@@ -55,8 +55,14 @@ def subtract_zero_read(data):
     Returns
     -------
     data (dict): Updated dictionary that has the zero read subtracted from
-        every other read in the integration.
+        every other read in the integration. Note that the data type has
+        changed from uint16 to int32 to accommodate pixels (especially in
+        the first science read) that go negative from the zero read subtraction.
     """
+
+    # Change data types in case we get negative numbers.
+    data['reads'] = data['reads'].astype(np.int32)
+    data['zero_read'] = data['zero_read'].astype(np.int32)
 
     data['reads'] -= data['zero_read']
 
