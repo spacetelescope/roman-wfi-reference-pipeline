@@ -19,8 +19,9 @@ def read_dcl_data(file):
     -------
     data (dict): A dictionary containing two numpy.ndarrays,
         one called 'reads' containing the data cube of the
-        integration, and another called 'zeroread' that is
-        the first read of the integration.
+        integration, another called 'zeroread' that is
+        the first read of the integration, and finally
+        'header' that includes the primary FITS header.
     """
 
     # Read in the FITS file. Squeeze it to remove
