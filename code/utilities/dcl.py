@@ -30,40 +30,13 @@ def read_dcl_data(file):
         integration = np.squeeze(hdu[1].data)
         hdr = hdu[0].header
 
-    # Re-order the array to increasing reads along
-    # the z-axis.
-    integration = integration[::-1, :, :]
+    # Subtract the cube from 65535 (for some reason?;
+    # Stefano knows the answer to this...).
+    # Convert to 32-bit signed integer
+    # for working with data in subsequent steps.
+    integration = 65535 - integration.astype(np.int32)
 
-    # Separate out the zero read so it can be used
-    # if needed, but doesn't get included in the
-    # rest of the data.
-    data = {'reads': integration[1:, :, :],
-            'zero_read': integration[0, :, :],
-            'header': hdr}
-
-    return data
-
-
-def subtract_zero_read(data):
-    """
-    Quickly subtract the zero read from all other reads in the integration.
-
-    Inputs
-    ------
-    data (dict): Dictionary output from .read_dcl_data
-
-    Returns
-    -------
-    data (dict): Updated dictionary that has the zero read subtracted from
-        every other read in the integration. Note that the data type has
-        changed from uint16 to int32 to accommodate pixels (especially in
-        the first science read) that go negative from the zero read subtraction.
-    """
-
-    # Change data types in case we get negative numbers.
-    data['reads'] = data['reads'].astype(np.int32)
-    data['zero_read'] = data['zero_read'].astype(np.int32)
-
-    data['reads'] -= data['zero_read']
+    data = {'reads': integration,
+            'meta': hdr}
 
     return data
