@@ -44,7 +44,7 @@ def read_dcl_data(file):
     return data
 
 
-def subtract_zeroread(data):
+def subtract_zero_read(data):
     """
     Quickly subtract the zero read from all other reads in the integration.
 
