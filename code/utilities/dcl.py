@@ -27,6 +27,7 @@ def read_dcl_data(file):
     # the superfluous fourth dimension.
     with fits.open(file) as hdu:
         integration = np.squeeze(hdu[1].data)
+        hdr = hdu[0].header
 
     # Re-order the array to increasing reads along
     # the z-axis.
@@ -36,6 +37,7 @@ def read_dcl_data(file):
     # if needed, but doesn't get included in the
     # rest of the data.
     data = {'reads': integration[1:, :, :],
-            'zeroread': integration[0, :, :]}
+            'zeroread': integration[0, :, :],
+            'header': hdr}
 
     return data
