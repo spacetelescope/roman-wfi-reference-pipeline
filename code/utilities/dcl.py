@@ -38,7 +38,26 @@ def read_dcl_data(file):
     # if needed, but doesn't get included in the
     # rest of the data.
     data = {'reads': integration[1:, :, :],
-            'zeroread': integration[0, :, :],
+            'zero_read': integration[0, :, :],
             'header': hdr}
+
+    return data
+
+
+def subtract_zeroread(data):
+    """
+    Quickly subtract the zero read from all other reads in the integration.
+
+    Inputs
+    ------
+    data (dict): Dictionary output from .read_dcl_data
+
+    Returns
+    -------
+    data (dict): Updated dictionary that has the zero read subtracted from
+        every other read in the integration.
+    """
+
+    data['reads'] -= data['zero_read']
 
     return data
