@@ -44,20 +44,7 @@ class CalDCL:
 
         self.cal_reads -= self.zero_read
 
-    def ramp_fit(self, gain_file=None):
-
-        # If gain file is present, then convert the cal data to electrons
-        # before the fit. The user may or may not want to do this (in
-        # general, they probably will).  Set the units of the images for
-        # user reference.
-        if gain_file:
-            with asdf.open(gain_file) as gf:
-                gain_image = gf.tree['data'].__array__()
-            self.cal_reads *= gain_image
-            self.cal_reads_units = units.electron
-            self.ramp_image_units = units.electron / units.second
-        else:
-            self.ramp_image_units = units.adu / units.second
+    def ramp_fit(self):
 
         # Get the shape of the cube and the number of reads.
         cube_shape = self.cal_reads.shape
@@ -68,3 +55,4 @@ class CalDCL:
         data_y = self.cal_reads.copy().reshape(cube_shape[0], -1)
         slopes, _ = np.polyfit(data_x, data_y, 1)
         self.ramp_image = slopes.reshape(cube_shape[1], cube_shape[2]).astype(np.float32)
+        self.ramp_image_units = units.adu / units.second
