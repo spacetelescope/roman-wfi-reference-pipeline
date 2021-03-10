@@ -24,8 +24,8 @@ class CalDCL:
         self.zero_read = None
         self.reference_pixels = None
         self.mean_reference_pixels = None
-        self.slope_image = None
-        self.slope_image_units = None
+        self.ramp_image = None
+        self.ramp_image_units = None
 
     def subtract_reference_pixels(self):
 
@@ -55,9 +55,9 @@ class CalDCL:
                 gain_image = gf.tree['data'].__array__()
             self.cal_reads *= gain_image
             self.cal_reads_units = units.electron
-            self.slope_image_units = units.electron / units.second
+            self.ramp_image_units = units.electron / units.second
         else:
-            self.slope_image_units = units.adu / units.second
+            self.ramp_image_units = units.adu / units.second
 
         # Get the shape of the cube and the number of reads.
         cube_shape = self.cal_reads.shape
@@ -67,4 +67,4 @@ class CalDCL:
         # 2D image shape (i.e., the flattened cube).
         data_y = self.cal_reads.copy().reshape(cube_shape[0], -1)
         slopes, _ = np.polyfit(data_x, data_y, 1)
-        self.slope_image = slopes.reshape(cube_shape[1], cube_shape[2]).astype(np.float32)
+        self.ramp_image = slopes.reshape(cube_shape[1], cube_shape[2]).astype(np.float32)
