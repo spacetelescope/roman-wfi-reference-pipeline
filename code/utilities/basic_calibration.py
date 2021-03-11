@@ -3,7 +3,7 @@ Tools for doing basic calibration of reads. This includes
 reference pixel subtraction and zero read subtraction.
 """
 
-import asdf
+import logging
 import numpy as np
 from astropy import units
 from ..utilities import dcl
@@ -29,11 +29,15 @@ class CalDCL:
 
     def subtract_reference_pixels(self):
 
+        logging.info('Calculating row-mean of reference pixels')
+
         # Grab the 8 columns of reference pixels from either side of the cube.
         # Compute the row average of the reference pixels.
         self.reference_pixels = np.concatenate((self.all_reads[:, :, :4], self.all_reads[:, :, -4:]), axis=2)
         new_shape = (self.all_reads.shape[0], self.all_reads.shape[1], 1)
         self.mean_reference_pixels = np.mean(self.reference_pixels, axis=2, dtype=np.int32).reshape(new_shape)
+
+        logging.info('Row-subtracting reference pixel mean')
 
         # Subtract off the mean reference pixel per row.
         self.cal_reads = self.all_reads[1:] - self.mean_reference_pixels[1:]
@@ -42,9 +46,13 @@ class CalDCL:
 
     def subtract_zero_read(self):
 
+        logging.info('Subtracting zero read')
+
         self.cal_reads -= self.zero_read
 
     def ramp_fit(self):
+
+        logging.info('Performing ramp fit')
 
         # Get the shape of the cube and the number of reads.
         cube_shape = self.cal_reads.shape

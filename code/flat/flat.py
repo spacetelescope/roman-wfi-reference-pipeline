@@ -9,15 +9,17 @@ class Flat(ReferenceFile):
     def __init__(self, ramp_image, meta_data, bit_mask=None, outfile=None, clobber=False):
 
         # If no output file name given, just set one now.
-        if not outfile:
-            outfile = 'roman_flat.asdf'
+        self.outfile = outfile if outfile else 'roman_flat.asdf'
 
-        super(Flat, self).__init__(ramp_image, meta_data, bit_mask=bit_mask, outfile=outfile, clobber=clobber)
+        super(Flat, self).__init__(ramp_image, meta_data, bit_mask=bit_mask, clobber=clobber)
 
         # Update metadata with constants.
         self.meta['meta']['description'] = 'Flat field file.'
 
     def make_flat(self, low_qe_threshold=0.2, low_qe_bit=13):
+
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
 
         # Normalize the flat_image by the sigma-clipped mean.
         mean, _, _ = sigma_clipped_stats(self.data)
