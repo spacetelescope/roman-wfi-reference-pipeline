@@ -1,6 +1,7 @@
 build-job:
   stage: build
   script:
+    - apt-get install -y python3.9 python-pip
     - pip install -e .
 
 run-pytest:
