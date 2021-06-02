@@ -1,0 +1,14 @@
+build-job:
+  stage: build
+  script:
+    - pip install -e .
+
+run-pytest:
+  stage: test
+  script:
+    pytest
+
+run-flake:
+  stage: test
+  script:
+    flake8
