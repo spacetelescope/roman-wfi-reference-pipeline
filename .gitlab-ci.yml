@@ -38,4 +38,4 @@ run-flake:
   stage: test
   script:
     - pip install flake8
-    - flake8
+    - flake8 wfi_reference_pipeline/
