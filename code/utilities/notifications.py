@@ -12,4 +12,4 @@ def send_slack_message(message, config_file='slack_devtest.yml'):
         slack_config = yaml.safe_load(cf)
 
     data = json.dumps({'text': message, **slack_config['bot_info']})
-    r = requests.post(slack_config['url'], data=data)
+    _ = requests.post(slack_config['url'], data=data)
