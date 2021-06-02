@@ -34,11 +34,11 @@ run-pytest:
   script:
     - pip install pytest
     - pip install pyyaml
+    - pip install crds
     - pytest
 
 run-flake:
   stage: test
   script:
     - pip install flake8
-    - ls
     - venv/bin/python3 -m flake8 code/*
