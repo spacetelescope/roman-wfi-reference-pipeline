@@ -1,15 +1,15 @@
-# import json
-import os
-# import requests
+import importlib.resources as pkg_resources
+import json
+import requests
 import yaml
 
-from astropy.utils.data import get_pkg_data_filename
+from wfi_reference_pipeline import config
 
 
-def send_slack_message(message,
-                       config_file=os.path.join('config', 'slack.yml')):
+def send_slack_message(message, config_file='slack_devtest.yml'):
 
-    with open(get_pkg_data_filename(config_file)) as config:
-        slack_config = yaml.safe_load(config)
+    with pkg_resources.open_text(config, config_file) as cf:
+        slack_config = yaml.safe_load(cf)
 
-    print(message, slack_config)
+    data = json.dumps({'text': message, **slack_config['bot_info']})
+    r = requests.post(slack_config['url'], data=data)
