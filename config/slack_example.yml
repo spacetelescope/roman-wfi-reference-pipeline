@@ -1,0 +1,3 @@
+# Fill in the fields and rename to slack.yml
+token: ExampleToken
+channel: SlackChannelName

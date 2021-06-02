@@ -1,0 +1,11 @@
+*.asdf
+*__pycache__*
+*.idea
+*.ipynb_checkpoints*
+.pytest_cache
+config/slack.yml
+build/*
+dist/*
+*.egg-info/
+.eggs/
+version.py
