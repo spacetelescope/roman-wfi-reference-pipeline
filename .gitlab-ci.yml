@@ -38,6 +38,6 @@ run-pytest:
 run-flake:
   stage: test
   script:
-    - pip install flake8-docstrings
+    - pip install flake8
     - ls
-    - venv/bin/python3 -m flake8 --ignore E501,D200 code/*
+    - venv/bin/python3 -m flake8 code/*
