@@ -31,7 +31,8 @@ build-job:
 run-pytest:
   stage: test
   script:
-    - pip install pytest, pyyaml
+    - pip install pytest
+    - pip install pyyaml
     - pytest
 
 run-flake:
@@ -39,4 +40,4 @@ run-flake:
   script:
     - pip install flake8-docstrings
     - ls
-    - venv/bin/python3 -m flake8 --ignore E501,D200 wfi_reference_pipeline/*
+    - venv/bin/python3 -m flake8 --ignore E501,D200 code/*
