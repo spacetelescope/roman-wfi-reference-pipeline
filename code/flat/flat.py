@@ -6,12 +6,14 @@ import numpy as np
 
 class Flat(ReferenceFile):
 
-    def __init__(self, ramp_image, meta_data, bit_mask=None, outfile=None, clobber=False):
+    def __init__(self, ramp_image, meta_data, bit_mask=None, outfile=None,
+                 clobber=False):
 
         # If no output file name given, just set one now.
         self.outfile = outfile if outfile else 'roman_flat.asdf'
 
-        super(Flat, self).__init__(ramp_image, meta_data, bit_mask=bit_mask, clobber=clobber)
+        super(Flat, self).__init__(ramp_image, meta_data, bit_mask=bit_mask,
+                                   clobber=clobber)
 
         # Update metadata with constants.
         self.meta['meta']['description'] = 'Flat field file.'
@@ -30,7 +32,8 @@ class Flat(ReferenceFile):
         self.mask[low_qe] += 2**low_qe_bit
 
         # Construct the flat field object from the data model.
-        flat_asdf = FlatModel(data=self.data, err=np.zeros(self.data.shape, dtype=np.float32),
+        flat_asdf = FlatModel(data=self.data,
+                              err=np.zeros(self.data.shape, dtype=np.float32),
                               dq=self.mask)
 
         # Add in the meta data and history to the ASDF tree.

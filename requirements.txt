@@ -1,0 +1,12 @@
+asdf==2.8.0
+crds==11.0.2
+flake8==3.9.2
+pytest==6.2.4
+pyyaml==5.4.1
+requests==2.25.1
+setuptools==57.0.0
+six==1.16.0
+stdatamodels==0.2.1
+stpipe==0.2.0
+wheel==0.36.2
+git+https://github.com/spacetelescope/romancal

@@ -20,5 +20,6 @@ class ReadNoise:
 
         # Linear fit to the data. Could get fancy with this later to do
         # outlier rejection...
-        var_func = np.poly1d(np.polyfit(range(delta.size[1]), variance[::-1] / 2, 1))
+        var_func = np.poly1d(np.polyfit(range(delta.size[1]),
+                                        variance[::-1] / 2, 1))
         self.read_noise = np.sqrt(var_func(0))

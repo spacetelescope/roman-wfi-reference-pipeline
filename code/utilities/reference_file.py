@@ -28,7 +28,8 @@ class ReferenceFile:
         # Convert useafter date to Astropy.Time object. Update meta data
         # with a few constants.
         self.meta['meta']['useafter'] = Time(self.meta['meta']['useafter'])
-        self.meta['meta']['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
+        self.meta['meta']['author'] = f'WFI Reference File Pipeline ' \
+                                      f'version {PIPELINE_VERSION}'
 
         # Other stuff.
         self.clobber = clobber
@@ -39,4 +40,5 @@ class ReferenceFile:
             if self.clobber:
                 os.remove(outfile)
             else:
-                raise FileExistsError(f'{outfile} already exists, and clobber={self.clobber}!')
+                raise FileExistsError(f'{outfile} already exists, and '
+                                      f'clobber={self.clobber}!')

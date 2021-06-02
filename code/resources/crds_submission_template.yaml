@@ -1,0 +1,29 @@
+# Much of the following doesn't need to be changed except in particular cases.
+# If you're unsure, ask someone!
+deliverer: WFI Reference File Pipeline
+other_email: null
+instrument: WFI
+history_updated: True
+pedigree_updated: True
+keywords_checked: True
+descrip_udpated: True
+useafter_updated: True
+useafter_matches: N/A
+compliance_verified: Yes
+ingest_files: Yes
+etc_delivery: False
+jwst_etc: False
+calpipe_version: No
+replacement_files: False
+old_reference_files: null
+replacing_badfiles: No
+jira_issue: null
+table_rows_changed: null
+change_level: SEVERE
+
+# Update these for the particular reference files being delivered.
+file_type: null
+modes_affected: null
+correctness_testing: null
+additional_considerations: null
+description: null

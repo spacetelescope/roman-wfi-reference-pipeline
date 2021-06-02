@@ -4,14 +4,13 @@ Roman/WFI reference file creation pipeline
 
 ## Installation
 
-Recommended to use the `romantest.yml` file included in the main directory of the repository to create your environment. To do that, go to the main directory of your local copy of the repository and type:
-
+Always create a clean environment first! E.g.,:
 ```buildoutcfg
-conda create -f romantest.yml
+conda create -n romanreffiles python=3.9
 ```
 
-After this, you will need to install the latest dev version of the Roman data pipeline:
+After cloning the repository, run the following command in the local copy:
 
 ```buildoutcfg
-pip install git+https://github.com/spacetelescope/romancal
+pip install -e .
 ```
