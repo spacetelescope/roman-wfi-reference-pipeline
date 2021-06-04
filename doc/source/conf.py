@@ -14,7 +14,7 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-from wfi_reference_pipeline import __version__
+import importlib.metadata as importlib_metadata
 
 # -- Project information -----------------------------------------------------
 
@@ -62,6 +62,8 @@ pygments_style = 'sphinx'
 html_static_path = ['_static']
 
 # The full version, including alpha/beta/rc tags.
-release = __version__
+# The full version, including alpha/beta/rc tags.
+project = 'wfi-reference-file-pipeline'
+release = importlib_metadata.version(project)
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
