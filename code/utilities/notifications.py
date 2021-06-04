@@ -37,4 +37,5 @@ def send_slack_message(message, config_file='slack_dev.yml'):
         _ = requests.post(token, data=data)
 
     except KeyError:
-        logging.warning('No slack token was provided, so skipping the notification...')
+        logging.warning('No slack token was provided, so skipping '
+                        'the notification...')
