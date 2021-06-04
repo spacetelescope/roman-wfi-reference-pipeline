@@ -49,4 +49,4 @@ sphinx:
     - pip install sphinx
     - pip install sphinx_automodapi
     - pip install sphinx_rtd_theme
-    - doc/make html
+    - sphinx-build -b html doc/source doc/build
