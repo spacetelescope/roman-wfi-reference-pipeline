@@ -46,7 +46,5 @@ run-flake:
 sphinx:
   stage: deploy
   script:
-    - pip install sphinx
-    - pip install sphinx_automodapi
-    - pip install sphinx_rtd_theme
+    - pip install -e .
     - sphinx-build -b html doc/source doc/build
