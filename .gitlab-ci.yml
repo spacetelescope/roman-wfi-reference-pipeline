@@ -43,8 +43,8 @@ run-flake:
     - pip install flake8
     - venv/bin/python3 -m flake8 code/*
 
-sphinx:
-  stage: deploy
+test-sphinx-docs:
+  stage: test
   script:
     - pip install .
     - sphinx-build -b html doc/source doc/build
