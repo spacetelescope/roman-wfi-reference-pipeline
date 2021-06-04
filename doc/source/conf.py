@@ -14,7 +14,7 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-from pkg_resources import get_distribution
+from wfi_reference_pipeline import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -62,6 +62,6 @@ pygments_style = 'sphinx'
 html_static_path = ['_static']
 
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('wfi_reference_pipeline').version
+release = __version__
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])

@@ -42,3 +42,11 @@ run-flake:
   script:
     - pip install flake8
     - venv/bin/python3 -m flake8 code/*
+
+sphinx:
+  stage: deploy
+  script:
+    - pip install sphinx
+    - pip install sphinx_automodapi
+    - pip install sphinx_rtd_theme
+    - doc/make html
