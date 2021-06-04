@@ -1,4 +1,2 @@
-url: https://hooks.slack.com/services/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
-bot_info:
-  username: WFI RefPipe Dev
-  icon_emoji: ':traffic_cone:'
+username: WFI RefPipe Dev
+icon_emoji: ':traffic_cone:'

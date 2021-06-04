@@ -4,6 +4,7 @@ Tools for sending notifications from the pipeline.
 
 import importlib.resources as pkg_resources
 import json
+import os
 import requests
 import yaml
 
@@ -29,5 +30,5 @@ def send_slack_message(message, config_file='slack_dev.yml'):
     with pkg_resources.open_text(config, config_file) as cf:
         slack_config = yaml.safe_load(cf)
 
-    data = json.dumps({'text': message, **slack_config['bot_info']})
-    _ = requests.post(slack_config['url'], data=data)
+    data = json.dumps({'text': message, **slack_config})
+    _ = requests.post(os.environ['WFI_SLACK_TOKEN'], data=data)
