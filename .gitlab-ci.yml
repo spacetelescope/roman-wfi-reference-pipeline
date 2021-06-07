@@ -41,7 +41,7 @@ run-flake:
   stage: test
   script:
     - pip install flake8
-    - venv/bin/python3 -m flake8 code/*
+    - venv/bin/python3 -m flake8 *
 
 test-sphinx-docs:
   stage: test

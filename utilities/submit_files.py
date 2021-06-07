@@ -16,13 +16,16 @@ def create_form(files, *args, yaml_form=None, submission_info=None,
     files (str list):
         List of reference files that should be attached to the form
         for the delivery to CRDS.
+
     yaml_form (str; optional; default=None):
         The name of a YAML file containing the submission information
         for the form. If provided, this takes precedence over other
         inputs. Must provide either yaml_form OR submissino_info.
+
     submission_info (dict; optional; default=None):
         A dictionary containing the information for the submission form.
         Must provide either yaml_form OR submission_info.
+
     server (str; optional; default='test'):
         A string that specifies to which Roman CRDS server the reference
         files are being delivered. Must be one of either 'ops', 'test', or

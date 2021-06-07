@@ -18,10 +18,12 @@ def send_slack_message(message, config_file='slack_dev.yml'):
 
     Inputs
     ------
-    message (str): Message to send to the slack channel.
-    config_file (str; optional; default="slack_dev.yml"): YAML file containing
-        the configuration information for the slack integration including
-        the webhook URL and optional name/icon information.
+    message (str):
+        Message to send to the slack channel.
+
+    config_file (str; optional; default="slack_dev.yml"):
+        YAML file containing the configuration information for the slack
+        integration including optional name/icon information.
 
     Returns
     -------
