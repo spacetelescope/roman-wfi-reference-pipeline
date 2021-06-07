@@ -18,7 +18,7 @@ import importlib.metadata as importlib_metadata
 
 # -- Project information -----------------------------------------------------
 
-project = 'WFI Reference File Pipeline'
+project = 'wfi-reference-file-pipeline'
 copyright = '2021, STScI'
 author = 'Tyler Desjardins'
 
@@ -45,7 +45,7 @@ html_logo = '_static/stsci_pri_combo_mark_white.png'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['wfi_reference_pipeline']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -61,9 +61,11 @@ pygments_style = 'sphinx'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# The reST default role (used for this markup: `text`) to use for all documents.
+default_role = 'py:obj'
+
 # The full version, including alpha/beta/rc tags.
 # The full version, including alpha/beta/rc tags.
-project = 'wfi-reference-file-pipeline'
 release = importlib_metadata.version(project)
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])

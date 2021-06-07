@@ -30,8 +30,11 @@ def send_slack_message(message, config_file='slack_dev.yml'):
 
     try:
         token = os.environ['WFI_SLACK_TOKEN']
-        with pkg_resources.open_text(config, config_file) as cf:
-            slack_config = yaml.safe_load(cf)
+        if config_file:
+            with pkg_resources.open_text(config, config_file) as cf:
+                slack_config = yaml.safe_load(cf)
+        else:
+            slack_config = {}
 
         data = json.dumps({'text': message, **slack_config})
         _ = requests.post(token, data=data)

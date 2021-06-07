@@ -10,3 +10,4 @@ dist/*
 .eggs/
 version.py
 doc/build/*
+doc/source/api/*

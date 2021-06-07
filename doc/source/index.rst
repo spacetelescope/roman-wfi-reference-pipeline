@@ -3,14 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to WFI Reference File Pipeline's documentation!
-=======================================================
+Roman WFI Reference File Pipeline Documentation
+===============================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-
+   utilities/index
 
 Indices and tables
 ==================
