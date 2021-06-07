@@ -42,7 +42,7 @@ run-flake:
   script:
     - pip install flake8
     - ls -l
-    - venv/bin/python3 -m flake8 --exclude=venv *
+    - venv/bin/python3 -m flake8 --exclude=venv *.py
 
 #test-sphinx-docs:
 #  stage: test
