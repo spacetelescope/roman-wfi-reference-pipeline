@@ -42,10 +42,10 @@ run-flake:
   script:
     - pip install flake8
     - ls -l
-    - venv/bin/python3 -m flake8 wfi_reference_pipeline/*
+    - venv/bin/python3 -m flake8 --exclude=venv *
 
-test-sphinx-docs:
-  stage: test
-  script:
-    - pip install .
-    - sphinx-build -b html doc/source doc/build
+#test-sphinx-docs:
+#  stage: test
+#  script:
+#    - pip install .
+#    - sphinx-build -b html doc/source doc/build
