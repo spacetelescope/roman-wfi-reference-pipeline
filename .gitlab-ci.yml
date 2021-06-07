@@ -41,7 +41,7 @@ run-flake:
   stage: test
   script:
     - pip install flake8
-    - venv/bin/python3 -m flake8 *
+    - venv/bin/python3 -m flake8 wfi_reference_pipeline/*
 
 test-sphinx-docs:
   stage: test
