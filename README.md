@@ -26,3 +26,7 @@ The documentation can then be found in doc/build/html/index.html.
 
 To use the Slack notifications, you must set up a Slack token. 
 When you have a token, you can point to it with the environment variable WFI_SLACK_TOKEN.
+
+### Miscellaneous
+
+<div>Project icon made by <a href="" title="Good Ware">Good Ware</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
