@@ -35,6 +35,7 @@ run-pytest:
     - pip install pytest
     - pip install pyyaml
     - pip install crds
+    - pip install coverage
     - pytest
     - coverage xml
   artifacts:
