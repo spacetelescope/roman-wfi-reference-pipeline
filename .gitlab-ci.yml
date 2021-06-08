@@ -1,6 +1,6 @@
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-image: python:3.9-buster
+image: python:3.9
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -27,16 +27,15 @@ before_script:
 build-job:
   stage: build
   script:
-    - pip install -e .
+    - pip install .
 
 run-pytest:
   stage: test
   script:
-    - pip install pytest
-    - pip install pyyaml
-    - pip install crds
+    - pip install -r requirements.txt
+    - pip install pytest-cov
     - pip install coverage
-    - pytest
+    - pytest --cov=.
     - coverage xml -o reports/coverage
   artifacts:
     reports:
@@ -48,9 +47,3 @@ run-flake:
     - pip install flake8
     - ls -l
     - venv/bin/python3 -m flake8 --exclude=venv *.py
-
-#test-sphinx-docs:
-#  stage: test
-#  script:
-#    - pip install .
-#    - sphinx-build -b html doc/source doc/build
