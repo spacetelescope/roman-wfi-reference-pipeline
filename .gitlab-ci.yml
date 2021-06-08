@@ -36,7 +36,7 @@ run-pytest:
     - pip install pytest-cov
     - pip install coverage
     - pytest --cov=.
-    - coverage xml -o reports/coverage
+    - coverage xml -o reports/coverage.xml
   artifacts:
     reports:
       cobertura: reports/coverage.xml

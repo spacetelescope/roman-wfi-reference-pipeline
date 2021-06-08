@@ -11,5 +11,6 @@ dist/*
 version.py
 doc/build/*
 doc/source/api/*
-.coverage*
+.coverage
+.coverage.*
 reports/coverage.xml
