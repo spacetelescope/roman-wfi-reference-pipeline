@@ -37,10 +37,10 @@ run-pytest:
     - pip install crds
     - pip install coverage
     - pytest
-    - coverage xml
+    - coverage xml -o reports/coverage
   artifacts:
     reports:
-      cobertura: coverage.xml
+      cobertura: reports/coverage.xml
 
 run-flake:
   stage: test
