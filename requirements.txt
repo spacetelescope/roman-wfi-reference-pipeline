@@ -1,2 +1,2 @@
-pyyml
+pyyaml
 romancal>=0.3.1
