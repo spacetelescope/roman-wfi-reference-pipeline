@@ -22,8 +22,11 @@ class ReferenceFile:
             self.mask = basic_mask.make_mask()
 
         # Grab the meta data from the yaml file.
-        with open(meta_data) as md:
-            self.meta = yaml.safe_load(md)
+        if type(meta_data) is dict:
+            self.meta = meta_data
+        else:
+            with open(meta_data) as md:
+                self.meta = yaml.safe_load(md)
 
         # Convert useafter date to Astropy.Time object. Update meta data
         # with a few constants.
