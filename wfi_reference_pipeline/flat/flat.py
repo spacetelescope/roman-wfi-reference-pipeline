@@ -1,5 +1,6 @@
+import asdf
 from astropy.stats import sigma_clipped_stats
-from roman_datamodels.datamodels import FlatRefModel
+import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
 import numpy as np
 
@@ -15,7 +16,10 @@ class Flat(ReferenceFile):
                                    clobber=clobber)
 
         # Update metadata with constants.
-        self.meta['meta']['description'] = 'Flat field file.'
+        if 'description' not in self.meta.keys():
+            self.meta['description'] = 'Flat field file.'
+        else:
+            pass
 
     def make_flat(self, low_qe_threshold=0.2, low_qe_bit=13):
         # Check if the output file exists, and take appropriate action.
@@ -30,14 +34,19 @@ class Flat(ReferenceFile):
         self.mask[low_qe] += 2 ** low_qe_bit
 
         # Construct the flat field object from the data model.
-        flat_asdf = FlatRefModel(data=self.data,
-                                 err=np.zeros(self.data.shape, dtype=np.float32),
-                                 dq=self.mask)
+        flatfile = rds.FlatRef()
+        flatfile['meta'] = self.meta
+        flatfile['data'] = self.data
+        flatfile['dq'] = self.mask
+        flatfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
 
         # Add in the meta data and history to the ASDF tree.
-        for key, value in self.meta['meta'].items():
-            flat_asdf.meta[key] = value
-        flat_asdf.history = self.meta['history']
+        af = asdf.AsdfFile()
+        af.tree = {'roman': flatfile}
+        af.write_to(self.outfile)
+        #for key, value in self.meta['meta'].items():
+        #    flat_asdf.meta[key] = value
+        #flat_asdf.history = self.meta['history']
 
         # Write out the flat field ASDF file.
-        flat_asdf.save(self.outfile)
+        #flat_asdf.save(self.outfile)

@@ -8,7 +8,7 @@ import numpy as np
 import os
 import yaml
 
-PIPELINE_VERSION = '0.0'
+PIPELINE_VERSION = '0.0.1'
 
 
 class ReferenceFile:
@@ -30,9 +30,11 @@ class ReferenceFile:
 
         # Convert useafter date to Astropy.Time object. Update meta data
         # with a few constants.
-        self.meta['meta']['useafter'] = Time(self.meta['meta']['useafter'])
-        self.meta['meta']['author'] = f'WFI Reference File Pipeline ' \
-                                      f'version {PIPELINE_VERSION}'
+        self.meta['useafter'] = Time(self.meta['useafter'])
+        self.meta['author'] = f'WFI Reference File Pipeline '\
+                              f'version {PIPELINE_VERSION}'
+        self.meta['origin'] = 'STScI'
+        self.meta['telescope'] = 'ROMAN'
 
         # Other stuff.
         self.clobber = clobber
