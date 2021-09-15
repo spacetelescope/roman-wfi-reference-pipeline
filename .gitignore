@@ -14,3 +14,4 @@ doc/source/api/*
 .coverage
 .coverage.*
 reports/coverage.xml
+*.DS_Store

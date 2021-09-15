@@ -3,15 +3,18 @@ A base class for dealing with reference files.
 """
 
 from ..utilities import basic_mask
-from astropy.time import Time
 import numpy as np
+from astropy.time import Time
 import os
 import yaml
 
-PIPELINE_VERSION = '0.0.1'
+PIPELINE_VERSION = '0.0.1' # set global variable for pipeline version
 
 
 class ReferenceFile:
+    """ The child class ReferenceFile() gives writes statis meta data to each reference
+    file type within the parent classes.
+    """
 
     def __init__(self, data, meta_data, bit_mask=None, clobber=False):
 
@@ -21,19 +24,18 @@ class ReferenceFile:
         else:
             self.mask = basic_mask.make_mask()
 
-        # Grab the meta data from the yaml file.
+        # Grab the meta data from the yaml file if provided.
         if type(meta_data) is dict:
             self.meta = meta_data
         else:
             with open(meta_data) as md:
                 self.meta = yaml.safe_load(md)
 
-        # Convert useafter date to Astropy.Time object. Update meta data
-        # with a few constants.
-        self.meta['useafter'] = Time(self.meta['useafter'])
-        self.meta['author'] = f'WFI Reference File Pipeline '\
-                              f'version {PIPELINE_VERSION}'
-        self.meta['origin'] = 'STScI'
+        # Convert use after date to Astropy.Time object.
+        self.meta['useafter']  = Time(self.meta['useafter'])
+        # Write static meta data for all file type.
+        self.meta['author']    = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
+        self.meta['origin']    = 'STScI'
         self.meta['telescope'] = 'ROMAN'
 
         # Other stuff.
@@ -45,5 +47,4 @@ class ReferenceFile:
             if self.clobber:
                 os.remove(outfile)
             else:
-                raise FileExistsError(f'{outfile} already exists, and '
-                                      f'clobber={self.clobber}!')
+                raise FileExistsError(f'{outfile} already exists, and clobber={self.clobber}!')
