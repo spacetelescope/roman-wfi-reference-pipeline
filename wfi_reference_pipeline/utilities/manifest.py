@@ -15,17 +15,19 @@ def make_manifest(files):
     Returns
     -------
     df: pandas.DataFrame
-        Pandas dataframe containing the file names, detector names,
+        Pandas dataframe containing the file names, reftypes, detector names,
         exposure types, optical elements, MA table names, and
         useafter dates for the input file list.
     """
 
-    useafter, exptype, element, detector, ma_name = [], [], [], [], []
+    useafter, exptype, element, detector = [], [], [], []
+    ma_name, reftype = [], []
 
     for file in files:
         with rdd.open(file) as rf:
             meta = rf.meta
 
+        reftype.append(meta['reftype'])
         useafter.append(meta['useafter'].datetime.strftime('%Y-%m-%d %H:%M:%S'))
         detector.append(meta['instrument']['detector'])
         try:
@@ -41,8 +43,8 @@ def make_manifest(files):
         except KeyError:
             ma_name.append('N/A')
 
-    df = pd.DataFrame({'file': files, 'detector': detector, 'exptype': exptype,
-                       'optical_element': element, 'ma_table_name': ma_name,
-                       'useafter': useafter})
+    df = pd.DataFrame({'file': files, 'reftype': reftype, 'detector': detector,
+                       'exptype': exptype, 'optical_element': element,
+                       'ma_table_name': ma_name, 'useafter': useafter})
 
     return df
