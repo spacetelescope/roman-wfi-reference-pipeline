@@ -1,3 +1,5 @@
 pyyaml
-romancal>=0.3.1
-pandas
+pytest
+crds
+romancal
+

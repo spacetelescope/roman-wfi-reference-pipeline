@@ -6,9 +6,10 @@ from astropy.stats import sigma_clipped_stats
 
 
 class ReadNoise(ReferenceFile):
-    """ The parent class ReadNoise() inherits the ReferenceFile child class methods
-    where static meta data for all file types are written. The method
-    make_read_noise() generates the asdf file matching the dimensions of the input data array.
+    """
+    Class ReadNoise() inherits the ReferenceFile() base class methods
+    where static meta data for all reference file types are written. The
+    method make_read_noise() creates the asdf readnoise file.
     """
 
     #def __init__(self, zero1, zero2):
@@ -28,7 +29,7 @@ class ReadNoise(ReferenceFile):
 
         # Update metadata with read noise file type info if not included.
         if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Read noise file default description.'
+            self.meta['description'] = 'Roman WFI read noise reference file.'
         else:
             pass
         if 'reftype' not in self.meta.keys():
@@ -48,9 +49,22 @@ class ReadNoise(ReferenceFile):
         self.read_noise = np.sqrt(var_func(0))
 
     def make_read_noise(self):
-        """ The method make_read_noise() generates a read noise reference file type
-        that matches the dimensions of the input data array.
         """
+        The method make_read_noise() generates a readnoise asdf file.
+
+        Parameters
+        ----------
+
+        Outputs
+        -------
+        af: asdf file tree: {meta, data}
+            meta:
+            data: self
+        """
+
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
+
         # Construct the read noise object from the data model.
         rnfile         = rds.ReadnoiseRef()
         rnfile['meta'] = self.meta
