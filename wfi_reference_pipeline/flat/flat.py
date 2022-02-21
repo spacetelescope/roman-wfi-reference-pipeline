@@ -6,10 +6,12 @@ from astropy.stats import sigma_clipped_stats
 
 
 class Flat(ReferenceFile):
-    """ The parent class Flat() inherits the ReferenceFile child class methods
-    where static meta data for all file types are written. The method
-    make_flat() does some statistical outlier rejection and generates
-    the asdf file matching the dimensions of the input data array.
+
+    """
+    Class Flat() inherits the ReferenceFile() base class methods
+    where static meta data for all reference file types are written. The
+    method make_flat() removes outliers and divides data by mean value and
+    then creates the flat asdf file containing the flattened frame.
     """
 
     def __init__(self, ramp_image, meta_data, bit_mask=None, outfile=None, clobber=False):
@@ -21,17 +23,35 @@ class Flat(ReferenceFile):
 
         # Update metadata with flat file type info if not included.
         if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Flat field file default description.'
+            self.meta['description'] = 'Roman WFI flat reference file.'
         else:
             pass
         if 'reftype' not in self.meta.keys():
-            self.meta['reftype']     = 'FLAT'
+            self.meta['reftype'] = 'FLAT'
         else:
             pass
 
     def make_flat(self, low_qe_threshold=0.2, low_qe_bit=13):
-        """ The method make_flat() generates a flat reference file type
-        that matches the dimensions of the input data array.
+        """
+        The method make_flat() generates a flat asdf file where input data is divided
+        by the mean value. The flattened image file is used to normalize quantum
+        efficiency variations.
+
+        Parameters
+        ----------
+        low_qe_threshold: float; default = 0.2,
+           Limit below which to flag pixels as low quantum efficiency.
+        low_qe_bit: unsigned integer; 13,
+            Power for base 2 flag in dq array (2^13).
+
+        Outputs
+        -------
+        af: asdf file tree: {meta, data, dq, err}
+            meta:
+            data: image divided by its mean
+            dq: mask - data quality array
+                masked loq QE pixels in image flagged 2**13
+            err: zeros
         """
 
         # Check if the output file exists, and take appropriate action.
@@ -41,24 +61,25 @@ class Flat(ReferenceFile):
         mean, _, _ = sigma_clipped_stats(self.data)
         self.data /= mean
 
+        # Generate between 200-300 pixels with low qe
+        rand_num_lowqe = np.random.randint(200, 300)
+        coords_x = np.random.randint(4, 4091, rand_num_lowqe)
+        coords_y = np.random.randint(4, 4091, rand_num_lowqe)
+        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
+        self.data[coords_x, coords_y] = rand_low_qe_values
+
         # Add DQ flag for low QE pixels.
-        low_qe = np.where(self.data < low_qe_threshold)
-        self.mask[low_qe] += 2 ** low_qe_bit
+        low_qe_pixels = np.where(self.data < low_qe_threshold)
+        self.mask[low_qe_pixels] += 2 ** low_qe_bit
 
         # Construct the flat field object from the data model.
-        flatfile         = rds.FlatRef()
+        flatfile = rds.FlatRef()
         flatfile['meta'] = self.meta
         flatfile['data'] = self.data
-        flatfile['dq']   = self.mask
-        flatfile['err']  = np.zeros(self.data.shape, dtype=np.float32)
+        flatfile['dq'] = self.mask
+        flatfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
 
         # Add in the meta data and history to the ASDF tree.
-        af      = asdf.AsdfFile()
+        af = asdf.AsdfFile()
         af.tree = {'roman': flatfile}
         af.write_to(self.outfile)
-        #for key, value in self.meta['meta'].items():
-        #    flat_asdf.meta[key] = value
-        #flat_asdf.history = self.meta['history']
-
-        # Write out the flat field ASDF file.
-        #flat_asdf.save(self.outfile)

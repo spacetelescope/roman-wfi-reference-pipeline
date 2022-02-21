@@ -4,9 +4,10 @@ import asdf
 
 
 class Gain(ReferenceFile):
-    """ The parent class Gain() inherits the ReferenceFile child class methods
-    where static meta data for all file types are written. The method
-    make_gain() generates the asdf file matching the dimensions of the input data array.
+    """
+    Class Gain() inherits the ReferenceFile() base class methods
+    where static meta data for all reference file types are written. The
+    method make_gain() creates the asdf gain file.
     """
 
     def __init__(self, gain_image, meta_data, bit_mask=None, outfile=None, clobber=False):
@@ -18,26 +19,37 @@ class Gain(ReferenceFile):
 
         # Update metadata with gain file type info if not included.
         if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Gain file default description.'
+            self.meta['description'] = 'Roman WFI gain reference file.'
         else:
             pass
         if 'reftype' not in self.meta.keys():
-            self.meta['reftype']     = 'GAIN'
+            self.meta['reftype'] = 'GAIN'
         else:
             pass
 
     def make_gain(self):
-        """ The method make_gain() generates a gain reference file type
-        that matches the dimensions of the input data array.
         """
+        The method make_gain() generates a gain asdf file with the input data.
+
+        Parameters
+        ----------
+
+        Outputs
+        -------
+        af: asdf file tree: {meta, data}
+            meta:
+            data: self
+        """
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
 
         # Construct the gain object from the data model.
-        gainfile         = rds.GainRef()
+        gainfile = rds.GainRef()
         gainfile['meta'] = self.meta
         gainfile['data'] = self.data
         # Gain files do not have data quality or error arrays.
 
         # Add in the meta data and history to the ASDF tree.
-        af      = asdf.AsdfFile()
+        af = asdf.AsdfFile()
         af.tree = {'roman': gainfile}
         af.write_to(self.outfile)

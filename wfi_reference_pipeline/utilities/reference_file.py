@@ -1,19 +1,15 @@
-"""
-A base class for dealing with reference files.
-"""
-
-from ..utilities import basic_mask
-import numpy as np
 from astropy.time import Time
 import os
 import yaml
+import numpy as np
 
 PIPELINE_VERSION = '0.0.1' # set global variable for pipeline version
 
 
 class ReferenceFile:
-    """ The child class ReferenceFile() gives writes statis meta data to each reference
-    file type within the parent classes.
+    """
+    Base class ReferenceFile() writes static meta data for all reference file types
+    are written.
     """
 
     def __init__(self, data, meta_data, bit_mask=None, clobber=False):
@@ -22,7 +18,7 @@ class ReferenceFile:
         if bit_mask:
             self.mask = bit_mask.astype(np.uint32)
         else:
-            self.mask = basic_mask.make_mask()
+            self.mask = np.zeros((4096, 4096), dtype=np.uint32)
 
         # Grab the meta data from the yaml file if provided.
         if type(meta_data) is dict:
@@ -32,10 +28,10 @@ class ReferenceFile:
                 self.meta = yaml.safe_load(md)
 
         # Convert use after date to Astropy.Time object.
-        self.meta['useafter']  = Time(self.meta['useafter'])
+        self.meta['useafter'] = Time(self.meta['useafter'])
         # Write static meta data for all file type.
-        self.meta['author']    = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
-        self.meta['origin']    = 'STScI'
+        self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
+        self.meta['origin'] = 'STScI'
         self.meta['telescope'] = 'ROMAN'
 
         # Other stuff.

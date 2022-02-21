@@ -14,7 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import importlib.metadata as importlib_metadata
+#import importlib.metadata as importlib_metadata
+from importlib.metadata import version
 
 # -- Project information -----------------------------------------------------
 
@@ -66,6 +67,7 @@ default_role = 'py:obj'
 
 # The full version, including alpha/beta/rc tags.
 # The full version, including alpha/beta/rc tags.
-release = importlib_metadata.version(project)
+#release = importlib_metadata.version(project)
+#release = version(project)
 # The short X.Y version.
-version = '.'.join(release.split('.')[:2])
+#ver = '.'.join(release.split('.')[:2])
