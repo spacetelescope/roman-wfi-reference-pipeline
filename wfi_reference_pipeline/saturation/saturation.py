@@ -39,7 +39,7 @@ class Saturation(ReferenceFile):
         -------
         af: asdf file tree: {meta, data, dq}
             meta:
-            data: self
+            data:
             dq: mask - data quality array
         """
 
