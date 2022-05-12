@@ -15,7 +15,9 @@ class ReferenceFile:
     def __init__(self, data, meta_data, bit_mask=None, clobber=False):
 
         self.data = data
-        if bit_mask:
+
+        if np.shape(bit_mask):
+            print("Mask provided. Skipping internal mask generation.")
             self.mask = bit_mask.astype(np.uint32)
         else:
             self.mask = np.zeros((4096, 4096), dtype=np.uint32)

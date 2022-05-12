@@ -59,7 +59,7 @@ class ReadNoise(ReferenceFile):
         -------
         af: asdf file tree: {meta, data}
             meta:
-            data: self
+            data:
         """
 
         # Check if the output file exists, and take appropriate action.

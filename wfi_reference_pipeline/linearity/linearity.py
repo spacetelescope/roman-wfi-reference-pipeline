@@ -40,7 +40,7 @@ class Linearity(ReferenceFile):
         -------
         af: asdf file tree: {meta, coeffs, dq}
             meta:
-            coeffs: self
+            coeffs:
             dq: mask
         """
 
@@ -51,6 +51,8 @@ class Linearity(ReferenceFile):
         linearityfile = rds.LinearityRef()
         linearityfile['meta'] = self.meta
         linearityfile['coeffs'] = self.data
+        nonleainr_pixels = np.where(self.mask == float('NaN'))
+        self.mask[nonleainr_pixels] = 2 ** 20 # linearity correction not available
         linearityfile['dq'] = self.mask
         # Linearity files do not have data quality or error arrays.
 

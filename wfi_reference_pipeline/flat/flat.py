@@ -18,8 +18,11 @@ class Flat(ReferenceFile):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_flat.asdf'
 
+        if not bit_mask:
+            bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
+
         # Access methods of base class ReferenceFile
-        super(Flat, self).__init__(ramp_image, meta_data, bit_mask=bit_mask, clobber=clobber)
+        super(Flat, self).__init__(ramp_image,  meta_data,  bit_mask=bit_mask, clobber=clobber)
 
         # Update metadata with flat file type info if not included.
         if 'description' not in self.meta.keys():
@@ -63,8 +66,8 @@ class Flat(ReferenceFile):
 
         # Generate between 200-300 pixels with low qe
         rand_num_lowqe = np.random.randint(200, 300)
-        coords_x = np.random.randint(4, 4091, rand_num_lowqe)
-        coords_y = np.random.randint(4, 4091, rand_num_lowqe)
+        coords_x = np.random.randint(0, 4088, rand_num_lowqe)
+        coords_y = np.random.randint(0, 4088, rand_num_lowqe)
         rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
         self.data[coords_x, coords_y] = rand_low_qe_values
 
@@ -77,7 +80,8 @@ class Flat(ReferenceFile):
         flatfile['meta'] = self.meta
         flatfile['data'] = self.data
         flatfile['dq'] = self.mask
-        flatfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
+        #flatfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
+        flatfile['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
 
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()

@@ -4,6 +4,11 @@ import asdf
 import numpy as np
 # from astropy.stats import sigma_clipped_stats
 import logging
+import pandas as pd
+import os
+
+
+
 
 # Squash logging messages from stpipe.
 logging.getLogger('stpipe').setLevel(logging.WARNING)
@@ -35,7 +40,10 @@ class Dark(ReferenceFile):
         else:
             pass
 
-    def make_dark(self, n_result, n_read_per_result, table_str):
+    # def make_ramp_image
+    # get all of the files and reads from a pwd
+
+    def make_dark(self, n_result, n_read_per_result, det_str):
 
         """
         The method make_dark() generates a dark asdf file such that it contains
@@ -75,6 +83,7 @@ class Dark(ReferenceFile):
 
         # initialize dark cube with number of resultants from inputs
         dark_cube = np.zeros((n_result, 4096, 4096), dtype=np.float32)
+        dark_cube_err = np.zeros((n_result, 4096, 4096), dtype=np.float32)
 
         # average over number of reads per resultant for each pixel
         # to make darks according to ma_table specs
@@ -82,6 +91,9 @@ class Dark(ReferenceFile):
             i1 = i_res * n_read_per_result
             i2 = i1 + n_read_per_result
             dark_cube[i_res, :, :] = np.mean(self.data[i1:i2, :, :], axis=0)
+            res_std = np.std(dark_cube[i_res, :, :])
+            dark_cube_err[i_res, :, :] = np.round(np.random.uniform(.9*res_std, 1.1*res_std,
+                                                                    size=(4096, 4096)).astype(np.float32),2)
 
         # update object for asdf file
         self.data = dark_cube
@@ -93,6 +105,7 @@ class Dark(ReferenceFile):
         fresult_avg = np.mean(self.data[-1])
         hot_pixels = np.where(self.data[-1] > 1.8*fresult_avg)
         self.mask[hot_pixels] = 2 ** 11
+        num_hotpixels = np.count_nonzero(self.mask == 2 **11)
 
         #logging.info('Recombining dark reads into MA table specifications')
         # Calculate the dark image for each resultant. Each resultant is
@@ -122,17 +135,37 @@ class Dark(ReferenceFile):
 
         #logging.info(f'Saving dark reference file to {outfile}')
 
-        # Construct the flat field object from the data model.
+        # Construct the dark object from the data model.
         darkfile = rds.DarkRef()
         darkfile['meta'] = self.meta
         # Add in the MA table name to the meta data in the ASDF file.
-        darkfile.meta['observation'] = {'ma_table_name': table_str}
+
 
         darkfile['data'] = self.data
         darkfile['dq'] = self.mask
-        darkfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
-
+        #darkfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
+        #darkfile['err'] = np.random.randint(3,8, size=(4096, 4096)).astype(np.float32)/10000.
+        darkfile['err'] = dark_cube_err
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
         af.tree = {'roman': darkfile}
         af.write_to(self.outfile)
+
+
+        #db_info = {
+        #    'detector' : det_str,
+        #    'type' : self.meta['reftype'],
+        #    'useafter' : self.meta['useafter'],
+        #    'mean': np.mean(self.data[-1]),
+        #    'median': np.median(self.data[-1]),
+        #    'stdev': np.std(self.data[-1]),
+        #    '#hotpix' : num_hotpixels,
+        #}
+
+        #df = pd.DataFrame(db_info, index=[0])
+        #print(df)
+
+        #dbRFP_pwd = '/grp/roman/RFP/DEV/RTB_DataBase_RFPtmp/'
+        #tmp_pwdfl = dbRFP_pwd + det_str + 'dark_db_metrics.csv'
+        #df.to_csv(tmp_pwdfl, index=False)
+        #os.chmod(tmp_pwdfl, 0o666)
