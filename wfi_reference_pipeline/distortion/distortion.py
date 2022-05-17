@@ -1,21 +1,29 @@
-import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+import numpy as np
+
 import asdf
+from astropy.modeling.models import Polynomial2D, Mapping, Shift
+from astropy import units as u
+import roman_datamodels.stnode as rds
+from soc_roman_tools.siaf import siaf
+
+from ..utilities.reference_file import ReferenceFile
 
 
 class Distortion(ReferenceFile):
     """
     Class Distortion() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written. The
-    method make_gain() creates the asdf gain file.
+    method make_distortion() creates the ASDF distortion reference file.
     """
 
-    def __init__(self, cdt_model, meta_data, bit_mask=None, outfile=None, clobber=False):
+    def __init__(self, cdt_model, meta_data, bit_mask=None, outfile=None,
+                 clobber=False):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_distortion.asdf'
 
         # Access methods of base class ReferenceFile
-        super(Distortion, self).__init__(cdt_model, meta_data, bit_mask=bit_mask, clobber=clobber)
+        super(Distortion, self).__init__(cdt_model, meta_data, bit_mask=bit_mask,
+                                         clobber=clobber)
 
         # Update metadata with distortion file type info if not included.
         if 'description' not in self.meta.keys():
@@ -27,77 +35,104 @@ class Distortion(ReferenceFile):
         else:
             pass
 
-    def make_distortion(self):
+        self.meta['input_units'] = u.pixel
+        self.meta['output_units'] = u.arcsec
+
+    def make_siaf_distortion(self, detector):
         """
-        The method make_distortion() generates a distortion asdf file with the input data.
+        The method make_siaf_distortion() generates a distortion ASDF file with
+        the input data. This version uses the SIAF as input to generate the
+        distortion reference file. This is the best that can be done until
+        commissioning and operations.
 
-        Parameters
-        ----------
+        Inputs
+        ------
+        detector (string):
+            Name of the detector for which the distortion model is constructed.
+            For example: WFI01.
 
-        Outputs
+        Returns
         -------
-        af: asdf file tree: {meta, model}
-            meta:
+        None
         """
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
 
-        filter = ["F062", "F087", "F106", "F129", "W146", "F158", "F184", "F213", "GRISM", "PRISM", "DARK"]
+        # Read in the Roman SIAF. Use the default version from soc_roman_tools.
+        siaf_data = siaf.RomanSiaf().read_roman_siaf()
+        aperture = siaf_data[f'{detector}_FULL']
 
-        # from https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py
-        # and https: // jira.stsci.edu / browse / RTB - 270
-        # Find the distance between (0,0) and the reference location
-        xshift, yshift = get_refpix(inst_siaf, full_aperture)
+        # Find the shift between (x_sci, y_sci) = (0, 0) and the reference location.
+        x_center = Shift(-aperture.XSciRef)
+        y_center = Shift(-aperture.YSciRef)
 
-        # *****************************************************
-        # If the user provides files containing distortion coefficients
-        # (as output by the jwst_fpa package), use those rather than
-        # retrieving coefficients from siaf.
-        if dist_coeffs_file is not None:
-            coeff_tab = read_distortion_coeffs_file(dist_coeffs_file)
-            xcoeffs = convert_distortion_coeffs_table(coeff_tab, 'Sci2IdlX')
-            ycoeffs = convert_distortion_coeffs_table(coeff_tab, 'Sci2IdlY')
-            inv_xcoeffs = convert_distortion_coeffs_table(coeff_tab, 'Idl2SciX')
-            inv_ycoeffs = convert_distortion_coeffs_table(coeff_tab, 'Idl2SciY')
-        elif dist_coeffs_file is None:
-            xcoeffs, ycoeffs = get_distortion_coeffs('Sci2Idl', siaf)
-            inv_xcoeffs, inv_ycoeffs = get_distortion_coeffs('Idl2Sci', siaf)
+        # Retrieve the distortion coefficients. We define the forward coefficients
+        # to be Sci -> Idl and the inverse to be Idl -> Sci. We need both sets
+        # of coefficients.
+        x_for, y_for = siaf.get_distortion_coeffs(f'{detector}_FULL')
+        x_inv, y_inv = siaf.get_distortion_coeffs(f'{detector}_FULL', inverse=True)
 
-        # V3IdlYAngle and V2Ref, V3Ref should always be taken from the latest version
-        # of SIAF, rather than the output of jwst_fpa. Separate FGS/NIRISS analyses must
-        # be done in order to modify these values.
-        v3_ideal_y_angle = siaf.V3IdlYAngle * np.pi / 180.
+        # Retrieve V frame information.
+        v3_angle = np.radians(aperture.V3IdlYAngle)
+        vidl_parity = aperture.VIdlParity
+        v2_ref, v3_ref = Shift(aperture.V2Ref), Shift(aperture.V3Ref)
 
-        # *****************************************************
-        # "Forward' transformations. science --> ideal --> V2V3
-        # label = 'Sci2Idl'
-        ##from_units = 'distorted pixels'
-        ##to_units = 'arcsec'
+        # Make the forward model.
+        sci2idl_x = Polynomial2D(5, **x_for)
+        sci2idl_y = Polynomial2D(5, **y_for)
 
-        # xcoeffs, ycoeffs = get_distortion_coeffs(label, siaf)
+        xc = dict()
+        yc = dict()
 
-        sci2idlx = Polynomial2D(degree, **xcoeffs)
-        sci2idly = Polynomial2D(degree, **ycoeffs)
+        xc['c1_0'] = vidl_parity * np.cos(v3_angle)
+        xc['c0_1'] = np.sin(v3_angle)
+        yc['c1_0'] = -vidl_parity * np.sin(v3_angle)
+        yc['c0_1'] = np.cos(v3_angle)
+        xc['c0_0'] = 0
+        yc['c0_0'] = 0
 
-        # Get info for ideal -> v2v3 or v2v3 -> ideal model
-        parity = siaf.VIdlParity
-        # v3_ideal_y_angle = siaf.V3IdlYAngle * np.pi / 180.
-        idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, v3_ideal_y_angle)
+        idl2v_x = Polynomial2D(1, **xc)
+        idl2v_y = Polynomial2D(1, **yc)
 
-        # Finally, we need to shift by the v2,v3 value of the reference
-        # location in order to get to absolute v2,v3 coordinates
-        v2shift, v3shift = get_v2v3ref(siaf)
+        # Make the inverse model.
+        idl2sci_x = Polynomial2D(5, **x_inv)
+        idl2sci_y = Polynomial2D(5, **y_inv)
 
-        #self.data = cdt_model done within the super in the base class merging
+        xc = dict()
+        yc = dict()
 
-        # Construct the gain object from the data model.
-        distortionfile = rds.DistortionRef()
-        distortionfile['coordinate_distortion_transform'] = self.data
-        distortionfile['meta'] = self.meta
-        # Gain files do not have data quality or error arrays.
+        xc['c1_0'] = vidl_parity * np.cos(v3_angle)
+        xc['c0_1'] = vidl_parity * -np.sin(v3_angle)
+        yc['c1_0'] = np.sin(v3_angle)
+        yc['c0_1'] = np.cos(v3_angle)
+        xc['c0_0'] = 0
+        yc['c0_0'] = 0
 
+        v2idl_x = Polynomial2D(1, **xc)
+        v2idl_y = Polynomial2D(1, **yc)
+
+        # Now combine the X & Y models into a single object. Include the inverse
+        # models as well.
+        sci2idl = Mapping([0, 1, 0, 1]) | sci2idl_x & sci2idl_y
+        sci2idl.inverse = Mapping([0, 1, 0, 1]) | idl2sci_x & idl2sci_y
+
+        idl2v = Mapping([0, 1, 0, 1]) | idl2v_x & idl2v_y
+        idl2v.inverse = Mapping([0, 1, 0, 1]) | v2idl_x & v2idl_y
+
+        # Make the core model object.
+        core_model = sci2idl | idl2v
+
+        # Add an index shift as Python is zero-index (SIAF is one-indexed).
+        index_shift = Shift(1)
+
+        self.data = index_shift & index_shift | x_center & y_center | \
+                    core_model | v2_ref & v3_ref
+
+    def save_file(self):
+        distortion_file = rds.DistortionRef()
+        distortion_file['coordinate_distortion_transform'] = self.data
+        distortion_file['meta'] = self.meta
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
-        af.tree = {'roman': distortionfile}
+        af.tree = {'roman': distortion_file}
         af.write_to(self.outfile)
-
