@@ -2,6 +2,7 @@ import numpy as np
 
 import asdf
 from astropy.modeling.models import Polynomial2D, Mapping, Shift
+from astropy.modeling import fitting
 from astropy import units as u
 import roman_datamodels.stnode as rds
 from soc_roman_tools.siaf import siaf
@@ -127,6 +128,65 @@ class Distortion(ReferenceFile):
 
         self.data = index_shift & index_shift | x_center & y_center | \
                     core_model | v2_ref & v3_ref
+
+    def make_distortion_from_stars(self, detector, refcat_path,
+                                   degree=5, init_as_siaf=True, niter=10):
+        """
+        The method make_distortion_from_stars generates a distortion ASDF file with
+        the input data. A lot of inspiration drawn from:
+        https://github.com/spacetelescope/astrometry-scripts/blob/master/focal_plane_alignment/jwst_distortion_calibration.py
+
+        Inputs
+        ------
+        detector (string):
+            Name of the detector for which the distortion model is constructed.
+            For example: WFI01.
+        refcat_path (string):
+            Path to reference catalog.
+        degree (int):
+            Degree of the 2D polynomial to use.
+        init_as_siaf (bool):
+            If `True` initialize the fit with the SIAF values. If `False` initialize
+            at zero.
+        niter (int):
+            Number of iterations to pass to FittingWithOutlierRemoval.
+
+        Returns
+        -------
+        None
+        """
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
+
+        # Read reference catalog -- should we match here or in read_refcat?
+        refcat = utils.read_refcat(refcat_path)
+
+        # Find the shift between (x_sci, y_sci) = (0, 0) and the reference location.
+        x_center = 2044.5 # Maybe write somewhere else??
+        y_center = 2044.5
+
+        # Create models, we can initialize at 0 or at the SIAF values.
+        if init_as_siaf:
+            x_for, y_for = siaf.get_distortion_coeffs(f'{detector}_FULL')
+            # Models use initial models from SIAF
+            sci2idl_x = Polynomial2D(degree=degree, **x_for)
+            sci2idl_y = Polynomial2D(degree=degree, **y_for)
+        else:
+            sci2idl_x = Polynomial2D(degree=degree)
+            sci2idl_y = Polynomial2D(degree=degree)
+
+        # Initialize fitter (it complains if I use LevMarLSQFitter)
+        lsqfitter = fitting.LinearLSQFitter()
+
+        # We are going to use outlier removal
+        fit = fitting.FittingWithOutlierRemoval(lsqfitter, sigma_clip, niter=niter)
+
+        # Get sci2idl transforms
+        sci2idl_x, _ = fit(sci2idl_x, refcat['x'], refcat['y'], refcat['x_ref'])
+        sci2idl_y, _ = fit(sci2idl_y, refcat['x'], refcat['y'], refcat['y_ref'])
+
+        # Combine both axes
+        sci2idl = Mapping([0, 1, 0, 1]) | sci2idl_x & sci2idl_y
 
     def save_file(self):
         distortion_file = rds.DistortionRef()
