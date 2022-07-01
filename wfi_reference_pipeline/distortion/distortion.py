@@ -3,12 +3,14 @@ import numpy as np
 import asdf
 from astropy.modeling.models import Polynomial2D, Mapping, Shift
 from astropy.modeling import fitting
+from astropy.stats import sigma_clip
 from astropy import units as u
 import roman_datamodels.stnode as rds
 from soc_roman_tools.siaf import siaf
 
 from ..utilities.reference_file import ReferenceFile
 from ..utilities.reference_catalog import ReferenceCatalog
+
 
 class Distortion(ReferenceFile):
     """
@@ -163,12 +165,12 @@ class Distortion(ReferenceFile):
         self.check_output_file(self.outfile)
 
         # Instantiate the reference catalog and read
-        RefCat = ReferenceCatalog(refcat_path)
+        RefCat = ReferenceCatalog(refcat_path, detector=detector)
 
         # I probably should read/pass the image in a format that guarantees that
         # is from the detector name passed by `detector`.
         # Run detection and match the catalogs
-        RefCat.match_refcat(img, **match_kwargs)
+        RefCat.match_refcat(detector, img, **match_kwargs)
 
         # Get the dictionary/table
         refcat = RefCat.matched_cat
