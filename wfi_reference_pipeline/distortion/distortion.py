@@ -129,7 +129,7 @@ class Distortion(ReferenceFile):
         index_shift = Shift(1)
 
         self.data = index_shift & index_shift | x_center & y_center | \
-                    core_model | v2_ref & v3_ref
+            core_model | v2_ref & v3_ref
 
     def make_distortion_from_stars(self, detector, img, refcat_path,
                                    degree=5, init_as_siaf=True, niter=10,
@@ -138,8 +138,10 @@ class Distortion(ReferenceFile):
         The method make_distortion_from_stars generates a distortion ASDF file with
         the input data. A lot of inspiration drawn from:
         https://github.com/spacetelescope/astrometry-scripts/blob/master/focal_plane_alignment/jwst_distortion_calibration.py
-        Check this out: https://github.com/spacetelescope/pystortion/blob/2366d010564a8cea49534eb0af605d6374576d71/pystortion/crossmatch.py
-        Docs: https://www.stsci.edu/files/live/sites/www/files/home/jwst/documentation/technical-documents/_documents/JWST-STScI-001550.pdf
+        Check this out:
+        https://github.com/spacetelescope/pystortion/blob/2366d010564a8cea49534eb0af605d6374576d71/pystortion/crossmatch.py
+        Docs:
+        https://www.stsci.edu/files/live/sites/www/files/home/jwst/documentation/technical-documents/_documents/JWST-STScI-001550.pdf
         Inputs
         ------
         detector (string):
