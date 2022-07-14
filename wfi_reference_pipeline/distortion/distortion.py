@@ -177,10 +177,13 @@ class Distortion(ReferenceFile):
         # Get the dictionary/table
         refcat = RefCat.matched_cat
 
+        # For now rely on alignment data from siaf (this will probably need an update?)
+        siaf_data = siaf.RomanSiaf().read_roman_siaf()
+        aperture = siaf_data[f'{detector}_FULL']
+
         # Find the shift between (x_sci, y_sci) = (0, 0) and the reference location.
-        # CAUTION! Hardcoded!!
-        x_center = Shift(-2044.5)
-        y_center = Shift(-2044.5)
+        x_center = Shift(-aperture.XSciRef)
+        y_center = Shift(-aperture.YSciRef)
 
         # Create models, we can initialize at 0 or at the SIAF values.
         if init_as_siaf:
@@ -214,9 +217,6 @@ class Distortion(ReferenceFile):
         sci2idl = Mapping([0, 1, 0, 1]) | sci2idl_x & sci2idl_y
         sci2idl.inverse = Mapping([0, 1, 0, 1]) | idl2sci_x & idl2sci_y
 
-        # For now rely on alignment data from siaf (this will probably need an update?)
-        siaf_data = siaf.RomanSiaf().read_roman_siaf()
-        aperture = siaf_data[f'{detector}_FULL']
         # Retrieve V frame information.
         v3_angle = np.radians(aperture.V3IdlYAngle)
         vidl_parity = aperture.VIdlParity
@@ -258,7 +258,7 @@ class Distortion(ReferenceFile):
         index_shift = Shift(1)
 
         self.data = index_shift & index_shift | x_center & y_center | \
-                    core_model | v2_ref & v3_ref
+            core_model | v2_ref & v3_ref
 
     def save_file(self):
         distortion_file = rds.DistortionRef()

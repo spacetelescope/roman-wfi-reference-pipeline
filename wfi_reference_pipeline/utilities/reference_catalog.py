@@ -1,15 +1,8 @@
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 from soc_roman_tools.siaf import siaf
-try:
-    import sep
-    use_sep = True
-except ImportError:
-    from photutils.detection import DAOStarFinder
-    use_sep = False
 from astropy.coordinates import SkyCoord, match_coordinates_3d
 import astropy.units as u
-
 # For now we will read a text file, later we will move to the database
 import astropy.table
 
@@ -41,7 +34,7 @@ class ReferenceCatalog:
         self.matched_cat = None
 
     def match_refcat(self, detector, img, nsigma_det=5, fwhm_det=3,
-                     plot_diagnostics=False):
+                     plot_diagnostics=False, use_sep=True):
         """
         This method runs a detection algorithm on the data contained
         in the input ReferenceFile and matches the detected sources to
@@ -64,6 +57,9 @@ class ReferenceCatalog:
         plot_diagnostics (bool):
             If `True` it will produce diagnostic plots for the matching routine.
             `False` by default.
+        use_sep (bool):
+            If `True` `sep` will be used to perform source detection. It will use
+            photutils.detection.DAOStarFinder otherwise. `True` by default.
 
         Returns
         -------
@@ -80,6 +76,7 @@ class ReferenceCatalog:
 
         # TODO load ePSF and use it for detection, potentially
         if use_sep:
+            import sep
             # SEP is picky with endianness
             if img.dtype.byteorder != '=':
                 bkg = sep.Background(img.byteswap().newbyteorder())
@@ -92,6 +89,7 @@ class ReferenceCatalog:
             y_sci = objects['y']
             # TODO include additional selection cuts
         else:
+            from photutils.detection import DAOStarFinder
             mean, median, std = sigma_clipped_stats(img)
             daofind = DAOStarFinder(fwhm=fwhm_det, threshold=nsigma_det*std)
             objects = daofind(img - median)
