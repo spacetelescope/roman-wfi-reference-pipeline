@@ -3,7 +3,7 @@ import os
 import yaml
 import numpy as np
 
-PIPELINE_VERSION = '0.0.1' # set global variable for pipeline version
+PIPELINE_VERSION = '0.0.1'  # set global variable for pipeline version
 
 
 class ReferenceFile:
