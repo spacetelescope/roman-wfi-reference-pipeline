@@ -12,9 +12,13 @@ class ReferenceFile:
     are written.
     """
 
-    def __init__(self, data, meta_data, bit_mask=None, clobber=False):
+    def __init__(self, data=None, meta=None, bit_mask=None, clobber=False):
 
         self.data = data
+        self.meta = meta
+        self.mask = bit_mask
+        self.clobber = clobber
+
 
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
@@ -23,10 +27,10 @@ class ReferenceFile:
             self.mask = np.zeros((4096, 4096), dtype=np.uint32)
 
         # Grab the meta data from the yaml file if provided.
-        if type(meta_data) is dict:
-            self.meta = meta_data
+        if type(meta) is dict:
+            self.meta = meta
         else:
-            with open(meta_data) as md:
+            with open(meta) as md:
                 self.meta = yaml.safe_load(md)
 
         # Convert use after date to Astropy.Time object.
