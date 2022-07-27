@@ -1,9 +1,11 @@
-from astropy.time import Time
+import datetime
 import os
+
+from astropy.time import Time
 import yaml
 import numpy as np
 
-PIPELINE_VERSION = '0.0.1'  # set global variable for pipeline version
+from wfi_reference_pipeline.version import version as PIPELINE_VERSION
 
 
 class ReferenceFile:
@@ -12,12 +14,9 @@ class ReferenceFile:
     are written.
     """
 
-    def __init__(self, data=None, meta=None, bit_mask=None, clobber=False):
+    def __init__(self, data, meta_data, bit_mask=None, clobber=False):
 
         self.data = data
-        self.meta = meta
-        self.mask = bit_mask
-        self.clobber = clobber
 
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
@@ -26,18 +25,23 @@ class ReferenceFile:
             self.mask = np.zeros((4096, 4096), dtype=np.uint32)
 
         # Grab the meta data from the yaml file if provided.
-        if type(meta) is dict:
-            self.meta = meta
+        if type(meta_data) is dict:
+            self.meta = meta_data
         else:
-            with open(meta) as md:
+            with open(meta_data) as md:
                 self.meta = yaml.safe_load(md)
 
         # Convert use after date to Astropy.Time object.
-        self.meta['useafter'] = Time(self.meta['useafter'])
+        if 'useafter' in self.meta.keys():
+            self.meta['useafter'] = Time(self.meta['useafter'])
+        else:
+            self.meta['useafter'] = Time(datetime.datetime.now())
         # Write static meta data for all file type.
         self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
-        self.meta['origin'] = 'STSCI'
+        self.meta['origin'] = 'STScI'
         self.meta['telescope'] = 'ROMAN'
+        if 'instrument' in self.meta.keys():
+            self.meta['instrument'].update({'name': 'WFI'})
 
         # Other stuff.
         self.clobber = clobber

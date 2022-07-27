@@ -10,19 +10,22 @@ import time
 from functools import wraps
 
 
-def configure_logging(target_module, path=None):
+def configure_logging(target_module, path=None, level=logging.INFO):
     """Configure the standard logging format.
 
     Parameters
     ----------
-    target_module : str
+    target_module (string):
         The name of the module being logged.
-    path : str
+    path (string):
         Where to write the log if user-supplied path; default to working dir.
+    level (integer):
+        Minimum logging level to display messages. These are technically
+        integers, but can use inputs like `logging.INFO` or `logging.DEBUG`.
 
     Returns
     -------
-    log_file : str
+    log_file (string):
         The name and path of the log file.
     """
 
@@ -37,7 +40,7 @@ def configure_logging(target_module, path=None):
     logging.basicConfig(filename=log_file,
                         format='%(asctime)s %(levelname)s: %(message)s',
                         datefmt='%m/%d/%Y %H:%M:%S %p',
-                        level=logging.INFO,
+                        level=level,
                         filemode='a')
 
     logging.captureWarnings(False)
@@ -102,10 +105,10 @@ def log_info(func):
         logging.info('Python Executable Path: ' + sys.executable)
 
         # Call the function and time it
-        t1_cpu = time.clock()
+        t1_cpu = time.process_time()
         t1_time = time.time()
         func(*a, **kw)
-        t2_cpu = time.clock()
+        t2_cpu = time.process_time()
         t2_time = time.time()
 
         # Log execution time

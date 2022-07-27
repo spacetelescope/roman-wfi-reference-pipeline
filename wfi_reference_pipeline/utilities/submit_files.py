@@ -7,74 +7,74 @@ import os
 import yaml
 from crds.submit import Submission
 
+from .notifications import send_slack_message
 
-def create_form(files, *args, yaml_form=None, submission_info=None,
-                server='test', **kwargs):
-    """
-    Inputs
-    ------
-    files (str list):
-        List of reference files that should be attached to the form
-        for the delivery to CRDS.
 
-    yaml_form (str; optional; default=None):
-        The name of a YAML file containing the submission information
-        for the form. If provided, this takes precedence over other
-        inputs. Must provide either yaml_form OR submissino_info.
+class WFIsubmit:
 
-    submission_info (dict; optional; default=None):
-        A dictionary containing the information for the submission form.
-        Must provide either yaml_form OR submission_info.
+    def __init__(self, files, submission_info, server='test'):
 
-    server (str; optional; default='test'):
-        A string that specifies to which Roman CRDS server the reference
-        files are being delivered. Must be one of either 'ops', 'test', or
-        'dev'.
+        if isinstance(files, list) or isinstance(files, tuple):
+            if len(files) > 0:
+                self.files = files
+            else:
+                raise ValueError(f'Input files list/tuple is empty! '
+                                 f'Got {files}.')
+        else:
+            raise TypeError(f'Input files should be a list or tuple. '
+                            f'Got {type(files)} instead.')
 
-    Returns
-    -------
-    form (crds.submit.Submission):
-        The submission form. This should be checked before using the form's
-        submit() method.
-    """
+        for f in self.files:
+            if not os.path.exists(f):
+                raise FileNotFoundError(f'Input file {f} does not exist!')
 
-    # Check the inputs.
-    if not isinstance(files, list):
-        raise TypeError('Input files should be in a list.')
-    if not yaml_form and not submission_info:
-        raise ValueError('Must supply either yaml_form OR submission_info.')
-    if server:
-        if server.lower() not in ('ops', 'test', 'dev'):
-            raise ValueError('If supplied, server must be one of ops, test, '
-                             'or dev.')
-    if len(files) == 0:
-        raise ValueError('Input file list is empty!')
-    for file in files:
-        if not os.path.exists(file):
-            raise FileNotFoundError(f'File {file} could not be found! Is the '
-                                    f'path correct?')
+        self.server = server.lower()
+        if self.server not in ('dev', 'test'):
+            raise ValueError(f'server should be either "test" or "dev". Got '
+                             f'{self.server} instead.')
 
-    # Save the inputs to attributes and set up remaining attributes.
-    files = files
-    if yaml_form:
-        with open(yaml_form) as yf:
-            submission_dict = yaml.safe_load(yf)
-    else:
-        submission_dict = submission_info
-    form = Submission('roman', server.lower())
+        if isinstance(submission_info, str):
+            with open(submission_info, 'r') as subfile:
+                self.submission_dict = yaml.safe_load(subfile)
+        elif isinstance(submission_info, dict):
+            self.submission_dict = submission_info
+        else:
+            raise TypeError(f'submission_info should be either a dictionary '
+                            f'or the string name of a YAML file. Got '
+                            f'{type(submission_info)} instead.')
 
-    # Update the form. We might be missing some keys that are present in
-    # the form, and that's okay if they have default values or are not
-    # required. This is up to the user to verify that it's correct and
-    # complete for the delivery.
-    for key in form.keys():
+        self.submission_form = Submission('roman', self.server)
+        self.submission_results = None
+
+    def get_form_keys(self):
+
+        print(self.submission_form.help())
+
+    def update_form(self):
+
+        for key in self.submission_form.keys():
+            try:
+                self.submission_form[key] = self.submission_dict[key]
+            except KeyError:
+                pass
+
+        # Attach the reference files being delivered.
+        for f in self.files:
+            self.submission_form.add_file(f)
+
+    def submit_to_crds(self, summary=None):
+
+        self.submission_results = self.submission_form.submit()
         try:
-            form[key] = submission_dict[key]
+            if summary:
+                summary = summary
+                summary += f' Result URL is {self.submission_results.ready_url}'
+            else:
+                summary = f'Files have been submitted. No summary provided.'
+                send_slack_message(summary, os.environ['WFI_REFFILE_SLACK_TOKEN'],
+                                   config_file=None)
+
         except KeyError:
-            pass
-
-    # Attach the reference files being delivered.
-    for file in files:
-        form.add_file(file)
-
-    return form
+            raise Exception('No token found in environment variable '
+                            '"WFI_REFFILE_SLACK_TOKEN". No Slack message '
+                            'was sent.')
