@@ -12,7 +12,7 @@ import yaml
 from wfi_reference_pipeline import config
 
 
-def send_slack_message(message, config_file='slack_dev.yml'):
+def send_slack_message(message, token, config_file='slack_dev.yml'):
     """
     Function for sending messages to a slack channel.
 
@@ -31,7 +31,7 @@ def send_slack_message(message, config_file='slack_dev.yml'):
     """
 
     try:
-        token = os.environ['WFI_SLACK_TOKEN']
+        # token = os.environ['WFI_SLACK_TOKEN']
         if config_file:
             with pkg_resources.open_text(config, config_file) as cf:
                 slack_config = yaml.safe_load(cf)

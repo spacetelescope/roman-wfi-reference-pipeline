@@ -1,9 +1,11 @@
-from astropy.time import Time
+import datetime
 import os
+
+from astropy.time import Time
 import yaml
 import numpy as np
 
-PIPELINE_VERSION = '0.0.1' # set global variable for pipeline version
+from wfi_reference_pipeline.version import version as PIPELINE_VERSION
 
 
 class ReferenceFile:
@@ -30,11 +32,16 @@ class ReferenceFile:
                 self.meta = yaml.safe_load(md)
 
         # Convert use after date to Astropy.Time object.
-        self.meta['useafter'] = Time(self.meta['useafter'])
+        if 'useafter' in self.meta.keys():
+            self.meta['useafter'] = Time(self.meta['useafter'])
+        else:
+            self.meta['useafter'] = Time(datetime.datetime.now())
         # Write static meta data for all file type.
         self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
         self.meta['origin'] = 'STScI'
         self.meta['telescope'] = 'ROMAN'
+        if 'instrument' in self.meta.keys():
+            self.meta['instrument'].update({'name': 'WFI'})
 
         # Other stuff.
         self.clobber = clobber
