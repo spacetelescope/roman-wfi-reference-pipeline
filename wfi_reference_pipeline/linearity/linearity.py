@@ -99,10 +99,6 @@ class Linearity(ReferenceFile):
             raise Warning('dq array not found!')
 
         good_px = get_fit_mask(img_arr, time, dq=img_dq)
-        if not constrained:
-            continue
-        else:
-            continue
 
 
 def get_fit_mask(datacube, time, dq=None, frac_thr=0.5,
