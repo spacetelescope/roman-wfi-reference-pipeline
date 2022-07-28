@@ -6,6 +6,8 @@ the information for the reference file submission.
 import os
 import yaml
 from crds.submit import Submission
+from crds.certify import certify_files
+from crds.core import heavy_client
 
 from .notifications import send_slack_message
 
@@ -49,6 +51,14 @@ class WFIsubmit:
     def get_form_keys(self):
 
         print(self.submission_form.help())
+
+    def certify_reffiles(self):
+
+        cert_files = [f if '/' in f else f'./{f}' for f in self.files]
+        server_info = heavy_client.server_info()
+        context = server_info['operational_context']
+
+        certify_files(cert_files, context)
 
     def update_form(self):
 
