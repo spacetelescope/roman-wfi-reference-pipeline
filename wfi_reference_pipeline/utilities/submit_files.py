@@ -55,7 +55,7 @@ class WFIsubmit:
     def certify_reffiles(self):
 
         cert_files = [f if '/' in f else f'./{f}' for f in self.files]
-        server_info = heavy_client.server_info()
+        server_info = heavy_client.get_config_info('roman')
         context = server_info['operational_context']
 
         certify_files(cert_files, context)
