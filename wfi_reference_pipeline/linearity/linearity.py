@@ -98,13 +98,48 @@ class Linearity(ReferenceFile):
             img_dq = None
             raise Warning('dq array not found!')
 
-        good_px = get_fit_mask(img_arr, time, dq=img_dq)
+        nframes = get_fit_length(img_arr, time, dq=img_dq)
+
+        # Keep only the frames that we need
+        img_arr = img_arr[:nframes, :, :]
+        if img_dq is not None:
+            img_dq = img_dq[:nframes, :, :]
+
+        if (img_dq is None):
+            if not constrained:
+                coeffs = np.polyfit(img_arr.reshape(nframes, -1), poly_order)
+                coeffs = coeffs.reshape((img_arr.shape[1], img_arr.shape[2]))
+            else:
+                # np.polyfit does not allow for fixed coefficients because
+                # it is solving a linear algebra problem (that's why it's fast).
+                # In order to fix coefficients we have to do some math.
+                # Based on solution here:
+                # https://stackoverflow.com/questions/48469889/how-to-fit-a-polynomial-with-some-of-the-coefficients-constrained
+                V = np.vander(time, poly_order+1)
+                # Removing the last column of the Vandermonde matrix
+                # is equivalent to setting a0 to 0 -> they go from order n to 0
+                V = np.delete(V, -1, axis=1)
+                # Subtract t from the original array, i.e., remove the linear part
+                # so the fit is still correct
+                img_arr -= V[:, -1, None]
+                # Now drop that column from the Vandermonde matrix
+                V = np.delete(V, -1, axis=1)
+                coeffs, _ = np.linalg.leastsq(V, img_arr.reshape(nframes, -1))
+                coeffs = coeffs.reshape(-1, img_arr.shape[1], img_arr.shape[2])
+                # Insert the slope=1 and intercept=0
+                coeffs = np.insert(coeffs, poly_order-1,
+                                   np.ones(img_arr.shape[1], img_arr.shape[2]))
+                coeffs = np.insert(coeffs, poly_order,
+                                   np.zeros(img_arr.shape[1], img_arr.shape[2]))
+        else:
+            raise NotImplementedError
+        return coeffs
 
 
-def get_fit_mask(datacube, time, dq=None, frac_thr=0.5,
-                 nsigma=3, verbose=False):
+def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
+                   nsigma=3, verbose=False):
     """
-    Function to obtain the range in the datacube to use for the fits
+    Function to obtain the frames in the datacube to use for the linearity fits.
 
     Parameters:
     -----------
@@ -120,9 +155,7 @@ def get_fit_mask(datacube, time, dq=None, frac_thr=0.5,
 
     Outputs:
     --------
-    data_out: (numpy.ndarray); Boolean mask for the datacube with shape
-              (Nreads, Npix, Npix). `True` indicates that the pixel will be used
-              for the fit.
+    nframes: (int); Number of frames to consider for the fit.
     """
     # We compute the gradient in counts
     # we just want to check that the signal grows by a quantity
@@ -154,8 +187,10 @@ def get_fit_mask(datacube, time, dq=None, frac_thr=0.5,
 
     if verbose:
         print('Standard deviation estimate:', std)
-
-    good_px = (grad > 3*std)  # TODO: check if this is right with non-evenly spaced reads
-    if dq is not None:
-        good_px &= (dq == 0)
-    return good_px
+    if dq is None:
+        # Get the first frame at which there are some signs of saturation in a pixel
+        nframes = np.where(grad < nsigma*std)[0][0]  # TODO: check this with non-evenly spaced reads
+    else:
+        # When applying a mask, it flattens the arrray, so we need to unravel the indices
+        nframes = np.unravel_index(np.where(grad[dq == 0] < nsigma*std)[0][0], datacube.shape)[0]
+    return nframes
