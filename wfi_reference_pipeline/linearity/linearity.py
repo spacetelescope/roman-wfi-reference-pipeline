@@ -66,9 +66,9 @@ class Linearity(ReferenceFile):
         af.tree = {'roman': linearityfile}
         af.write_to(self.outfile)
 
-    def make_linearity_single(self, input_file, poly_order=5, constrained=False):
+    def fit_single(self, input_file, poly_order=5, constrained=False):
         """
-        Method to compute the linearity coefficients for a single flat dark_image
+        Method to fit the linearity coefficients for a single flat image.
 
         Parameters:
         -----------
@@ -82,8 +82,11 @@ class Linearity(ReferenceFile):
               polynomial for the given image.
         """
 
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
+
         # Load input image
-        img_in = asdf.AsfFile.open(input_file)
+        img_in = asdf.AsdfFile.open(input_file)
 
         time = img_in['roman']['meta']['exposure']['frame_time']
         img_arr = img_in['roman']['data']
@@ -92,23 +95,23 @@ class Linearity(ReferenceFile):
         else:
             if time.shape[0] != img_arr.shape[0]:
                 raise ValueError('Frame times should have the same length as datacube')
-        try:
+        if 'dq' in img_in['roman'].keys():
             img_dq = img_in['roman']['dq']
-        except KeyError:
+        else:
             img_dq = None
-            raise Warning('dq array not found!')
 
         nframes = get_fit_length(img_arr, time, dq=img_dq)
 
         # Keep only the frames that we need
         img_arr = img_arr[:nframes, :, :]
+        time = time[:nframes]
         if img_dq is not None:
             img_dq = img_dq[:nframes, :, :]
 
         if (img_dq is None):
             if not constrained:
-                coeffs = np.polyfit(img_arr.reshape(nframes, -1), poly_order)
-                coeffs = coeffs.reshape((img_arr.shape[1], img_arr.shape[2]))
+                coeffs = np.polyfit(time, img_arr.reshape(nframes, -1), poly_order)
+                coeffs = coeffs.reshape(-1, img_arr.shape[1], img_arr.shape[2])
             else:
                 # np.polyfit does not allow for fixed coefficients because
                 # it is solving a linear algebra problem (that's why it's fast).
