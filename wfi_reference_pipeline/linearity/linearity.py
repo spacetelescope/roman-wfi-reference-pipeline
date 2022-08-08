@@ -107,11 +107,13 @@ class Linearity(ReferenceFile):
         time = time[:nframes]
         if img_dq is not None:
             img_dq = img_dq[:nframes, :, :]
-
+        npix_0 = img_arr.shape[1]
+        npix_1 = img_arr.shape[2]
+        mask = np.zeros((npix_0, npix_1))
         if (img_dq is None):
             if not constrained:
                 coeffs = np.polyfit(time, img_arr.reshape(nframes, -1), poly_order)
-                coeffs = coeffs.reshape(-1, img_arr.shape[1], img_arr.shape[2])
+                coeffs = coeffs.reshape(-1, npix_0, npix_1)
             else:
                 # np.polyfit does not allow for fixed coefficients because
                 # it is solving a linear algebra problem (that's why it's fast).
@@ -128,15 +130,29 @@ class Linearity(ReferenceFile):
                 # Now drop that column from the Vandermonde matrix
                 V = np.delete(V, -1, axis=1)
                 coeffs, _ = np.linalg.leastsq(V, img_arr.reshape(nframes, -1))
-                coeffs = coeffs.reshape(-1, img_arr.shape[1], img_arr.shape[2])
+                coeffs = coeffs.reshape(-1, npix_0, npix_1)
                 # Insert the slope=1 and intercept=0
                 coeffs = np.insert(coeffs, poly_order-1,
-                                   np.ones(img_arr.shape[1], img_arr.shape[2]))
+                                   np.ones(npix_0, npix_1))
                 coeffs = np.insert(coeffs, poly_order,
-                                   np.zeros(img_arr.shape[1], img_arr.shape[2]))
+                                   np.zeros(npix_0, npix_1))
         else:
-            raise NotImplementedError
-        return coeffs
+            # For loop over all pixels -- slow but safe
+            coeffs = np.zeros((poly_order+1, npix_0, npix_1))
+            for i in range(npix_0*npix_1):
+                ipx, jpx = np.unravel_index(i, (npix_0, npix_1))
+                dq_here = img_dq[:, ipx, jpx]
+                img_here = img_arr[:, ipx, jpx]
+                if np.count_nonzero(dq_here != 0) > poly_order:
+                    # There are more parameters than points to fit
+                    coeffs[:, ipx, jpx] = np.nan
+                    mask[ipx, jpx] = 2**20
+                else:
+                    # Fit the relevant frames
+                    frames_good = np.where(dq_here == 0)[0]
+                    aux_coeff = np.polyfit(frames_good, img_here[frames_good], deg=poly_order)
+                    coeffs[:, ipx, jpx] = aux_coeff
+        return coeffs, mask
 
 
 def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
