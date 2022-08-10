@@ -146,44 +146,43 @@ class Linearity(ReferenceFile):
                         _aux1 = np.einsum('ij, ik, il', V, wgt.reshape(nframes_grid, -1), V)
                         _aux1 = np.linalg.inv(_aux1.swapaxes(1, 0))  # (V^T W V)^-1
                         _aux2 = np.einsum('ijk, lj', _aux1, V)  # (V^T W V)^-1 V^T
-                        return _aux1, _aux2, wy
-        #             coeffs = np.einsum('ijk, kl -> ji', _aux2,
-        #                                wy)/wy.shape[1]
-        #             if return_unc:
-        #                 err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
-        #                 self.unc = err.T
-        #         # Ignore spread and consider all steps in the ramp with the same weight
-        #         else:
-        #             if return_unc:
-        #                 coeffs, _cov = np.polyfit(t_grid,
-        #                                           img_arr_all.reshape(nframes_grid, -1),
-        #                                           poly_order,
-        #                                           cov=return_unc)
-        #                 err = np.sqrt(np.diagonal(_cov, axis1=0, axis2=1))
-        #                 self.unc = err.reshape((poly_order+1, npx0, npx1))
-        #             else:
-        #                 coeffs = np.polyfit(t_grid, img_arr_all.reshape(nframes_grid, -1),
-        #                                     poly_order)
-        #         self.data = coeffs.reshape((poly_order+1, npx0, npx1))
-        #         if 'input_files' not in self.meta.keys():
-        #             # Use this or the uri from the asdf files?
-        #             self.meta['input_files'] = input_files
-        #     else:
-        #         raise Warning('Linearity images not fit, creating dummy files...')
-        #
-        # # Construct the linearity object from the data model.
-        # linearityfile = rds.LinearityRef()
-        # linearityfile['meta'] = self.meta
-        # linearityfile['coeffs'] = self.data
-        # linearityfile['unc'] = self.unc
-        # nonlinear_pixels = np.where((self.mask == float('NaN')) |
-        #                             (self.data[0, :, :] == float('NaN')))
-        # self.mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
-        # linearityfile['dq'] = self.mask
-        # # Add in the meta data and history to the ASDF tree.
-        # af = asdf.AsdfFile()
-        # af.tree = {'roman': linearityfile}
-        # af.write_to(self.outfile)
+                    coeffs = np.einsum('ijk, kl -> ji', _aux2,
+                                       wy)/wy.shape[1]
+                    if return_unc:
+                        err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
+                        self.unc = err.T
+                # Ignore spread and consider all steps in the ramp with the same weight
+                else:
+                    if return_unc:
+                        coeffs, _cov = np.polyfit(t_grid,
+                                                  img_arr_all.reshape(nframes_grid, -1),
+                                                  poly_order,
+                                                  cov=return_unc)
+                        err = np.sqrt(np.diagonal(_cov, axis1=0, axis2=1))
+                        self.unc = err.reshape((poly_order+1, npx0, npx1))
+                    else:
+                        coeffs = np.polyfit(t_grid, img_arr_all.reshape(nframes_grid, -1),
+                                            poly_order)
+                self.data = coeffs.reshape((poly_order+1, npx0, npx1))
+                if 'input_files' not in self.meta.keys():
+                    # Use this or the uri from the asdf files?
+                    self.meta['input_files'] = input_files
+            else:
+                raise Warning('Linearity images not fit, creating dummy files...')
+
+        # Construct the linearity object from the data model.
+        linearityfile = rds.LinearityRef()
+        linearityfile['meta'] = self.meta
+        linearityfile['coeffs'] = self.data
+        linearityfile['unc'] = self.unc
+        nonlinear_pixels = np.where((self.mask == float('NaN')) |
+                                    (self.data[0, :, :] == float('NaN')))
+        self.mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
+        linearityfile['dq'] = self.mask
+        # Add in the meta data and history to the ASDF tree.
+        af = asdf.AsdfFile()
+        af.tree = {'roman': linearityfile}
+        af.write_to(self.outfile)
 
     def fit_single(self, input_file, poly_order=5, constrained=False,
                    return_time=False):
