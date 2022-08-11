@@ -146,23 +146,23 @@ class Linearity(ReferenceFile):
                         _aux1 = np.einsum('ij, ik, il', V, wgt.reshape(nframes_grid, -1), V)
                         _aux1 = np.linalg.inv(_aux1.swapaxes(1, 0))  # (V^T W V)^-1
                         _aux2 = np.einsum('ijk, lj', _aux1, V)  # (V^T W V)^-1 V^T
-                    coeffs = np.einsum('ijk, kl -> ji', _aux2,
-                                       wy)/wy.shape[1]
-                    if return_unc:
-                        err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
-                        self.unc = err.T
-                # Ignore spread and consider all steps in the ramp with the same weight
-                else:
-                    if return_unc:
-                        coeffs, _cov = np.polyfit(t_grid,
-                                                  img_arr_all.reshape(nframes_grid, -1),
-                                                  poly_order,
-                                                  cov=return_unc)
-                        err = np.sqrt(np.diagonal(_cov, axis1=0, axis2=1))
-                        self.unc = err.reshape((poly_order+1, npx0, npx1))
-                    else:
-                        coeffs = np.polyfit(t_grid, img_arr_all.reshape(nframes_grid, -1),
-                                            poly_order)
+                        coeffs = np.einsum('ijk, kl -> ji', _aux2,
+                                           wy)/wy.shape[1]
+                        if return_unc:
+                            err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
+                            self.unc = err.T
+                        # Ignore spread and consider all steps in the ramp with the same weight
+                        else:
+                            if return_unc:
+                                coeffs, _cov = np.polyfit(t_grid,
+                                                          img_arr_all.reshape(nframes_grid, -1),
+                                                          poly_order,
+                                                          cov=return_unc)
+                                err = np.sqrt(np.diagonal(_cov, axis1=0, axis2=1))
+                                self.unc = err.reshape((poly_order+1, npx0, npx1))
+                            else:
+                                coeffs = np.polyfit(t_grid, img_arr_all.reshape(nframes_grid, -1),
+                                                    poly_order)
                 self.data = coeffs.reshape((poly_order+1, npx0, npx1))
                 if 'input_files' not in self.meta.keys():
                     # Use this or the uri from the asdf files?
