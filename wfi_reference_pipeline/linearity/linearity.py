@@ -33,7 +33,8 @@ class Linearity(ReferenceFile):
         self.unc = None
 
     def make_linearity(self, input_files, poly_order=5, constrained=False,
-                       nframes_grid=10, use_unc=False, return_unc=False):
+                       nframes_grid=10, use_unc=False, return_unc=False,
+                       clobber=False):
         """
         The method make_linearity() generates a linearity asdf file.
 
@@ -47,6 +48,8 @@ class Linearity(ReferenceFile):
         nframes_grid: integer; Number of points in the grid to evaluate the fit.
         use_unc: bool; If True, it uses the spread in the fits to compute the best-fit.
         return_unc: bool; If True, it returns the uncertainty of the fit.
+        clobber: bool; If True, overwrite the previous file.
+
         Outputs
         -------
         af: asdf file tree: {meta, coeffs, dq}
@@ -54,7 +57,7 @@ class Linearity(ReferenceFile):
             coeffs:
             dq: mask
         """
-
+        self.clobber = clobber
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
 
@@ -133,6 +136,7 @@ class Linearity(ReferenceFile):
                         coeffs = coeffs.reshape(-1, npx0, npx1)
                     else:  # The weights make sense
                         wgt = 1./var
+                        wgt[~np.isfinite(wgt)] = 0.  # Just set to zero the weight of NaN and infs
                         # Multiplying weights and measurements
                         wy = wgt*img_arr_all
                         wy = wy.reshape(nframes_grid, -1)
@@ -149,7 +153,7 @@ class Linearity(ReferenceFile):
                         coeffs = np.einsum('ijk, ki -> ji', _aux2, wy)
                         if return_unc:
                             err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
-                            self.unc = err.T
+                            self.unc = err.T.reshape(-1, npx0, npx1)
 
                     # Ignore spread and consider all steps in the ramp with the same weight
                 else:
@@ -174,8 +178,11 @@ class Linearity(ReferenceFile):
         # Construct the linearity object from the data model.
         linearityfile = rds.LinearityRef()
         linearityfile['meta'] = self.meta
-        linearityfile['coeffs'] = self.data
-        linearityfile['unc'] = self.unc
+        linearityfile['coeffs'] = self.data.astype(np.float32)
+        if self.unc is not None:
+            linearityfile['unc'] = self.unc.astype(np.float32)
+        else:
+            linearityfile['unc'] = self.unc
         nonlinear_pixels = np.where((self.mask == float('NaN')) |
                                     (self.data[0, :, :] == float('NaN')))
         self.mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
