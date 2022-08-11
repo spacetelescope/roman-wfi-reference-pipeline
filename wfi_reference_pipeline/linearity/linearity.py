@@ -146,8 +146,7 @@ class Linearity(ReferenceFile):
                         _aux1 = np.einsum('ij, ik, il', V, wgt.reshape(nframes_grid, -1), V)
                         _aux1 = np.linalg.inv(_aux1.swapaxes(1, 0))  # (V^T W V)^-1
                         _aux2 = np.einsum('ijk, lj', _aux1, V)  # (V^T W V)^-1 V^T
-                        coeffs = np.einsum('ijk, kl -> ji', _aux2,
-                                           wy)/wy.shape[1]
+                        coeffs = np.einsum('ijk, ki -> ji', _aux2, wy)
                         if return_unc:
                             err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
                             self.unc = err.T
