@@ -3,6 +3,7 @@ from ..utilities.reference_file import ReferenceFile
 import asdf
 import numpy as np
 from astropy.stats import sigma_clipped_stats
+import warnings
 
 
 class Linearity(ReferenceFile):
@@ -173,7 +174,7 @@ class Linearity(ReferenceFile):
                     # Use this or the uri from the asdf files?
                     self.meta['input_files'] = input_files
             else:
-                raise Warning('Linearity images not fit, creating dummy files...')
+                warnings.warn('Linearity images not fit, creating dummy files...', Warning)
 
         # Construct the linearity object from the data model.
         linearityfile = rds.LinearityRef()
