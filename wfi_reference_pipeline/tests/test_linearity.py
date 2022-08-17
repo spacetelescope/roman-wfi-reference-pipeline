@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import numpy.testing as testing
-# from numpy import random
 import tempfile
 import asdf
 from astropy.time import Time
@@ -112,7 +111,7 @@ class LinearityTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
-        y_test += 0.01*np.random.normal(size=y_test.shape)
+        y_test += 0.005*np.random.normal(size=y_test.shape)
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         af['roman'] = dict()
@@ -134,7 +133,7 @@ class LinearityTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
-        y_test += 0.01*np.random.normal(size=y_test.shape)
+        y_test += 0.005*np.random.normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -158,6 +157,256 @@ class LinearityTestCase(unittest.TestCase):
         testing.assert_almost_equal(poly_coeffs, coeffs[:, 1, 1], decimal=2)
         # Check the other masked pixel
         testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10], decimal=2)
+
+    def test_make_linearity_single_wrong_poly(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up a polynomial
+        poly_coeffs = (0.1, 10, 0.001)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        dq_test = np.zeros_like(y_test)
+        # Flag some pixels
+        dq_test[0, 0, 0] = 2**20
+        dq_test[14, 0, 0] = 2**20
+        dq_test[15, 0, 0] = 2**20
+        dq_test[14, 10, 10] = 2**20
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test
+        af['roman']['meta'] = _meta
+        af['roman']['dq'] = dq_test
+        dummy_path = os.path.join(self.test_dir, 'dummy_img.asdf')
+        af.write_to(dummy_path)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile)
+        # Check if the "correct" polynomial is still fit even if we change
+        # input and output polynomial orders don't match
+        coeffs, mask = lin.fit_single(dummy_path, poly_order=5)
+        # Check the 0,0 pixel that has some masked values
+        testing.assert_almost_equal(poly_coeffs, coeffs[3:, 0, 0])
+        # Check some unmasked pixel
+        testing.assert_almost_equal(poly_coeffs, coeffs[3:, 1, 1])
+        # Check the other masked pixel
+        testing.assert_almost_equal(poly_coeffs, coeffs[3:, 10, 10])
+
+    def test_make_linearity_single_constrained_dq(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up constrained fit (i.e, slope 1 and intercept 0)
+        poly_coeffs = (0.1, 1, 0)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        dq_test = np.zeros_like(y_test)
+        # Flag some pixels
+        dq_test[0, 0, 0] = 2**20
+        dq_test[14, 0, 0] = 2**20
+        dq_test[15, 0, 0] = 2**20
+        dq_test[14, 10, 10] = 2**20
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test
+        af['roman']['meta'] = _meta
+        af['roman']['dq'] = dq_test
+        dummy_path = os.path.join(self.test_dir, 'dummy_img.asdf')
+        af.write_to(dummy_path)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile)
+        # We have not implemented this option with a dq array yet
+        with self.assertRaises(NotImplementedError):
+            lin.fit_single(dummy_path, poly_order=2, constrained=True)
+
+    def test_make_linearity_single_constrained_nodq(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up constrained fit (i.e, slope 1 and intercept 0)
+        poly_coeffs = (0.1, 1, 0)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test
+        af['roman']['meta'] = _meta
+        dummy_path = os.path.join(self.test_dir, 'dummy_img.asdf')
+        af.write_to(dummy_path)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile)
+        # Check if the "correct" polynomial is still fit even if we change
+        # input and output polynomial orders don't match
+        coeffs, mask = lin.fit_single(dummy_path, poly_order=2, constrained=True)
+        testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10])
+
+    def test_make_linearity_dq_nounc(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up constrained fit (i.e, slope 1 and intercept 0)
+        poly_coeffs = (0.1, 10, 0.01)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        noise1 = 0.005*np.random.normal(size=y_test.shape)
+        noise2 = 0.005*np.random.normal(size=y_test.shape)
+        noise3 = 0.005*np.random.normal(size=y_test.shape)
+        dq_test = np.zeros_like(y_test)
+        # Flag some pixels
+        dq_test[0, 0, 0] = 2**20
+        dq_test[14, 0, 0] = 2**20
+        dq_test[15, 0, 0] = 2**20
+        dq_test[14, 10, 10] = 2**20
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test+noise1
+        af['roman']['meta'] = _meta
+        af['roman']['dq'] = dq_test
+        dummy_path1 = os.path.join(self.test_dir, 'dummy_img_1.asdf')
+        dummy_path2 = os.path.join(self.test_dir, 'dummy_img_2.asdf')
+        dummy_path3 = os.path.join(self.test_dir, 'dummy_img_3.asdf')
+        af.write_to(dummy_path1)
+        af['roman']['data'] = y_test+noise2
+        af.write_to(dummy_path2)
+        af['roman']['data'] = y_test+noise3
+        af.write_to(dummy_path3)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile,
+                        bit_mask=np.zeros((y_test.shape[1],
+                                           y_test.shape[2]),
+                                          dtype=np.uint32))
+        # Check that it works with one file
+        lin.make_linearity(dummy_path1, poly_order=2)
+        testing.assert_almost_equal(poly_coeffs, lin.data[:, 10, 10], decimal=2)
+        # Check that it works with 2 files  (with 2 or more files we homogeinize the data
+        # to slope 1 and intercept 0 to alllow for different bias levels and count rates)
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=2, clobber=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[:, 10, 10], decimal=2)
+        # Check that it works with the wrong poly order
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=5, clobber=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[3:, 10, 10], decimal=2)
+        # Check 3 files
+        lin.make_linearity([dummy_path1, dummy_path2, dummy_path3],
+                           poly_order=2, clobber=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[:, 10, 10], decimal=2)
+        # Check returning uncertainty
+        lin.make_linearity(dummy_path1, poly_order=2, return_unc=True, clobber=True)
+        testing.assert_almost_equal(poly_coeffs, lin.data[:, 10, 10], decimal=2)
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=2, clobber=True,
+                           return_unc=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[:, 10, 10], decimal=2)
+
+    def test_make_linearity_dq_useunc(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up constrained fit (i.e, slope 1 and intercept 0)
+        poly_coeffs = (0.1, 10, 0.01)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        noise1 = 0.005*np.random.normal(size=y_test.shape)
+        noise2 = 0.005*np.random.normal(size=y_test.shape)
+        noise3 = 0.005*np.random.normal(size=y_test.shape)
+        dq_test = np.zeros_like(y_test)
+        # Flag some pixels
+        dq_test[0, 0, 0] = 2**20
+        dq_test[14, 0, 0] = 2**20
+        dq_test[15, 0, 0] = 2**20
+        dq_test[14, 10, 10] = 2**20
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test+noise1
+        af['roman']['meta'] = _meta
+        af['roman']['dq'] = dq_test
+        dummy_path1 = os.path.join(self.test_dir, 'dummy_img_1.asdf')
+        dummy_path2 = os.path.join(self.test_dir, 'dummy_img_2.asdf')
+        dummy_path3 = os.path.join(self.test_dir, 'dummy_img_3.asdf')
+        af.write_to(dummy_path1)
+        af['roman']['data'] = y_test+noise2
+        af.write_to(dummy_path2)
+        af['roman']['data'] = y_test+noise3
+        af.write_to(dummy_path3)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile,
+                        bit_mask=np.zeros((y_test.shape[1],
+                                           y_test.shape[2]),
+                                          dtype=np.uint32))
+        # Check that it works with one file
+        lin.make_linearity(dummy_path1, poly_order=2, use_unc=True)
+        testing.assert_almost_equal(poly_coeffs, lin.data[:, 10, 10], decimal=2)
+        # Check that it works with 2 files  (with 2 or more files we homogeinize the data
+        # to slope 1 and intercept 0 to alllow for different bias levels and count rates)
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=2, clobber=True, use_unc=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[:, 10, 10], decimal=2)
+        # Check that it works with the wrong poly order
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=5, clobber=True, use_unc=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[3:, 10, 10], decimal=2)
+        # Check returning the uncertainty
+        lin.make_linearity(dummy_path1, poly_order=2, clobber=True, use_unc=True, return_unc=True)
+        testing.assert_almost_equal(poly_coeffs, lin.data[:, 10, 10], decimal=2)
+        lin.make_linearity([dummy_path1, dummy_path2], poly_order=2, clobber=True,
+                           use_unc=True, return_unc=True)
+        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                    lin.data[:, 10, 10], decimal=2)
+
+    def test_make_linearity_dq_ngrid(self):
+        _meta = setup_dummy_meta()
+        af = asdf.AsdfFile()
+        # Set up a grid of times
+        t_test = np.linspace(0, 10, 20)
+        # Set up constrained fit (i.e, slope 1 and intercept 0)
+        poly_coeffs = (0.1, 10, 0.01)
+        y_test = np.polyval(poly_coeffs, t_test)
+        y_test = y_test[:, None, None]*np.ones((40, 40))  # Test with a (20, 40, 40) array
+        noise1 = 0.005*np.random.normal(size=y_test.shape)
+        noise2 = 0.005*np.random.normal(size=y_test.shape)
+        noise3 = 0.005*np.random.normal(size=y_test.shape)
+        dq_test = np.zeros_like(y_test)
+        # Flag some pixels
+        dq_test[0, 0, 0] = 2**20
+        dq_test[14, 0, 0] = 2**20
+        dq_test[15, 0, 0] = 2**20
+        dq_test[14, 10, 10] = 2**20
+        _meta['exposure'] = dict()
+        _meta['exposure']['frame_time'] = t_test
+        af['roman'] = dict()
+        af['roman']['data'] = y_test+noise1
+        af['roman']['meta'] = _meta
+        af['roman']['dq'] = dq_test
+        dummy_path1 = os.path.join(self.test_dir, 'dummy_img_1.asdf')
+        dummy_path2 = os.path.join(self.test_dir, 'dummy_img_2.asdf')
+        dummy_path3 = os.path.join(self.test_dir, 'dummy_img_3.asdf')
+        af.write_to(dummy_path1)
+        af['roman']['data'] = y_test+noise2
+        af.write_to(dummy_path2)
+        af['roman']['data'] = y_test+noise3
+        af.write_to(dummy_path3)
+        outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
+        lin = Linearity(y_test, _meta, outfile=outfile,
+                        bit_mask=np.zeros((y_test.shape[1],
+                                           y_test.shape[2]),
+                                          dtype=np.uint32))
+        # Check that it breaks with one file
+        with self.assertRaises(ValueError):
+            lin.make_linearity(dummy_path1, poly_order=4, nframes_grid=3)
+        with self.assertRaises(ValueError):
+            lin.make_linearity([dummy_path1, dummy_path2], poly_order=4, nframes_grid=3,
+                               clobber=True)
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(dir='./',
