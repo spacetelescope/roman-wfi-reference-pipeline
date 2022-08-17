@@ -340,6 +340,11 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
             # If there are no saturated frames, we use all of them
             nframes = datacube.shape[0]
     else:
-        # When applying a mask, it flattens the arrray, so we need to unravel the indices
-        nframes = np.unravel_index(np.where(grad[dq == 0] < nsigma*std)[0][0], datacube.shape)[0]
+        try:
+            # When applying a mask, it flattens the arrray, so we need to unravel the indices
+            nframes = np.unravel_index(np.where(grad[dq == 0] < nsigma*std)[0][0],
+                                       datacube.shape)[0]
+        except IndexError:
+            # If there are no saturated frames, we use all of them
+            nframes = datacube.shape[0]
     return nframes
