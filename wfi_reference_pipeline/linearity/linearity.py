@@ -68,6 +68,7 @@ class Linearity(ReferenceFile):
                                               poly_order=poly_order, constrained=constrained)
             # Mark that the fit is complete
             self.fit_complete = True
+            self.poly_order = poly_order
         else:
             warnings.warn('Linearity images not fit, creating dummy files...', Warning)
 
@@ -123,7 +124,12 @@ def fit_single(img_arr, time, img_dq=None, poly_order=5, constrained=False):
     img_arr = img_arr[:nframes, :, :]
     time = time[:nframes]
     if img_dq is not None:
-        img_dq = img_dq[:nframes, :, :]
+        if len(img_dq.shape) == 2:
+            img_dq = np.ones(nframes)[:, None, None]*img_dq
+        elif len(img_dq.shape) == 3:
+            img_dq = img_dq[:nframes, :, :]
+        else:
+            raise ValueError('dq array expected to be 2 or 3-dimensional')
     mask = np.zeros((npix_0, npix_1), np.uint32)
 
     if (img_dq is None) or (np.allclose(img_dq, np.zeros_like(img_dq))):
@@ -189,6 +195,15 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     --------
     nframes: (int); Number of frames to consider for the fit.
     """
+    if len(datacube.shape) != 3:
+        raise ValueError('A 3-dimensional datacube is expected')
+    if dq is not None:
+        if len(dq.shape) == 2:
+            dq = np.ones(datacube.shape[0])[:, None, None]*dq
+        elif len(dq.shape) == 3:
+            pass
+        else:
+            raise ValueError('dq array expected to be 2 or 3-dimensional')
     # We compute the gradient in counts
     # we just want to check that the signal grows by a quantity
     # larger than nsigma * std (i.e., it's likely not saturated)
@@ -209,7 +224,7 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
                 break
         # Check if all the reads were bad, and if so, just mask everything
         if base_read == len(time):
-            return np.zeros(datacube.shape, dtype=bool)
+            return 0
         _, _, std = sigma_clipped_stats(datacube[base_read, :, :][dq[base_read, :, :] == 0])
     else:
         _, _, std = sigma_clipped_stats(datacube[base_read, :, :])
@@ -264,8 +279,16 @@ def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
         dq: mask
     """
     # Linearity files do not have data quality or error arrays.
+    err = None
+    data = None
+    mask = None
+    if nframes_grid < poly_order:
+        raise ValueError('''nframes_grid cannot be smaller than the required polynomial
+                          order, as the result will be unconstrained.''')
     if input_lin is not None:
         if isinstance(input_lin, Linearity):
+            warnings.warn('''Using a single linearity file,
+                          ignoring grid''', Warning)
             # If it's a string, then it's a single file
             if input_lin.fit_complete:
                 data = input_lin.data
@@ -279,7 +302,7 @@ def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
             tmax = -1e24
             # Fit each image in the list and save the coefficients
             use_lin = []
-            for lin in enumerate(input_lin):
+            for lin in input_lin:
                 if lin.fit_complete:
                     tt = lin.times
                     if len(use_lin) < 1:
@@ -313,15 +336,15 @@ def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
                         # are different, we have to normalize everything to the same
                         # count rate.
                         img_arr_all += (np.polyval(lin.data, t_grid[:, None, None]) -
-                                        lin.data[poly_order, :]) / lin.data[poly_order-1, :]
+                                        lin.data[lin.poly_order, :]) / lin.data[lin.poly_order-1, :]
                         if use_unc:
                             # This is to get the std as <mean^2> - <mean>^2
                             if constrained:
                                 img_arr_all_sq += np.polyval(lin.data, t_grid[:, None, None])**2
                             else:
                                 img_arr_all_sq += ((np.polyval(lin.data, t_grid[:, None, None]) -
-                                                    lin.data[poly_order, :]) /
-                                                   lin.data[poly_order-1, :])**2
+                                                    lin.data[lin.poly_order, :]) /
+                                                   lin.data[lin.poly_order-1, :])**2
                 # Now we have the sum of the polynomials in the image
                 img_arr_all /= len(use_lin)  # <X>
 
@@ -330,9 +353,9 @@ def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
                     img_arr_all_sq /= len(use_lin)  # <X^2>
                     var = img_arr_all_sq - img_arr_all**2
                     # If there's no variance, there's no point in using weights...
-                if np.allclose(var, np.zeros_like(var)):
-                    raise Warning('No variance in images, ignoring variance')
-                    use_unc = False
+                    if np.allclose(var, np.zeros_like(var)):
+                        warnings.warn('No variance in images, ignoring variance', Warning)
+                        use_unc = False
 
                 # Time to run the fits
 
@@ -375,21 +398,30 @@ def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
                         err = err.T.reshape(-1, npx0, npx1)
 
                     data = coeffs.reshape((poly_order+1, npx0, npx1))
-        else:
-            warnings.warn('Linearity images not fit, creating dummy files...', Warning)
+    else:
+        warnings.warn('Linearity images not fit, creating dummy files...', Warning)
 
-        # Construct the linearity object from the data model.
-        linearityfile = rds.LinearityRef()
-        linearityfile['meta'] = meta
+    # Construct the linearity object from the data model.
+    linearityfile = rds.LinearityRef()
+    linearityfile['meta'] = meta
+    if data is not None:
         linearityfile['coeffs'] = data.astype(np.float32)
-        if err is not None:
-            linearityfile['unc'] = err.astype(np.float32)
+    if err is not None:
+        linearityfile['unc'] = err.astype(np.float32)
+    if data is not None:
         # The "bad" pixels will be those where the fits did not work
         nonlinear_pixels = np.where(data[0, :, :] == float('NaN'))
         mask = np.zeros((data.shape[1], data.shape[2]), dtype=np.uint32)
         mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
         linearityfile['dq'] = mask
+    if output_file is not None:
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
         af.tree = {'roman': linearityfile}
         af.write_to(output_file)
+    else:
+        # We want the option to get the arrays without writing (e.g., for testing)
+        if not return_unc:
+            return data, mask
+        else:
+            return data, mask, err

@@ -33,7 +33,7 @@ class ReferenceFile:
         self.meta['useafter'] = Time(self.meta['useafter'])
         # Write static meta data for all file type.
         self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
-        self.meta['origin'] = 'STScI'
+        self.meta['origin'] = 'STSCI'
         self.meta['telescope'] = 'ROMAN'
 
         # Other stuff.
