@@ -216,14 +216,7 @@ class LinearityTestCase(unittest.TestCase):
         dummy_img = np.zeros((1, 1, 1), np.float32)
         outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
         lin = Linearity(dummy_img, _meta, outfile=outfile)
-        with testing.assert_warns(Warning):
-            lin.make_linearity(dummy_img)
-
-        # Check that the file is created
-        assert(os.path.exists(lin.outfile))
-        lin = Linearity(dummy_img, _meta, outfile=outfile)
-        # Check that the file is not overwritten
-        with self.assertRaises(FileExistsError):
+        with self.assertRaises(ValueError):  # testing.assert_warns(Warning):
             lin.make_linearity(dummy_img)
 
     def test_make_linearity_nodq(self):
@@ -290,7 +283,7 @@ class LinearityMultiTestCase(unittest.TestCase):
         t_test = np.linspace(0, 10, 20)
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
-        with testing.assert_warns(Warning):
+        with self.assertRaises(ValueError):
             _ = make_linearity_multi(None, _meta, output_file=None)
 
     def test_make_linearity_multi_dq_nounc(self):
