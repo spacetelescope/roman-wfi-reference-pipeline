@@ -2,4 +2,4 @@ pyyaml
 pytest
 crds
 romancal
-
+bs4
