@@ -40,7 +40,7 @@ class Linearity(ReferenceFile):
         self.fit_complete = False
         self.poly_order = None
 
-    def make_linearity(self, poly_order=5, constrained=False, clobber=False):
+    def make_linearity(self, poly_order=6, constrained=False, clobber=False):
         """
         The method make_linearity() generates a linearity asdf file.
 
@@ -86,7 +86,7 @@ class Linearity(ReferenceFile):
         af.write_to(self.outfile)
 
 
-def fit_single(img_arr, time, img_dq=None, poly_order=5, constrained=False):
+def fit_single(img_arr, time, img_dq=None, poly_order=6, constrained=False):
     """
     Method to fit the linearity coefficients for a single flat image.
 
@@ -252,7 +252,7 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     return nframes
 
 
-def make_linearity_multi(input_lin, meta, poly_order=5, constrained=False,
+def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                          nframes_grid=10, use_unc=False, return_unc=False,
                          clobber=False, output_file='roman_linearity.asdf'):
     """
