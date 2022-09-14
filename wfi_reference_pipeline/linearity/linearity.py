@@ -70,7 +70,7 @@ class Linearity(ReferenceFile):
             self.fit_complete = True
             self.poly_order = poly_order
         else:
-            warnings.warn('Linearity images not fit, creating dummy files...', Warning)
+            raise ValueError('Input data is require to create linearity file')
 
         # Construct the linearity object from the data model.
         linearityfile = rds.LinearityRef()
@@ -399,7 +399,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
 
                     data = coeffs.reshape((poly_order+1, npx0, npx1))
     else:
-        warnings.warn('Linearity images not fit, creating dummy files...', Warning)
+        raise ValueError('Linearity images not fit!')
 
     # Construct the linearity object from the data model.
     linearityfile = rds.LinearityRef()
