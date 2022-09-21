@@ -19,7 +19,6 @@ class ReferenceFile:
         self.mask = bit_mask
         self.clobber = clobber
 
-
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
             self.mask = bit_mask.astype(np.uint32)
@@ -37,7 +36,7 @@ class ReferenceFile:
         self.meta['useafter'] = Time(self.meta['useafter'])
         # Write static meta data for all file type.
         self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
-        self.meta['origin'] = 'STScI'
+        self.meta['origin'] = 'STSCI'
         self.meta['telescope'] = 'ROMAN'
 
         # Other stuff.

@@ -54,10 +54,10 @@ class Mask(ReferenceFile):
 
         # set reference pixel border
         mask = np.zeros((4096, 4096), dtype=np.uint32)
-        mask[:4, :] = 2**31 # apply to the top 4 rows for every column
-        mask[-4:, :] = 2**31 # apply to the bottom 4 rows for every column
-        mask[:, :4] = 2**31
-        mask[:, -4:]= 2**31
+        mask[:4, :] += 2**31 # apply to the top 4 rows for every column
+        mask[-4:, :] += 2**31 # apply to the bottom 4 rows for every column
+        mask[:, :4] += 2**31
+        mask[:, -4:]+= 2**31
 
         # randomly assigning 750-850 pixels as bad pixels
         rand_num_badpixels = np.random.randint(750, 850)
