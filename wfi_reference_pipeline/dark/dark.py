@@ -1,6 +1,6 @@
 import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
-import psutil, sys, os, glob, time, gc, asdf, logging
+import psutil, sys, os, glob, time, gc, asdf, logging, math
 import numpy as np
 from astropy.stats import sigma_clip
 import pandas as pd
@@ -13,6 +13,7 @@ logging.getLogger('stpipe').setLevel(logging.WARNING)
 log_file_str = 'dark_dev.log'
 logging.basicConfig(filename=log_file_str, level=logging.INFO)
 logging.info(f'Dark reference file log: {log_file_str}')
+
 
 class Dark(ReferenceFile):
     """
@@ -82,13 +83,13 @@ class Dark(ReferenceFile):
         # for development and testing purposes ahead of simulated asdf files
         test_len_arr = [70, 90, 90, 110, 110, 90, 70, 70, 110, 110, 90, 70]
         tmp_reads = []
-        for fl in range(0,len(self.dark_filelist)):
+        for fl in range(0, len(self.dark_filelist)):
             ftmp = asdf.open(self.dark_filelist[fl], validate_on_read=False)
             n_reads, _, _ = np.shape(ftmp.tree['roman']['data'])
-            #n_reads = test_len_arr[fl]
+            # n_reads = test_len_arr[fl]
             tmp_reads.append(n_reads)
         num_reads_set = [*set(tmp_reads)]
-        num_reads_set = 3 # to speed up testing
+        # num_reads_set = 3 # to speed up testing
 
         # The master dark length is the maximum number of reads in all dark asdf files to be used
         # when creating the dark reference file. Need to "try" over files with different lengths
@@ -106,7 +107,8 @@ class Dark(ReferenceFile):
                 dark_read_cube.append(rd_tmp[rd, :, :])
                 del ftmp, rd_tmp
                 gc.collect()  # clean up memory
-            clipped_reads = sigma_clip(dark_read_cube, sigma_lower=sigma_clip_low_bound, sigma_upper=sigma_clip_high_bound,
+            clipped_reads = sigma_clip(dark_read_cube, sigma_lower=sigma_clip_low_bound,
+                                       sigma_upper=sigma_clip_high_bound,
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
             self.master_dark[rd, :, :] = np.mean(clipped_reads, axis=0)
             del clipped_reads
@@ -147,7 +149,7 @@ class Dark(ReferenceFile):
         con, _, _ = connect_server(DSN_name='DWRINSDB')
         new_tab = DatabaseTable(con, 'ma_table_science')
         ma_tab = new_tab.read_table()
-        ma_tab_ind = ma_table_ID - 1 # to match index starting at 0 in database with integer ma table ID starting at 1
+        ma_tab_ind = ma_table_ID - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
         ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
         ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
         ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
@@ -155,15 +157,18 @@ class Dark(ReferenceFile):
         ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
         logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID} for the '
                      f'{ma_tab_name}, with {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
-                     f' reads per resultant')
+                     f' reads per resultant.')
         # generate time array for exposure sequence for ramp fitting and error and variance calcs
         # first instance of attribute in Dark class
         self.exp_time_arr = [ma_tab_read_time * i for i in
                              range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)]
 
+        # check if we should write this meta data here or update the dictionary key values
         self.meta['exposure'] = {'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
-                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_ID}
+                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_ID,
+                                 'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
         logging.info(f'Updated meta data with MA table info.')
+
         return ma_tab_num_resultants, ma_tab_reads_per_resultant
 
     def make_ma_table_dark(self, num_resultants, reads_per_resultant):
@@ -212,7 +217,7 @@ class Dark(ReferenceFile):
         self.resampled_dark_time_arr = np.zeros((num_resultants), dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
-        for i_res in range(0,num_resultants):
+        for i_res in range(0, num_resultants):
             i1 = i_res * reads_per_resultant
             i2 = i1 + reads_per_resultant
             if i2 > n_reads:
@@ -220,55 +225,87 @@ class Dark(ReferenceFile):
             self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
             # initialize dark cube err per resultant to be zeros - for testing and validating model
             self.resampled_dark_cube_err[i_res, :, :] = np.zeros((4096, 4096), dtype=np.float32)
-            # to handle upscope with time dependent resultant variance - tau
+            # to handle upscope with variance-based resultant time - tau_i in uneven spaced resultant
+            # if evenly spaced, equation 14 reduces to below
             self.resampled_dark_time_arr[i_res] = np.mean(self.exp_time_arr[i1:i2])
+            # to do next phase, implement equation 14 here
 
         logging.info(f'MA table resampling with {num_resultants} resultants averaging {reads_per_resultant}'
-                     f' reads per resultant complete. Updated meta data. Error arrays initialized with zeros.'
+                     f' reads per resultant complete. Updated meta data. Error arrays initialized with zeros. '
                      f'Run calc_dark_err_metrics() to calculate errors.')
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010,
                               hot_pixel_bit=11, warm_pixel_bit=12):
         """
+        The calc_dark_err_metrics() method computes the error as the variance of the fitted ramp or slope
+        along the time axis for the resultants in the resampled_dark_cube attribute using a 1st order polyfit.
+        The slopes are saved as the dark_rate_image and the variances as the dark_rate_image_var. The hot and warm
+        pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
+        DQ bit flag.
 
-        :param hot_pixel_rate:
-        :param warm_pixel_rate:
-        :param hot_pixel_bit:
-        :param warm_pixel_bit:
-        :return:
+        NOTE: Look into writing metrics like number of hot pixels here or in a different method altogether
+
+        Parameters
+        ----------
+        hot_pixel_rate: float; default = 0.015 DN/s or ADU/s
+            The hot pixel rate is the number of DN/s determined from detector characterization to be 10-sigma above
+            the nominal expectation of dark current.
+        warm_pixel_rate: float; default = 0.010 e/s
+            The warm pixel rate is the number of DN/s determined from detector characterization to be 8-sigma above
+            the nominal expectation of dark current.
+        hot_pixel_bit: integer; default = 11
+            DQ hot pixel flag value in romancal library.
+        warm_pixel_bit: integer; default = 12
+            DQ hot pixel flag value in romancal library.
+
+        NOTE: The determination of hot and warm pixel rates and sigma values are only referenced as a best guess
+        at what we should consider for setting these values. Likely to change or be more informed post-TVAC.
         """
-        # do simple linear regression to fit ma table resultants in time
-        n_res, ni, nj = np.shape(self.resampled_dark_cube)
+        logging.info(f'Computing dark variance and CDS noise values.')
+        # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
+        num_resultants, ni, nj = np.shape(self.resampled_dark_cube)
         slopes, variances = np.polyfit(self.resampled_dark_time_arr,
-                                self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr),-1), 1)
+                                       self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr), -1), 1)
 
-        self.dark_rate_image = slopes.reshape(ni,nj)
-        self.dark_rate_image_var = variances.reshape(ni,nj)
+        # reshape results back to 2D arrays
+        self.dark_rate_image = slopes.reshape(ni, nj)
+        self.dark_rate_image_var = variances.reshape(ni, nj)
 
+        # calculate correlated double sampling between pairs of successive reads - the read noise
+        # consider making this its own module in RFP utilities - CDS_noise() module and method
+        n_reads, _, _ = np.shape(self.dark_read_cube)
+        read_diff_cube = np.zeros((math.ceil(n_reads / 2), 4096, 4096), dtype=np.float32)
+        for i_read in range(0, n_reads-1, 2):
+            # skip last pair to avoid index error if n_reads is odd
+            print(i_read, i_read+1, n_reads)
+            rd1_ramp_sub = self.dark_read_cube[i_read, :, :] - self.dark_rate_image * self.exp_time_arr[i_read]
+            rd2_ramp_sub = self.dark_read_cube[i_read + 1, :, :] - self.dark_rate_image * self.exp_time_arr[i_read + 1]
+            read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2_ramp_sub - rd1_ramp_sub
+        # A. Petric noted using 3 or 5 sigma clipping to compute CDS noise, consider for next phase
+        cds_noise = np.std(read_diff_cube[:, :, :], axis=0)
+        del read_diff_cube
+        gc.collect()
+
+        # add errors from slope fitting and read noise in quadrature
+        # next step is to implement general error measurements of variance in unevenly spaced resultant and slope
+        # fitting memo
+        for i_result in range(0,num_resultants):
+            tmp_err = cds_noise ** 2 + self.dark_rate_image_var ** 2
+            self.resampled_dark_cube_err[i_result, :, :] = tmp_err**0.5
+
+        logging.info(f'Flagging hot and warm pixels and updating DQ array.')
+        # locate hot and warm pixel ni,nj positions in 2D array
         hot_pixels = np.where(self.dark_rate_image >= hot_pixel_rate)
-        warm_pixels = np.where( (warm_pixel_rate <= self.dark_rate_image) &
-                                (self.dark_rate_image < hot_pixel_rate) )
+        warm_pixels = np.where((warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < hot_pixel_rate))
 
+        # set mask DQ flag values
         self.mask[hot_pixels] += 2 ** hot_pixel_bit
         self.mask[warm_pixels] += 2 ** warm_pixel_bit
 
+        # get the number of hot and warm pixels for metric tracking
         _, num_hot_pixels = np.shape(hot_pixels)
         _, num_warm_pixels = np.shape(warm_pixels)
-        print("Found {} hot pixels and {} warm pixels".format(num_hot_pixels, num_warm_pixels))
-
-
-
-        # res_std = np.std(self.resampled_dark_cube[i_res, :, :])
-        # self.resampled_dark_cube_err[i_res, :, :] = np.round(np.random.uniform(.9*res_std, 1.1*res_std,
-        # size=(4096, 4096)).astype(np.float32),2)
-
-        #data = data.reshape(nframes, -1) or data.shape = (nframes, -1)
-
-        # hot pixel flagging will requirem
-        #fresult_avg = np.mean(self.data[-1])
-        #hot_pixels = np.where(self.data[-1] > 1.8*fresult_avg)
-        #self.mask[hot_pixels] = 2 ** 11
-        #num_hotpixels = np.count_nonzero(self.mask == 2 **11)
+        logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
 
     def save_dark_ref_file(self):
         """
@@ -297,6 +334,3 @@ class Dark(ReferenceFile):
         af = asdf.AsdfFile()
         af.tree = {'roman': dark_file}
         af.write_to(self.outfile)
-
-
-
