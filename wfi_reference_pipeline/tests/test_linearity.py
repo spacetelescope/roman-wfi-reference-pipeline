@@ -308,22 +308,22 @@ class LinearityMultiTestCase(unittest.TestCase):
         lin1 = Linearity(y_test+noise1, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         lin2 = Linearity(y_test+noise2, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         lin3 = Linearity(y_test+noise3, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         with self.assertRaises(ValueError):
             make_linearity_multi(lin1, lin1.meta)
         with self.assertRaises(ValueError):
             make_linearity_multi([lin1, lin2], lin1.meta)
         lin1.make_linearity(poly_order=2)
-        lin2.make_linearity(poly_order=2, clobber=True)
-        lin3.make_linearity(poly_order=2, clobber=True)
+        lin2.make_linearity(poly_order=2)
+        lin3.make_linearity(poly_order=2)
         # Check that it works with one file
         with testing.assert_warns(Warning):
             coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2, output_file=None)
@@ -381,19 +381,19 @@ class LinearityMultiTestCase(unittest.TestCase):
         lin1 = Linearity(y_test+noise1, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         lin2 = Linearity(y_test+noise2, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         lin3 = Linearity(y_test+noise3, _meta, outfile=outfile,
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
-                                           dtype=np.uint32), clobber=True)
+                                           dtype=np.uint32))
         # Check that it works with one file
         lin1.make_linearity(poly_order=2)
-        lin2.make_linearity(poly_order=2, clobber=True)
-        lin3.make_linearity(poly_order=2, clobber=True)
+        lin2.make_linearity(poly_order=2)
+        lin3.make_linearity(poly_order=2)
         with testing.assert_warns(Warning):
             coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2, output_file=None,
                                                 use_unc=True)
