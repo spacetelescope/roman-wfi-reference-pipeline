@@ -86,6 +86,7 @@ class Linearity(ReferenceFile):
         nonlinear_pixels = np.where((self.mask == float('NaN')) |
                                     (self.data[0, :, :] == float('NaN')))
         self.mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
+        self.data[self.data == float('NaN')] = 0  # Set to zero the NaN pixels
         linearityfile['dq'] = self.mask
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
