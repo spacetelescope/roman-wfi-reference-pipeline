@@ -40,9 +40,9 @@ class Linearity(ReferenceFile):
         self.fit_complete = False
         self.poly_order = None
 
-    def make_linearity(self, poly_order=6, constrained=False, clobber=False):
+    def make_linearity(self, poly_order=6, constrained=False):
         """
-        The method make_linearity() generates a linearity asdf file.
+        The method make_linearity() populates the data of a Linearity object.
 
         Parameters
         ----------
@@ -50,7 +50,6 @@ class Linearity(ReferenceFile):
         constrained: bool; If True, it returns the fit resulting fixing intercept
                      to 0 and slope to 1.
         nframes_grid: integer; Number of points in the grid to evaluate the fit.
-        clobber: bool; If True, overwrite the previous outfile.
 
         Outputs
         -------
@@ -59,9 +58,6 @@ class Linearity(ReferenceFile):
             coeffs:
             dq: mask
         """
-        self.clobber = clobber
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
 
         if (self.data is not None) & (self.times is not None):
             self.data, self.mask = fit_single(self.data, self.times, img_dq=self.mask,
@@ -72,13 +68,24 @@ class Linearity(ReferenceFile):
         else:
             raise ValueError('Input data is require to create linearity file')
 
+    def save_linearity(self, clobber=False):
+        """
+        Save a linearity reference file to an asdf file.
+
+        Parameters
+        ----------
+        clobber: bool; If True, it allows overwritting a previous linearity file.
+        """
+        self.clobber = clobber
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
         # Construct the linearity object from the data model.
         linearityfile = rds.LinearityRef()
         linearityfile['meta'] = self.meta
         linearityfile['coeffs'] = self.data
         nonlinear_pixels = np.where((self.mask == float('NaN')) |
                                     (self.data[0, :, :] == float('NaN')))
-        self.mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
+        self.mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
         linearityfile['dq'] = self.mask
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
@@ -169,7 +176,7 @@ def fit_single(img_arr, time, img_dq=None, poly_order=6, constrained=False):
         else:
             raise NotImplementedError
     # Mask bad pixels
-    mask[np.where(np.isnan(coeffs))[1:]] = 2**20
+    mask[np.where(np.isnan(coeffs))[1:]] += 2**20
 
     return coeffs.astype(np.float32), mask
 
