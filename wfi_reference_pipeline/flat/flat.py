@@ -80,7 +80,6 @@ class Flat(ReferenceFile):
         flatfile['meta'] = self.meta
         flatfile['data'] = self.data
         flatfile['dq'] = self.mask
-        #flatfile['err'] = np.zeros(self.data.shape, dtype=np.float32)
         flatfile['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
 
         # Add in the meta data and history to the ASDF tree.

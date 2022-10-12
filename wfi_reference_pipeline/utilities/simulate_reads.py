@@ -25,6 +25,7 @@ def SimulateReads(n_reads, exptime, darkrate, darkvar):
     read_cube: cube of reads to make darks
     """
 
+    print("Simulating WFI dark reads...")
     rate_image = np.random.normal(darkrate, scale=darkvar, size=(4096, 4096))
 
     # place a somewhat random number of hotpixels into the rate image
