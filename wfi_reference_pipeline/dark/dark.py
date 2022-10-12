@@ -85,11 +85,11 @@ class Dark(ReferenceFile):
         tmp_reads = []
         for fl in range(0, len(self.dark_filelist)):
             ftmp = asdf.open(self.dark_filelist[fl], validate_on_read=False)
+            #n_reads, _, _ = ftmp['roman']['data'].shape[0]
             n_reads, _, _ = np.shape(ftmp.tree['roman']['data'])
             # n_reads = test_len_arr[fl]
             tmp_reads.append(n_reads)
         num_reads_set = [*set(tmp_reads)]
-        # num_reads_set = 3 # to speed up testing
 
         # The master dark length is the maximum number of reads in all dark asdf files to be used
         # when creating the dark reference file. Need to "try" over files with different lengths
@@ -100,7 +100,7 @@ class Dark(ReferenceFile):
         logging.info(f'Reading dark asdf files read by read to compute average for master dark.')
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
-            print("On read", rd, " of ", np.max(num_reads_set), " total reads")
+            logging.info(f'On read {rd} of {np.max(num_reads_set)}')
             for fl in range(0, len(self.dark_filelist)):
                 ftmp = asdf.open(self.dark_filelist[fl], validate_on_read=False)
                 rd_tmp = ftmp.tree['roman']['data']
@@ -223,8 +223,6 @@ class Dark(ReferenceFile):
             if i2 > n_reads:
                 break
             self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
-            # initialize dark cube err per resultant to be zeros - for testing and validating model
-            self.resampled_dark_cube_err[i_res, :, :] = np.zeros((4096, 4096), dtype=np.float32)
             # to handle upscope with variance-based resultant time - tau_i in uneven spaced resultant
             # if evenly spaced, equation 14 reduces to below
             self.resampled_dark_time_arr[i_res] = np.mean(self.exp_time_arr[i1:i2])
@@ -276,8 +274,8 @@ class Dark(ReferenceFile):
         n_reads, _, _ = np.shape(self.dark_read_cube)
         read_diff_cube = np.zeros((math.ceil(n_reads / 2), 4096, 4096), dtype=np.float32)
         for i_read in range(0, n_reads-1, 2):
-            # skip last pair to avoid index error if n_reads is odd
-            print(i_read, i_read+1, n_reads)
+            # n_reads-1 skip last pair to avoid index error if n_reads is odd
+            logging.info(f'Calculating correlated double sampling between frames {i_read} and {i_read+1}')
             rd1_ramp_sub = self.dark_read_cube[i_read, :, :] - self.dark_rate_image * self.exp_time_arr[i_read]
             rd2_ramp_sub = self.dark_read_cube[i_read + 1, :, :] - self.dark_rate_image * self.exp_time_arr[i_read + 1]
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2_ramp_sub - rd1_ramp_sub
@@ -290,8 +288,7 @@ class Dark(ReferenceFile):
         # next step is to implement general error measurements of variance in unevenly spaced resultant and slope
         # fitting memo
         for i_result in range(0,num_resultants):
-            tmp_err = cds_noise ** 2 + self.dark_rate_image_var ** 2
-            self.resampled_dark_cube_err[i_result, :, :] = tmp_err**0.5
+            self.resampled_dark_cube_err[i_result, :, :] = (cds_noise**2 + self.dark_rate_image_var**2)**0.5
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # locate hot and warm pixel ni,nj positions in 2D array
