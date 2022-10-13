@@ -39,7 +39,9 @@ run-pytest:
     - coverage xml -o reports/coverage.xml
   artifacts:
     reports:
-      cobertura: reports/coverage.xml
+      coverage_report:
+        coverage_format: cobertura  
+        path: reports/coverage.xml
 
 run-flake:
   stage: test
