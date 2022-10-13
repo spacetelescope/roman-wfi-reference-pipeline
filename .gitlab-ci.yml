@@ -39,7 +39,9 @@ run-pytest:
     - coverage xml -o reports/coverage.xml
   artifacts:
     reports:
-      cobertura: reports/coverage.xml
+      coverage_report:
+        coverage_format: cobertura  
+        path: reports/coverage.xml
 
 run-flake:
   stage: test
@@ -47,3 +49,4 @@ run-flake:
     - pip install flake8
     - ls -l
     - venv/bin/python3 -m flake8 --exclude=venv *.py
+
