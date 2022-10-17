@@ -6,4 +6,4 @@ requires = [
 ]
 
 [tool.setuptools_scm]
-write_to = 'wfi_reference_pipeline/version.py'
+write_to = 'src/wfi_reference_pipeline/version.py'

@@ -1,0 +1,18 @@
+optical_elements:
+  WIM:
+    - F062
+    - F087
+    - F106
+    - F129
+    - F146
+    - F158
+    - F184
+    - F213
+  WSM:
+    - GRISM
+    - PRISM
+  OTHER:
+    - DARK
+frame_time:
+  WIM: 3.04
+  WSM: 4.03
