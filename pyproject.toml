@@ -1,0 +1,9 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=3.4",
+    "wheel"
+]
+
+[tool.setuptools_scm]
+write_to = 'src/wfi_reference_pipeline/version.py'
