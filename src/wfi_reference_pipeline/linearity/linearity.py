@@ -5,6 +5,12 @@ import numpy as np
 from astropy.stats import sigma_clipped_stats
 import warnings
 from collections.abc import Iterable
+import logging
+
+logging.getLogger('stpipe').setLevel(logging.WARNING)
+log_file_str = 'linearity_dev.log'
+logging.basicConfig(filename=log_file_str, level=logging.INFO)
+logging.info(f'Dark reference file log: {log_file_str}')
 
 
 class Linearity(ReferenceFile):
@@ -15,15 +21,31 @@ class Linearity(ReferenceFile):
     method make_linearity() creates the asdf linearity file.
     """
 
-    def __init__(self, linearity_image, meta_data, bit_mask=None, outfile=None, clobber=False):
+    def __init__(self, linearity_image, out_meta_data, optical_element=None,
+                 bit_mask=None, outfile=None, clobber=False):
+        """
+        Parameters
+        ----------
+
+        linearity_image: numpy.ndarray; Input (typically a flat-field image) image used to perform
+            the linearity fit. It populates self.data.
+        out_meta_data: dict; Metadata that will populate the output linearity reference file.
+        clobber: bool; If True, overwrite previously generated linearity file in outfile.
+        outfile: str; Path to output linearity file. (Default: roman_linearity.asdf).
+        bit_mask: numpy.ndarray; Input mask (dq array from the flat file to use).
+        """
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_linearity.asdf'
 
+        # Make sure that the shapes match if initialized to None
+        if bit_mask is None:
+            bit_mask = np.zeros(linearity_image.shape, dtype=np.uint32)
+
         # Access methods of base class ReferenceFile
-        super(Linearity, self).__init__(linearity_image, meta_data, bit_mask=bit_mask,
+        super(Linearity, self).__init__(linearity_image, out_meta_data, bit_mask=bit_mask,
                                         clobber=clobber)
 
-        # Update metadata with gain file type info if not included.
+        # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
             self.meta['description'] = 'Roman WFI linearity reference file.'
         else:
@@ -32,119 +54,62 @@ class Linearity(ReferenceFile):
             self.meta['reftype'] = 'LINEARITY'
         else:
             pass
-        if 'exposure' in self.meta.keys():
-            if 'frame_time' in self.meta['exposure'].keys():
-                self.times = self.meta['exposure']['frame_time']  # For now using this
+        self.times = None
+
+        # Potentially will write these couple of lines in an auxiliary file
+        if optical_element in ['GRISM', 'PRISM']:
+            self.times = 4.03 * np.arange(self.data.shape[0])
+        elif optical_element == 'DARK':
+            raise ValueError('Cannot use a DARK image to fit linearity.')
         else:
-            self.times = None
+            self.times = 3.04 * np.arange(self.data.shape[0])
+
         self.fit_complete = False
         self.poly_order = None
+        self.coeffs = None
 
     def make_linearity(self, poly_order=6, constrained=False):
         """
-        The method make_linearity() populates the data of a Linearity object.
+        The method make_linearity() populates the coefficients of a Linearity object,
+        fitting the linearity coefficients for a single flat image.
 
         Parameters
         ----------
         poly_order: integer; Polynomial order to use for the fits.
         constrained: bool; If True, it returns the fit resulting fixing intercept
                      to 0 and slope to 1.
-        nframes_grid: integer; Number of points in the grid to evaluate the fit.
-
-        Outputs
-        -------
-        af: asdf file tree: {meta, coeffs, dq}
-            meta:
-            coeffs:
-            dq: mask
         """
 
-        if (self.data is not None) & (self.times is not None):
-            self.data, self.mask = fit_single(self.data, self.times, img_dq=self.mask,
-                                              poly_order=poly_order, constrained=constrained)
-            # Mark that the fit is complete
-            self.fit_complete = True
-            self.poly_order = poly_order
+        # Get the dimensions of the image
+        npix_0 = self.data.shape[1]
+        npix_1 = self.data.shape[2]
+
+        # Load input image
+        if np.isscalar(self.times):
+            time = np.arange(0, self.data.shape[0]) * self.times
         else:
-            raise ValueError('Input data is require to create linearity file')
+            if self.times.shape[0] != self.data.shape[0]:
+                raise ValueError('Frame times should have the same length as datacube')
 
-    def save_linearity(self, clobber=False):
-        """
-        Save a linearity reference file to an asdf file.
+        nframes = get_fit_length(self.data, self.times, dq=self.mask)
 
-        Parameters
-        ----------
-        clobber: bool; If True, it allows overwritting a previous linearity file.
-        """
-        self.clobber = clobber
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-        # Construct the linearity object from the data model.
-        linearityfile = rds.LinearityRef()
-        linearityfile['meta'] = self.meta
-        linearityfile['coeffs'] = self.data
-        nonlinear_pixels = np.where((self.mask == float('NaN')) |
-                                    (self.data[0, :, :] == float('NaN')))
-        self.mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
-        self.data[self.data == float('NaN')] = 0  # Set to zero the NaN pixels
-        linearityfile['dq'] = self.mask
-        # Add in the meta data and history to the ASDF tree.
-        af = asdf.AsdfFile()
-        af.tree = {'roman': linearityfile}
-        af.write_to(self.outfile)
+        # Keep only the frames that we need
+        img_arr = self.data[:nframes, :, :]
+        time = self.times[:nframes]
+        if self.mask is not None:
+            if len(self.mask.shape) == 2:
+                img_dq = np.ones(nframes)[:, None, None] * self.mask
+            elif len(self.mask.shape) == 3:
+                img_dq = self.mask[:nframes, :, :]
+            else:
+                raise ValueError('dq array expected to be 2 or 3-dimensional')
 
-
-def fit_single(img_arr, time, img_dq=None, poly_order=6, constrained=False):
-    """
-    Method to fit the linearity coefficients for a single flat image.
-
-    Parameters:
-    -----------
-    img_arr: numpy.ndarray; Array containing the image datacube to fit with shape
-        (Nreads, Npix0, Npix1).
-    time: float or numpy.ndarray; If a single value is supplied, time is interpreted
-        to be the space between frames, if an array is supplied, it is
-        interpreted to be the time at which read is performed.
-    img_dq: numpy.ndarray; Array containing the data-quality flags.
-    poly_order: integer; Polynomial order to use for the fits.
-    constrained: bool; If True, it will fix intercept to 0 and slope to 1.
-
-    Outputs
-    -------
-    poly: (numpy.ndarray); Array containing the coefficients of the best-fit
-          polynomial for the given image.
-    """
-
-    # Get the dimensions of the image
-    npix_0 = img_arr.shape[1]
-    npix_1 = img_arr.shape[2]
-
-    # Load input image
-    if np.isscalar(time):
-        time = np.arange(0, img_arr.shape[0])*time
-    else:
-        if time.shape[0] != img_arr.shape[0]:
-            raise ValueError('Frame times should have the same length as datacube')
-
-    nframes = get_fit_length(img_arr, time, dq=img_dq)
-
-    # Keep only the frames that we need
-    img_arr = img_arr[:nframes, :, :]
-    time = time[:nframes]
-    if img_dq is not None:
-        if len(img_dq.shape) == 2:
-            img_dq = np.ones(nframes)[:, None, None]*img_dq
-        elif len(img_dq.shape) == 3:
-            img_dq = img_dq[:nframes, :, :]
-        else:
-            raise ValueError('dq array expected to be 2 or 3-dimensional')
-    mask = np.zeros((npix_0, npix_1), np.uint32)
-
-    if (img_dq is None) or (np.allclose(img_dq, np.zeros_like(img_dq))):
         if not constrained:
-            coeffs = np.polyfit(time, img_arr.reshape(nframes, -1), poly_order)
+            aux_arr = np.ma.array(img_arr)
+            aux_arr.mask = (img_dq != 0)
+            coeffs = np.ma.polyfit(time, aux_arr.reshape(nframes, -1), poly_order)
             coeffs = coeffs.reshape(-1, npix_0, npix_1)
-        else:
+        elif (constrained) & (np.allclose(img_dq, np.zeros_like(img_dq))):
             # np.polyfit does not allow for fixed coefficients because
             # it is solving a linear algebra problem (that's why it's fast).
             # In order to fix coefficients we have to do some math.
@@ -168,48 +133,58 @@ def fit_single(img_arr, time, img_dq=None, poly_order=6, constrained=False):
                                np.ones((npix_0, npix_1)), axis=0)
             coeffs = np.insert(coeffs, poly_order,
                                np.zeros((npix_0, npix_1)), axis=0)
-    else:
-        if not constrained:
-            aux_arr = np.ma.array(img_arr)
-            aux_arr.mask = (img_dq != 0)
-            coeffs = np.ma.polyfit(time, aux_arr.reshape(nframes, -1), poly_order)
-            coeffs = coeffs.reshape(-1, npix_0, npix_1)
         else:
             raise NotImplementedError
-    # Mask bad pixels
-    mask[np.where(np.isnan(coeffs))[1:]] += 2**20
+        # Mask bad pixels
+        self.mask[np.where(np.isnan(coeffs))[1:]] += 2**20
+        self.coeffs = coeffs
+        self.fit_complete = True
+        self.poly_order = poly_order
 
-    return coeffs.astype(np.float32), mask
+    def save_linearity(self, clobber=False):
+        """
+        Save a linearity reference file to an asdf file.
+
+        Parameters
+        ----------
+        clobber: bool; If True, it allows overwritting a previous linearity file.
+        """
+        self.clobber = clobber
+        # Check if the output file exists, and take appropriate action.
+        self.check_output_file(self.outfile)
+        _save_linearity(self.outfile, self.meta, self.coeffs, self.mask, clobber=self.clobber)
 
 
 def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
-                   nsigma=3, verbose=False):
+                   nsigma=3):
     """
     Function to obtain the frames in the datacube to use for the linearity fits.
 
     Parameters:
     -----------
-    datacube: (numpy.ndarray); Datacube with shape (Nreads, Npix, Npix)
+    datacube: numpy.ndarray; Datacube with shape (Nreads, Npix, Npix)
               containing all reads of a given image.
-    time: (numpy.ndarray); time at which the frames were taken.
-    frac_thr: (float); Maximum fraction of flagged pixels to consider a read
+    time: numpy.ndarray; time at which the frames were taken.
+    frac_thr: float; Maximum fraction of flagged pixels to consider a read
               as ``good`` to obtain a baseline standard deviation within a read.
               Default 0.5.
-    nsigma: (int); Threshold to consider a pixel in the fit. If the difference
+    nsigma: int; Threshold to consider a pixel in the fit. If the difference
         between reads is larger than nsigma * sigma, the pixel is considered good.
-    verbose: (bool); If `True` it shows debugging messages.
 
     Outputs:
     --------
-    nframes: (int); Number of frames to consider for the fit.
+    nframes: int; Number of frames to consider for the fit.
     """
     if len(datacube.shape) != 3:
         raise ValueError('A 3-dimensional datacube is expected')
     if dq is not None:
         if len(dq.shape) == 2:
-            dq = np.ones(datacube.shape[0])[:, None, None]*dq
+            dq = np.ones(datacube.shape[0])[:, None, None] * dq
         elif len(dq.shape) == 3:
-            pass
+            if (dq.shape != datacube.shape):
+                raise ValueError('A 3d dq array should have the same dimensions as the datacube')
+            else:
+                pass
         else:
             raise ValueError('dq array expected to be 2 or 3-dimensional')
     # We compute the gradient in counts
@@ -220,10 +195,11 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     # as long as the first read has more than 50 percent of the pixels
     # If not, we will move to a different read.
     base_read = 0
+
     if dq is not None:
         for i in range(len(time)):
             # Check the fraction of flagged pixels
-            frac_bad = np.count_nonzero(dq[base_read, :, :])/len(dq[base_read, :, :])
+            frac_bad = np.count_nonzero(dq[base_read, :, :]) / len(dq[base_read, :, :])
             # If the fraction of bad pixels is higher than the threshold, move to the next
             # read
             if frac_bad > frac_thr:
@@ -240,8 +216,7 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     # If the gradient is bigger than 3-times the standard deviation we
     # are accumulating charge -- we follow NIRCam's algorithm here
 
-    if verbose:
-        print('Standard deviation estimate:', std)
+    logging.debug('Standard deviation estimate:', std)
     if dq is None:
         try:
             # Get the first frame at which there are some signs of saturation in a pixel
@@ -281,14 +256,13 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
 
     Outputs
     -------
-    af: asdf file tree: {meta, coeffs, dq}
-        meta:
-        coeffs:
-        dq: mask
+    coeffs: numpy.ndarray; Output linearity coefficients.
+    mask: numpy.ndarray; Output bit-mask.
+    unc: numpy.ndarray; Uncertainty of the linearity coefficients.
     """
     # Linearity files do not have data quality or error arrays.
     err = None
-    data = None
+    coeffs = None
     mask = None
     if nframes_grid < poly_order:
         raise ValueError('''nframes_grid cannot be smaller than the required polynomial
@@ -299,7 +273,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                           ignoring grid''', Warning)
             # If it's a string, then it's a single file
             if input_lin.fit_complete:
-                data = input_lin.data
+                coeffs = input_lin.coeffs
             else:
                 raise ValueError('''The input Linearity files have not been fit.
                                  Please run input_lin.make_linearity before running
@@ -314,11 +288,11 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                 if lin.fit_complete:
                     tt = lin.times
                     if len(use_lin) < 1:
-                        npx0 = lin.data.shape[1]
-                        npx1 = lin.data.shape[2]
+                        npx0 = lin.coeffs.shape[1]
+                        npx1 = lin.coeffs.shape[2]
                         use_lin.append(lin)
                     else:
-                        if (lin.data.shape[1] == npx0) & (lin.data.shape[2] == npx1):
+                        if (lin.coeffs.shape[1] == npx0) & (lin.coeffs.shape[2] == npx1):
                             use_lin.append(lin)
                     if np.min(tt) < tmin:
                         tmin = np.min(tt)
@@ -338,21 +312,21 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                 # as suggested by S. Casertano
                 for lin in use_lin:
                     if constrained:  # The different count rates are already taken into account
-                        img_arr_all += np.polyval(lin.data, t_grid[:, None, None])
+                        img_arr_all += np.polyval(lin.coeffs, t_grid[:, None, None])
                     else:
                         # It the slope and intercept are not 1, and the count rates
                         # are different, we have to normalize everything to the same
                         # count rate.
-                        img_arr_all += (np.polyval(lin.data, t_grid[:, None, None]) -
-                                        lin.data[lin.poly_order, :]) / lin.data[lin.poly_order-1, :]
+                        img_arr_all += (np.polyval(lin.coeffs, t_grid[:, None, None]) -
+                                        (lin.coeffs[lin.poly_order, :] - lin.coeffs[lin.poly_order-1, :])
                         if use_unc:
                             # This is to get the std as <mean^2> - <mean>^2
                             if constrained:
-                                img_arr_all_sq += np.polyval(lin.data, t_grid[:, None, None])**2
+                                img_arr_all_sq += np.polyval(lin.coeffs, t_grid[:, None, None])**2
                             else:
-                                img_arr_all_sq += ((np.polyval(lin.data, t_grid[:, None, None]) -
-                                                    lin.data[lin.poly_order, :]) /
-                                                   lin.data[lin.poly_order-1, :])**2
+                                img_arr_all_sq += ((np.polyval(lin.coeffs, t_grid[:, None, None]) -
+                                                    lin.coeffs[lin.poly_order, :]) /
+                                                   lin.coeffs[lin.poly_order-1, :])**2
                 # Now we have the sum of the polynomials in the image
                 img_arr_all /= len(use_lin)  # <X>
 
@@ -380,7 +354,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                         coeffs = np.polyfit(t_grid,
                                             img_arr_all.reshape(nframes_grid, -1),
                                             poly_order)
-                    data = coeffs.reshape(-1, npx0, npx1)
+                    coeffs = coeffs.reshape(-1, npx0, npx1)
 
                 # Case where we want to use the uncertainties as weights
                 else:
@@ -405,31 +379,46 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                         err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
                         err = err.T.reshape(-1, npx0, npx1)
 
-                    data = coeffs.reshape((poly_order+1, npx0, npx1))
+                    coeffs = coeffs.reshape((poly_order+1, npx0, npx1))
     else:
         raise ValueError('Linearity images not fit!')
 
-    # Construct the linearity object from the data model.
-    linearityfile = rds.LinearityRef()
-    linearityfile['meta'] = meta
-    if data is not None:
-        linearityfile['coeffs'] = data.astype(np.float32)
-    if err is not None:
-        linearityfile['unc'] = err.astype(np.float32)
-    if data is not None:
-        # The "bad" pixels will be those where the fits did not work
-        nonlinear_pixels = np.where(data[0, :, :] == float('NaN'))
-        mask = np.zeros((data.shape[1], data.shape[2]), dtype=np.uint32)
-        mask[nonlinear_pixels] = 2 ** 20  # linearity correction not available
-        linearityfile['dq'] = mask
     if output_file is not None:
-        # Add in the meta data and history to the ASDF tree.
-        af = asdf.AsdfFile()
-        af.tree = {'roman': linearityfile}
-        af.write_to(output_file)
+        _save_linearity(output_file, meta, coeffs.astype(np.float32),
+                        mask, clobber=clobber)
     else:
         # We want the option to get the arrays without writing (e.g., for testing)
         if not return_unc:
-            return data, mask
+            return coeffs, mask
         else:
-            return data, mask, err
+            return coeffs, mask, err
+
+
+def _save_linearity(outfile, meta, coeffs, mask, clobber=False, unc=None):
+    """
+    Save a linearity reference file to an asdf file.
+
+    Parameters
+    ----------
+    outfile: str; Output path for the linearity file.
+    meta: dict; Metadata of the output file.
+    coeffs: numpy.ndarray; Array containing the values of the coefficient of the polynomial
+        fit for the linearity reference file.
+    mask: numpy.ndarray; Output bit mask.
+    clobber: bool; If True, it allows overwritting a previous linearity file.
+    unc: numpy.ndarray; Uncertainty of the coefficients, coeffs.
+    """
+    linearityfile = rds.LinearityRef()
+    linearityfile['meta'] = meta
+    linearityfile['coeffs'] = coeffs
+    nonlinear_pixels = np.where((mask == float('NaN')) |
+                                (coeffs[0, :, :] == float('NaN')))
+    mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
+    coeffs[coeffs == float('NaN')] = 0  # Set to zero the NaN pixels
+    linearityfile['dq'] = mask
+    if unc is not None:
+        linearityfile['unc'] = unc
+    # Add in the meta data and history to the ASDF tree.
+    af = asdf.AsdfFile()
+    af.tree = {'roman': linearityfile}
+    af.write_to(outfile)
