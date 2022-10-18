@@ -29,7 +29,7 @@ data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.da
                                             "ancillary.yaml")
 with open(data_path, "r") as stream:
     data_anc = yaml.safe_load(stream)
-print("Ancillary", data_anc, data_anc.keys())
+
 
 
 class Linearity(ReferenceFile):
