@@ -28,7 +28,7 @@ class Linearity(ReferenceFile):
         ----------
 
         linearity_image: numpy.ndarray; Input (typically a flat-field image) image used
-         to perform the linearity fit. It populates self.data.
+         to perform the linearity fit. It populates self.input_data.
         out_meta_data: dict; Metadata that will populate the output linearity reference
          file.
         clobber: bool; If True, overwrite previously generated linearity file in outfile.
@@ -59,11 +59,11 @@ class Linearity(ReferenceFile):
 
         # Potentially will write these couple of lines in an auxiliary file
         if optical_element in ['GRISM', 'PRISM']:
-            self.times = 4.03 * np.arange(self.data.shape[0])
+            self.times = 4.03 * np.arange(self.input_data.shape[0])
         elif optical_element == 'DARK':
             raise ValueError('Cannot use a DARK image to fit linearity.')
         else:
-            self.times = 3.04 * np.arange(self.data.shape[0])
+            self.times = 3.04 * np.arange(self.input_data.shape[0])
 
         self.fit_complete = False
         self.poly_order = None
@@ -82,20 +82,20 @@ class Linearity(ReferenceFile):
         """
 
         # Get the dimensions of the image
-        npix_0 = self.data.shape[1]
-        npix_1 = self.data.shape[2]
+        npix_0 = self.input_data.shape[1]
+        npix_1 = self.input_data.shape[2]
 
         # Load input image
         if np.isscalar(self.times):
-            time = np.arange(0, self.data.shape[0]) * self.times
+            time = np.arange(0, self.input_data.shape[0]) * self.times
         else:
-            if self.times.shape[0] != self.data.shape[0]:
+            if self.times.shape[0] != self.input_data.shape[0]:
                 raise ValueError('Frame times should have the same length as datacube')
 
-        nframes = get_fit_length(self.data, self.times, dq=self.mask)
+        nframes = get_fit_length(self.input_data, self.times, dq=self.mask)
 
         # Keep only the frames that we need
-        img_arr = self.data[:nframes, :, :]
+        img_arr = self.input_data[:nframes, :, :]
         time = self.times[:nframes]
         if self.mask is not None:
             if len(self.mask.shape) == 2:

@@ -33,7 +33,7 @@ class GetFitLengthTestCase(unittest.TestCase):
 
         t_test = np.array([10, 20])
         y_test = np.polyval(poly_coeffs,
-                            t_test)[:, None, None]*np.ones((2, 2), dtype=np.float32)
+                            t_test)[:, None, None] * np.ones((2, 2), dtype=np.float32)
         nf = get_fit_length(y_test, t_test)
         testing.assert_almost_equal(len(t_test), nf)
 
@@ -44,8 +44,8 @@ class GetFitLengthTestCase(unittest.TestCase):
         poly_coeffs = (1., 0.1)
         t_test = np.array([10, 20])
         y_test = np.polyval(poly_coeffs,
-                            t_test)[:, None, None]*np.ones((2, 2), dtype=np.float32)
-        dq_test = np.array([0, 1])[:, None, None]*np.eye(2, dtype=np.uint32)
+                            t_test)[:, None, None] * np.ones((2, 2), dtype=np.float32)
+        dq_test = np.array([0, 1])[:, None, None] * np.eye(2, dtype=np.uint32)
         nf = get_fit_length(y_test, t_test, dq=dq_test)
         testing.assert_equal(len(t_test), nf)
         dq_test[1, :, :] = 1
@@ -68,7 +68,7 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146')
         lin.make_linearity(poly_order=2)
         testing.assert_almost_equal(poly_coeffs, lin.coeffs[:, 0, 0])
@@ -82,14 +82,15 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         dq_test = np.zeros(y_test.shape, dtype=np.uint32)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146', bit_mask=dq_test)
+        lin = Linearity(y_test, setup_dummy_meta(),
+                        optical_element='F146', bit_mask=dq_test)
         lin.make_linearity(poly_order=2)
         # Check the 0,0 pixel that has some masked values
         testing.assert_almost_equal(poly_coeffs, lin.coeffs[:, 0, 0])
@@ -107,7 +108,7 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         y_test += 0.005 * np.random.normal(size=y_test.shape)
         lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146')
         lin.make_linearity(poly_order=2)
@@ -122,7 +123,7 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         y_test += 0.005 * np.random.normal(size=y_test.shape)
         dq_test = np.zeros(y_test.shape, dtype=np.uint32)
         # Flag some pixels
@@ -130,7 +131,8 @@ class FitSingleTestCase(unittest.TestCase):
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146', bit_mask=dq_test)
+        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146',
+                        bit_mask=dq_test)
         lin.make_linearity(poly_order=2)
         # Check the 0,0 pixel that has some masked values
         testing.assert_almost_equal(poly_coeffs, lin.coeffs[:, 0, 0], decimal=2)
@@ -149,14 +151,15 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146', bit_mask=dq_test)
+        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146',
+                        bit_mask=dq_test)
         # Check if the "correct" polynomial is still fit even if we change
         # input and output polynomial orders don't match
         lin.make_linearity(poly_order=5)
@@ -177,14 +180,15 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 1, 0)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146', bit_mask=dq_test)
+        lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146',
+                        bit_mask=dq_test)
         # We have not implemented this option with a dq array yet
         with self.assertRaises(NotImplementedError):
             lin.make_linearity(poly_order=2, constrained=True)
@@ -198,7 +202,7 @@ class FitSingleTestCase(unittest.TestCase):
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 1, 0)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146')
         # Check if the "correct" polynomial is still fit even if we change
         # input and output polynomial orders don't match
@@ -221,7 +225,7 @@ class LinearityMultiTestCase(unittest.TestCase):
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         noise1 = 0.005 * np.random.normal(size=y_test.shape)
         noise2 = 0.005 * np.random.normal(size=y_test.shape)
         noise3 = 0.005 * np.random.normal(size=y_test.shape)
@@ -234,17 +238,17 @@ class LinearityMultiTestCase(unittest.TestCase):
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
-        lin1 = Linearity(y_test+noise1, _meta, outfile=outfile,
+        lin1 = Linearity(y_test + noise1, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
                                            dtype=np.uint32))
-        lin2 = Linearity(y_test+noise2, _meta, outfile=outfile,
+        lin2 = Linearity(y_test + noise2, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
                                            dtype=np.uint32))
-        lin3 = Linearity(y_test+noise3, _meta, outfile=outfile,
+        lin3 = Linearity(y_test + noise3, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
@@ -258,36 +262,40 @@ class LinearityMultiTestCase(unittest.TestCase):
         lin3.make_linearity(poly_order=2)
         # Check that it works with one file
         with testing.assert_warns(Warning):
-            coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2, output_file=None)
+            coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2,
+                                                output_file=None)
             testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10], decimal=2)
         # Check with a list
-        coeffs, mask = make_linearity_multi([lin1], lin1.meta, poly_order=2, output_file=None)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        coeffs, mask = make_linearity_multi([lin1], lin1.meta, poly_order=2,
+                                            output_file=None)
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
 
-        # Check that it works with 3 objects (with 2 or more objects we homogeinize the data
+        # Check that it works with 3 objects (with 2 or more objects we fix the data
         # to slope 1 and intercept 0 to alllow for different bias levels and count rates)
         coeffs, mask = make_linearity_multi([lin1, lin2, lin3], lin1.meta,
                                             poly_order=2, output_file=None)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
         # Check that it works with the wrong poly order
-        coeffs, mask = make_linearity_multi([lin1, lin2], lin1.meta, poly_order=5, output_file=None)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        coeffs, mask = make_linearity_multi([lin1, lin2], lin1.meta,
+                                            poly_order=5, output_file=None)
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[3:, 10, 10], decimal=2)
         # Check returning uncertainty
         with testing.assert_warns(Warning):
-            coeffs, mask, err = make_linearity_multi(lin1, lin1.meta, poly_order=2, return_unc=True,
+            coeffs, mask, err = make_linearity_multi(lin1, lin1.meta, poly_order=2,
+                                                     return_unc=True,
                                                      output_file=None)
             testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10], decimal=2)
 
         coeffs, mask, err = make_linearity_multi([lin1], lin1.meta, poly_order=2,
                                                  output_file=None, return_unc=True)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
         coeffs, mask, err = make_linearity_multi([lin1, lin2], lin1.meta, poly_order=2,
                                                  return_unc=True, output_file=None)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
 
     def test_make_linearity_multi_dq_useunc(self):
@@ -297,10 +305,10 @@ class LinearityMultiTestCase(unittest.TestCase):
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
-        noise1 = 0.005*np.random.normal(size=y_test.shape)
-        noise2 = 0.005*np.random.normal(size=y_test.shape)
-        noise3 = 0.005*np.random.normal(size=y_test.shape)
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
+        noise1 = 0.005 * np.random.normal(size=y_test.shape)
+        noise2 = 0.005 * np.random.normal(size=y_test.shape)
+        noise3 = 0.005 * np.random.normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -310,17 +318,17 @@ class LinearityMultiTestCase(unittest.TestCase):
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
-        lin1 = Linearity(y_test+noise1, _meta, outfile=outfile,
+        lin1 = Linearity(y_test + noise1, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
                                            dtype=np.uint32))
-        lin2 = Linearity(y_test+noise2, _meta, outfile=outfile,
+        lin2 = Linearity(y_test + noise2, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
                                            dtype=np.uint32))
-        lin3 = Linearity(y_test+noise3, _meta, outfile=outfile,
+        lin3 = Linearity(y_test + noise3, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
@@ -330,36 +338,41 @@ class LinearityMultiTestCase(unittest.TestCase):
         lin2.make_linearity(poly_order=2)
         lin3.make_linearity(poly_order=2)
         with testing.assert_warns(Warning):
-            coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2, output_file=None,
+            coeffs, mask = make_linearity_multi(lin1, lin1.meta, poly_order=2,
+                                                output_file=None,
                                                 use_unc=True)
             testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10], decimal=2)
         # Check with a list
         with testing.assert_warns(Warning):
             # With a single element the variance is zero
-            coeffs, mask = make_linearity_multi([lin1], lin1.meta, poly_order=2, output_file=None,
+            coeffs, mask = make_linearity_multi([lin1], lin1.meta, poly_order=2,
+                                                output_file=None,
                                                 use_unc=True)
-            testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+            testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                         coeffs[:, 10, 10], decimal=2)
 
-        # Check that it works with 3 objects (with 2 or more objects we homogeinize the data
+        # Check that it works with 3 objects (with 2 or more objects we fix the data
         # to slope 1 and intercept 0 to alllow for different bias levels and count rates)
         coeffs, mask = make_linearity_multi([lin1, lin2, lin3], lin1.meta,
                                             poly_order=2, output_file=None, use_unc=True)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
         # Check that it works with the wrong poly order
-        coeffs, mask = make_linearity_multi([lin1, lin2], lin1.meta, poly_order=5, output_file=None,
+        coeffs, mask = make_linearity_multi([lin1, lin2], lin1.meta, poly_order=5,
+                                            output_file=None,
                                             use_unc=True)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[3:, 10, 10], decimal=2)
         # Check returning uncertainty
         with testing.assert_warns(Warning):
-            coeffs, mask, err = make_linearity_multi(lin1, lin1.meta, poly_order=2, return_unc=True,
+            coeffs, mask, err = make_linearity_multi(lin1, lin1.meta, poly_order=2,
+                                                     return_unc=True,
                                                      output_file=None, use_unc=True)
             testing.assert_almost_equal(poly_coeffs, coeffs[:, 10, 10], decimal=2)
         coeffs, mask, err = make_linearity_multi([lin1, lin2], lin1.meta, poly_order=2,
-                                                 return_unc=True, output_file=None, use_unc=True)
-        testing.assert_almost_equal((poly_coeffs[0]/poly_coeffs[1], 1, 0),
+                                                 return_unc=True, output_file=None,
+                                                 use_unc=True)
+        testing.assert_almost_equal((poly_coeffs[0], 1, 0),
                                     coeffs[:, 10, 10], decimal=2)
 
     def test_make_linearity_dq_ngrid(self):
@@ -369,9 +382,9 @@ class LinearityMultiTestCase(unittest.TestCase):
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
-        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with a (10, 40, 40) array
-        noise1 = 0.005*np.random.normal(size=y_test.shape)
-        noise2 = 0.005*np.random.normal(size=y_test.shape)
+        y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
+        noise1 = 0.005 * np.random.normal(size=y_test.shape)
+        noise2 = 0.005 * np.random.normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -381,12 +394,12 @@ class LinearityMultiTestCase(unittest.TestCase):
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         outfile = os.path.join(self.test_dir, 'roman_linearity.asdf')
-        lin1 = Linearity(y_test+noise1, _meta, outfile=outfile,
+        lin1 = Linearity(y_test + noise1, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
                                            dtype=np.uint32))
-        lin2 = Linearity(y_test+noise2, _meta, outfile=outfile,
+        lin2 = Linearity(y_test + noise2, _meta, outfile=outfile,
                          optical_element='F146',
                          bit_mask=np.zeros((y_test.shape[1],
                                            y_test.shape[2]),
@@ -399,8 +412,8 @@ class LinearityMultiTestCase(unittest.TestCase):
             make_linearity_multi([lin1], lin1.meta, poly_order=4, nframes_grid=3,
                                  clobber=True)
             with self.assertRaises(ValueError):
-                make_linearity_multi([lin1, lin2], lin1.meta, poly_order=4, nframes_grid=3,
-                                     clobber=True)
+                make_linearity_multi([lin1, lin2], lin1.meta, poly_order=4,
+                                     nframes_grid=3, clobber=True)
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(dir='./',

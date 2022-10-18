@@ -78,4 +78,5 @@ class ReferenceFile:
             if self.clobber:
                 os.remove(outfile)
             else:
-                raise FileExistsError(f'{outfile} already exists, and clobber={self.clobber}!')
+                raise FileExistsError(f'''{outfile} already exists,
+                                          and clobber={self.clobber}!''')
