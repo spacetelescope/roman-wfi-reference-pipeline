@@ -6,11 +6,30 @@ from astropy.stats import sigma_clipped_stats
 import warnings
 from collections.abc import Iterable
 import logging
+from romancal.lib import dqflags
+import yaml
+import pkg_resources
 
 logging.getLogger('stpipe').setLevel(logging.WARNING)
 log_file_str = 'linearity_dev.log'
 logging.basicConfig(filename=log_file_str, level=logging.INFO)
 logging.info(f'Dark reference file log: {log_file_str}')
+
+# dq flags
+key_nl = 'NONLINEAR'  # Pixel is non linear
+key_nlc = 'NO_LIN_CORR'  # No linear correction is available
+# I assume that this value corresponds when the fit is not good anymore
+# but I am not checking the residuals so this is not used so far
+flag_nl = dqflags.pixel[key_nl]
+# Using this one for failed fits
+flag_nlc = dqflags.pixel[key_nlc]
+
+# Load ancillary datacube
+data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.data",
+                                            "ancillary.yaml")
+with open(data_path, "r") as stream:
+    data_anc = yaml.safe_load(stream)
+print("Ancillary", data_anc, data_anc.keys())
 
 
 class Linearity(ReferenceFile):
@@ -57,14 +76,16 @@ class Linearity(ReferenceFile):
             pass
         self.times = None
 
-        # Potentially will write these couple of lines in an auxiliary file
-        if optical_element in ['GRISM', 'PRISM']:
-            self.times = 4.03 * np.arange(self.input_data.shape[0])
-        elif optical_element == 'DARK':
-            raise ValueError('Cannot use a DARK image to fit linearity.')
-        else:
-            self.times = 3.04 * np.arange(self.input_data.shape[0])
+        # Get whether we are in spectroscopic or imaging mode
+        im_mode = None
+        for key in data_anc['optical_elements'].keys():
+            if optical_element in data_anc['optical_elements'][key]:
+                im_mode = key
 
+        if (im_mode is None) or (im_mode == 'OTHER'):
+            raise ValueError('The selected optical element is DARK or not recognized')
+
+        self.times = data_anc['frame_time'][im_mode] * np.arange(self.input_data.shape[0])
         self.fit_complete = False
         self.poly_order = None
         self.coeffs = None
@@ -137,7 +158,7 @@ class Linearity(ReferenceFile):
         else:
             raise NotImplementedError
         # Mask bad pixels
-        self.mask[np.where(np.isnan(coeffs))[1:]] += 2**20
+        self.mask[np.where(np.isnan(coeffs))[1:]] += flag_nlc
         self.coeffs = coeffs
         self.fit_complete = True
         self.poly_order = poly_order
@@ -423,7 +444,7 @@ def _save_linearity(outfile, meta, coeffs, mask, clobber=False, unc=None):
     linearityfile['coeffs'] = coeffs
     nonlinear_pixels = (mask == float('NaN')) | (coeffs[0, :, :] == float('NaN'))
     nonlinear_pixels = np.where(nonlinear_pixels)
-    mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
+    mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
     coeffs[coeffs == float('NaN')] = 0  # Set to zero the NaN pixels
     linearityfile['dq'] = mask
     if unc is not None:
