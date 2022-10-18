@@ -27,9 +27,10 @@ class Linearity(ReferenceFile):
         Parameters
         ----------
 
-        linearity_image: numpy.ndarray; Input (typically a flat-field image) image used to perform
-            the linearity fit. It populates self.data.
-        out_meta_data: dict; Metadata that will populate the output linearity reference file.
+        linearity_image: numpy.ndarray; Input (typically a flat-field image) image used
+         to perform the linearity fit. It populates self.data.
+        out_meta_data: dict; Metadata that will populate the output linearity reference
+         file.
         clobber: bool; If True, overwrite previously generated linearity file in outfile.
         outfile: str; Path to output linearity file. (Default: roman_linearity.asdf).
         bit_mask: numpy.ndarray; Input mask (dq array from the flat file to use).
@@ -115,7 +116,7 @@ class Linearity(ReferenceFile):
             # In order to fix coefficients we have to do some math.
             # Based on solution here:
             # https://stackoverflow.com/questions/48469889/how-to-fit-a-polynomial-with-some-of-the-coefficients-constrained
-            V = np.vander(time, poly_order+1)
+            V = np.vander(time, poly_order + 1)
             # Removing the last column of the Vandermonde matrix
             # is equivalent to setting a0 to 0 -> they go from order n to 0
             V = np.delete(V, -1, axis=1)
@@ -129,7 +130,7 @@ class Linearity(ReferenceFile):
             coeffs, _, _, _ = np.linalg.lstsq(V, img_arr, rcond=None)
             coeffs = coeffs.reshape(-1, npix_0, npix_1)
             # Insert the slope=1 and intercept=0
-            coeffs = np.insert(coeffs, poly_order-1,
+            coeffs = np.insert(coeffs, poly_order - 1,
                                np.ones((npix_0, npix_1)), axis=0)
             coeffs = np.insert(coeffs, poly_order,
                                np.zeros((npix_0, npix_1)), axis=0)
@@ -152,7 +153,8 @@ class Linearity(ReferenceFile):
         self.clobber = clobber
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
-        _save_linearity(self.outfile, self.meta, self.coeffs, self.mask, clobber=self.clobber)
+        _save_linearity(self.outfile, self.meta, self.coeffs, self.mask,
+                        clobber=self.clobber)
 
 
 def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
@@ -182,7 +184,8 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
             dq = np.ones(datacube.shape[0])[:, None, None] * dq
         elif len(dq.shape) == 3:
             if (dq.shape != datacube.shape):
-                raise ValueError('A 3d dq array should have the same dimensions as the datacube')
+                raise ValueError('''A 3d dq array should have the same
+                                    dimensions as the image datacube''')
             else:
                 pass
         else:
@@ -209,7 +212,8 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
         # Check if all the reads were bad, and if so, just mask everything
         if base_read == len(time):
             return 0
-        _, _, std = sigma_clipped_stats(datacube[base_read, :, :][dq[base_read, :, :] == 0])
+        good_dqs = dq[base_read, :, :] == 0
+        _, _, std = sigma_clipped_stats(datacube[base_read, :, :][good_dqs])
     else:
         _, _, std = sigma_clipped_stats(datacube[base_read, :, :])
 
@@ -220,14 +224,14 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     if dq is None:
         try:
             # Get the first frame at which there are some signs of saturation in a pixel
-            nframes = np.where(grad < nsigma*std)[0][0]  # TODO: check this with not even spacing
+            nframes = np.where(grad < nsigma * std)[0][0]
         except IndexError:
             # If there are no saturated frames, we use all of them
             nframes = datacube.shape[0]
     else:
         try:
-            # When applying a mask, it flattens the arrray, so we need to unravel the indices
-            nframes = np.unravel_index(np.where(grad[dq == 0] < nsigma*std)[0][0],
+            # When applying a mask, it flattens the arrray, so we need to unravel
+            nframes = np.unravel_index(np.where(grad[dq == 0] < nsigma * std)[0][0],
                                        datacube.shape)[0]
         except IndexError:
             # If there are no saturated frames, we use all of them
@@ -311,22 +315,27 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                 # Here we compute the mean of the polynomial evaluated in a grid
                 # as suggested by S. Casertano
                 for lin in use_lin:
-                    if constrained:  # The different count rates are already taken into account
+                    if constrained:  # The different count rates are already accounted for
                         img_arr_all += np.polyval(lin.coeffs, t_grid[:, None, None])
                     else:
                         # It the slope and intercept are not 1, and the count rates
                         # are different, we have to normalize everything to the same
                         # count rate.
-                        img_arr_all += (np.polyval(lin.coeffs, t_grid[:, None, None]) -
-                                        (lin.coeffs[lin.poly_order, :] - lin.coeffs[lin.poly_order-1, :])
+                        # Evaluate polynomial
+                        aux_img = np.polyval(lin.coeffs, t_grid[:, None, None])
+                        # Subtract intercept to make it zero
+                        aux_img -= lin.coeffs[lin.poly_order, :]
+                        # Subtract linear term (and leave slope 1)
+                        aux_sl = lin.coeffs[lin.poly_order - 1, :] - 1
+                        aux_img -= aux_sl * t_grid[:, None, None]
+                        img_arr_all += aux_img
                         if use_unc:
                             # This is to get the std as <mean^2> - <mean>^2
                             if constrained:
-                                img_arr_all_sq += np.polyval(lin.coeffs, t_grid[:, None, None])**2
+                                img_arr_all_sq += np.polyval(lin.coeffs,
+                                                             t_grid[:, None, None])**2
                             else:
-                                img_arr_all_sq += ((np.polyval(lin.coeffs, t_grid[:, None, None]) -
-                                                    lin.coeffs[lin.poly_order, :]) /
-                                                   lin.coeffs[lin.poly_order-1, :])**2
+                                img_arr_all_sq += aux_img**2
                 # Now we have the sum of the polynomials in the image
                 img_arr_all /= len(use_lin)  # <X>
 
@@ -349,7 +358,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                                                   poly_order,
                                                   cov=return_unc)
                         err = np.sqrt(np.diagonal(_cov, axis1=0, axis2=1)).T
-                    # We do not want to use the weights nor want an uncertainty on the fits
+                    # We do not want to use the weights nor want an uncertainty on the fit
                     else:
                         coeffs = np.polyfit(t_grid,
                                             img_arr_all.reshape(nframes_grid, -1),
@@ -358,10 +367,11 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
 
                 # Case where we want to use the uncertainties as weights
                 else:
-                    wgt = 1./var
-                    wgt[~np.isfinite(wgt)] = 0.  # Just set to zero the weight of NaN and infs
+                    wgt = 1. / var
+                    # non-finite entries have zero weight
+                    wgt[~np.isfinite(wgt)] = 0.
                     # Multiplying weights and measurements
-                    wy = wgt*img_arr_all
+                    wy = wgt * img_arr_all
                     wy = wy.reshape(nframes_grid, -1)
                     # Clear memory
                     del(img_arr_all_sq)
@@ -369,7 +379,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                     # Here is where the linear algebra fun starts...
                     # using the weighted least squares estimator
                     # https://en.wikipedia.org/wiki/Weighted_least_squares
-                    V = np.vander(t_grid, poly_order+1)
+                    V = np.vander(t_grid, poly_order + 1)
                     _aux1 = np.einsum('ij, ik, il', V, wgt.reshape(nframes_grid, -1), V)
                     _aux1 = np.linalg.inv(_aux1.swapaxes(1, 0))  # (V^T W V)^-1
                     _aux2 = np.einsum('ijk, lj', _aux1, V)  # (V^T W V)^-1 V^T
@@ -379,7 +389,7 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                         err = np.sqrt(np.diagonal(_aux1, axis1=1, axis2=2))
                         err = err.T.reshape(-1, npx0, npx1)
 
-                    coeffs = coeffs.reshape((poly_order+1, npx0, npx1))
+                    coeffs = coeffs.reshape((poly_order + 1, npx0, npx1))
     else:
         raise ValueError('Linearity images not fit!')
 
@@ -402,8 +412,8 @@ def _save_linearity(outfile, meta, coeffs, mask, clobber=False, unc=None):
     ----------
     outfile: str; Output path for the linearity file.
     meta: dict; Metadata of the output file.
-    coeffs: numpy.ndarray; Array containing the values of the coefficient of the polynomial
-        fit for the linearity reference file.
+    coeffs: numpy.ndarray; Array containing the values of the coefficient of the
+     polynomial fit for the linearity reference file.
     mask: numpy.ndarray; Output bit mask.
     clobber: bool; If True, it allows overwritting a previous linearity file.
     unc: numpy.ndarray; Uncertainty of the coefficients, coeffs.
@@ -411,8 +421,8 @@ def _save_linearity(outfile, meta, coeffs, mask, clobber=False, unc=None):
     linearityfile = rds.LinearityRef()
     linearityfile['meta'] = meta
     linearityfile['coeffs'] = coeffs
-    nonlinear_pixels = np.where((mask == float('NaN')) |
-                                (coeffs[0, :, :] == float('NaN')))
+    nonlinear_pixels = (mask == float('NaN')) | (coeffs[0, :, :] == float('NaN'))
+    nonlinear_pixels = np.where(nonlinear_pixels)
     mask[nonlinear_pixels] += 2 ** 20  # linearity correction not available
     coeffs[coeffs == float('NaN')] = 0  # Set to zero the NaN pixels
     linearityfile['dq'] = mask
