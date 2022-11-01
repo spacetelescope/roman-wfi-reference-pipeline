@@ -61,24 +61,24 @@ class Flat(ReferenceFile):
         self.check_output_file(self.outfile)
 
         # Normalize the flat_image by the sigma-clipped mean.
-        mean, _, _ = sigma_clipped_stats(self.data)
-        self.data /= mean
+        mean, _, _ = sigma_clipped_stats(self.input_data)
+        self.input_data /= mean
 
         # Generate between 200-300 pixels with low qe
         rand_num_lowqe = np.random.randint(200, 300)
         coords_x = np.random.randint(0, 4088, rand_num_lowqe)
         coords_y = np.random.randint(0, 4088, rand_num_lowqe)
         rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
-        self.data[coords_x, coords_y] = rand_low_qe_values
+        self.input_data[coords_x, coords_y] = rand_low_qe_values
 
         # Add DQ flag for low QE pixels.
-        low_qe_pixels = np.where(self.data < low_qe_threshold)
+        low_qe_pixels = np.where(self.input_data < low_qe_threshold)
         self.mask[low_qe_pixels] += 2 ** low_qe_bit
 
         # Construct the flat field object from the data model.
         flatfile = rds.FlatRef()
         flatfile['meta'] = self.meta
-        flatfile['data'] = self.data
+        flatfile['data'] = self.input_data
         flatfile['dq'] = self.mask
         flatfile['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
 

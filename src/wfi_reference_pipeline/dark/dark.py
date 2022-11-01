@@ -24,11 +24,37 @@ class Dark(ReferenceFile):
     frame resultants.
     """
 
-    def __init__(self, dark_read_cube=None, meta_data=None, bit_mask=None, clobber=False, outfile=None,
-                 dark_filelist=None):
+    def __init__(self, dark_filelist, meta_data=None, bit_mask=None, clobber=False, outfile=None,
+                 dark_read_cube=None):
+        """
+        The __init__ method initializes the class with proper data nedded to be sent to the ReferenceFile
+        file base class. The general input data sent to ReferenceFile by the Dark class is a list of filename
+        string objects. Meta_data is populated or modified at certain points in the dark reference file creation
+        such as the number of resultants in an MA table. Outfile is the output filename and path to be written
+        to disk.
+
+        Parameters
+        ----------
+        dark_filelist: string object; default = None
+            List of dark filenames with absolute paths. If no filelist provided, an input dark read cube
+            should be supplied for MA table resampling to create dark reference file.
+        meta_data: dictionary; default = None
+            Dictionary of information for dark reference file as required by romandatamodels
+        outfile: string; default = None
+            Outfile defined as roman_dark.asdf if no outfile given and Dark class save_dark() method is executed.
+        dark_read_cube: numpy array; default = None
+            Cube of dark reads to be resampled into MA table specific dark reference file. Dimensions
+            of ni x ni x n_reads, where ni is the number of pixels of a square array of the detector by the
+            number of reads (n_reads) in the integration.  NOTE: For parallelization only square arrays allowed.
+            dimensions of dark_read_cube = [ni,ni,n_reads]
+
+        Returns
+        -------
+        None
+        """
 
         # Access methods of base class ReferenceFile
-        super(Dark, self).__init__(dark_read_cube, meta_data, bit_mask=bit_mask, clobber=clobber)
+        super(Dark, self).__init__(dark_filelist, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
         # Update metadata with dark file type info if not included.
         if 'description' not in self.meta.keys():
@@ -45,14 +71,13 @@ class Dark(ReferenceFile):
         logging.info(f'Default dark reference file object: {outfile} ')
 
         # Object attributes for master dark
-        self.dark_filelist = dark_filelist
         self.master_dark = None
         # Object attributes for resampled darks
         self.dark_read_cube = dark_read_cube
         self.resampled_dark_cube = None
         self.resampled_dark_cube_err = None
 
-    def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0):
+    def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0, write_md=1):
         """
         The method make_master_dark() ingests all files located in a directory as a python object list of
         file names with absolute path. A master dark is created by iterating through each read of every
@@ -77,32 +102,30 @@ class Dark(ReferenceFile):
         -------
         None
         """
-        logging.info(f'Using files {self.dark_filelist[0][:34]} to construct master dark object.')
+        logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to construct master dark object.')
 
-        # array of variable number of reads in sample dark files simulating calibration plan
-        # for development and testing purposes ahead of simulated asdf files
-        test_len_arr = [70, 90, 90, 110, 110, 90, 70, 70, 110, 110, 90, 70]
+        # for next phase of development query what file types are in directory, HDF5, fits, asdf,
+        # then cycle through to find longest number of reads to initialize master dark and have all
+        # data converted into a numpy array
         tmp_reads = []
-        for fl in range(0, len(self.dark_filelist)):
-            ftmp = asdf.open(self.dark_filelist[fl], validate_on_read=False)
-            #n_reads, _, _ = ftmp['roman']['data'].shape[0]
-            n_reads, _, _ = np.shape(ftmp.tree['roman']['data'])
-            # n_reads = test_len_arr[fl]
+        for fl in range(0, len(self.input_data)):
+            ftmp = asdf.open(self.input_data[fl], validate_on_read=False)
+            n_reads, ni, _ = np.shape(ftmp.tree['roman']['data'])
             tmp_reads.append(n_reads)
         num_reads_set = [*set(tmp_reads)]
 
         # The master dark length is the maximum number of reads in all dark asdf files to be used
         # when creating the dark reference file. Need to "try" over files with different lengths
         # to compute average read by read for all files
-        self.master_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
+        self.master_dark = np.zeros((np.max(num_reads_set), ni, ni), dtype=np.float32)
         # This method of opening and close each file read by read is file I/O intensive however
         # it is efficient on memory usage. Compare memory and time for stress tests.
         logging.info(f'Reading dark asdf files read by read to compute average for master dark.')
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
             logging.info(f'On read {rd} of {np.max(num_reads_set)}')
-            for fl in range(0, len(self.dark_filelist)):
-                ftmp = asdf.open(self.dark_filelist[fl], validate_on_read=False)
+            for fl in range(0, len(self.input_data)):
+                ftmp = asdf.open(self.input_data[fl], validate_on_read=False)
                 rd_tmp = ftmp.tree['roman']['data']
                 dark_read_cube.append(rd_tmp[rd, :, :])
                 del ftmp, rd_tmp
@@ -114,7 +137,19 @@ class Dark(ReferenceFile):
             del clipped_reads
             gc.collect()  # clean up memory
 
+        # write master dark to disk for use by other modules
+        # or as a means for module development to load a numpy array that is the master dark
+        # attribute but does not have to run the make_master_dark() method
+
+        if write_md == 1:
+            master_dark_fl_str = 'master_dark_cube.dat'
+            master_dark_dat_fl = os.path.dirname(self.input_data[0]) + '/' + master_dark_fl_str
+            fp = np.memmap(master_dark_dat_fl, dtype='float32', mode='w+', shape=(n_reads, ni, ni))
+            logging.info(f'Master dark cube written to file in directory as: {master_dark_fl_str}')
+
         # set reference pixel border to zero for master dark
+        # this needs to be done differently for multi sub array jigsaw handling
+        # move to when making the mask and final stitching together different pieces to do the border
         self.master_dark[:, :4, :] = 0.
         self.master_dark[:, -4:, :] = 0.
         self.master_dark[:, :, :4] = 0.
@@ -154,14 +189,16 @@ class Dark(ReferenceFile):
         ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
         ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
         ma_tab_read_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
-        ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
-        logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID} for the '
-                     f'{ma_tab_name}, with {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
+        ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
+        logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID}.')
+        logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
                      f' reads per resultant.')
         # generate time array for exposure sequence for ramp fitting and error and variance calcs
         # first instance of attribute in Dark class
         self.exp_time_arr = [ma_tab_read_time * i for i in
                              range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)]
+        logging.info(f'Constructed exposure time array sequence from MA table information on read spacing, skips,'
+                     f'and number of resultants')
 
         # check if we should write this meta data here or update the dictionary key values
         self.meta['exposure'] = {'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
@@ -201,19 +238,17 @@ class Dark(ReferenceFile):
         None.
         """
 
-        # depending on how the Dark() class is first initialized set the dark_read_cube to
-        # the self.master_dark if it was made or use self.data if it exists
-        if self.master_dark is not None:
+        # control and messaging depending on how the Dark() class is initialized
+        if self.dark_read_cube is not None:
+            logging.info(f'Input dark read cube used for MA table resampling.')
+        if self.input_data is not None and self.dark_read_cube is None:
             self.dark_read_cube = self.master_dark
-            logging.info(f'Master dark is being used for MA table resampling.')
-        if self.data is not None:
-            self.dark_read_cube = self.data
-            logging.info(f'Input dark read cube is being used for MA table resampling.')
-        n_reads, ni, nj = np.shape(self.dark_read_cube)
+            logging.info(f'Master dark created from input filelist used for MA table resampling.')
+        n_reads, ni, _ = np.shape(self.dark_read_cube)
 
         # initialize dark cube, error, and time arrays with number of resultants from inputs
-        self.resampled_dark_cube = np.zeros((num_resultants, 4096, 4096), dtype=np.float32)
-        self.resampled_dark_cube_err = np.zeros((num_resultants, 4096, 4096), dtype=np.float32)
+        self.resampled_dark_cube = np.zeros((num_resultants, ni, ni), dtype=np.float32)
+        self.resampled_dark_cube_err = np.zeros((num_resultants, ni, ni), dtype=np.float32)
         self.resampled_dark_time_arr = np.zeros((num_resultants), dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
@@ -229,8 +264,9 @@ class Dark(ReferenceFile):
             # to do next phase, implement equation 14 here
 
         logging.info(f'MA table resampling with {num_resultants} resultants averaging {reads_per_resultant}'
-                     f' reads per resultant complete. Updated meta data. Error arrays initialized with zeros. '
-                     f'Run calc_dark_err_metrics() to calculate errors.')
+                     f' reads per resultant complete.')
+        logging.info(f'Updated meta data with MA Table information.')
+        logging.info(f'Error arrays initialized with zeros. Run calc_dark_err_metrics() to calculate errors.')
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010,
                               hot_pixel_bit=11, warm_pixel_bit=12):
@@ -261,18 +297,18 @@ class Dark(ReferenceFile):
         """
         logging.info(f'Computing dark variance and CDS noise values.')
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
-        num_resultants, ni, nj = np.shape(self.resampled_dark_cube)
+        num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
         slopes, variances = np.polyfit(self.resampled_dark_time_arr,
                                        self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr), -1), 1)
 
         # reshape results back to 2D arrays
-        self.dark_rate_image = slopes.reshape(ni, nj)
-        self.dark_rate_image_var = variances.reshape(ni, nj)
+        self.dark_rate_image = slopes.reshape(ni, ni)
+        self.dark_rate_image_var = variances.reshape(ni, ni)
 
         # calculate correlated double sampling between pairs of successive reads - the read noise
         # consider making this its own module in RFP utilities - CDS_noise() module and method
-        n_reads, _, _ = np.shape(self.dark_read_cube)
-        read_diff_cube = np.zeros((math.ceil(n_reads / 2), 4096, 4096), dtype=np.float32)
+        n_reads, ni, _ = np.shape(self.dark_read_cube)
+        read_diff_cube = np.zeros((math.ceil(n_reads / 2), ni, ni), dtype=np.float32)
         for i_read in range(0, n_reads-1, 2):
             # n_reads-1 skip last pair to avoid index error if n_reads is odd
             logging.info(f'Calculating correlated double sampling between frames {i_read} and {i_read+1}')
@@ -304,10 +340,13 @@ class Dark(ReferenceFile):
         _, num_warm_pixels = np.shape(warm_pixels)
         logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
 
-    def save_dark_ref_file(self):
+    def save_dark(self):
         """
         The method save_dark_file() writes the resampled dark cube into an asdf
         file to be saved somewhere on disk.
+
+        NOTE: Consider this method to stitch chunks of jigsaw approach of subarrays back together
+        into the dimensions for writing the final version of the asdf reference file.
 
         Returns
         -------
