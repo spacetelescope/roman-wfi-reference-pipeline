@@ -1,12 +1,15 @@
 import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
-import psutil, sys, os, glob, time, gc, asdf, logging, math
+import psutil, sys, os, glob, time, gc, asdf, logging, math, datetime
 import numpy as np
 from astropy.stats import sigma_clip
+from astropy.time import Time
 import pandas as pd
 from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
+
+
 
 # Squash logging messages from stpipe.
 logging.getLogger('stpipe').setLevel(logging.WARNING)
@@ -17,11 +20,12 @@ logging.info(f'Dark reference file log: {log_file_str}')
 
 class Dark(ReferenceFile):
     """
-    Class Dark() inherits the ReferenceFile() base class methods
-    where static meta data for all reference file types are written. The
-    method make_dark() implements specified MA table properties (number of
-    reads per resultant). The dark asdf file has contains the averaged dark
-    frame resultants.
+    Class Dark() inherits the ReferenceFile() base class methods where static meta data for all reference
+    file types are written. Under automated operations conditions, a list of dark files from a directory
+    will be the input into the class to begin generating a dark reference file. A master dark cube of all
+    available reads taken during a single observation go through outlier rejection and then averaging per
+    a multi-accumulation prescription that is accessed from a database. The resampled dark has metrics like
+    variance and hot pixels tabulated and identified in corresponding file extensions and is then saved.
     """
 
     def __init__(self, dark_filelist, meta_data=None, bit_mask=None, clobber=False, outfile=None,
@@ -77,7 +81,7 @@ class Dark(ReferenceFile):
         self.resampled_dark_cube = None
         self.resampled_dark_cube_err = None
 
-    def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0, write_md=1):
+    def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0):
         """
         The method make_master_dark() ingests all files located in a directory as a python object list of
         file names with absolute path. A master dark is created by iterating through each read of every
@@ -137,16 +141,6 @@ class Dark(ReferenceFile):
             del clipped_reads
             gc.collect()  # clean up memory
 
-        # write master dark to disk for use by other modules
-        # or as a means for module development to load a numpy array that is the master dark
-        # attribute but does not have to run the make_master_dark() method
-
-        if write_md == 1:
-            master_dark_fl_str = 'master_dark_cube.dat'
-            master_dark_dat_fl = os.path.dirname(self.input_data[0]) + '/' + master_dark_fl_str
-            fp = np.memmap(master_dark_dat_fl, dtype='float32', mode='w+', shape=(n_reads, ni, ni))
-            logging.info(f'Master dark cube written to file in directory as: {master_dark_fl_str}')
-
         # set reference pixel border to zero for master dark
         # this needs to be done differently for multi sub array jigsaw handling
         # move to when making the mask and final stitching together different pieces to do the border
@@ -155,6 +149,36 @@ class Dark(ReferenceFile):
         self.master_dark[:, :, :4] = 0.
         self.master_dark[:, :, -4:] = 0.
         logging.info(f'Master dark attribute created.')
+
+    def save_master_dark(self, md_outfile=None):
+        """
+        The method save_master_dark with default conditions will write the master dark cube into an asdf
+        file for each detector in the directory from which the input files where pointed to and used to
+        construct the master dark read cube. A user can specific an absolute path or relative file string
+        to write their own master dark file name.
+
+        Parameters
+        ----------
+        md_outfile: str; default = None
+            File string. Absolute or relative path for optional input.
+            By default, None is provided but the method below generates the asdf file string from meta
+            data of the input files such as date and detector number  (i.e. WFI01)
+
+        Returns
+        -------
+        None
+        """
+
+        meta_md = {'pedigree': "GROUND", 'description': "Generated from Reference File Pipeline",
+                   'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
+        if md_outfile is None:
+            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector']+'_master_dark.asdf'
+        self.check_output_file(md_outfile)
+        logging.info(f'Saving master dark to disk.')
+
+        af = asdf.AsdfFile()
+        af.tree = {'meta': meta_md, 'data': self.master_dark}
+        af.write_to(md_outfile)
 
     def get_ma_table_info(self, ma_table_ID):
         """
@@ -193,10 +217,10 @@ class Dark(ReferenceFile):
         logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID}.')
         logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
                      f' reads per resultant.')
-        # generate time array for exposure sequence for ramp fitting and error and variance calcs
+        # generate time array for exposure sequence for ramp fitting
         # first instance of attribute in Dark class
-        self.exp_time_arr = [ma_tab_read_time * i for i in
-                             range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)]
+        self.exp_time_arr = np.array([ma_tab_read_time * i for i in
+                             range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)])
         logging.info(f'Constructed exposure time array sequence from MA table information on read spacing, skips,'
                      f'and number of resultants')
 
@@ -249,7 +273,7 @@ class Dark(ReferenceFile):
         # initialize dark cube, error, and time arrays with number of resultants from inputs
         self.resampled_dark_cube = np.zeros((num_resultants, ni, ni), dtype=np.float32)
         self.resampled_dark_cube_err = np.zeros((num_resultants, ni, ni), dtype=np.float32)
-        self.resampled_dark_time_arr = np.zeros((num_resultants), dtype=np.float32)
+        self.resampled_dark_time_arr = np.zeros(num_resultants, dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
         for i_res in range(0, num_resultants):
@@ -295,15 +319,39 @@ class Dark(ReferenceFile):
         NOTE: The determination of hot and warm pixel rates and sigma values are only referenced as a best guess
         at what we should consider for setting these values. Likely to change or be more informed post-TVAC.
         """
-        logging.info(f'Computing dark variance and CDS noise values.')
+        logging.info(f'Computing dark image variance and noise.')
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
         num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
-        slopes, variances = np.polyfit(self.resampled_dark_time_arr,
-                                       self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr), -1), 1)
+        p, cov = np.polyfit(self.resampled_dark_time_arr,
+                            self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr), -1),
+                            1, full=False, cov=True)
+
+        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
+        print('Memory before dark rate images and model = {:.1f} MB'.format(mem2))
 
         # reshape results back to 2D arrays
-        self.dark_rate_image = slopes.reshape(ni, ni)
-        self.dark_rate_image_var = variances.reshape(ni, ni)
+        self.dark_rate_image = p[0].reshape(ni, ni)
+        self.dark_intercept_image = p[1].reshape(ni, ni)
+        self.dark_rate_var = cov[0, 0, :].reshape(ni, ni)
+
+        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
+        print('Memory after images saved to self = {:.1f} MB'.format(mem2))
+
+        self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_time_arr), ni, ni), dtype=np.float32)
+        for tt in range(0,len(self.resampled_dark_time_arr)):
+            self.resampled_dark_cube_model[tt,:,:] = self.dark_rate_image * self.resampled_dark_time_arr[tt] + \
+                                                     self.dark_intercept_image # y = m*x + b only 300 MB of memory
+
+        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
+        print('Memory after resampled dark cube model created = {:.1f} MB'.format(mem2))
+
+        print("making the dark read cube model - NO RESAMPLING")
+        self.dark_cube_model = np.zeros((len(self.dark_read_cube), ni, ni), dtype=np.float32)
+        for tt in range(0,len(self.exp_time_arr)):
+            self.dark_cube_model[tt,:,:] = self.dark_rate_image * self.exp_time_arr[tt] + \
+                                                     self.dark_intercept_image # y
+        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
+        print('Memory after dark cube model = {:.1f} MB'.format(mem2))
 
         # calculate correlated double sampling between pairs of successive reads - the read noise
         # consider making this its own module in RFP utilities - CDS_noise() module and method
@@ -324,7 +372,7 @@ class Dark(ReferenceFile):
         # next step is to implement general error measurements of variance in unevenly spaced resultant and slope
         # fitting memo
         for i_result in range(0,num_resultants):
-            self.resampled_dark_cube_err[i_result, :, :] = (cds_noise**2 + self.dark_rate_image_var**2)**0.5
+            self.resampled_dark_cube_err[i_result, :, :] = (cds_noise**2 + self.dark_rate_var)**0.5
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # locate hot and warm pixel ni,nj positions in 2D array
@@ -360,6 +408,7 @@ class Dark(ReferenceFile):
 
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
+        logging.info(f'Writing new dark reference file to disk.')
 
         dark_file = rds.DarkRef()
         dark_file['data'] = self.resampled_dark_cube

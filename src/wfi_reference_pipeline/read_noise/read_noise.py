@@ -9,7 +9,9 @@ class ReadNoise(ReferenceFile):
     """
     Class ReadNoise() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written. The
-    method make_read_noise() creates the asdf readnoise file.
+    method make_dark() implements specified MA table properties (number of
+    reads per resultant). The dark asdf file has contains the averaged dark
+    frame resultants.
     """
 
     #def __init__(self, zero1, zero2):
