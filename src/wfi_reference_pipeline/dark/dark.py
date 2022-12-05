@@ -9,8 +9,6 @@ from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
 
-
-
 # Squash logging messages from stpipe.
 logging.getLogger('stpipe').setLevel(logging.WARNING)
 log_file_str = 'dark_dev.log'
@@ -74,12 +72,17 @@ class Dark(ReferenceFile):
         self.outfile = outfile if outfile else 'roman_dark.asdf'
         logging.info(f'Default dark reference file object: {outfile} ')
 
-        # Object attributes for master dark
-        self.master_dark = None
-        # Object attributes for resampled darks
-        self.dark_read_cube = dark_read_cube
-        self.resampled_dark_cube = None
-        self.resampled_dark_cube_err = None
+        # Other object attributes
+        self.master_dark = None  # cube of all averaged reads
+        self.dark_read_cube = dark_read_cube  # a user specified cube of reads
+        self.ma_table_sequence = None  # place holder attribute to generalize even or unevenly spaced resultants and
+        # how to construct averaged resultants from the master dark or dark read cube
+        self.resampled_dark_cube = None  # MA table averaged read cube
+        self.resampled_dark_cube_err = None  # MA table averaged read cube error
+        self.time_seq = None  # a time array constructed from the MA table specs, which incorporates the mode type
+        # either imaging or spectral and corresponding integration times according to number of reads in MA table
+        self.resampled_time_seq = None  # the averaged time for MA table evenly spaced resultants
+        self.resultant_tau_seq = None  # the variance-based resultant time tau_i from Casterano et al. 2022 equation 14
 
     def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0):
         """
@@ -162,17 +165,20 @@ class Dark(ReferenceFile):
         md_outfile: str; default = None
             File string. Absolute or relative path for optional input.
             By default, None is provided but the method below generates the asdf file string from meta
-            data of the input files such as date and detector number  (i.e. WFI01)
+            data of the input files such as date and detector number  (i.e. WFI01) in the filename.
 
         Returns
         -------
-        None
+        af: asdf file tree: {meta, data}
+            meta: master dark meta data
+            data: master dark sigma clipped averaged reads
         """
 
-        meta_md = {'pedigree': "GROUND", 'description': "Generated from Reference File Pipeline",
+        meta_md = {'pedigree': "GROUND", 'description': "Master dark internal reference file calibration product"
+                                                        "generated from Reference File Pipeline",
                    'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
         if md_outfile is None:
-            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector']+'_master_dark.asdf'
+            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector'] + '_master_dark.asdf'
         self.check_output_file(md_outfile)
         logging.info(f'Saving master dark to disk.')
 
@@ -217,14 +223,15 @@ class Dark(ReferenceFile):
         logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID}.')
         logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
                      f' reads per resultant.')
-        # generate time array for exposure sequence for ramp fitting
-        # first instance of attribute in Dark class
-        self.exp_time_arr = np.array([ma_tab_read_time * i for i in
-                             range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)])
+        # generate time array for exposure sequence from ma table information
+        # for even spacing use below - for uneven spacing will ingest integer or character sequence from ma table
+        # to generate time array - this is mode specific (imaging or spectral)
+        self.time_seq = np.array([ma_tab_read_time * i for i in
+                                  range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)])
         logging.info(f'Constructed exposure time array sequence from MA table information on read spacing, skips,'
                      f'and number of resultants')
 
-        # check if we should write this meta data here or update the dictionary key values
+        # check how we should get and write this meta data here and now or not?
         self.meta['exposure'] = {'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
                                  'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_ID,
                                  'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
@@ -273,7 +280,7 @@ class Dark(ReferenceFile):
         # initialize dark cube, error, and time arrays with number of resultants from inputs
         self.resampled_dark_cube = np.zeros((num_resultants, ni, ni), dtype=np.float32)
         self.resampled_dark_cube_err = np.zeros((num_resultants, ni, ni), dtype=np.float32)
-        self.resampled_dark_time_arr = np.zeros(num_resultants, dtype=np.float32)
+        self.resampled_time_seq = np.zeros(num_resultants, dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
         for i_res in range(0, num_resultants):
@@ -282,10 +289,11 @@ class Dark(ReferenceFile):
             if i2 > n_reads:
                 break
             self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
-            # to handle upscope with variance-based resultant time - tau_i in uneven spaced resultant
-            # if evenly spaced, equation 14 reduces to below
-            self.resampled_dark_time_arr[i_res] = np.mean(self.exp_time_arr[i1:i2])
-            # to do next phase, implement equation 14 here
+
+            # NOTE: Below needs to be updated for the generalized unevenly spaced resultant time tau in Casternao et al
+            # from equation 14 handling the variance-based resultant time - tau_i
+            # if evenly spaced should just be the mid point average of read times composing the resultant
+            self.resampled_time_seq[i_res] = np.mean(self.time_seq[i1:i2])
 
         logging.info(f'MA table resampling with {num_resultants} resultants averaging {reads_per_resultant}'
                      f' reads per resultant complete.')
@@ -322,57 +330,15 @@ class Dark(ReferenceFile):
         logging.info(f'Computing dark image variance and noise.')
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
         num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
-        p, cov = np.polyfit(self.resampled_dark_time_arr,
-                            self.resampled_dark_cube.reshape(len(self.resampled_dark_time_arr), -1),
-                            1, full=False, cov=True)
-
-        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
-        print('Memory before dark rate images and model = {:.1f} MB'.format(mem2))
+        p, V = np.polyfit(self.resampled_time_seq,
+                          self.resampled_dark_cube.reshape(len(self.resampled_time_seq), -1),
+                          1, full=False, cov=True)
 
         # reshape results back to 2D arrays
-        self.dark_rate_image = p[0].reshape(ni, ni)
-        self.dark_intercept_image = p[1].reshape(ni, ni)
-        self.dark_rate_var = cov[0, 0, :].reshape(ni, ni)
-
-        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
-        print('Memory after images saved to self = {:.1f} MB'.format(mem2))
-
-        self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_time_arr), ni, ni), dtype=np.float32)
-        for tt in range(0,len(self.resampled_dark_time_arr)):
-            self.resampled_dark_cube_model[tt,:,:] = self.dark_rate_image * self.resampled_dark_time_arr[tt] + \
-                                                     self.dark_intercept_image # y = m*x + b only 300 MB of memory
-
-        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
-        print('Memory after resampled dark cube model created = {:.1f} MB'.format(mem2))
-
-        print("making the dark read cube model - NO RESAMPLING")
-        self.dark_cube_model = np.zeros((len(self.dark_read_cube), ni, ni), dtype=np.float32)
-        for tt in range(0,len(self.exp_time_arr)):
-            self.dark_cube_model[tt,:,:] = self.dark_rate_image * self.exp_time_arr[tt] + \
-                                                     self.dark_intercept_image # y
-        mem2 = psutil.Process().memory_info().rss / (1024. * 1024.)  # physical memory in MB
-        print('Memory after dark cube model = {:.1f} MB'.format(mem2))
-
-        # calculate correlated double sampling between pairs of successive reads - the read noise
-        # consider making this its own module in RFP utilities - CDS_noise() module and method
-        n_reads, ni, _ = np.shape(self.dark_read_cube)
-        read_diff_cube = np.zeros((math.ceil(n_reads / 2), ni, ni), dtype=np.float32)
-        for i_read in range(0, n_reads-1, 2):
-            # n_reads-1 skip last pair to avoid index error if n_reads is odd
-            logging.info(f'Calculating correlated double sampling between frames {i_read} and {i_read+1}')
-            rd1_ramp_sub = self.dark_read_cube[i_read, :, :] - self.dark_rate_image * self.exp_time_arr[i_read]
-            rd2_ramp_sub = self.dark_read_cube[i_read + 1, :, :] - self.dark_rate_image * self.exp_time_arr[i_read + 1]
-            read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2_ramp_sub - rd1_ramp_sub
-        # A. Petric noted using 3 or 5 sigma clipping to compute CDS noise, consider for next phase
-        cds_noise = np.std(read_diff_cube[:, :, :], axis=0)
-        del read_diff_cube
-        gc.collect()
-
-        # add errors from slope fitting and read noise in quadrature
-        # next step is to implement general error measurements of variance in unevenly spaced resultant and slope
-        # fitting memo
-        for i_result in range(0,num_resultants):
-            self.resampled_dark_cube_err[i_result, :, :] = (cds_noise**2 + self.dark_rate_var)**0.5
+        self.dark_rate_image = p[0].reshape(ni, ni)  # the ramp slope fit
+        self.dark_intercept_image = p[1].reshape(ni, ni)  # the y intercept of the slope
+        self.dark_rate_var = V[0, 0, :].reshape(ni, ni)  # returned covariance matrix slope fit error
+        self.dark_intercept_var = V[1, 1, :].reshape(ni, ni)  # returned covariance matrix intercept error
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # locate hot and warm pixel ni,nj positions in 2D array
