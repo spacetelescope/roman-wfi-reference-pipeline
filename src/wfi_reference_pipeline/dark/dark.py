@@ -1,19 +1,16 @@
 import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
-import psutil, sys, os, glob, time, gc, asdf, logging, math, datetime
+import psutil, sys, os, glob, time, gc, asdf, math, datetime, logging
+from ..utilities.logging_functions import configure_logging
 import numpy as np
 from astropy.stats import sigma_clip
 from astropy.time import Time
-import pandas as pd
 from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
 
-# Squash logging messages from stpipe.
-logging.getLogger('stpipe').setLevel(logging.WARNING)
-log_file_str = 'dark_dev.log'
-logging.basicConfig(filename=log_file_str, level=logging.INFO)
-logging.info(f'Dark reference file log: {log_file_str}')
+#configure_logging('dark_dev', path='/grp/roman/RFP/DEV/scratch/')
+configure_logging('dark_dev')
 
 
 class Dark(ReferenceFile):
@@ -26,10 +23,9 @@ class Dark(ReferenceFile):
     variance and hot pixels tabulated and identified in corresponding file extensions and is then saved.
     """
 
-    def __init__(self, dark_filelist, meta_data=None, bit_mask=None, clobber=False, outfile=None,
-                 dark_read_cube=None):
+    def __init__(self, dark_filelist, meta_data=None, bit_mask=None, clobber=False, outfile=None, dark_read_cube=None):
         """
-        The __init__ method initializes the class with proper data nedded to be sent to the ReferenceFile
+        The __init__ method initializes the class with proper data needed to be sent to the ReferenceFile
         file base class. The general input data sent to ReferenceFile by the Dark class is a list of filename
         string objects. Meta_data is populated or modified at certain points in the dark reference file creation
         such as the number of resultants in an MA table. Outfile is the output filename and path to be written
@@ -45,10 +41,9 @@ class Dark(ReferenceFile):
         outfile: string; default = None
             Outfile defined as roman_dark.asdf if no outfile given and Dark class save_dark() method is executed.
         dark_read_cube: numpy array; default = None
-            Cube of dark reads to be resampled into MA table specific dark reference file. Dimensions
-            of ni x ni x n_reads, where ni is the number of pixels of a square array of the detector by the
-            number of reads (n_reads) in the integration.  NOTE: For parallelization only square arrays allowed.
-            dimensions of dark_read_cube = [ni,ni,n_reads]
+            Cube of dark reads to be resampled into MA table specific dark reference file. Dimensions of
+            ni x ni x n_reads, where ni is the number of pixels of a square sub-array of the detector by the number of
+            reads (n_reads) in the integration. NOTE: For parallelization only square arrays allowed.
 
         Returns
         -------
@@ -116,10 +111,13 @@ class Dark(ReferenceFile):
         # data converted into a numpy array
         tmp_reads = []
         for fl in range(0, len(self.input_data)):
-            ftmp = asdf.open(self.input_data[fl], validate_on_read=False)
-            n_reads, ni, _ = np.shape(ftmp.tree['roman']['data'])
-            tmp_reads.append(n_reads)
+            tmp = asdf.open(self.input_data[fl], validate_on_read=False)
+            n_rds, ni, _ = np.shape(tmp.tree['roman']['data'])
+            tmp_reads.append(n_rds)
+            tmp.close()
         num_reads_set = [*set(tmp_reads)]
+        del tmp_reads, tmp
+        gc.collect()
 
         # The master dark length is the maximum number of reads in all dark asdf files to be used
         # when creating the dark reference file. Need to "try" over files with different lengths
@@ -132,10 +130,10 @@ class Dark(ReferenceFile):
             dark_read_cube = []
             logging.info(f'On read {rd} of {np.max(num_reads_set)}')
             for fl in range(0, len(self.input_data)):
-                ftmp = asdf.open(self.input_data[fl], validate_on_read=False)
-                rd_tmp = ftmp.tree['roman']['data']
+                tmp = asdf.open(self.input_data[fl], validate_on_read=False)
+                rd_tmp = tmp.tree['roman']['data']
                 dark_read_cube.append(rd_tmp[rd, :, :])
-                del ftmp, rd_tmp
+                del tmp, rd_tmp
                 gc.collect()  # clean up memory
             clipped_reads = sigma_clip(dark_read_cube, sigma_lower=sigma_clip_low_bound,
                                        sigma_upper=sigma_clip_high_bound,
@@ -186,7 +184,7 @@ class Dark(ReferenceFile):
         af.tree = {'meta': meta_md, 'data': self.master_dark}
         af.write_to(md_outfile)
 
-    def get_ma_table_info(self, ma_table_ID):
+    def get_ma_table_info(self, ma_table_id):
         """
         This method get_me_table_info() imports modules and methods from the RTB database
         repo to allow the RFP to establish a connection and query the science ma tables
@@ -214,13 +212,13 @@ class Dark(ReferenceFile):
         con, _, _ = connect_server(DSN_name='DWRINSDB')
         new_tab = DatabaseTable(con, 'ma_table_science')
         ma_tab = new_tab.read_table()
-        ma_tab_ind = ma_table_ID - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
+        ma_tab_ind = ma_table_id - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
         ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
         ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
         ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
         ma_tab_read_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
         ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
-        logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_ID}.')
+        logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
         logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
                      f' reads per resultant.')
         # generate time array for exposure sequence from ma table information
@@ -233,7 +231,7 @@ class Dark(ReferenceFile):
 
         # check how we should get and write this meta data here and now or not?
         self.meta['exposure'] = {'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
-                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_ID,
+                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_id,
                                  'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
         logging.info(f'Updated meta data with MA table info.')
 
@@ -255,10 +253,6 @@ class Dark(ReferenceFile):
 
         Parameters
         ----------
-        ma_table_ID: integer; the MA table ID number 1-999
-            The MA table name ID number is used to retrieve ma table parameters
-            for converting the master dark read cube into resultant  averages
-            used during science observations
         num_resultants: integer; the number of resultants
             The number of final resultants in the dark asdf file.
         reads_per_resultant: integer; the number of reads per resultant
@@ -270,11 +264,11 @@ class Dark(ReferenceFile):
         """
 
         # control and messaging depending on how the Dark() class is initialized
-        if self.dark_read_cube is not None:
-            logging.info(f'Input dark read cube used for MA table resampling.')
         if self.input_data is not None and self.dark_read_cube is None:
             self.dark_read_cube = self.master_dark
             logging.info(f'Master dark created from input filelist used for MA table resampling.')
+        if self.dark_read_cube is not None:
+            logging.info(f'Input dark read cube used for MA table resampling.')
         n_reads, ni, _ = np.shape(self.dark_read_cube)
 
         # initialize dark cube, error, and time arrays with number of resultants from inputs
@@ -331,14 +325,13 @@ class Dark(ReferenceFile):
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
         num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
         p, V = np.polyfit(self.resampled_time_seq,
-                          self.resampled_dark_cube.reshape(len(self.resampled_time_seq), -1),
-                          1, full=False, cov=True)
+                          self.resampled_dark_cube.reshape(len(self.resampled_time_seq), -1), 1, full=False, cov=True)
 
         # reshape results back to 2D arrays
-        self.dark_rate_image = p[0].reshape(ni, ni)  # the ramp slope fit
-        self.dark_intercept_image = p[1].reshape(ni, ni)  # the y intercept of the slope
-        self.dark_rate_var = V[0, 0, :].reshape(ni, ni)  # returned covariance matrix slope fit error
-        self.dark_intercept_var = V[1, 1, :].reshape(ni, ni)  # returned covariance matrix intercept error
+        self.dark_rate_image = p[0].reshape(ni, ni)  # the fitted ramp slope
+        self.dark_intercept_image = p[1].reshape(ni, ni)  # the fitted y intercept of the ramp slope
+        self.dark_rate_var = V[0, 0, :].reshape(ni, ni)  # covariance matrix slope variance
+        self.dark_intercept_var = V[1, 1, :].reshape(ni, ni)  # covariance matrix intercept variance
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # locate hot and warm pixel ni,nj positions in 2D array
@@ -356,7 +349,7 @@ class Dark(ReferenceFile):
 
     def save_dark(self):
         """
-        The method save_dark_file() writes the resampled dark cube into an asdf
+        The method save_dark() writes the resampled dark cube into an asdf
         file to be saved somewhere on disk.
 
         NOTE: Consider this method to stitch chunks of jigsaw approach of subarrays back together
