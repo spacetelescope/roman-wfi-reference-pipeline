@@ -23,7 +23,7 @@ class ReadNoise(ReferenceFile):
     developing more mature functionality into the reference file pipeline.
     """
 
-    def __init__(self, filelist, meta_data=None, bit_mask=None, outfile=None, clobber=False, wfi_mode='IMAGE',
+    def __init__(self, input_filelist, meta_data=None, bit_mask=None, outfile=None, clobber=False, wfi_mode='IMAGE',
                  input_read_cube=None):
         """
         The __init__ method initializes the class with proper data needed to be sent to the ReferenceFile
@@ -35,7 +35,7 @@ class ReadNoise(ReferenceFile):
 
         Parameters
         ----------
-        dark_filelist: string object; default = None
+        input_filelist: string object; default = None
             List of dark filenames with absolute paths. If no filelist provided, an input dark read cube
             should be supplied.
         meta_data: dictionary; default = None
@@ -47,7 +47,7 @@ class ReadNoise(ReferenceFile):
             The mode for which the WFI was in and consistent with the input_data. WFI imaging and spectral modes have
             different integration times and therefore the time sequence generated from the input data is determined by
             which mode was used to acquire the data.
-        dark_read_cube: numpy array; default = None
+        input_read_cube: numpy array; default = None
             Cube of dark reads. Dimensions of ni x ni x n_reads, where ni is the number of pixels of a square sub-array
             of the detector by the number of reads (n_reads) in the integration. NOTE: For parallelization only square
             arrays allowed.
@@ -58,7 +58,7 @@ class ReadNoise(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super(ReadNoise, self).__init__(filelist, meta_data, bit_mask=bit_mask, clobber=clobber)
+        super(ReadNoise, self).__init__(input_filelist, meta_data, bit_mask=bit_mask, clobber=clobber)
 
         # Update metadata with read noise file type info if not included.
         if 'description' not in self.meta.keys():
@@ -85,9 +85,9 @@ class ReadNoise(ReferenceFile):
         The method get_read_cube() looks through the filelist provided to the ReadNoise module and finds the data
         set with the most number of reads in that list. It currently sorts the files in descending order of the number
         of reads such that the first index will be the longest number of reads and the last will be the fewest. This
-        functionality could be useful for looking at how many reads are necessary to accurately determine noise. The
-        number of reads is used to construct a time sequence for the integration of whatever files has the most number
-        of reads. The mode for WFI is used as selector criteria for selecting the appropriate exposure time in seconds.
+        functionality could be useful for looking at how many reads are necessary to accurately determine read noise.
+        The number of reads is used to construct a time sequence for the integration of whatever file has the most
+        reads. The mode for WFI is used as selector criteria for selecting the appropriate exposure time in seconds.
 
         Parameters
         ----------
@@ -99,7 +99,7 @@ class ReadNoise(ReferenceFile):
 
         # Determine what type of input data was passed - either a list of files or a data array.
         if self.input_data is not None and self.input_read_cube is None:
-            logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to find longest dark exposure.')
+            logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to find longest input file exposure.')
 
             # go through all dark files to find longest amount of reads available
             fl_reads_ordered_list = []
@@ -131,6 +131,11 @@ class ReadNoise(ReferenceFile):
         and intercept are returned as well as the covariance matrix which has the corresponding diagonal error
         estimates which may be used in later analysis.
 
+        NOTE: A. Petric and Calibration Block that this method is very similar for how the read noise component in the
+        Dark module is computed. The difference here in ReadNoise is that EVERY READ IS USED IN THE READ NOISE as the
+        variance of the residuals from the model and the data, while in Dark, ONLY THE MA TABLE RESAMPLED NUMBER OF
+        READS ARE USED.
+
         Returns
         -------
         None
@@ -155,6 +160,11 @@ class ReadNoise(ReferenceFile):
         Method get_ramp_res_var() uses the difference of the data from a ramp model for each pixel as the residuals
         for which the variance of that cube is the most appropriate method for computing the read noise.
 
+        NOTE: A. Petric and Calibration Block that this method is very similar for how the read noise component in the
+        Dark module is computed. The difference here in ReadNoise is that EVERY READ IS USED IN THE READ NOISE as the
+        variance of the residuals from the model and the data, while in Dark, ONLY THE MA TABLE RESAMPLED NUMBER OF
+        READS ARE USED.
+
         Returns
         -------
         None
@@ -165,7 +175,6 @@ class ReadNoise(ReferenceFile):
         residual_cube = self.ramp_model - self.input_read_cube
         std = np.std(residual_cube, axis=0)
         self.ramp_res_var = std*std
-        print(np.shape(self.ramp_res_var))
 
     def get_cds_noise(self):
         """
@@ -186,9 +195,8 @@ class ReadNoise(ReferenceFile):
             rd1 = self.ramp_model[i_read, :, :] - self.input_read_cube[i_read, :, :]
             rd2 = self.ramp_model[i_read + 1, :, :] - self.input_read_cube[i_read + 1, :, :]
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2 - rd1  # differnce of reads
-        # A. Petric noted using 3 or 5 sigma clipping to compute CDS noise, consider for next phase
-        cds_noise = np.std(read_diff_cube[:, :, :], axis=0)
-        print(np.shape(cds_noise))
+        # NOTE that A. Petric use 3 or 5 sigma clipping to compute CDS noise, consider for next phase
+        self.cds_noise = np.std(read_diff_cube[:, :, :], axis=0)
         del read_diff_cube
         gc.collect()
 
@@ -211,7 +219,7 @@ class ReadNoise(ReferenceFile):
         rn_file = rds.ReadnoiseRef()
         rn_file['meta'] = self.meta
         rn_file['data'] = self.ramp_res_var
-        # Readnoise files do not have data quality or error arrays.
+        # NOTE: read noise files do not have data quality or error arrays.
 
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()

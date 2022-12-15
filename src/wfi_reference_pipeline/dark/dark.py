@@ -73,6 +73,7 @@ class Dark(ReferenceFile):
         self.ma_table_sequence = None  # place holder attribute to generalize even or unevenly spaced resultants and
         # how to construct averaged resultants from the master dark or dark read cube
         self.resampled_dark_cube = None  # MA table averaged read cube
+        self.resampled_dark_cube_model = None  # MA table averaged dark ramp model
         self.resampled_dark_cube_err = None  # MA table averaged read cube error
         self.time_seq = None  # a time array constructed from the MA table specs, which incorporates the mode type
         # either imaging or spectral and corresponding integration times according to number of reads in MA table
@@ -112,7 +113,7 @@ class Dark(ReferenceFile):
         tmp_reads = []
         for fl in range(0, len(self.input_data)):
             tmp = asdf.open(self.input_data[fl], validate_on_read=False)
-            n_rds, ni, _ = np.shape(tmp.tree['roman']['data'])
+            n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
             tmp_reads.append(n_rds)
             tmp.close()
         num_reads_set = [*set(tmp_reads)]
@@ -122,7 +123,7 @@ class Dark(ReferenceFile):
         # The master dark length is the maximum number of reads in all dark asdf files to be used
         # when creating the dark reference file. Need to "try" over files with different lengths
         # to compute average read by read for all files
-        self.master_dark = np.zeros((np.max(num_reads_set), ni, ni), dtype=np.float32)
+        self.master_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
         # This method of opening and close each file read by read is file I/O intensive however
         # it is efficient on memory usage. Compare memory and time for stress tests.
         logging.info(f'Reading dark asdf files read by read to compute average for master dark.')
@@ -269,18 +270,18 @@ class Dark(ReferenceFile):
             logging.info(f'Master dark created from input filelist used for MA table resampling.')
         if self.dark_read_cube is not None:
             logging.info(f'Input dark read cube used for MA table resampling.')
-        n_reads, ni, _ = np.shape(self.dark_read_cube)
+        self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
 
         # initialize dark cube, error, and time arrays with number of resultants from inputs
-        self.resampled_dark_cube = np.zeros((num_resultants, ni, ni), dtype=np.float32)
-        self.resampled_dark_cube_err = np.zeros((num_resultants, ni, ni), dtype=np.float32)
+        self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
+        self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         self.resampled_time_seq = np.zeros(num_resultants, dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
         for i_res in range(0, num_resultants):
             i1 = i_res * reads_per_resultant
             i2 = i1 + reads_per_resultant
-            if i2 > n_reads:
+            if i2 > self.n_reads:
                 break
             self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
 
@@ -323,15 +324,34 @@ class Dark(ReferenceFile):
         """
         logging.info(f'Computing dark image variance and noise.')
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
-        num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
-        p, V = np.polyfit(self.resampled_time_seq,
+        num_resultants, _, _ = np.shape(self.resampled_dark_cube)
+        p, c = np.polyfit(self.resampled_time_seq,
                           self.resampled_dark_cube.reshape(len(self.resampled_time_seq), -1), 1, full=False, cov=True)
 
         # reshape results back to 2D arrays
-        self.dark_rate_image = p[0].reshape(ni, ni)  # the fitted ramp slope
-        self.dark_intercept_image = p[1].reshape(ni, ni)  # the fitted y intercept of the ramp slope
-        self.dark_rate_var = V[0, 0, :].reshape(ni, ni)  # covariance matrix slope variance
-        self.dark_intercept_var = V[1, 1, :].reshape(ni, ni)  # covariance matrix intercept variance
+        self.dark_rate_image = p[0].reshape(self.ni, self.ni)  # the fitted ramp slope image
+        self.dark_intercept_image = p[1].reshape(self.ni, self.ni)  # the fitted y intercept
+        self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni)  # covariance matrix slope variance
+        self.dark_intercept_var = c[1, 1, :].reshape(self.ni, self.ni)  # covariance matrix intercept variance
+
+        #
+        # A. Petric and RTB Calibration Block
+        # the difference between these lines below and the read noise calculated in the ReadNoise reference file
+        # module is that there is NO RESAMPLING PER THE MA TABLE
+        # Please review and comment on both the Dark and ReadNoise modules
+        #
+        # generate a dark ramp cube model per the resampled ma table speccs
+        self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_cube), self.ni, self.ni), dtype=np.float32)
+        for tt in range(0, len(self.resampled_time_seq)):
+            self.resampled_dark_cube_model[tt, :, :] = self.dark_rate_image * self.resampled_time_seq[tt] \
+                                                       + self.dark_intercept_image  # y = m*x + b
+        # get the residuals of the dark ramp model and the data
+        residual_cube = self.resampled_dark_cube_model - self.resampled_dark_cube
+        std = np.std(residual_cube, axis=0)  # this is the standard deviation of residuals from the resampled dark cube
+        # model and the resampled dark cube data, std^2 is therefore the resampled read noise variance
+        # the dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
+        # and the variance of the resampled residuals are added in quadrature
+        self.resampled_dark_cube_err[0, :, :] = (std*std + self.dark_rate_var)**0.5
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # locate hot and warm pixel ni,nj positions in 2D array
