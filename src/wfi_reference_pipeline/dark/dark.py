@@ -9,8 +9,8 @@ from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
 
-#configure_logging('dark_dev', path='/grp/roman/RFP/DEV/scratch/')
-configure_logging('dark_dev')
+configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
+#configure_logging('dark_dev')
 
 
 class Dark(ReferenceFile):
@@ -222,19 +222,26 @@ class Dark(ReferenceFile):
         logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
         logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
                      f' reads per resultant.')
+        # now update meta data with ma table specs
+        self.meta['exposure'].update({'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
+                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_id})
+        logging.info(f'Updated meta data with MA table info.')
+
+        # Determine WIM or WSM - WFI Imaging or Spectral Mode - from the ma table specs in the database from PRD
+        if ma_tab_read_time == self.ancillary['frame_time']['WSM']:  # frame time in spectral mode in seconds:
+            self.meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
+            logging.info(f'WFI spectral mode selected (WSM).')
+        elif ma_tab_read_time == self.ancillary['frame_time']['WIM']:  # frame time in imaging mode in seconds
+            self.meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
+            logging.info(f'WFI spectral mode selected (WIM).')
+
         # generate time array for exposure sequence from ma table information
         # for even spacing use below - for uneven spacing will ingest integer or character sequence from ma table
         # to generate time array - this is mode specific (imaging or spectral)
         self.time_seq = np.array([ma_tab_read_time * i for i in
                                   range(1, ma_tab_reads_per_resultant * ma_tab_num_resultants + 1)])
-        logging.info(f'Constructed exposure time array sequence from MA table information on read spacing, skips,'
-                     f'and number of resultants')
-
-        # check how we should get and write this meta data here and now or not?
-        self.meta['exposure'] = {'ngroups': ma_tab_num_resultants, 'nframes': ma_tab_reads_per_resultant,
-                                 'groupgap': 0, 'ma_table_name': ma_tab_name, 'ma_table_number': ma_table_id,
-                                 'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
-        logging.info(f'Updated meta data with MA table info.')
+        logging.info(f'Constructed exposure time array sequence from MA table information on read spacing, skips, '
+                     f'and number of resultants.')
 
         return ma_tab_num_resultants, ma_tab_reads_per_resultant
 
@@ -275,6 +282,8 @@ class Dark(ReferenceFile):
         # initialize dark cube, error, and time arrays with number of resultants from inputs
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
+        logging.info(f'Error arrays with number of resultants initialized with zeros.')
+        logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
         self.resampled_time_seq = np.zeros(num_resultants, dtype=np.float32)
 
         # average over number of reads per resultant per ma table specs
@@ -293,7 +302,7 @@ class Dark(ReferenceFile):
         logging.info(f'MA table resampling with {num_resultants} resultants averaging {reads_per_resultant}'
                      f' reads per resultant complete.')
         logging.info(f'Updated meta data with MA Table information.')
-        logging.info(f'Error arrays initialized with zeros. Run calc_dark_err_metrics() to calculate errors.')
+
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010,
                               hot_pixel_bit=11, warm_pixel_bit=12):

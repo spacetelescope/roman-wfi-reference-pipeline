@@ -5,7 +5,8 @@ from ..utilities.logging_functions import configure_logging
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 
-configure_logging('readnoise_dev')
+configure_logging('readnoise_dev', path='/grp/roman/RFP/DEV/logs/')
+#configure_logging('readnoise_dev')
 
 
 class ReadNoise(ReferenceFile):
@@ -116,10 +117,11 @@ class ReadNoise(ReferenceFile):
             logging.info(f'Using {fl_reads_ordered_list[0][0]} to compute noise.')
 
         self.n_reads, self.ni, _ = np.shape(self.input_read_cube)
-        if self.WFI_MODE == 'IMAGE':
-            self.exp_time = 3.04  # frame time in imaging mode in seconds
         if self.WFI_MODE == 'SPECTRAL':
-            self.exp_time = 4.03  # frame time in spectral mode in seconds
+            self.exp_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
+        elif self.WFI_MODE == 'IMAGE':
+            self.exp_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
+
         # generate the time array depending on which WFI mode is determined from above
         logging.info(f'Creating exposure integration for {self.WFI_MODE} mode with {self.n_reads} reads with a frame'
                      f'time of {self.exp_time} seconds.')

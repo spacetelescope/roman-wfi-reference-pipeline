@@ -1,0 +1,15 @@
+instrument:
+  name: WFI
+  detector:
+  optical_element:
+exposure:
+  type:
+  'p_exptype':
+  ma_table_name:
+  ma_table_number:
+  ngroups:
+  nframes:
+  groupgap:
+pedigree: DUMMY
+description: For reference file pipeline development.
+useafter:
