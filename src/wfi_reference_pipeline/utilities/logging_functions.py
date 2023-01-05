@@ -97,6 +97,7 @@ def log_info(func):
     """
     @wraps(func)
     def wrapped(*a, **kw):
+        """do function wrapping"""
 
         # Log environment information
         logging.info('User: ' + getpass.getuser())
