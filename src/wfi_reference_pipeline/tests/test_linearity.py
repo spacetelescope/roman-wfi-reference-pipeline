@@ -127,7 +127,8 @@ class FitSingleTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        y_test += 0.005 * np.random.normal(size=y_test.shape)
+        rng = np.random.default_rng(1234)
+        y_test += 0.005 * rng.standard_normal(size=y_test.shape)
         lin = Linearity(y_test, setup_dummy_meta(), optical_element='F146')
         lin.make_linearity(poly_order=2)
         testing.assert_almost_equal(poly_coeffs, lin.coeffs[:, 10, 10], decimal=2)
@@ -142,7 +143,8 @@ class FitSingleTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        y_test += 0.005 * np.random.normal(size=y_test.shape)
+        rng = np.random.default_rng(1234)
+        y_test += 0.005 * rng.standard_normal(size=y_test.shape)
         dq_test = np.zeros(y_test.shape, dtype=np.uint32)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -244,9 +246,10 @@ class LinearityMultiTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        noise1 = 0.005 * np.random.normal(size=y_test.shape)
-        noise2 = 0.005 * np.random.normal(size=y_test.shape)
-        noise3 = 0.005 * np.random.normal(size=y_test.shape)
+        rng = np.random.default_rng(1234)
+        noise1 = 0.005 * rng.standard_normal(size=y_test.shape)
+        noise2 = 0.005 * rng.standard_normal(size=y_test.shape)
+        noise3 = 0.005 * rng.standard_normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -324,9 +327,10 @@ class LinearityMultiTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        noise1 = 0.005 * np.random.normal(size=y_test.shape)
-        noise2 = 0.005 * np.random.normal(size=y_test.shape)
-        noise3 = 0.005 * np.random.normal(size=y_test.shape)
+        rng = np.random.default_rng(1234)
+        noise1 = 0.005 * rng.standard_normal(size=y_test.shape)
+        noise2 = 0.005 * rng.standard_normal(size=y_test.shape)
+        noise3 = 0.005 * rng.standard_normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
@@ -401,8 +405,9 @@ class LinearityMultiTestCase(unittest.TestCase):
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        noise1 = 0.005 * np.random.normal(size=y_test.shape)
-        noise2 = 0.005 * np.random.normal(size=y_test.shape)
+        rng = np.random.default_rng(1234)
+        noise1 = 0.005 * rng.standard_normal(size=y_test.shape)
+        noise2 = 0.005 * rng.standard_normal(size=y_test.shape)
         dq_test = np.zeros_like(y_test)
         # Flag some pixels
         dq_test[0, 0, 0] = 2**20
