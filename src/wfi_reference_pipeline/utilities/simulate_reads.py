@@ -39,6 +39,7 @@ def SimulateReads(n_reads, exptime, darkrate, darkvar):
     hp_pix_array = np.random.normal(hotpixel_val, scale=hotpixel_var, size=(num_hotpixels))
     # update the rate image with hotpixels
     rate_image[coords_x, coords_y] = hp_pix_array
+    rate_image = np.abs(rate_image)  # need to ensure all pixel ramp rates are positive
 
     read_cube = np.zeros((n_reads, 4096, 4096), dtype=np.float32) # initialize read cube
     for read_r in range(0, n_reads):
