@@ -1,10 +1,10 @@
-wfi\_reference\_pipeline.dark package
+src.wfi\_reference\_pipeline.dark package
 =========================================
 
 Submodules
 ----------
 
-wfi\_reference\_pipeline.dark.dark module
+src.wfi\_reference\_pipeline.dark.dark module
 ---------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.dark.dark

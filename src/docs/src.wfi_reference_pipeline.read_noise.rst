@@ -1,10 +1,10 @@
-wfi\_reference\_pipeline.read\_noise package
+src.wfi\_reference\_pipeline.read\_noise package
 ================================================
 
 Submodules
 ----------
 
-wfi\_reference\_pipeline.read\_noise.read\_noise module
+src.wfi\_reference\_pipeline.read\_noise.read\_noise module
 -----------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.read_noise.read_noise
