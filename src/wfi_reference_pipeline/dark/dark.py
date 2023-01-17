@@ -3,7 +3,6 @@ from ..utilities.reference_file import ReferenceFile
 import psutil, sys, os, glob, time, gc, asdf, logging, math
 import numpy as np
 from astropy.stats import sigma_clip
-import pandas as pd
 from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
