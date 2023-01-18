@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.gain package
+wfi\_reference\_pipeline.gain package
 =========================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.gain.gain module
+wfi\_reference\_pipeline.gain.gain module
 ---------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.gain.gain

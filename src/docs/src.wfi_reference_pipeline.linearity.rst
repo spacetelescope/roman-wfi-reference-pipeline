@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.linearity package
+wfi\_reference\_pipeline.linearity package
 ==============================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.linearity.linearity module
+wfi\_reference\_pipeline.linearity.linearity module
 -------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.linearity.linearity

@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.distortion package
+wfi\_reference\_pipeline.distortion package
 ===============================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.distortion.distortion module
+wfi\_reference\_pipeline.distortion.distortion module
 ---------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.distortion.distortion

@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.saturation package
+wfi\_reference\_pipeline.saturation package
 ===============================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.saturation.saturation module
+wfi\_reference\_pipeline.saturation.saturation module
 ---------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.saturation.saturation

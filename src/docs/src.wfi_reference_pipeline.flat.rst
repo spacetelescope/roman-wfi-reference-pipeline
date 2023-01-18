@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.flat package
+wfi\_reference\_pipeline.flat package
 =========================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.flat.flat module
+wfi\_reference\_pipeline.flat.flat module
 ---------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.flat.flat

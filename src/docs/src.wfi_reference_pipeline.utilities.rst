@@ -1,10 +1,10 @@
-src.wfi\_reference\_pipeline.utilities package
+wfi\_reference\_pipeline.utilities package
 ==============================================
 
 Submodules
 ----------
 
-src.wfi\_reference\_pipeline.utilities.basic\_calibration module
+wfi\_reference\_pipeline.utilities.basic\_calibration module
 ----------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.basic_calibration
@@ -12,7 +12,7 @@ src.wfi\_reference\_pipeline.utilities.basic\_calibration module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.dcl module
+wfi\_reference\_pipeline.utilities.dcl module
 -------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.dcl
@@ -20,7 +20,7 @@ src.wfi\_reference\_pipeline.utilities.dcl module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.logging\_functions module
+wfi\_reference\_pipeline.utilities.logging\_functions module
 ----------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.logging_functions
@@ -28,7 +28,7 @@ src.wfi\_reference\_pipeline.utilities.logging\_functions module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.manifest module
+wfi\_reference\_pipeline.utilities.manifest module
 ------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.manifest
@@ -36,7 +36,7 @@ src.wfi\_reference\_pipeline.utilities.manifest module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.mask module
+wfi\_reference\_pipeline.utilities.mask module
 --------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.mask
@@ -44,7 +44,7 @@ src.wfi\_reference\_pipeline.utilities.mask module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.notifications module
+wfi\_reference\_pipeline.utilities.notifications module
 -----------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.notifications
@@ -52,7 +52,7 @@ src.wfi\_reference\_pipeline.utilities.notifications module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.reference\_file module
+wfi\_reference\_pipeline.utilities.reference\_file module
 -------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.reference_file
@@ -60,7 +60,7 @@ src.wfi\_reference\_pipeline.utilities.reference\_file module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.simulate\_reads module
+wfi\_reference\_pipeline.utilities.simulate\_reads module
 -------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.simulate_reads
@@ -68,7 +68,7 @@ src.wfi\_reference\_pipeline.utilities.simulate\_reads module
    :undoc-members:
    :show-inheritance:
 
-src.wfi\_reference\_pipeline.utilities.submit\_files module
+wfi\_reference\_pipeline.utilities.submit\_files module
 -----------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.submit_files

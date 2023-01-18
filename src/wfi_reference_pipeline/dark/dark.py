@@ -101,6 +101,7 @@ class Dark(ReferenceFile):
         -------
         None
         """
+
         logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to construct master dark object.')
 
         # for next phase of development query what file types are in directory, HDF5, fits, asdf,
@@ -294,6 +295,7 @@ class Dark(ReferenceFile):
         NOTE: The determination of hot and warm pixel rates and sigma values are only referenced as a best guess
         at what we should consider for setting these values. Likely to change or be more informed post-TVAC.
         """
+
         logging.info(f'Computing dark variance and CDS noise values.')
         # linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency
         num_resultants, ni, _ = np.shape(self.resampled_dark_cube)
@@ -349,6 +351,7 @@ class Dark(ReferenceFile):
 
         Returns
         -------
+
         af: asdf file tree: {meta, data, dq, err}
             meta:
             data: averaged resultants per MA table specs
