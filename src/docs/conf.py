@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../..'))
 
-autodoc_mock_imports = ['RTB_Database', 'pandas', 'pytest']
+autodoc_mock_imports = ['RTB_Database', 'pandas', 'pytest', 'bs4']
 # -- Project information -----------------------------------------------------
 
 project = 'wfi_reference_pipeline'
@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
     'sphinx_automodapi.automodapi',
-    "sphinx.ext.todo", 
+    "sphinx.ext.todo",
     "sphinx.ext.viewcode"
 ]
 

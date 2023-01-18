@@ -14,7 +14,7 @@ This will also install all of the dependencies.
 
 ## Documentation
 
-To get the full documentation, install the package as described above, then go to the doc/ directory and run:
+To get the full documentation, install the package as described above, then go to the /src/docs/ directory and run:
 
 ```buildoutcfg
 make html
