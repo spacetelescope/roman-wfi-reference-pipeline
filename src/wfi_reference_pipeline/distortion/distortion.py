@@ -9,7 +9,7 @@ import roman_datamodels.stnode as rds
 from soc_roman_tools.siaf import siaf
 
 from ..utilities.reference_file import ReferenceFile
-from ..utilities.reference_catalog import ReferenceCatalog
+# from ..utilities.reference_catalog import ReferenceCatalog
 
 
 class Distortion(ReferenceFile):

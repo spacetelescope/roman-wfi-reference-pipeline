@@ -10,18 +10,20 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
-#import importlib.metadata as importlib_metadata
-# from importlib.metadata import version
-
+autodoc_mock_imports = ['RTB_Database', 'pandas', 'pytest', 'bs4']
 # -- Project information -----------------------------------------------------
 
-project = 'wfi-reference-file-pipeline'
-copyright = '2021, STScI'
-author = 'Tyler Desjardins'
+project = 'wfi_reference_pipeline'
+copyright = '2023, Space Telescope Science Institute'
+author = 'Bradley Sappington'
+
+# The full version, including alpha/beta/rc tags
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,18 +37,19 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
-    'sphinx_automodapi.automodapi'
+    'sphinx_automodapi.automodapi',
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-html_logo = '_static/stsci_pri_combo_mark_white.png'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['wfi_reference_pipeline']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -55,19 +58,13 @@ exclude_patterns = ['wfi_reference_pipeline']
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-pygments_style = 'sphinx'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
-# The reST default role (used for this markup: `text`) to use for all documents.
-default_role = 'py:obj'
-
-# The full version, including alpha/beta/rc tags.
-# The full version, including alpha/beta/rc tags.
-#release = importlib_metadata.version(project)
-#release = version(project)
-# The short X.Y version.
-#ver = '.'.join(release.split('.')[:2])
+html_logo = 'stsci_pri_combo_mark_white.png'
+html_theme_options = {
+    'logo_only': True,
+    'display_version': False,
+}

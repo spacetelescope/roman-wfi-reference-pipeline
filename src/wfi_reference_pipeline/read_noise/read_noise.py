@@ -38,7 +38,9 @@ class ReadNoise(ReferenceFile):
             pass
 
     def get_read_noise(self):
-
+        """
+        save read noise value to self
+        """
         delta = self.zero1 - self.zero2
         _, noise, _ = sigma_clipped_stats(delta, sigma=5, maxiters=2, axis=1)
         variance = noise**2
