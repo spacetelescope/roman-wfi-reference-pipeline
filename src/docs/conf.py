@@ -19,7 +19,7 @@ autodoc_mock_imports = ['RTB_Database', 'pandas', 'pytest', 'bs4']
 # -- Project information -----------------------------------------------------
 
 project = 'wfi_reference_pipeline'
-copyright = '2023, Bradley Sappington'
+copyright = '2023, Space Telescope Science Institute'
 author = 'Bradley Sappington'
 
 # The full version, including alpha/beta/rc tags
