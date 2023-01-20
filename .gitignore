@@ -12,6 +12,7 @@ version.py
 doc/build/*
 doc/source/api/*
 src/docs/_build/*
+*.log
 .coverage
 .coverage.*
 reports/coverage.xml
