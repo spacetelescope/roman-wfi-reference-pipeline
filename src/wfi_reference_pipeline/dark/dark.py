@@ -75,6 +75,7 @@ class Dark(ReferenceFile):
         self.dark_read_cube = dark_read_cube
         self.resampled_dark_cube = None
         self.resampled_dark_cube_err = None
+        self.exp_time_arr = None
 
     def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0, write_md=1):
         """
