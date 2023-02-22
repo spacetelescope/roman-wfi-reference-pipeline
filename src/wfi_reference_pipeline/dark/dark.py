@@ -1,8 +1,8 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
-import psutil, sys, os, glob, time, gc, asdf, math, datetime, logging
-from ..utilities.logging_functions import configure_logging
 import numpy as np
+import psutil, sys, os, glob, time, gc, asdf, math, datetime, logging
+from ..utilities.reference_file import ReferenceFile
+from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from RTB_Database.utilities.login import connect_server
@@ -10,7 +10,6 @@ from RTB_Database.utilities.table_tools import DatabaseTable
 from RTB_Database.utilities.table_tools import table_names
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
-#configure_logging('dark_dev')
 
 
 class Dark(ReferenceFile):
@@ -25,10 +24,10 @@ class Dark(ReferenceFile):
 
     def __init__(self, dark_filelist, meta_data=None, bit_mask=None, clobber=False, outfile=None, dark_read_cube=None):
         """
-        The __init__ method initializes the class with proper data needed to be sent to the ReferenceFile
-        file base class. The general input data sent to ReferenceFile by the Dark class is a list of filename
-        string objects. Meta_data is populated or modified at certain points in the dark reference file creation
-        such as the number of resultants in an MA table. Outfile is the output filename and path to be written
+        The __init__ method initializes the class with inputs needed to be sent to the ReferenceFile
+        file base class. The input data sent to ReferenceFile by the Dark class is a list of dark filenames.
+        Meta_data is populated or modified at certain points in Dark(), such as the number of resultants in an MA
+        table as determined by details in the RTB database. Outfile is the output filename and path to be written
         to disk.
 
         Parameters
@@ -47,7 +46,9 @@ class Dark(ReferenceFile):
 
         Returns
         -------
-        None
+        self.input_data: variable;
+            The first positional variable in the Dark class instance which in base class ReferenceFile().
+            For Dark() self.input_data is a list of paths and filenames.
         """
 
         # Access methods of base class ReferenceFile
@@ -80,19 +81,22 @@ class Dark(ReferenceFile):
         self.resampled_time_seq = None  # the averaged time for MA table evenly spaced resultants
         self.resultant_tau_seq = None  # the variance-based resultant time tau_i from Casterano et al. 2022 equation 14
 
+        if self.input_data is None and self.dark_read_cube is None:
+            raise ValueError(f'No data supplied to make dark reference file!')
+
     def make_master_dark(self, sigma_clip_low_bound=3.0, sigma_clip_high_bound=3.0):
         """
         The method make_master_dark() ingests all files located in a directory as a python object list of
-        file names with absolute path. A master dark is created by iterating through each read of every
-        dark file, read by read (see NOTE below). A cube of reads is formed into a numpy array and sigma
+        filenames with absolute paths. A master dark is created by iterating through each read of every
+        dark file, read by read (see File I/O NOTE below). A cube of reads is formed into a numpy array and sigma
         clipped according to method inputs (default is 3 sigma) and the mean of the clipped data cube is
         saved as the master dark class attribute.
 
         NOTE: The algorithm is file I/O intensive but utilizes less memory while performance is only currently
-        only marginally slower. Initial testing was performed by R. Cosentino with 12 dark files that each had
+        marginally slower. Initial testing was performed by R. Cosentino with 12 dark files that each had
         21 reads where this method took ~330 seconds and had a peak memory usage of 2.5 GB. Opening and loading
         all files at once took ~300 seconds with a peak memory usage of 36 GB. Running from the command line
-        or in the ipython intrepreter displays significant differences in memory usage/allocation and run time.
+        or in the ipython intrepreter displays significant differences in memory usage and run time.
 
         Parameters
         ----------
@@ -156,8 +160,8 @@ class Dark(ReferenceFile):
         """
         The method save_master_dark with default conditions will write the master dark cube into an asdf
         file for each detector in the directory from which the input files where pointed to and used to
-        construct the master dark read cube. A user can specific an absolute path or relative file string
-        to write their own master dark file name.
+        construct the master dark read cube. A user can specify an absolute path or relative file string
+        to write the master dark file name to disk.
 
         Parameters
         ----------
