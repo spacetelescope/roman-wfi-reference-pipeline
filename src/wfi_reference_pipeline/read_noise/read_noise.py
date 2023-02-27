@@ -1,4 +1,5 @@
 import roman_datamodels.stnode as rds
+from roman_datamodels import units as ru
 import numpy as np
 import asdf, logging, math, gc, os
 from astropy.stats import sigma_clip
@@ -121,7 +122,7 @@ class ReadNoise(ReferenceFile):
             tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
             self.input_read_cube = tmp.tree['roman']['data']
             logging.info(f'Using {fl_reads_ordered_list[0][0]} to compute read noise.')
-        elif self.input_data is None and self.input_read_cube:
+        elif self.input_data is None and self.input_read_cube is not None:
             logging.info(f'User supplied input read cube being used to compute read noise.')
         else:
             logging.info(f'Something is wrong with input data to ReadNoise().')
@@ -188,7 +189,7 @@ class ReadNoise(ReferenceFile):
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
         std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = std*std
+        self.ramp_res_var = np.float32(std*std)
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
@@ -232,7 +233,7 @@ class ReadNoise(ReferenceFile):
         # Construct the read noise object from the data model.
         rn_file = rds.ReadnoiseRef()
         rn_file['meta'] = self.meta
-        rn_file['data'] = self.ramp_res_var
+        rn_file['data'] = self.ramp_res_var * ru.DN  # Use astropy units to make data array a quantity object.
 
         # af: asdf file tree: {meta, data}
         af = asdf.AsdfFile()
