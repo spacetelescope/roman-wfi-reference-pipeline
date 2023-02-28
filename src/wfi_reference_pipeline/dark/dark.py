@@ -25,7 +25,7 @@ class Dark(ReferenceFile):
     """
 
     def __init__(self, dark_filelist, meta_data=None, bit_mask=None, outfile=None, clobber=False,
-                 input_dark_cube=None, wfi_mode=None):
+                 input_dark_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
         file base class.
@@ -75,8 +75,7 @@ class Dark(ReferenceFile):
         logging.info(f'Default dark reference file object: {outfile} ')
 
         # Additional object attributes
-        self.dark_read_cube = input_dark_cube   # Supplied input dark read cube.
-        self.wfi_mode = wfi_mode  # WFI Imaging (WIM) or Spectral (WSM) mode.
+        self.dark_read_cube = input_dark_cube  # Supplied input dark read cube.
         self.master_dark = None  # A cube of all available reads that is sigma clipped and averaged.
         self.ma_table_seq = None  # For general treatment of unevenly spaced resultant averaging.
         self.resampled_dark_cube = None  # MA table averaged resultant cube.
@@ -86,7 +85,7 @@ class Dark(ReferenceFile):
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_reads = None  # Number of reads in data cube being analyzed.
         self.ni = None  # Number of pixels.
-        self.exp_time = None  # Frame time from ancillary data.
+        self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
 
         if self.input_data is None and self.dark_read_cube is None:
@@ -217,7 +216,7 @@ class Dark(ReferenceFile):
         ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
         ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
         ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
-        self.exp_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
+        self.frame_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
         ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
         logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
         logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
@@ -226,26 +225,19 @@ class Dark(ReferenceFile):
         self.meta['exposure'].update(dict(ngroups=ma_tab_num_resultants, nframes=ma_tab_reads_per_resultant, groupgap=0,
                                           ma_table_name=ma_tab_name, ma_table_number=ma_table_id))
         logging.info(f'Updated meta data with MA table info.')
-
         # Determine WIM or WSM - WFI Imaging or Spectral Mode - from the ma table specs in the RTB database from PRD.
-        if self.exp_time == self.ancillary['frame_time']['WIM']:  # frame time in imaging mode in seconds
+        if self.frame_time == self.ancillary['frame_time']['WIM']:  # frame time in imaging mode in seconds
             self.meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
-            logging.info(f'WFI spectral mode selected (WIM).')
-        elif self.exp_time == self.ancillary['frame_time']['WSM']:  # frame time in spectral mode in seconds:
+            logging.info(f'WFI imaging mode selected (WIM) from RTB database.')
+        elif self.frame_time == self.ancillary['frame_time']['WSM']:  # frame time in spectral mode in seconds:
             self.meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
-            logging.info(f'WFI spectral mode selected (WSM).')
+            logging.info(f'WFI spectral mode selected (WSM) from RTB database.')
 
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array in {self.wfi_mode} mode with {self.n_reads} reads with a frame'
-                     f'time of {self.exp_time} seconds.')
-        self.time_arr = np.array([self.exp_time * i for i in range(1, self.n_reads + 1)])
+        ma_tab_sequence = '222222R'
 
-        return ma_tab_num_resultants, ma_tab_reads_per_resultant
+        return ma_tab_num_resultants, ma_tab_reads_per_resultant, ma_tab_sequence
 
-        # Separate method here to make MA table time array, exposure sequence and where a user supplied MA table
-        # name and mode and sequence can be used to to make a dark without connection to the RTB database.
-
-    def make_ma_table_dark(self, num_resultants, reads_per_resultant):
+    def make_ma_table_dark(self, num_resultants=None, **kwargs):
         """
         The method make_dark() takes a non-resampled dark cube read and converts it into
         a number of resultants that constructed from the mean of a number of reads
@@ -263,8 +255,10 @@ class Dark(ReferenceFile):
         ----------
         num_resultants: integer; the number of resultants
             The number of final resultants in the dark asdf file.
-        reads_per_resultant: integer; the number of reads per resultant
-            The number of reads to be averaged in creating a resultant.
+        kwargs:
+            num_rds_per_res: integer; The user suupplied number of reads per resultant in evenly spaced resultants.
+            wfi_mode: string; allowed values - 'WIM' for WFI imaging mode and 'WSM" for WFI spectral mode
+            ma_table_seq: string TBD - for unevenly spaced resultants
         """
 
         # Flow control and logging messaging depending on how the Dark() class is initialized
@@ -275,6 +269,21 @@ class Dark(ReferenceFile):
             logging.info(f'Input dark read cube used for MA table resampling.')
         self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
 
+        if 'wfi_mode' not in kwargs:
+            logging.info(f'No wfi_mode supplied as optional keyword into make_ma_table_dark().')
+            raise ValueError(f'No wfi_mode supplied as optional keyword into make_ma_table_dark()!')
+        else:
+            if kwargs.get('wfi_mode') == 'WIM':
+                self.meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
+                logging.info(f'User supplied WFI imaging mode selected (WIM).')
+            if kwargs.get('wfi_mode') == 'WSM':
+                self.meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
+                logging.info(f'User supplied WFI spectral mode selected (WSM).')
+            logging.info(f'Updated meta data with user supplied MA Table information with evening spacing.')
+
+        # Make the time array for the length of the dark read cube exposure.
+        self.make_time_array()
+
         # Initialize resampled dark cube, error, and time arrays with number of ma tables specs
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
@@ -282,22 +291,62 @@ class Dark(ReferenceFile):
         logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
-        # Averaging over reads per ma table specs
-        for i_res in range(0, num_resultants):
-            i1 = i_res * reads_per_resultant
-            i2 = i1 + reads_per_resultant
-            if i2 > self.n_reads:
-                break
-            self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
-
-            # NOTE: Below needs to be updated for the generalized unevenly spaced resultant time tau in Casternao et al
-            # from equation 14 handling the variance-based resultant time - tau_i
-            # if evenly spaced should just be the mid point average of read times composing the resultant
+        # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
+        if 'num_rds_per_res' in kwargs:
+            if 'ma_table_seq' in kwargs:
+                logging.info(f'Warning: User supplied information to for evenly spaced MA table resampling and '
+                             f'a MA table sequence. Defaulting to evenly spaced sampling. Provide MA table sequence'
+                             f' with keyword ma_table_seq = string without keyword num_rds_per_res')
+            rds_per_res = kwargs.get('num_rds_per_res')
+            if rds_per_res > self.n_reads:
+                # Check that the length of the reads per resultant is not greater than the available number of reads
+                logging.info(f'Can not average over more reads than supplied in dark read cube.')
+                raise ValueError(f'Can not average over more reads than supplied in dark read cube.')
+            # Averaging over reads per ma table specs or user defined even spacing.
+            logging.info(f'Averaging over reads per ma table specs or user defined even spacing.')
+            for i_res in range(0, num_resultants):
+                i1 = i_res * rds_per_res
+                i2 = i1 + rds_per_res
+                if i2 > self.n_reads:
+                    logging.info(f'Warning: The number of reads per resultant was not evenly divisible into the number'
+                                 f' of available reads to average and remainder reads were skipped.')
+                    logging.info(f'Resultants after resultant {i_res+1} contain zeros.')
+                    break
+                self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
             self.resultant_tau_arr[i_res] = np.mean(self.time_arr[i1:i2])
+            logging.info(f'MA table resampling with {num_resultants} resultants averaging {rds_per_res}'
+                         f' reads per resultant complete.')
+        else:
+            logging.info(f'Number of reads per resultant keyword num_rds_per_res required for MA table averaging to '
+                         f'evenly resample dark cube or supply MA table exposure sequence string keyword')
+            raise ValueError(f'Number of reads per resultant keyword num_rds_per_res required for MA table averaging to'
+                             f' evenly resample dark cube or supply MA table exposure sequence string keyword')
 
-        logging.info(f'MA table resampling with {num_resultants} resultants averaging {reads_per_resultant}'
-                     f' reads per resultant complete.')
-        logging.info(f'Updated meta data with MA Table information.')
+        if 'ma_table_seq' in kwargs and 'num_rds_per_res' not in kwargs:
+            logging.info(f'Using MA table exposure sequence provided for MA table resampling and averaging of '
+                         f'resultants and calculation of variance based resultant time.')
+        # For unevenly spaced resultant time tau in Casternao et al equation 14 handling the variance based
+        # resultant time
+
+    def make_time_array(self):
+        """
+        The method make_data_time_arrays() will generate a WFI mode dependent time array of the exposure or input
+        data supplied to make the read noise reference file.
+        """
+
+        if self.frame_time is None:
+            if self.meta['exposure']['type'] == 'WFI_IMAGE':
+                self.frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
+            elif self.meta['exposure']['type'] == 'WFI_GRISM':
+                self.frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
+            else:
+                logging.info(f'No frame time found for WFI mode specified.')
+                raise ValueError(f'No frame time found for WFI mode specified!')
+
+        # Generate the time array depending on WFI mode.
+        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
+                     f'time of {self.frame_time} seconds.')
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, hot_pixel_bit=11, warm_pixel_bit=12):
         """
@@ -324,6 +373,7 @@ class Dark(ReferenceFile):
         warm_pixel_bit: integer; default = 12
             DQ hot pixel flag value in romancal library.
         """
+
         logging.info(f'Computing dark image variance and noise.')
         # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
         num_resultants, _, _ = np.shape(self.resampled_dark_cube)
@@ -347,7 +397,7 @@ class Dark(ReferenceFile):
         # model and the resampled dark cube data, std^2 is therefore the resampled read noise variance
         # the dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
         # and the variance of the resampled residuals are added in quadrature
-        self.resampled_dark_cube_err[0, :, :] = (std*std + dark_rate_var)**0.5
+        self.resampled_dark_cube_err[0, :, :] = (std * std + dark_rate_var) ** 0.5
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # Locate hot and warm pixel ni,nj positions in 2D array

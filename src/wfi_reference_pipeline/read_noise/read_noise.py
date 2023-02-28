@@ -26,7 +26,7 @@ class ReadNoise(ReferenceFile):
     """
 
     def __init__(self, input_filelist, meta_data=None, bit_mask=None, outfile=None, clobber=False,
-                 input_data_cube=None, wfi_mode=None):
+                 input_data_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
         file base class.
@@ -48,9 +48,6 @@ class ReadNoise(ReferenceFile):
         input_data_cube: numpy array; default = None
             Data cube of reads. Dimensions of n_reads x ni x ni, where ni is the number of pixels of a square array
             of the detector by the number of reads (n_reads). NOTE - For parallelization only square arrays allowed.
-        wfi_mode: string; default = None
-            WFI imaging (WIM) or WFI spectral (WSM) modes. The indicated mode is used to generate the time sequence
-            array which is dependent on mode specific integration time.
         ----------
         self.input_data: attribute;
             The first positional variable in the ReadNoise class instance assigned in base class ReferenceFile().
@@ -79,7 +76,6 @@ class ReadNoise(ReferenceFile):
 
         # Additional object attributes
         self.input_read_cube = input_data_cube  # Supplied input read cube.
-        self.wfi_mode = wfi_mode  # WFI Imaging (WIM) or Spectral (WSM) mode.
         self.ramp_model = None  # Ramp model fitted to input data cube.
         self.ramp_res_var = None  # The variance in the residuals of the difference between the ramp model and input
         # data cube that was created from one of the dark calibration files or the input_read_cube supplied.
@@ -87,8 +83,7 @@ class ReadNoise(ReferenceFile):
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_reads = None  # Number of reads in data cube being analyzed.
         self.ni = None  # Number of pixels.
-        self.exp_time = None  # Frame time from ancillary data.
-        self.time_arr = None  # Time array of an exposure.
+        self.time_arr = None  # Time array of an exposure or input data.
 
         # Check input data to initialize ReadNoise().
         if self.input_data is None and self.input_read_cube is None:
@@ -100,7 +95,7 @@ class ReadNoise(ReferenceFile):
         the most number of reads in that list. It currently sorts the files in descending order of the number
         of reads such that the first index will be the file with the most number of reads and the last will have the
         fewest. This functionality could be useful for looking at how many reads are necessary to accurately quantify
-        the read noise. The number of reads is used to construct a mode dependent time array for the input cube data.
+        the read noise. The dimensions of the input data are retrieved.
         """
 
         # Determine what type of input data was passed. If input data is not none, then go through the list of files.
@@ -122,6 +117,7 @@ class ReadNoise(ReferenceFile):
             tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
             self.input_read_cube = tmp.tree['roman']['data']
             logging.info(f'Using {fl_reads_ordered_list[0][0]} to compute read noise.')
+
         elif self.input_data is None and self.input_read_cube is not None:
             logging.info(f'User supplied input read cube being used to compute read noise.')
         else:
@@ -129,18 +125,25 @@ class ReadNoise(ReferenceFile):
             raise ValueError(f'Expected either a file list or an input data read cube. Not both!')
 
         self.n_reads, self.ni, _ = np.shape(self.input_read_cube)
-        if self.wfi_mode == 'WIM':
-            self.exp_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
-        elif self.wfi_mode == 'WSM':
-            self.exp_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
+
+    def make_time_array(self):
+        """
+        The method make_data_time_arrays() will generate a WFI mode dependent time array of the exposure or input
+        data supplied to make the read noise reference file.
+        """
+
+        if self.meta['exposure']['type'] == 'WFI_IMAGE':
+            frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
+        elif self.meta['exposure']['type'] == 'WFI_GRISM':
+            frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
         else:
             logging.info(f'No frame time found for WFI mode specified.')
             raise ValueError(f'No frame time found for WFI mode specified!')
 
         # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array in {self.wfi_mode} mode with {self.n_reads} reads with a frame'
-                     f'time of {self.exp_time} seconds.')
-        self.time_arr = np.array([self.exp_time * i for i in range(1, self.n_reads + 1)])
+        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
+                     f'time of {frame_time} seconds.')
+        self.time_arr = np.array([frame_time * i for i in range(1, self.n_reads + 1)])
 
     def make_ramp_cube_model(self):
         """
