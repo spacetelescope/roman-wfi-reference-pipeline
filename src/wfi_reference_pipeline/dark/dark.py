@@ -237,7 +237,7 @@ class Dark(ReferenceFile):
 
         return ma_tab_num_resultants, ma_tab_reads_per_resultant, ma_tab_sequence
 
-    def make_ma_table_dark(self, num_resultants=None, **kwargs):
+    def make_ma_table_dark(self, num_resultants, num_rds_per_res=None, ma_table_seq=None, wfi_mode=None):
         """
         The method make_dark() takes a non-resampled dark cube read and converts it into
         a number of resultants that constructed from the mean of a number of reads
@@ -253,12 +253,10 @@ class Dark(ReferenceFile):
 
         Parameters
         ----------
-        num_resultants: integer; the number of resultants
-            The number of final resultants in the dark asdf file.
-        kwargs:
-            num_rds_per_res: integer; The user suupplied number of reads per resultant in evenly spaced resultants.
-            wfi_mode: string; allowed values - 'WIM' for WFI imaging mode and 'WSM" for WFI spectral mode
-            ma_table_seq: string TBD - for unevenly spaced resultants
+        num_resultants: integer; The number of resultants
+        num_rds_per_res: integer; The user suupplied number of reads per resultant in evenly spaced resultants.
+        ma_table_seq: string TBD - for unevenly spaced resultants
+        wfi_mode: string; allowed values - 'WIM' for WFI imaging mode and 'WSM" for WFI spectral mode
         """
 
         # Flow control and logging messaging depending on how the Dark() class is initialized
@@ -269,14 +267,14 @@ class Dark(ReferenceFile):
             logging.info(f'Input dark read cube used for MA table resampling.')
         self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
 
-        if 'wfi_mode' not in kwargs:
+        if wfi_mode is None:
             logging.info(f'No wfi_mode supplied as optional keyword into make_ma_table_dark().')
             raise ValueError(f'No wfi_mode supplied as optional keyword into make_ma_table_dark()!')
         else:
-            if kwargs.get('wfi_mode') == 'WIM':
+            if wfi_mode == 'WIM':
                 self.meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
                 logging.info(f'User supplied WFI imaging mode selected (WIM).')
-            if kwargs.get('wfi_mode') == 'WSM':
+            if wfi_mode == 'WSM':
                 self.meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
                 logging.info(f'User supplied WFI spectral mode selected (WSM).')
             logging.info(f'Updated meta data with user supplied MA Table information with evening spacing.')
@@ -292,21 +290,20 @@ class Dark(ReferenceFile):
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
         # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
-        if 'num_rds_per_res' in kwargs:
-            if 'ma_table_seq' in kwargs:
-                logging.info(f'Warning: User supplied information to for evenly spaced MA table resampling and '
-                             f'a MA table sequence. Defaulting to evenly spaced sampling. Provide MA table sequence'
-                             f' with keyword ma_table_seq = string without keyword num_rds_per_res')
-            rds_per_res = kwargs.get('num_rds_per_res')
-            if rds_per_res > self.n_reads:
+        if num_rds_per_res is not None:
+            if ma_table_seq is not None:
+                logging.info(f'Warning: User supplied information for evenly spaced MA table resampling and '
+                             f'a MA table sequence for generalized uneven sampling.')
+                logging.info(f'Defaulting to evenly spaced sampling.')
+            if num_rds_per_res > self.n_reads:
                 # Check that the length of the reads per resultant is not greater than the available number of reads
                 logging.info(f'Can not average over more reads than supplied in dark read cube.')
                 raise ValueError(f'Can not average over more reads than supplied in dark read cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
-            logging.info(f'Averaging over reads per ma table specs or user defined even spacing.')
+            logging.info(f'Averaging over reads with evenly spaced resultants.')
             for i_res in range(0, num_resultants):
-                i1 = i_res * rds_per_res
-                i2 = i1 + rds_per_res
+                i1 = i_res * num_rds_per_res
+                i2 = i1 + num_rds_per_res
                 if i2 > self.n_reads:
                     logging.info(f'Warning: The number of reads per resultant was not evenly divisible into the number'
                                  f' of available reads to average and remainder reads were skipped.')
@@ -314,7 +311,7 @@ class Dark(ReferenceFile):
                     break
                 self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
             self.resultant_tau_arr[i_res] = np.mean(self.time_arr[i1:i2])
-            logging.info(f'MA table resampling with {num_resultants} resultants averaging {rds_per_res}'
+            logging.info(f'MA table resampling with {num_resultants} resultants averaging {num_rds_per_res}'
                          f' reads per resultant complete.')
         else:
             logging.info(f'Number of reads per resultant keyword num_rds_per_res required for MA table averaging to '
@@ -322,7 +319,7 @@ class Dark(ReferenceFile):
             raise ValueError(f'Number of reads per resultant keyword num_rds_per_res required for MA table averaging to'
                              f' evenly resample dark cube or supply MA table exposure sequence string keyword')
 
-        if 'ma_table_seq' in kwargs and 'num_rds_per_res' not in kwargs:
+        if ma_table_seq is not None and num_rds_per_res is None:
             logging.info(f'Using MA table exposure sequence provided for MA table resampling and averaging of '
                          f'resultants and calculation of variance based resultant time.')
         # For unevenly spaced resultant time tau in Casternao et al equation 14 handling the variance based
