@@ -1,18 +1,11 @@
-import datetime
-import os
-import sys
-
+import datetime, os, sys, yaml
+import numpy as np
 if sys.version_info < (3, 9):
     import importlib_resources
 else:
     import importlib.resources as importlib_resources
-
 from astropy.time import Time
-import yaml
-import numpy as np
-
 from romancal.lib import dqflags
-
 from wfi_reference_pipeline.version import version as PIPELINE_VERSION
 
 
@@ -20,6 +13,15 @@ class ReferenceFile:
     """
     Base class ReferenceFile() writes static metadata for all reference file types
     are written.
+
+    Returns
+    -------
+    self.input_data: attribute;
+        Class dependent variable assigned as attribute. Intended to be list of files or numpy array.
+        If not used, returned as none.
+    self.ancillary: attribute;
+        Other data for WFI such as filter names, frame times, WFI mode.
+    self.dqflag_defs:
     """
 
     def __init__(self, data, meta_data={}, bit_mask=None, clobber=False,
