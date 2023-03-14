@@ -35,9 +35,8 @@ def test_rfp_dark_schema():
     dark_test_meta.update({'description': 'For schema pytest validation.'})
 
     # Create dark test object with the reference file pipeline Dark() module and input test data and error arrays.
-    rfp_dark = dark.Dark(None, meta_data=dark_test_meta, input_dark_cube=np.ones((3, 3, 3), dtype=np.float32))
-    rfp_dark.make_ma_table_dark(test_ngroups, test_nframes, wfi_mode='WIM')
-    rfp_dark.resampled_dark_cube_err = np.ones((3, 3, 3), dtype=np.float32)
+    rfp_dark = dark.Dark(None, meta_data=dark_test_meta, input_dark_cube=np.ones((1, 1, 1), dtype=np.float32))
+    rfp_dark.resampled_dark_cube_err = np.ones((1, 1, 1), dtype=np.float32)
 
     # Build dark reference asdf file object and test by asserting validate returns none.
     rfp_test_dark = rds.DarkRef()
