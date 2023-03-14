@@ -10,10 +10,10 @@ from romancal.lib import dqflags
 import yaml
 import pkg_resources
 
-logging.getLogger('stpipe').setLevel(logging.WARNING)
-log_file_str = 'linearity_dev.log'
-logging.basicConfig(filename=log_file_str, level=logging.INFO)
-logging.info(f'Dark reference file log: {log_file_str}')
+# logging.getLogger('stpipe').setLevel(logging.WARNING)
+# log_file_str = 'linearity_dev.log'
+# logging.basicConfig(filename=log_file_str, level=logging.INFO)
+# logging.info(f'Dark reference file log: {log_file_str}')
 
 # dq flags
 key_nl = 'NONLINEAR'  # Pixel is non linear
