@@ -1,8 +1,8 @@
 import yaml, asdf
 from wfi_reference_pipeline.dark import dark
-from roman_datamodels import units as ru
 import importlib.resources as importlib_resources
 import roman_datamodels.stnode as rds
+from roman_datamodels import units as ru
 import numpy as np
 
 
@@ -35,13 +35,16 @@ def test_rfp_dark_schema():
     dark_test_meta.update({'description': 'For schema pytest validation.'})
 
     # Create dark test object with the reference file pipeline Dark() module and input test data and error arrays.
-    rfp_dark = dark.Dark(None, meta_data=dark_test_meta, input_dark_cube=np.ones((1, 1, 1), dtype=np.float32))
-    rfp_dark.resampled_dark_cube_err = np.ones((1, 1, 1), dtype=np.float32)
+    test_data = np.ones((3, 3, 3), dtype=np.float32) * ru.DN
+    rfp_dark = dark.Dark(None, meta_data=dark_test_meta, input_dark_cube=test_data)
+    rfp_dark.make_ma_table_dark(test_ngroups, num_rds_per_res=test_nframes, wfi_mode='WIM')
+    rfp_dark.resampled_dark_cube *= ru.DN
+    rfp_dark.resampled_dark_cube_err *= ru.DN
 
     # Build dark reference asdf file object and test by asserting validate returns none.
     rfp_test_dark = rds.DarkRef()
-    rfp_test_dark['data'] = rfp_dark.resampled_dark_cube * ru.DN
-    rfp_test_dark['err'] = rfp_dark.resampled_dark_cube_err * ru.DN
+    rfp_test_dark['data'] = rfp_dark.resampled_dark_cube
+    rfp_test_dark['err'] = rfp_dark.resampled_dark_cube_err
     rfp_test_dark['dq'] = rfp_dark.mask
     rfp_test_dark['meta'] = rfp_dark.meta
     td = asdf.AsdfFile()
