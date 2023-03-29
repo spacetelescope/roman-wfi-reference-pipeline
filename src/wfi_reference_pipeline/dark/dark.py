@@ -1,13 +1,11 @@
 import roman_datamodels.stnode as rds
 import numpy as np
-import psutil, sys, os, glob, time, gc, asdf, math, datetime, logging
+import os, gc, asdf, datetime, logging
 from ..utilities.reference_file import ReferenceFile
 from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
-from RTB_Database.utilities.login import connect_server
-from RTB_Database.utilities.table_tools import DatabaseTable
-from RTB_Database.utilities.table_tools import table_names
+
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
 
@@ -183,59 +181,6 @@ class Dark(ReferenceFile):
         af = asdf.AsdfFile()
         af.tree = {'meta': meta_md, 'data': self.master_dark}
         af.write_to(md_outfile)
-
-    def get_ma_table_info(self, ma_table_id):
-        """
-        This method get_me_table_info() imports modules and methods from the RTB database
-        repo to allow the RFP to establish a connection and query the science ma tables
-        for specifications on how they are made.
-
-        NOTE: Incorporating changes from the upscope are not included yet and will alter
-        how this is done in significant manners.
-
-        It might be that this is also a utility in order to initiliaze dark reference file
-        meta data with ma table information before the Dark class() instance is created
-
-        Parameters
-        ----------
-        ma_table_id: integer
-            Database entry in first column to fetch ma table information.
-
-        Returns
-        -------
-        ma_tab_num_resultants: integer
-            number of resultants, currently called ngroups in meta
-        ma_tab_reads_per_resultant: integer
-            number of reads per resultant, currently called nframe in meta
-        """
-
-        con, _, _ = connect_server(DSN_name='DWRINSDB')
-        new_tab = DatabaseTable(con, 'ma_table_science')
-        ma_tab = new_tab.read_table()
-        ma_tab_ind = ma_table_id - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
-        ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
-        ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
-        ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
-        self.frame_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
-        ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
-        logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
-        logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
-                     f' reads per resultant.')
-        # now update meta data with ma table specs
-        self.meta['exposure'].update(dict(ngroups=ma_tab_num_resultants, nframes=ma_tab_reads_per_resultant, groupgap=0,
-                                          ma_table_name=ma_tab_name, ma_table_number=ma_table_id))
-        logging.info(f'Updated meta data with MA table info.')
-        # Determine WIM or WSM - WFI Imaging or Spectral Mode - from the ma table specs in the RTB database from PRD.
-        if self.frame_time == self.ancillary['frame_time']['WIM']:  # frame time in imaging mode in seconds
-            self.meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
-            logging.info(f'WFI imaging mode selected (WIM) from RTB database.')
-        elif self.frame_time == self.ancillary['frame_time']['WSM']:  # frame time in spectral mode in seconds:
-            self.meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
-            logging.info(f'WFI spectral mode selected (WSM) from RTB database.')
-
-        ma_tab_sequence = '222222R'
-
-        return ma_tab_num_resultants, ma_tab_reads_per_resultant, ma_tab_sequence
 
     def make_ma_table_dark(self, num_resultants, num_rds_per_res=None, ma_table_seq=None, wfi_mode=None):
         """
