@@ -1,8 +1,8 @@
 pyyaml
 pytest
 crds
-romanad=0.11.1
-roman-datamodels=0.14.1
-romancal=0.10.0
+romanad==0.11.1
+roman-datamodels==0.14.1
+romancal==0.10.0
 RTB_database
 bs4
