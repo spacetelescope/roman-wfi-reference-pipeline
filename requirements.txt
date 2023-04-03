@@ -4,5 +4,5 @@ crds
 romanad==0.11.1
 roman-datamodels==0.14.1
 romancal==0.10.0
-RTB_database
+git@grit.stsci.edu:roman/rtb-database.git
 bs4
