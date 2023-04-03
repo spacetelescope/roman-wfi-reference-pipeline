@@ -16,7 +16,7 @@ with anc_file_path.open() as af:
     anc_data = yaml.safe_load(af)
 
 
-def ma_tab_from_rtbdb(ma_table_id):
+def get_ma_tab_from_rtb_db(ma_table_id):
     """
     This method get_me_table_info() imports modules and methods from the RTB database
     repo to allow the RFP to establish a connection and query the science ma tables

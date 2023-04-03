@@ -50,11 +50,12 @@ def test_rfp_dark_schema():
                                                'ma_table_number': test_ma_table_id})
             dark_test_meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
             dark_test_meta.update({'description': 'For schema pytest validation.'})
+            dark_test_meta.update({'pedigree': 'DUMMY'})
 
             # Create dark test object with the reference file pipeline dark() module with test data and error arrays.
             test_data = np.ones((3, 3, 3), dtype=np.float32) * ru.DN
             rfp_dark = dark.Dark(None, meta_data=dark_test_meta, input_dark_cube=test_data)
-            rfp_dark.make_ma_table_dark(test_ngroups, num_rds_per_res=test_nframes, wfi_mode='WIM')
+            rfp_dark.make_ma_table_dark(test_ngroups, num_rds_per_res=test_nframes)
             rfp_dark.resampled_dark_cube *= ru.DN
             rfp_dark.resampled_dark_cube_err *= ru.DN
 
