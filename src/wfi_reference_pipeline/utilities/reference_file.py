@@ -67,7 +67,7 @@ class ReferenceFile:
 
         # Ancillary data for reference file modules
         with importlib_resources.path('wfi_reference_pipeline.resources.data',
-                                          'ancillary.yaml') as afile:
+                                      'ancillary.yaml') as afile:
             with open(afile) as af:
                 self.ancillary = yaml.safe_load(af)
 

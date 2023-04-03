@@ -1,5 +1,5 @@
 instrument:
-  name: WFI
+  name:
   detector:
   optical_element:
 exposure:
@@ -10,6 +10,6 @@ exposure:
   ngroups:
   nframes:
   groupgap:
-pedigree: DUMMY
-description: For reference file pipeline development.
+pedigree:
+description:
 useafter:
