@@ -38,6 +38,8 @@ class IPC(ReferenceFile):
         else:
             pass
 
+        self.ipc_kernel = None
+
     def make_ipc_ref_file(self):
         """
         The method make_ipc_ref_file() generates a WFI inter-pixel capacitance reference file.'
@@ -56,13 +58,13 @@ class IPC(ReferenceFile):
                                [0.0021, 0.0162, 0.0020]], dtype=np.float32)
 
         if self.input_data is None:
-            ipc_kernel = ipc_kernel_default
+            self.ipc_kernel = ipc_kernel_default
             print("Using default IPC kernel from Bellini et al. 2022.")
         else:
             if self.input_data.shape != (3, 3):
                 print("The input dimensions of supplied IPC kernel is not 3x3.")
             else:
-                ipc_kernel = self.input_data
+                self.ipc_kernel = self.input_data
                 print("User supplied IPC kernel used to make reference file.")
 
         # Check if the output file exists, and take appropriate action.
@@ -71,7 +73,7 @@ class IPC(ReferenceFile):
         # Construct the dark object from the data model.
         ipc_file = rds.IpcRef()
         ipc_file['meta'] = self.meta
-        ipc_file['data'] = ipc_kernel
+        ipc_file['data'] = self.ipc_kernel
 
         # af: asdf file tree: {meta, data, err, dq}
         af = asdf.AsdfFile()
