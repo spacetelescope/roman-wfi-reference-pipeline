@@ -4,10 +4,8 @@ from pathlib import Path
 
 class MakeTestMeta:
     """
-    Class to generate reference file common meta and type specific meta required to validate against schema in roman
-    data models.
+    Class to generate reference file common meta and type specific meta.
     """
-
     def __init__(self, ref_type=None):
         """
         Return common meta data on any instance of the class, with optional ref_type variable needed to import
@@ -17,12 +15,11 @@ class MakeTestMeta:
         Parameters
         -------
         ref_type: str; default = None
-            String defining the reference file type which will populate additional meta data for file types requiring
-            meta not included in common.
-
+            String defining the reference file type which will populate reftype in the common meta data for all
+            reference files and necessary selector for additional meta.
         """
 
-        # File to dictionary with empty common meta.
+        # File to empty dictionary of common meta keys.
         common_yaml_path = Path("/grp/roman/rcosenti/RFP_git_clone/wfi_reference_pipeline/src/wfi_reference_pipeline/"
                                 "resources/data/common_meta.yaml")
 
@@ -39,14 +36,14 @@ class MakeTestMeta:
             self.test_meta['instrument'].update({'name': 'WFI'})
             self.test_meta['instrument'].update({'detector': 'WFI01'})
 
-            # Add Dark and Read Noise required exposure data about type.
+            # Add Dark and Read Noise exposure type meta.
             if self.test_meta['reftype'] in ['DARK', 'READ_NOISE']:
                 self.test_meta['exposure'] = {'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
-                # Add Dark specific exposure meta about MA table.
+                # Add Dark MA table meta.
                 if self.test_meta['reftype'] == 'DARK':
                     self.test_meta['exposure'].update({'ngroups': 1, 'nframes': 1, 'groupgap': 0,
                                                        'ma_table_name': 'Test Table', 'ma_table_number': 0})
 
-            # Add Dark, Distortion, Flat, and IPC required optical element data about filter.
+            # Add optical element filter meta.
             if self.test_meta['reftype'] in ['DARK', 'DISTORTION', 'FLAT', 'IPC']:
                 self.test_meta['instrument'].update({'optical_element': 'F158'})
