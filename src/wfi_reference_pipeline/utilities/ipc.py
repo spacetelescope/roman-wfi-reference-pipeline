@@ -39,23 +39,20 @@ class IPC(ReferenceFile):
             pass
 
         self.ipc_kernel = None
+        self.ipc_obj = None
 
-    def make_ipc_ref_file(self):
+    def make_ipc_kernel(self):
         """
-        The method make_ipc_ref_file() generates a WFI inter-pixel capacitance reference file.'
-
-        Outputs
-        -------
-        af: asdf file tree: {meta, data}
-            meta:
-            dq: mask - data quality array
-                masked reference pixels flagged 2**31
-                masked bad pixels flagged 2**1
+        The method make_ipc_kernel() generates a WFI inter-pixel capacitance matrix or uses the values supplied
+        when the class instance was initiated.'
         """
 
+        # IPC kernel from Bellini et al. 2022 WFIsim: The Roman Telescope Branch
+        # Wide-Field-Instrument Simulator - Nancy Grace Roman Space Telescope
+        # Technical Report Roman-STScI-000433
         ipc_kernel_default = np.array([[0.0021, 0.0166, 0.0022],
-                               [0.0188, 0.9159, 0.0187],
-                               [0.0021, 0.0162, 0.0020]], dtype=np.float32)
+                                       [0.0188, 0.9159, 0.0187],
+                                       [0.0021, 0.0162, 0.0020]], dtype=np.float32)
 
         if self.input_data is None:
             self.ipc_kernel = ipc_kernel_default
@@ -67,15 +64,25 @@ class IPC(ReferenceFile):
                 self.ipc_kernel = self.input_data
                 print("User supplied IPC kernel used to make reference file.")
 
+    def make_ipc_obj(self):
+        """
+        The method make_ipc_obj creates an object from the DMS data model.
+        """
+
+        # Construct the dark object from the data model.
+        self.ipc_obj = rds.IpcRef()
+        self.ipc_obj['meta'] = self.meta
+        self.ipc_obj['data'] = self.ipc_kernel
+
+    def save_ipc(self):
+        """
+        The method save_ipc writes the reference file object to the specified asdf outfile.
+        """
+
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
 
-        # Construct the dark object from the data model.
-        ipc_file = rds.IpcRef()
-        ipc_file['meta'] = self.meta
-        ipc_file['data'] = self.ipc_kernel
-
         # af: asdf file tree: {meta, data, err, dq}
         af = asdf.AsdfFile()
-        af.tree = {'roman': ipc_file}
+        af.tree = {'roman': self.ipc_obj}
         af.write_to(self.outfile)
