@@ -1,8 +1,0 @@
-instrument:
-  name: WFI
-  detector:
-exposure:
-  type: WFI_IMAGE
-  'p_exptype': WFI_IMAGE|
-pedigree: DUMMY
-description: For reference file pipeline development.

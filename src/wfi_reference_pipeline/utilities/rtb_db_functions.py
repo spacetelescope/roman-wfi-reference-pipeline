@@ -1,19 +1,17 @@
-import numpy as np
 import wfi_reference_pipeline.resources.data as resource_meta
-import psutil, sys, os, glob, time, gc, asdf, math, datetime, logging, yaml, importlib.resources
-from pathlib import Path
+import logging, yaml, importlib.resources
 from RTB_Database.utilities.login import connect_server
 from RTB_Database.utilities.table_tools import DatabaseTable
 
-# Load all of the yaml files with reference file specific meta data
-meta_yml_fls = importlib.resources.files(resource_meta)
+# File to empty dictionary of common meta keys.
+meta_yaml_files = importlib.resources.files(resource_meta)
 
-anc_file_path = Path("/grp/roman/rcosenti/RFP_git_clone/wfi_reference_pipeline/src/wfi_reference_pipeline/" 
-                     "resources/data/ancillary.yaml")
+# Load the YAML file contents into a dictionary using safe_load().
+anc_yaml_path = meta_yaml_files.joinpath('ancillary.yaml')
 
 # Load the YAML file contents into a dictionary using safe_load()
-with anc_file_path.open() as af:
-    anc_data = yaml.safe_load(af)
+with anc_yaml_path.open() as ayp:
+    anc_data = yaml.safe_load(ayp)
 
 
 def get_ma_table_from_rtb_db(ma_table_id):
