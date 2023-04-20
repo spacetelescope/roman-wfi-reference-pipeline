@@ -1,5 +1,5 @@
-import yaml
-from pathlib import Path
+import yaml, importlib.resources
+import wfi_reference_pipeline.resources.data as resource_meta
 
 
 class MakeDevMeta:
@@ -20,12 +20,12 @@ class MakeDevMeta:
         """
 
         # File to empty dictionary of common meta keys.
-        common_yaml_path = Path("/grp/roman/rcosenti/RFP_git_clone/wfi_reference_pipeline/src/wfi_reference_pipeline/"
-                                "resources/data/common_meta.yaml")
+        meta_yaml_files = importlib.resources.files(resource_meta)
 
         # Load the YAML file contents into a dictionary using safe_load().
-        with common_yaml_path.open() as cyf:
-            self.dev_meta = yaml.safe_load(cyf)
+        common_yaml_path = meta_yaml_files.joinpath('common_meta.yaml')
+        with common_yaml_path.open() as cyp:
+            self.dev_meta = yaml.safe_load(cyp)
             self.dev_meta.update({'reftype': ref_type})
             self.dev_meta.update({'pedigree': 'DUMMY'})
             self.dev_meta.update({'description': 'For RFP Development.'})
@@ -48,3 +48,6 @@ class MakeDevMeta:
             # Add optical element filter meta.
             if self.dev_meta['reftype'] in ['DARK', 'DISTORTION', 'FLAT', 'IPC']:
                 self.dev_meta['instrument'].update({'optical_element': 'F158'})
+                if self.dev_meta['reftype'] in ['IPC']:
+                    self.dev_meta['instrument'].update({'p_optical_element':
+                                                         'F062|F087|F106|F129|F146|F158|F184|F213|GRISM|PRISM|DARK|'})
