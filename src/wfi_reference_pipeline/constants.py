@@ -1,0 +1,41 @@
+WFI_DETECTORS = {
+    "WFI01",
+    "WFI02",
+    "WFI03",
+    "WFI04",
+    "WFI05",
+    "WFI06",
+    "WFI07",
+    "WFI08",
+    "WFI09",
+    "WFI10",
+    "WFI11",
+    "WFI12",
+    "WFI13",
+    "WFI14",
+    "WFI15",
+    "WFI16",
+    "WFI17",
+    "WFI18",
+}
+
+WFI_PEDIGREE = {"GROUND", "MODEL", "DUMMY", "SIMULATION"}
+
+WFI_REF_TYPES = {
+    "DARK": "Dark",
+    "DISTORTION": "Distortion",
+    "FLAT": "Flat",
+    "GAIN": "Gain",
+    "INVERSE_LINEARITY": "Inverse Linearity",
+    "IPC": "IPC",
+    "LINIEARITY": "Linearity",
+    "MASK": "Mask",
+    "PIXELAREA": "Pixelarea",
+    "READNOISE": "Readnoise",
+    "REF_COMMON": "Ref Common",
+    "REF_EXPOSURE_TYPE": "Ref Exposure Type",
+    "REF_OPTICAL_ELEMENT": "Ref Optical Element",
+    "SATURATION": "Saturation",
+    "SUPERBIAS": "Superbias",
+    "WFI_IMG_PHOTOM": "WFI Img Photom",
+}
