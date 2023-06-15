@@ -1,12 +1,10 @@
 import logging
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-
 from ..utilities.reference_file import ReferenceFile
 # from ..utilities.logging_functions import log_info
-
+from astropy import units as u
 import pdb
 
 
@@ -38,14 +36,14 @@ class Gain(ReferenceFile):
         else:
             pass
 
-        if isinstance(self.data, list):
-            self.data = np.array(self.data)
-        if self.data.shape[0] % 2:
-            self.data = self.data[:-1]
-            logging.warn('Odd number of input observations given. Removing the '
-                         'last observation from analysis.')
+        # if isinstance(self.data, list):
+        #     self.data = np.array(self.data)
+        # if self.data.shape[0] % 2:
+        #     self.data = self.data[:-1]
+        #     logging.warn('Odd number of input observations given. Removing the '
+        #                  'last observation from analysis.')
 
-        self.gain = None
+        self.gain = input_data
 
     def make_gain(self):
         """
@@ -93,14 +91,14 @@ class Gain(ReferenceFile):
 
         return signal_arr, var_arr
 
-    def save_file(self):
+    def save_gain(self):
 
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
 
         gain_file = rds.GainRef()
         gain_file['meta'] = self.meta
-        gain_file['data'] = self.gain
+        gain_file['data'] = self.gain * u.electron / u.DN
 
         # Add in the meta data and history to the ASDF tree.
         af = asdf.AsdfFile()
