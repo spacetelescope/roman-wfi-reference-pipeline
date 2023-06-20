@@ -3,7 +3,7 @@ import sys
 ON_GITLAB_ACTIONS = "GITLAB_CI" in os.environ
 
 # TODO Enable this test once RTB-DATABASE is up and running.
-if not ON_GITLAB_ACTIONS:
+if ON_GITLAB_ACTIONS:
     sys.exit(0)
 
 
