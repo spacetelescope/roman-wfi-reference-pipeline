@@ -69,6 +69,9 @@ def make_read_pattern(ma_table_meta=None, num_resultants=None, num_rds_per_res=N
     as a standalone function for RFP development and testing mimicking future capabilities of DMS, Roman Attribute
     Dictionary, Roman Data Models, and Romancal.
 
+    example unevenly spaced with skips read_pattern = [[1,2], [4,5,6], [9, 10, 11,12], [13]]
+    example evenly spaced no skips read_pattern = [[1,2], [3,4], [5, 6], [7,8]]
+
     Parameters
     ----------
     ma_table_meta: dictionary; default=None
