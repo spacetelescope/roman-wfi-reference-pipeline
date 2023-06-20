@@ -1,17 +1,20 @@
-import asdf
 import os
 import sys
-from wfi_reference_pipeline.dark import dark
-from roman_datamodels import units as ru
-from wfi_reference_pipeline.tests import make_test_meta
-import roman_datamodels.stnode as rds
-import numpy as np
-
 ON_GITLAB_ACTIONS = "GITLAB_CI" in os.environ()
 
 # TODO Enable this test once RTB-DATABASE is up and running.
 if not ON_GITLAB_ACTIONS:
     sys.exit(0)
+
+
+import asdf
+import numpy as np
+import roman_datamodels.stnode as rds
+from roman_datamodels import units as ru
+from wfi_reference_pipeline.tests import make_test_meta
+from wfi_reference_pipeline.dark import dark
+
+
 
 def test_rfp_dark_schema():
     """
