@@ -24,14 +24,17 @@ class ReferenceFile:
     self.dqflag_defs:
     """
 
-    def __init__(self, data, meta_data={}, bit_mask=None, clobber=False,
+    def __init__(self, data, meta_data, bit_mask=None, clobber=False,
                  make_mask=False, mask_size=(4096, 4096)):
 
         self.input_data = data
+        # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
+        self.meta_data = meta_data
 
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 
+        # TODO is this needed here or will this be reference type specific?
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
             self.mask = bit_mask.astype(np.uint32)
@@ -41,38 +44,17 @@ class ReferenceFile:
             else:
                 self.mask = None
 
-        # Grab the metadata from the yaml file if provided.
-        if not meta_data:
-            meta_data = {}
-        if isinstance(meta_data, dict):
-            self.meta = meta_data
-        elif isinstance(meta_data, str):
-            with open(meta_data) as md:
-                self.meta = yaml.safe_load(md)
-        else:
-            raise TypeError(f'meta_data should be of type dict '
-                            f'or str, but got {type(meta_data)}')
 
-        # Convert use after date to Astropy.Time object.
-        if 'useafter' in self.meta.keys():
-            self.meta['useafter'] = Time(self.meta['useafter'])
-        else:
-            self.meta['useafter'] = Time(datetime.datetime.now())
-        # Write static metadata for all file type.
-        self.meta['author'] = f'WFI Reference File Pipeline version {PIPELINE_VERSION}'
-        self.meta['origin'] = 'STSCI'
-        self.meta['telescope'] = 'ROMAN'
-        if 'instrument' in self.meta.keys():
-            self.meta['instrument'].update({'name': 'WFI'})
-
-        # Ancillary data for reference file modules
-        with importlib_resources.path('wfi_reference_pipeline.resources.data',
-                                      'ancillary.yaml') as afile:
-            with open(afile) as af:
-                self.ancillary = yaml.safe_load(af)
+        # TODO - Is this needed here?
+        # # Ancillary data for reference file modules
+        # with importlib_resources.path('wfi_reference_pipeline.resources.data',
+        #                               'ancillary.yaml') as afile:
+        #     with open(afile) as af:
+        #         self.ancillary = yaml.safe_load(af)
 
         # Other stuff.
         self.clobber = clobber
+        self.meta_data.initialize_reference_data(self)
 
     def check_output_file(self, outfile):
         # Check if the output file exists, and take appropriate action.
