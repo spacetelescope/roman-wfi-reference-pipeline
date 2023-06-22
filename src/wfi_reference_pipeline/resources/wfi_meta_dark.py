@@ -16,6 +16,7 @@ class WFIMetaDark(WFIMetadata):
         super().__post_init__()
         self.reference_type = WFI_REF_TYPES["DARK"]
 
+    # TODO remove this eventually, just here for an example
     def initialize_reference_data(self, reference):
-        # TODO put code here for initializaton code from the ReferenceFile Class
-        print(reference.data + " UPDATED FOR A DARK METACLASS")
+        # TODO put code here for initializaton code from the ReferenceFile Class, Print used as temp example
+        print(reference.data)

@@ -27,14 +27,14 @@ class ReferenceFile:
     def __init__(self, data, meta_data, bit_mask=None, clobber=False,
                  make_mask=False, mask_size=(4096, 4096)):
 
-        self.input_data = data
+        self.data = data
         # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
         self.meta_data = meta_data
 
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 
-        # TODO is this needed here or will this be reference type specific?
+        # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
             self.mask = bit_mask.astype(np.uint32)
@@ -54,6 +54,8 @@ class ReferenceFile:
 
         # Other stuff.
         self.clobber = clobber
+
+        # TODO remove the below line, it is here as an example for utilizing the abstractmethods
         self.meta_data.initialize_reference_data(self)
 
     def check_output_file(self, outfile):
