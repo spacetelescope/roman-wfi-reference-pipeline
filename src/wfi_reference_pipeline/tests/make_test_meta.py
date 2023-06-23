@@ -26,9 +26,10 @@ class MakeTestMeta:
         groupgap = 0
         ma_table_name = "Test ma_table_name"
         ma_table_number = 0
-        p_optical_element = "F158"
+        p_exptype = "None"
+        ref_optical_element = "F158"
 
-        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, p_optical_element]
+        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, p_exptype, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
 

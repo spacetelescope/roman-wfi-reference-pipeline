@@ -15,7 +15,8 @@ class WFIMetaDark(WFIMetadata):
     groupgap: int
     ma_table_name: str
     ma_table_number: int
-    p_optical_element: str
+    p_exptype: str
+    ref_optical_element: str
 
     def __post_init__(self):
         super().__post_init__()

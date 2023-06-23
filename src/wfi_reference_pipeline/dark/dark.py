@@ -73,7 +73,7 @@ class Dark(ReferenceFile):
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
 
-        if self.data is None and self.dark_read_cube is None:
+        if self.input_data is None and self.dark_read_cube is None:
             raise ValueError('No data supplied to make dark reference file!')
 
     def make_master_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
@@ -269,9 +269,9 @@ class Dark(ReferenceFile):
         """
 
         if self.frame_time is None:
-            if self.meta['exposure']['type'] == 'WFI_IMAGE':
+            if self.meta_data.p_exptype == 'WFI_IMAGE':
                 self.frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
-            elif self.meta['exposure']['type'] == 'WFI_GRISM':
+            elif self.meta_data.p_exptype == 'WFI_GRISM':
                 self.frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
             else:
                 logging.info(f'No frame time found for WFI mode specified.')
@@ -359,7 +359,7 @@ class Dark(ReferenceFile):
 
         # Construct the dark object from the data model.
         dark_file = rds.DarkRef()
-        dark_file['meta'] = self.meta
+        dark_file['meta'] = self.meta_data
         dark_file['data'] = self.resampled_dark_cube * ru.DN
         dark_file['err'] = self.resampled_dark_cube_err * ru.DN
         dark_file['dq'] = self.mask
