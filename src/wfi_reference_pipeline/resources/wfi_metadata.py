@@ -31,8 +31,3 @@ class WFIMetadata(ABC):
                 self.use_after = Time(self.use_after)
             else:
                 self.use_after = Time(datetime.now())
-
-    #TODO remove this abstractmethod eventually, just here for example
-    @abstractmethod
-    def initialize_reference_data(reference):
-        pass

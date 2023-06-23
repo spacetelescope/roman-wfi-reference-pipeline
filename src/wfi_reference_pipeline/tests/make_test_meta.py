@@ -4,7 +4,12 @@ from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_PEDIGREE, WFI_DE
 
 class MakeTestMeta:
     """
-    Class to generate reference file common meta and type specific meta.
+    Class to generate any complete reference file MetaData object.
+
+    Example Usage:
+    test_meta_maker = MakeTestMeta("DARK")
+    dark_meta_data = test_meta_maker.meta_dark
+
     """
     def _create_test_meta_dark(self, meta_data):
         ngroups = 1
@@ -17,17 +22,14 @@ class MakeTestMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, p_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
-    def __init__(self, ref_type=None):
+    def __init__(self, ref_type):
         """
-        Return common meta data on any instance of the class, with optional ref_type variable needed to import
-        reference file specific meta for testing for files requiring additional information in meta as determined
-        by the schema in roman data models.
+        Generates a reference type specific MetaData object relevant to the ref_type parameter.
 
         Parameters
         -------
-        ref_type: str; default = None
-            String defining the reference file type which will populate reftype in the common meta data for all
-            reference files and necessary selector for additional meta.
+        ref_type: str;
+            String defining the reference file type which will determine the reference meta object created.
         """
 
         pedigree = "TESTING"

@@ -11,14 +11,15 @@ from wfi_reference_pipeline.version import version as PIPELINE_VERSION
 
 class ReferenceFile:
     """
-    Base class ReferenceFile() writes static metadata for all reference file types
-    are written.
+    Base class ReferenceFile() for all reference file types.
 
     Returns
     -------
     self.input_data: attribute;
         Class dependent variable assigned as attribute. Intended to be list of files or numpy array.
         If not used, returned as none.
+    self.meta_data: object;
+        ref type specific metadata object
     self.ancillary: attribute;
         Other data for WFI such as filter names, frame times, WFI mode.
     self.dqflag_defs:
@@ -54,9 +55,6 @@ class ReferenceFile:
 
         # Other stuff.
         self.clobber = clobber
-
-        # TODO remove the below line, it is here as an example for utilizing the abstractmethods
-        self.meta_data.initialize_reference_data(self)
 
     def check_output_file(self, outfile):
         # Check if the output file exists, and take appropriate action.
