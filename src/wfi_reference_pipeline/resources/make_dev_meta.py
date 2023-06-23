@@ -38,7 +38,7 @@ class MakeDevMeta:
             self.dev_meta['instrument'].update({'detector': 'WFI01'})
 
             # Add Dark and Read Noise exposure type meta.
-            if self.dev_meta['reftype'] in ['DARK', 'READ_NOISE']:
+            if self.dev_meta['reftype'] in ['DARK', 'READNOISE']:
                 self.dev_meta['exposure'] = {'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
                 # Add Dark MA table meta.
                 if self.dev_meta['reftype'] == 'DARK':

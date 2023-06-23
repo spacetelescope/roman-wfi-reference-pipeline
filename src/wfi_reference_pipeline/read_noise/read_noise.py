@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from roman_datamodels import units as ru
+from astropy import units as u
 import numpy as np
 import asdf, logging, math, gc, os
 from astropy.stats import sigma_clip
@@ -236,7 +236,7 @@ class ReadNoise(ReferenceFile):
         # Construct the read noise object from the data model.
         rn_file = rds.ReadnoiseRef()
         rn_file['meta'] = self.meta
-        rn_file['data'] = self.ramp_res_var * ru.DN  # Use astropy units to make data array a quantity object.
+        rn_file['data'] = self.ramp_res_var * u.DN  # Use astropy units to make data array a quantity object.
 
         # af: asdf file tree: {meta, data}
         af = asdf.AsdfFile()

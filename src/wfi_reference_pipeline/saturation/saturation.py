@@ -1,6 +1,7 @@
 import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
 import asdf
+from astropy import units as u
 import numpy as np
 
 
@@ -14,6 +15,9 @@ class Saturation(ReferenceFile):
     def __init__(self, saturation_image, meta_data, bit_mask=None, outfile=None, clobber=False):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_saturation.asdf'
+
+        if not bit_mask:
+            bit_mask = np.zeros((4096, 4096), dtype=np.uint32)
 
         # Access methods of base class ReferenceFile
         super(Saturation, self).__init__(saturation_image, meta_data, bit_mask=bit_mask, clobber=clobber)
@@ -49,7 +53,7 @@ class Saturation(ReferenceFile):
         # Construct the gain object from the data model.
         saturationfile = rds.SaturationRef()
         saturationfile['meta'] = self.meta
-        saturationfile['data'] = self.data
+        saturationfile['data'] = self.input_data * u.DN
         saturationfile['dq'] = self.mask
         # Saturation files do not have data quality or error arrays.
 

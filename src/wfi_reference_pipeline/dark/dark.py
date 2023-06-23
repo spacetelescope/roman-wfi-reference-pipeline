@@ -6,7 +6,11 @@ from ..utilities.reference_file import ReferenceFile
 from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
+from astropy import units as u
 
+#from RTB_Database.utilities.login import connect_server
+#from RTB_Database.utilities.table_tools import DatabaseTable
+#from RTB_Database.utilities.table_tools import table_names
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
 
@@ -360,8 +364,8 @@ class Dark(ReferenceFile):
         # Construct the dark object from the data model.
         dark_file = rds.DarkRef()
         dark_file['meta'] = self.meta
-        dark_file['data'] = self.resampled_dark_cube * ru.DN
-        dark_file['err'] = self.resampled_dark_cube_err * ru.DN
+        dark_file['data'] = self.resampled_dark_cube * u.DN
+        dark_file['err'] = self.resampled_dark_cube_err * u.DN
         dark_file['dq'] = self.mask
 
         # af: asdf file tree: {meta, data, err, dq}
