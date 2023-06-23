@@ -1,4 +1,5 @@
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
 from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_PEDIGREE, WFI_DETECTORS
 
 
@@ -11,6 +12,14 @@ class MakeTestMeta:
     dark_meta_data = test_meta_maker.meta_dark
 
     """
+    def _create_test_meta_ipc(self, meta_data):
+        p_optical_element = "F158"
+
+        ipc_meta_data = [p_optical_element]
+        self.meta_ipc = WFIMetaIPC(*meta_data, *ipc_meta_data)
+        self.meta_ipc.description = "Roman WFI inter-pixel capacitance reference file"
+
+
     def _create_test_meta_dark(self, meta_data):
         ngroups = 1
         nframes = 1
@@ -21,6 +30,7 @@ class MakeTestMeta:
 
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, p_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+
 
     def __init__(self, ref_type):
         """
@@ -53,4 +63,5 @@ class MakeTestMeta:
         if ref_type == "DARK":
             self._create_test_meta_dark(META_DATA_PARAMS)
 
-
+        if ref_type == "IPC":
+            self._create_test_meta_ipc(META_DATA_PARAMS)
