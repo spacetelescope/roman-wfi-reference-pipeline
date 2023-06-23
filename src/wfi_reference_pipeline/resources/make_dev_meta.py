@@ -1,5 +1,6 @@
-import yaml, importlib.resources
+import importlib.resources
 import wfi_reference_pipeline.resources.data as resource_meta
+import yaml
 
 
 class MakeDevMeta:
