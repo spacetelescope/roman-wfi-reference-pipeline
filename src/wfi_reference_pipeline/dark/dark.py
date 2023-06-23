@@ -23,7 +23,7 @@ class Dark(ReferenceFile):
     written to disk.
     """
 
-    def __init__(self, dark_filelist, meta_data=None, bit_mask=None, outfile=None, clobber=False,
+    def __init__(self, dark_filelist, meta_data, bit_mask=None, outfile='roman_dark.asdf', clobber=False,
                  input_dark_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -54,20 +54,8 @@ class Dark(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super(Dark, self).__init__(dark_filelist, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
+        super().__init__(dark_filelist, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
-        # Update metadata with dark file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI dark reference file.'
-        else:
-            pass
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'DARK'
-        else:
-            pass
-
-        # If no output file name given, set default file name.
-        self.outfile = outfile if outfile else 'roman_dark.asdf'
         logging.info(f'Default dark reference file object: {outfile} ')
 
         # Additional object attributes
@@ -85,8 +73,8 @@ class Dark(ReferenceFile):
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
 
-        if self.input_data is None and self.dark_read_cube is None:
-            raise ValueError(f'No data supplied to make dark reference file!')
+        if self.data is None and self.dark_read_cube is None:
+            raise ValueError('No data supplied to make dark reference file!')
 
     def make_master_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
         """

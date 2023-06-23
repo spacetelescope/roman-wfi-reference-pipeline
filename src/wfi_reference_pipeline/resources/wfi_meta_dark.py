@@ -4,7 +4,12 @@ from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 @dataclass
 class WFIMetaDark(WFIMetadata):
-    """ Metadata Specific to Dark Reference File Type """
+    """
+    Class WFIMetaDark() Metadata Specific to Dark Reference File Type
+    inherits WFIMetadata
+    All Fields are required and positional with base class fields first
+
+    """
     ngroups: int
     nframes: int
     groupgap: int
