@@ -269,9 +269,9 @@ class Dark(ReferenceFile):
         """
 
         if self.frame_time is None:
-            if self.meta_data.p_exptype == 'WFI_IMAGE':
+            if self.meta.p_exptype == 'WFI_IMAGE':
                 self.frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
-            elif self.meta_data.p_exptype == 'WFI_GRISM':
+            elif self.meta.p_exptype == 'WFI_GRISM':
                 self.frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
             else:
                 logging.info(f'No frame time found for WFI mode specified.')
@@ -359,7 +359,7 @@ class Dark(ReferenceFile):
 
         # Construct the dark object from the data model.
         dark_file = rds.DarkRef()
-        dark_file['meta'] = self.meta_data
+        dark_file['meta'] = self.meta
         dark_file['data'] = self.resampled_dark_cube * ru.DN
         dark_file['err'] = self.resampled_dark_cube_err * ru.DN
         dark_file['dq'] = self.mask
