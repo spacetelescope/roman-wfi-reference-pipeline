@@ -1,4 +1,4 @@
-import roman_datamodels.stnode as rds
+# import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
 import asdf
 import numpy as np
@@ -26,13 +26,6 @@ class IPC(ReferenceFile):
 
         # Access methods of base class ReferenceFile
         super().__init__(user_ipc, meta_data, clobber=clobber)
-
-        # Update metadata with mask file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI inter-pixel capacitance reference file.'
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'IPC'
-
         self.outfile = outfile
         self.ipc_kernel = user_ipc
         self.ipc_obj = None
@@ -63,9 +56,10 @@ class IPC(ReferenceFile):
         """
 
         # Construct the dark object from the data model.
-        self.ipc_obj = rds.IpcRef()
-        self.ipc_obj['meta'] = self.meta
-        self.ipc_obj['data'] = self.ipc_kernel
+        # self.ipc_obj = rds.IpcRef()
+        # self.ipc_obj['meta'] = self.meta
+        # self.ipc_obj['data'] = self.ipc_kernel
+        pass
 
     def save_ipc(self):
         """

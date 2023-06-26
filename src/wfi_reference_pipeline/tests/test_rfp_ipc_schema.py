@@ -1,23 +1,26 @@
-import asdf
-from wfi_reference_pipeline.utilities import ipc
-from wfi_reference_pipeline.tests import make_test_meta
-import roman_datamodels.stnode as rds
-import numpy as np
+import os
+# TODO Enable this test once RTB-DATABASE is up and running.
+ON_GITLAB_ACTIONS = "GITLAB_CI" in os.environ
+if not ON_GITLAB_ACTIONS:
+
+    import asdf
+    from wfi_reference_pipeline.utilities.ipc import IPC
+    from wfi_reference_pipeline.tests.make_test_meta import MakeTestMeta
+    import roman_datamodels.stnode as rds
+    import numpy as np
 
 
-def test_rfp_ipc_schema():
-    """
-    Use the WFI reference file pipeline IPC() module to build a testable object which is then validated against
-    the DMS reference file schema.
-    """
-    ipc_test = make_test_meta.MakeTestMeta(ref_type='IPC')
+    def test_rfp_ipc_schema():
+        """
+        Use the WFI reference file pipeline IPC() module to build a testable object which is then validated against
+        the DMS reference file schema.
+        """
+        ipc_make_test_meta = MakeTestMeta(ref_type='IPC')
+        ipc_meta = ipc_make_test_meta.meta_ipc
 
-    if ipc_test.test_meta is None:
-        raise ValueError(f'No meta to test.')
-    else:
         # Make RFP IPC reference file object for testing.
         test_data = np.ones((3, 3), dtype=np.float32)
-        rfp_ipc = ipc.IPC(meta_data=ipc_test.test_meta, user_ipc=test_data)
+        rfp_ipc = IPC(ipc_meta, user_ipc=test_data)
         rfp_ipc.make_ipc_kernel()
         rfp_ipc.make_ipc_obj()
 

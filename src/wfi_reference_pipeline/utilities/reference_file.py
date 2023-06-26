@@ -28,9 +28,9 @@ class ReferenceFile:
     def __init__(self, data, meta_data, bit_mask=None, clobber=False,
                  make_mask=False, mask_size=(4096, 4096)):
 
-        self.data = data
+        self.input_data = data
         # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
-        self.meta_data = meta_data
+        self.meta = meta_data
 
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
