@@ -43,7 +43,7 @@ class MakeTestMeta:
             String defining the reference file type which will determine the reference meta object created.
         """
 
-        pedigree = "TESTING"
+        pedigree = "DUMMY"
         description = "For RFP testing."
         author = "RFP Test Suite"
         use_after = "2023-01-01T00:00:00.000"
