@@ -271,20 +271,21 @@ class Dark(ReferenceFile):
         The method make_data_time_arrays() will generate a WFI mode dependent time array of the exposure or input
         data supplied to make the read noise reference file.
         """
+        # TODO implement this
+        pass
+        # if self.frame_time is None:
+        #     if self.meta.p_exptype == 'WFI_IMAGE':
+        #         self.frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
+        #     elif self.meta.p_exptype == 'WFI_GRISM':
+        #         self.frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
+        #     else:
+        #         logging.info(f'No frame time found for WFI mode specified.')
+        #         raise ValueError(f'No frame time found for WFI mode specified!')
 
-        if self.frame_time is None:
-            if self.meta.p_exptype == 'WFI_IMAGE':
-                self.frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
-            elif self.meta.p_exptype == 'WFI_GRISM':
-                self.frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
-            else:
-                logging.info(f'No frame time found for WFI mode specified.')
-                raise ValueError(f'No frame time found for WFI mode specified!')
-
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+        # # Generate the time array depending on WFI mode.
+        # logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
+        #              f'time of {self.frame_time} seconds.')
+        # self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, hot_pixel_bit=11, warm_pixel_bit=12):
         """

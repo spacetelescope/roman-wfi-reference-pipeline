@@ -31,3 +31,9 @@ class WFIMetadata(ABC):
                 self.use_after = Time(self.use_after)
             else:
                 self.use_after = Time(datetime.now())
+
+    @abstractmethod
+    def export_asdf_meta(self):
+        pass
+
+
