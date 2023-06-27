@@ -29,13 +29,13 @@ if not ON_GITLAB_ACTIONS:
         rfp_dark.resampled_dark_cube_err *= ru.DN
 
         # Build dark reference asdf file object and test by asserting validate returns none.
-        # rfp_test_dark = rds.DarkRef()
-        # rfp_test_dark['data'] = rfp_dark.resampled_dark_cube
-        # rfp_test_dark['err'] = rfp_dark.resampled_dark_cube_err
-        # rfp_test_dark['dq'] = rfp_dark.mask
-        # rfp_test_dark['meta'] = rfp_dark.meta_data
+        rfp_test_dark = rds.DarkRef()
+        rfp_test_dark['data'] = rfp_dark.resampled_dark_cube
+        rfp_test_dark['err'] = rfp_dark.resampled_dark_cube_err
+        rfp_test_dark['dq'] = rfp_dark.mask
+        rfp_test_dark['meta'] = rfp_dark.meta.export_asdf_meta()
         td = asdf.AsdfFile()
-        # td.tree = {'roman': rfp_test_dark}
+        td.tree = {'roman': rfp_test_dark}
         # The validate method will return a list of exceptions that the schema fails to validate on against
         # the json schema in DMS. If none, then validate == TRUE.
         assert td.validate() is None

@@ -1,6 +1,6 @@
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_TYPES, WFI_PEDIGREE, WFI_DETECTORS
+from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE, WFI_REF_TYPES, WFI_TYPE_IMAGE
 
 
 class MakeTestMeta:
@@ -26,10 +26,11 @@ class MakeTestMeta:
         groupgap = 0
         ma_table_name = "Test ma_table_name"
         ma_table_number = 0
-        type = WFI_MODE_WIM
+        mode = WFI_MODE_WIM
+        type = WFI_TYPE_IMAGE
         ref_optical_element = ["F158"]
 
-        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, type, ref_optical_element]
+        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
 
