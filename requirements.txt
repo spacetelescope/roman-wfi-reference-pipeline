@@ -1,6 +1,6 @@
 pyyaml
 pytest
 crds
-nad
+rad
 roman-datamodels
 bs4
