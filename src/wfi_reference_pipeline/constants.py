@@ -68,7 +68,7 @@ WFI_REF_TYPES = {
     "DISTORTION": "Distortion",
     "FLAT": "Flat",
     "GAIN": "Gain",
-    "INVERSE_LINEARITY": "Inverse Linearity",
+    "INVERSELINEARITY": "Inverse Linearity",
     "IPC": "IPC",
     "LINIEARITY": "Linearity",
     "MASK": "Mask",

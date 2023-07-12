@@ -1,5 +1,4 @@
 import roman_datamodels.stnode as rds
-from roman_datamodels import units as ru
 import numpy as np
 import os, gc, asdf, datetime, logging
 from ..utilities.reference_file import ReferenceFile
@@ -27,7 +26,7 @@ class Dark(ReferenceFile):
     written to disk.
     """
 
-    def __init__(self, dark_filelist, meta_data, bit_mask=None, outfile='roman_dark.asdf', clobber=False,
+    def __init__(self, dark_file_list, meta_data, bit_mask=None, outfile='roman_dark.asdf', clobber=False,
                  input_dark_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -35,7 +34,7 @@ class Dark(ReferenceFile):
 
         Parameters
         ----------
-        dark_filelist: string object; default = None
+        dark_file_list: string object; default = None
             List of dark calibration filenames with absolute paths. If no file list is provided, an input dark read cube
             should be supplied.
         meta_data: dictionary; default = None
@@ -58,7 +57,7 @@ class Dark(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super().__init__(dark_filelist, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
+        super().__init__(dark_file_list, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
         logging.info(f'Default dark reference file object: {outfile} ')
 
@@ -76,9 +75,6 @@ class Dark(ReferenceFile):
         self.ni = None  # Number of pixels.
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
-
-        if self.input_data is None and self.dark_read_cube is None:
-            raise ValueError('No data supplied to make dark reference file!')
 
     def make_master_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
         """
@@ -214,12 +210,16 @@ class Dark(ReferenceFile):
             The user supplied number of reads per resultant in evenly spaced resultants.
         """
 
+        # TODO rethink logic here to make ma table dark with meta data and read pattern etc.
+
         # Flow control and logging messaging depending on how the Dark() class is initialized
         if self.input_data is not None and self.dark_read_cube is None:
             self.dark_read_cube = self.master_dark
-            logging.info(f'Master dark created from input filelist used for MA table resampling.')
+            logging.info(f'Master dark created from input file list used for MA table resampling.')
         if self.dark_read_cube is not None:
             logging.info(f'Input dark read cube used for MA table resampling.')
+        if self.input_data is None and self.dark_read_cube is None:
+            raise ValueError('No data supplied to make dark reference file for MA table resampling!')
         self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
 
         # Make the time array for the length of the dark read cube exposure.

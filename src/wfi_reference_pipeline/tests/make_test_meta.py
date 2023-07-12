@@ -19,7 +19,6 @@ class MakeTestMeta:
         self.meta_ipc = WFIMetaIPC(*meta_data, *ipc_meta_data)
         self.meta_ipc.description = "Roman WFI inter-pixel capacitance reference file"
 
-
     def _create_test_meta_dark(self, meta_data):
         ngroups = 1
         nframes = 1
@@ -32,7 +31,6 @@ class MakeTestMeta:
 
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
-
 
     def __init__(self, ref_type):
         """
@@ -60,7 +58,8 @@ class MakeTestMeta:
         if detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author, use_after, telescope, origin, instrument, detector]
+        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author, use_after, telescope, origin,
+                            instrument, detector]
 
         if ref_type == "DARK":
             self._create_test_meta_dark(META_DATA_PARAMS)

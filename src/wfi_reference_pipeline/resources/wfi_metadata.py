@@ -18,7 +18,6 @@ class WFIMetadata(ABC):
     instrument: str
     instrument_detector: str
 
-
     def __post_init__(self):
         if self.pedigree not in WFI_PEDIGREE:
             raise ValueError(f"Invalid pedigree value. Allowed values are {WFI_PEDIGREE}")
