@@ -1,54 +1,68 @@
-import importlib.resources
-import wfi_reference_pipeline.resources.data as resource_meta
-import yaml
+from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
+from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE, WFI_REF_TYPES, WFI_TYPE_IMAGE
 
 
 class MakeDevMeta:
     """
-    Class to generate reference file common meta and type specific meta.
+    Class to generate any complete reference file MetaData object.
+
+    Example Usage:
+    dev_meta_maker = MakeDarkMeta("DARK")
+    dark_meta_data = dev_meta_maker.meta_dark
+
     """
-    def __init__(self, ref_type=None):
+    def _create_dev_meta_ipc(self, meta_data):
+        p_optical_element = "F158"
+
+        ipc_meta_data = [p_optical_element]
+        self.meta_ipc = WFIMetaIPC(*meta_data, *ipc_meta_data)
+        self.meta_ipc.description = "Roman WFI inter-pixel capacitance reference file"
+
+    def _create_dev_meta_dark(self, meta_data):
+        ngroups = 6
+        nframes = 8
+        groupgap = 0
+        ma_table_name = "High Latitude Imaging Survey"
+        ma_table_number = 1
+        mode = WFI_MODE_WIM
+        type = WFI_TYPE_IMAGE
+        ref_optical_element = ["F158"]
+
+        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, mode, type, ref_optical_element]
+        self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+
+    def __init__(self, ref_type):
         """
-        Return common meta data on any instance of the class, with optional ref_type variable needed to import
-        reference file specific meta for testing for files requiring additional information in meta as determined
-        by the schema in roman data models.
+        Generates a reference type specific MetaData object relevant to the ref_type parameter.
 
         Parameters
         -------
-        ref_type: str; default = None
-            String defining the reference file type which will populate reftype in the common meta data for all
-            reference files and necessary selector for additional meta.
+        ref_type: str;
+            String defining the reference file type which will determine the reference meta object created.
         """
 
-        # File to empty dictionary of common meta keys.
-        meta_yaml_files = importlib.resources.files(resource_meta)
+        pedigree = "DUMMY"
+        description = "For RFP Development and DMS Build Support."
+        author = "RFP"
+        use_after = "2023-01-01T00:00:00.000"
+        telescope = "ROMAN"
+        origin = "STSCI"
+        instrument = "WFI"
+        detector = "WFI01"
 
-        # Load the YAML file contents into a dictionary using safe_load().
-        common_yaml_path = meta_yaml_files.joinpath('common_meta.yaml')
-        with common_yaml_path.open() as cyp:
-            self.dev_meta = yaml.safe_load(cyp)
-            self.dev_meta.update({'reftype': ref_type})
-            self.dev_meta.update({'pedigree': 'DUMMY'})
-            self.dev_meta.update({'description': 'For RFP Development.'})
-            self.dev_meta.update({'author': 'RFP Dev Package.'})
-            self.dev_meta.update({'useafter': '2020-01-01T00:00:00.000'})
-            self.dev_meta.update({'telescope': 'ROMAN'})
-            self.dev_meta.update({'origin': 'STSCI'})
-            self.dev_meta['instrument'].update({'name': 'WFI'})
-            self.dev_meta['instrument'].update({'detector': 'WFI01'})
+        if ref_type not in WFI_REF_TYPES:
+            raise ValueError(f"ref_type must be one of: {WFI_REF_TYPES}")
+        if pedigree not in WFI_PEDIGREE:
+            raise ValueError(f"pedigree must be one of: {WFI_PEDIGREE}")
+        if detector not in WFI_DETECTORS:
+            raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-            # Add Dark and Read Noise exposure type meta.
-            if self.dev_meta['reftype'] in ['DARK', 'READNOISE']:
-                self.dev_meta['exposure'] = {'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'}
-                # Add Dark MA table meta.
-                if self.dev_meta['reftype'] == 'DARK':
-                    self.dev_meta['exposure'].update({'ngroups': 6, 'nframes': 8, 'groupgap': 0,
-                                                      'ma_table_name': 'High Latitude Imaging Survey',
-                                                      'ma_table_number': 1})
+        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author, use_after, telescope, origin,
+                            instrument, detector]
 
-            # Add optical element filter meta.
-            if self.dev_meta['reftype'] in ['DARK', 'DISTORTION', 'FLAT', 'IPC']:
-                self.dev_meta['instrument'].update({'optical_element': 'F158'})
-                if self.dev_meta['reftype'] in ['IPC']:
-                    self.dev_meta['instrument'].update({'p_optical_element':
-                                                         'F062|F087|F106|F129|F146|F158|F184|F213|GRISM|PRISM|DARK|'})
+        if ref_type == "DARK":
+            self._create_dev_meta_dark(META_DATA_PARAMS)
+
+        if ref_type == "IPC":
+            self._create_dev_meta_ipc(META_DATA_PARAMS)

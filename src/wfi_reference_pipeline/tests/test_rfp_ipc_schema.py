@@ -4,7 +4,7 @@ ON_GITLAB_ACTIONS = "GITLAB_CI" in os.environ
 if not ON_GITLAB_ACTIONS:
 
     import asdf
-    from wfi_reference_pipeline.utilities.ipc import IPC
+
     from wfi_reference_pipeline.tests.make_test_meta import MakeTestMeta
     import roman_datamodels.stnode as rds
     import numpy as np

@@ -1,7 +1,6 @@
 pyyaml
 pytest
 crds
-# romanad==0.11.1
-roman-datamodels==0.15.0
-#romancal==0.10.0
+nad
+roman-datamodels
 bs4

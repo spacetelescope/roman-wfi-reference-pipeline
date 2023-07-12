@@ -1,7 +1,7 @@
 import wfi_reference_pipeline.resources.data as resource_meta
 import logging, yaml, importlib.resources
-from RTB_Database.utilities.login import connect_server
-from RTB_Database.utilities.table_tools import DatabaseTable
+#from RTB_Database.utilities.login import connect_server
+#from RTB_Database.utilities.table_tools import DatabaseTable
 
 # File to empty dictionary of common meta keys.
 meta_yaml_files = importlib.resources.files(resource_meta)
@@ -61,7 +61,7 @@ def get_ma_table_from_rtb_db(ma_table_id):
     return ma_table_meta
 
 
-def make_read_pattern(ma_table_meta=None, num_resultants=None, num_rds_per_res=None, even_spacing=True):
+def make_read_pattern(meta=None, num_resultants=None, num_rds_per_res=None, even_spacing=True):
     """
     The method make_read_pattern is an RFP solution to providing a future meta data field from DMS in which a list
     of lists will be supplied with the information about evenly spaced resultants and the indices of the reads
@@ -70,7 +70,7 @@ def make_read_pattern(ma_table_meta=None, num_resultants=None, num_rds_per_res=N
     Dictionary, Roman Data Models, and Romancal.
 
     example unevenly spaced with skips read_pattern = [[1,2], [4,5,6], [9, 10, 11,12], [13]]
-    example evenly spaced no skips read_pattern = [[1,2], [3,4], [5, 6], [7,8]]
+    example evenly spaced no skips read_pattern = [[1,2], [3,4], [5,6], [7,8]]
 
     Parameters
     ----------
@@ -91,9 +91,9 @@ def make_read_pattern(ma_table_meta=None, num_resultants=None, num_rds_per_res=N
     """
 
     if even_spacing:
-        if ma_table_meta:
-            num_resultants = ma_table_meta['exposure']['ngroups']
-            num_rds_per_res = ma_table_meta['exposure']['nframes']
+        if meta:
+            num_resultants = meta['exposure']['ngroups']
+            num_rds_per_res = meta['exposure']['nframes']
             rds_list = list(range(1, num_resultants*num_rds_per_res+1))
             # Make nested list of lists read_pattern for evenly spaced resultants according to DRM, DMS, or GSFC.
             read_pattern = [rds_list[i:i+num_resultants] for i in range(0, len(rds_list), num_resultants)]
