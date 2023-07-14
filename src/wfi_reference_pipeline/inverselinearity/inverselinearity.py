@@ -6,7 +6,7 @@ from astropy.io import fits
 import asdf
 
 
-class InvLinearity(ReferenceFile):
+class InverseLinearity(ReferenceFile):
     """
     Class InvLinearity() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written. The
@@ -41,8 +41,8 @@ class InvLinearity(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super(InvLinearity, self).__init__(inv_linearity_image, meta_data, bit_mask=bit_mask, clobber=clobber,
-                                           make_mask=True)
+        super(InverseLinearity, self).__init__(inv_linearity_image, meta_data, bit_mask=bit_mask, clobber=clobber,
+                                               make_mask=True)
 
         # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
@@ -98,7 +98,7 @@ class InvLinearity(ReferenceFile):
         self.meta.update({'pedigree': 'GROUND'})
         self.meta['instrument'].update({'SCA': sca_id})
 
-    def make_inv_linearity_obj(self):
+    def make_inverselinearity_obj(self):
         """
         The method make_inv_linearity_obj creates an object from the DMS data model.
         """
@@ -109,7 +109,7 @@ class InvLinearity(ReferenceFile):
         self.invlin_obj['coeffs'] = self.inv_coeffs
         self.invlin_obj['dq'] = self.mask
 
-    def save_inv_linearity(self):
+    def save_inverselinearity(self):
         """
         The method save_inv_linearity writes the reference file object to the specified asdf outfile.
         """
