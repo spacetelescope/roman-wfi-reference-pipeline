@@ -1,4 +1,4 @@
-# import roman_datamodels.stnode as rds
+import roman_datamodels.stnode as rds
 from ..utilities.reference_file import ReferenceFile
 import asdf
 import numpy as np
@@ -18,6 +18,8 @@ class IPC(ReferenceFile):
 
         Parameters
         -------
+        meta_data: dictionary; default = None
+            Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = 'roman_ipcfile.asdf'
         self.input_data: variable;
             The first positional variable in the IPC class instance assigned in base class ReferenceFile().
@@ -56,20 +58,16 @@ class IPC(ReferenceFile):
         """
 
         # Construct the dark object from the data model.
-        # self.ipc_obj = rds.IpcRef()
-        # self.ipc_obj['meta'] = self.meta
-        # self.ipc_obj['data'] = self.ipc_kernel
-        pass
+        self.ipc_obj = rds.IpcRef()
+        self.ipc_obj['meta'] = self.meta
+        self.ipc_obj['data'] = self.ipc_kernel
 
     def save_ipc(self):
         """
         The method save_ipc writes the reference file object to the specified asdf outfile.
         """
 
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-
-        # af: asdf file tree: {meta, data, err, dq}
+        # af: asdf file tree: {meta, data}
         af = asdf.AsdfFile()
         af.tree = {'roman': self.ipc_obj}
         af.write_to(self.outfile)

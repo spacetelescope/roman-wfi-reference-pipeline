@@ -1,6 +1,9 @@
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
+from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
 from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
 from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE, WFI_REF_TYPES, WFI_TYPE_IMAGE
+from astropy import units as u
 
 
 class MakeTestMeta:
@@ -13,11 +16,24 @@ class MakeTestMeta:
 
     """
     def _create_test_meta_ipc(self, meta_data):
-        p_optical_element = "F158"
+        ref_optical_element = "F158"
 
-        ipc_meta_data = [p_optical_element]
+        ipc_meta_data = [ref_optical_element]
         self.meta_ipc = WFIMetaIPC(*meta_data, *ipc_meta_data)
-        self.meta_ipc.description = "Roman WFI inter-pixel capacitance reference file"
+
+    def _create_test_meta_inverselinearity(self, meta_data):
+        input_units = u.DN
+        output_units = u.DN
+
+        inverselinearity_meta_data = [input_units, output_units]
+        self.meta_inverselinearity = WFIMetaInverseLinearity(*meta_data, *inverselinearity_meta_data)
+
+    def _create_test_meta_referencepixel(self, meta_data):
+        input_units = u.DN
+        output_units = u.DN
+
+        referncepixel_meta_data = [input_units, output_units]
+        self.meta_referencepixel = WFIMetaReferencePixel(*meta_data, *referncepixel_meta_data)
 
     def _create_test_meta_dark(self, meta_data):
         ngroups = 1
@@ -64,5 +80,11 @@ class MakeTestMeta:
         if ref_type == "DARK":
             self._create_test_meta_dark(META_DATA_PARAMS)
 
+        if ref_type == "INVERSELINEARITY":
+            self._create_test_meta_inverselinearity(META_DATA_PARAMS)
+
         if ref_type == "IPC":
             self._create_test_meta_ipc(META_DATA_PARAMS)
+
+        if ref_type == "REFPIX":
+            self._create_test_meta_referencepixel(META_DATA_PARAMS)

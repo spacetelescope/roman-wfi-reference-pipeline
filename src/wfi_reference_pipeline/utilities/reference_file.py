@@ -32,6 +32,10 @@ class ReferenceFile:
         # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
         self.meta = meta_data
 
+        if isinstance(self.meta['useafter'], str):
+            self.meta['useafter'] = Time(self.meta['useafter'])
+            # TODO if a new useafter string date is provided convert to astropy time object otherwise modify metadata.py to only have strings and convert here
+
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 

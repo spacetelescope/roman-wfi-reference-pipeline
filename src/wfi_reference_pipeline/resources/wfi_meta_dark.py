@@ -1,8 +1,9 @@
 from dataclasses import dataclass, InitVar
 from itertools import filterfalse
 from typing import List, Optional
-import wfi_reference_pipeline.constants  as constants
+import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
+
 
 @dataclass
 class WFIMetaDark(WFIMetadata):
@@ -12,12 +13,15 @@ class WFIMetaDark(WFIMetadata):
     All Fields are required and positional with base class fields first
 
     """
+
+    # These are required reftype specific
     ngroups: int
     nframes: int
     groupgap: int
     ma_table_name: str
     ma_table_number: int
     mode: InitVar[Optional[str]] = ""
+    # TODO type is a reserved word in python. Can we look at type, reftype, p_exp_type, WFI_TYPE for another word/key?
     type: InitVar[Optional[str]] = ""
     ref_optical_element: InitVar[Optional[List[str]]] = []
 
@@ -35,7 +39,7 @@ class WFIMetaDark(WFIMetadata):
             raise ValueError(f"Invalid `mode: {mode}` for {self.reference_type}")
 
         if type in constants.WFI_TYPES:
-            self.type = type
+            self.type = type  # TODO follow up on type and cross referencing reftype
         elif len(type):
             raise ValueError(f"Invalid `type: {type}` for {self.reference_type}")
 
@@ -46,9 +50,9 @@ class WFIMetaDark(WFIMetadata):
             else:
                 raise ValueError(f"Invalid `ref_optical_element: {bad_elements}` for {self.reference_type}")
 
-
     def export_asdf_meta(self):
         asdf_meta = {
+            # Common meta
             'reftype': self.reference_type,
             'pedigree': self.pedigree,
             'description': self.description,
@@ -58,8 +62,9 @@ class WFIMetaDark(WFIMetadata):
             'origin': self.origin,
             'instrument': {'name': self.instrument,
                            'detector': self.instrument_detector,
-                           'optical_element': ','.join(self.ref_optical_element) #TODO determine how asdf validate handles multiple optical elements, comma separated?
+                           'optical_element': ','.join(self.ref_optical_element) #TODO determine how asdf validate handles multiple optical elements, comma separated?/ # Ref type specific meta
                            },
+            # Ref type specific meta
             'exposure': {'ngroups': self.ngroups,
                         'nframes': self.nframes,
                         'groupgap': self.groupgap,

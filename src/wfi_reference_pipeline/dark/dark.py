@@ -38,7 +38,7 @@ class Dark(ReferenceFile):
             List of dark calibration filenames with absolute paths. If no file list is provided, an input dark read cube
             should be supplied.
         meta_data: dictionary; default = None
-            Dictionary of information for read noise reference file as required by romandatamodels.
+            Dictionary of information for reference file as required by romandatamodels.
         bit_mask: 2D integer numpy array, default = None
             A 2D data quality integer array for supplying a mask for the creation of the dark reference file.
         outfile: string; default = roman_dark.asdf

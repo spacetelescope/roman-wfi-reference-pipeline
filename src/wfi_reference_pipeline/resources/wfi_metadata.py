@@ -30,6 +30,7 @@ class WFIMetadata(ABC):
                 self.use_after = Time(self.use_after)
             else:
                 self.use_after = Time(datetime.now())
+                # TODO look at how to change the userafter date with this or in the reference file base class post making meta data
 
     @abstractmethod
     def export_asdf_meta(self):

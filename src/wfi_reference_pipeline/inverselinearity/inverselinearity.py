@@ -8,7 +8,7 @@ import asdf
 
 class InverseLinearity(ReferenceFile):
     """
-    Class InvLinearity() inherits the ReferenceFile() base class methods
+    Class InverseLinearity() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written. The
     method get_coeffs_from_dcl retrieves inverse linearity coefficients
     determined from DCL data by Bellini et al. (~2021), which are used to
@@ -29,7 +29,7 @@ class InverseLinearity(ReferenceFile):
         inv_linearity_image: numpy.ndarray; Input image
          to perform the inverse linearity fit. It populates self.input_data.
         meta_data: dictionary; default = None
-            Dictionary of information for read noise reference file as required by romandatamodels.
+            Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = roman_inv_linearity.asdf
             Filename with path for saved inverse linearity reference file.
         inv_coeffs: numpy.ndarray; User input inverse linearity coefficients.
@@ -52,8 +52,8 @@ class InverseLinearity(ReferenceFile):
             # June 2023 - R. Cosentino, R. Klein, W. Jamieson
 
         # Add required inverse linearity meta with astropy units
-        self.meta['input_units'] = u.DN
-        self.meta['output_units'] = u.DN
+        #self.meta['input_units'] = u.DN
+        #self.meta['output_units'] = u.DN
 
         # Initialize attributes
         self.outfile = outfile
@@ -100,7 +100,7 @@ class InverseLinearity(ReferenceFile):
 
     def make_inverselinearity_obj(self):
         """
-        The method make_inv_linearity_obj creates an object from the DMS data model.
+        The method make_inverselinearity_obj creates an object from the DMS data model.
         """
 
         # Construct the dark object from the data model.
@@ -111,13 +111,10 @@ class InverseLinearity(ReferenceFile):
 
     def save_inverselinearity(self):
         """
-        The method save_inv_linearity writes the reference file object to the specified asdf outfile.
+        The method save_inverselinearity writes the reference file object to the specified asdf outfile.
         """
 
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-
-        # af: asdf file tree: {meta, inv_coeffs, dq}
+        # af: asdf file tree: {meta, coeffs, dq}
         af = asdf.AsdfFile()
         af.tree = {'roman': self.invlin_obj}
         af.write_to(self.outfile)
