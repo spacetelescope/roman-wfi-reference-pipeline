@@ -14,6 +14,7 @@ class WFIMetaInverseLinearity(WFIMetadata):
     # These are required reftype specific
     input_units: str
     output_units: str
+    #TODO investigate dataclasses string as default while receiving astropy unit (WHY DOES THIS WORK?)
 
     def __post_init__(self):
         super().__post_init__()

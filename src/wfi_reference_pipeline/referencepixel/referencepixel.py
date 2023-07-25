@@ -35,7 +35,7 @@ class ReferencePixel(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super(ReferencePixel, self).__init__(input_data, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=False)
+        super().__init__(input_data, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=False)
 
         # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
@@ -48,37 +48,41 @@ class ReferencePixel(ReferenceFile):
         self.gamma = gamma
         self.zeta = zeta
         self.alpha = alpha
-        self.refpix_obj = None
 
     def make_referencepixel_coeffs(self):
         """
         The method make_inv_linearity_obj creates an object from the DMS data model.
         """
 
-        self.gamma = np.zeros((4096, 4096), dtype=np.complex128)
-        self.zeta = np.zeros((4096, 4096), dtype=np.complex128)
-        self.alpha = np.zeros((4096, 4096), dtype=np.complex128)
+        self.gamma = np.zeros((32, 286721), dtype=np.complex128)
+        self.zeta = np.zeros((32, 286721), dtype=np.complex128)
+        self.alpha = np.zeros((32, 286721), dtype=np.complex128)
 
-    def make_referencepixel_obj(self):
+    def populate_datamodel_tree(self):
         """
-        The method make_inv_linearity_obj creates an object from the DMS data model.
+        Create data model from DMS and populate tree.
         """
 
         # Construct the dark object from the data model.
-        self.refpix_obj = rds.RefpixRef()
-        self.refpix_obj['meta'] = self.meta
-        self.refpix_obj['gamma'] = self.gamma
-        self.refpix_obj['zeta'] = self.zeta
-        self.refpix_obj['alpha'] = self.alpha
+        referencepixel_datamodel_tree = rds.RefpixRef()
+        referencepixel_datamodel_tree['meta'] = self.meta
+        referencepixel_datamodel_tree['gamma'] = self.gamma
+        referencepixel_datamodel_tree['zeta'] = self.zeta
+        referencepixel_datamodel_tree['alpha'] = self.alpha
 
-    def save_referencepixel(self):
+        return referencepixel_datamodel_tree
+
+    def save_referencepixel(self, datamodel_tree=None):
         """
-        The method save_referencepixel writes the reference file object to the specified asdf outfile.
+        The method save_dark writes the reference file object to the specified asdf outfile.
         """
 
-        # af: asdf file tree: {meta, gamma, zeta, alpha}
+        # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': self.refpix_obj}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)
 
 

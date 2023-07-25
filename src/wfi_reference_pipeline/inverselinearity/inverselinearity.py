@@ -41,8 +41,7 @@ class InverseLinearity(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super(InverseLinearity, self).__init__(inv_linearity_image, meta_data, bit_mask=bit_mask, clobber=clobber,
-                                               make_mask=True)
+        super().__init__(inv_linearity_image, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
         # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
@@ -51,14 +50,9 @@ class InverseLinearity(ReferenceFile):
             self.meta['reftype'] = 'INVERSELINEARITY'  # RTB coordinated with DMS and CRDS on reftype name of all caps
             # June 2023 - R. Cosentino, R. Klein, W. Jamieson
 
-        # Add required inverse linearity meta with astropy units
-        #self.meta['input_units'] = u.DN
-        #self.meta['output_units'] = u.DN
-
         # Initialize attributes
         self.outfile = outfile
         self.inv_coeffs = inv_coeffs
-        self.invlin_obj = None
 
     def get_coeffs_from_dcl(self, wfi_det='WFI01'):
         """
@@ -98,24 +92,28 @@ class InverseLinearity(ReferenceFile):
         self.meta.update({'pedigree': 'GROUND'})
         self.meta['instrument'].update({'SCA': sca_id})
 
-    def make_inverselinearity_obj(self):
+    def populate_datamodel_tree(self):
         """
-        The method make_inverselinearity_obj creates an object from the DMS data model.
+        Create data model from DMS and populate tree.
         """
 
         # Construct the dark object from the data model.
-        self.invlin_obj = rds.InverseLinearityRef()
-        self.invlin_obj['meta'] = self.meta
-        self.invlin_obj['coeffs'] = self.inv_coeffs
-        self.invlin_obj['dq'] = self.mask
+        inverselinearity_datamodel_tree = rds.InverseLinearityRef()
+        inverselinearity_datamodel_tree['meta'] = self.meta
+        inverselinearity_datamodel_tree['coeffs'] = self.inv_coeffs
+        inverselinearity_datamodel_tree['dq'] = self.mask
 
-    def save_inverselinearity(self):
+        return inverselinearity_datamodel_tree
+
+    def save_inverselinearity(self, datamodel_tree=None):
         """
         The method save_inverselinearity writes the reference file object to the specified asdf outfile.
         """
 
-        # af: asdf file tree: {meta, coeffs, dq}
+        # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': self.invlin_obj}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)
-

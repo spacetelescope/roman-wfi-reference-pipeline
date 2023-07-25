@@ -1,15 +1,12 @@
-import datetime, os, sys, yaml
+import os, sys
 import numpy as np
-if sys.version_info < (3, 9):
-    import importlib_resources
-else:
-    import importlib.resources as importlib_resources
 from astropy.time import Time
 from romancal.lib import dqflags
 from wfi_reference_pipeline.version import version as PIPELINE_VERSION
+from abc import ABC, abstractmethod
 
 
-class ReferenceFile:
+class ReferenceFile(ABC):
     """
     Base class ReferenceFile() for all reference file types.
 
@@ -31,13 +28,13 @@ class ReferenceFile:
         self.input_data = data
         # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
         self.meta = meta_data
-
-        if isinstance(self.meta['useafter'], str):
-            self.meta['useafter'] = Time(self.meta['useafter'])
-            # TODO if a new useafter string date is provided convert to astropy time object otherwise modify metadata.py to only have strings and convert here
-
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
+        self.clobber = clobber
+
+        # Allow for input string udesafter to be converted to astropy time object.
+        if isinstance(self.meta['useafter'], str):
+            self.meta['useafter'] = Time(self.meta['useafter'])
 
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):
@@ -49,17 +46,6 @@ class ReferenceFile:
             else:
                 self.mask = None
 
-
-        # TODO - Is this needed here?
-        # # Ancillary data for reference file modules
-        # with importlib_resources.path('wfi_reference_pipeline.resources.data',
-        #                               'ancillary.yaml') as afile:
-        #     with open(afile) as af:
-        #         self.ancillary = yaml.safe_load(af)
-
-        # Other stuff.
-        self.clobber = clobber
-
     def check_output_file(self, outfile):
         # Check if the output file exists, and take appropriate action.
         if os.path.exists(outfile):
@@ -68,3 +54,8 @@ class ReferenceFile:
             else:
                 raise FileExistsError(f'''{outfile} already exists,
                                           and clobber={self.clobber}!''')
+
+    # Enforce method for all reference file reftype modules used in schema testing.
+    @abstractmethod
+    def populate_datamodel_tree(self):
+        pass
