@@ -1,10 +1,10 @@
-# import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+import roman_datamodels.stnode as rds
+from wfi_reference_pipeline.utilities.reference_file import ReferenceFile
 import asdf
 import numpy as np
 
 
-class IPC(ReferenceFile):
+class InterPixelCapacitance(ReferenceFile):
     """
     Class ipc() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written. The
@@ -18,6 +18,8 @@ class IPC(ReferenceFile):
 
         Parameters
         -------
+        meta_data: dictionary; default = None
+            Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = 'roman_ipcfile.asdf'
         self.input_data: variable;
             The first positional variable in the IPC class instance assigned in base class ReferenceFile().
@@ -26,9 +28,16 @@ class IPC(ReferenceFile):
 
         # Access methods of base class ReferenceFile
         super().__init__(user_ipc, meta_data, clobber=clobber)
+
+        # Update metadata with file type info if not included.
+        if 'description' not in self.meta.keys():
+            self.meta['description'] = 'Roman WFI interpixel capacitance reference file.'
+        if 'reftype' not in self.meta.keys():
+            self.meta['reftype'] = 'IPC'
+
+        # Initialize attributes
         self.outfile = outfile
         self.ipc_kernel = user_ipc
-        self.ipc_obj = None
 
     def make_ipc_kernel(self):
         """
@@ -50,26 +59,27 @@ class IPC(ReferenceFile):
             if self.ipc_kernel.shape != (3, 3):
                 print("The input dimensions of supplied IPC kernel are not 3x3.")
 
-    def make_ipc_obj(self):
+    def populate_datamodel_tree(self):
         """
-        The method make_ipc_obj creates an object from the DMS data model.
+        Create data model from DMS and populate tree.
         """
 
         # Construct the dark object from the data model.
-        # self.ipc_obj = rds.IpcRef()
-        # self.ipc_obj['meta'] = self.meta
-        # self.ipc_obj['data'] = self.ipc_kernel
-        pass
+        interpixelcapacitance_datamodel_tree = rds.IpcRef()
+        interpixelcapacitance_datamodel_tree['meta'] = self.meta
+        interpixelcapacitance_datamodel_tree['data'] = self.ipc_kernel
 
-    def save_ipc(self):
+        return interpixelcapacitance_datamodel_tree
+
+    def save_interpixelcapacitance(self, datamodel_tree=None):
         """
-        The method save_ipc writes the reference file object to the specified asdf outfile.
+        The method save_interpixelcapacitance writes the reference file object to the specified asdf outfile.
         """
 
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-
-        # af: asdf file tree: {meta, data, err, dq}
+        # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': self.ipc_obj}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)

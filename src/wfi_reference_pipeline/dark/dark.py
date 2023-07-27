@@ -38,7 +38,7 @@ class Dark(ReferenceFile):
             List of dark calibration filenames with absolute paths. If no file list is provided, an input dark read cube
             should be supplied.
         meta_data: dictionary; default = None
-            Dictionary of information for read noise reference file as required by romandatamodels.
+            Dictionary of information for reference file as required by romandatamodels.
         bit_mask: 2D integer numpy array, default = None
             A 2D data quality integer array for supplying a mask for the creation of the dark reference file.
         outfile: string; default = roman_dark.asdf
@@ -59,8 +59,16 @@ class Dark(ReferenceFile):
         # Access methods of base class ReferenceFile
         super().__init__(dark_file_list, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
+        # Update metadata with file type info if not included.
+        if 'description' not in self.meta.keys():
+            self.meta['description'] = 'Roman WFI dark reference file.'
+        if 'reftype' not in self.meta.keys():
+            self.meta['reftype'] = 'DARK'
+
         logging.info(f'Default dark reference file object: {outfile} ')
 
+        # Initialize attributes
+        self.outfile = outfile
         # Additional object attributes
         self.dark_read_cube = input_dark_cube  # Supplied input dark read cube.
         self.master_dark = None  # A cube of all available reads that is sigma clipped and averaged.
@@ -188,6 +196,28 @@ class Dark(ReferenceFile):
                 self.ma_table_sequence.append(rd)
             self.ma_table_sequence.append('R')
 
+    def initialize_cube_arrays(self, num_resultants=None, ni=None):
+        """
+
+        Parameters
+        ----------
+        num_resultants: integer; Default=None
+            The number of resultants
+        ni: integer; Default=None
+            Number of square pixels of array ni. Cubes are num_resultants x ni x ni.
+        """
+
+        self.ni = ni
+        # Initialize resampled dark cube and error array as quantity object
+        self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
+        self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
+        logging.info(f'Error arrays with number of resultants initialized with zeros.')
+        logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
+
+        # Make the time array for the length of the dark read cube exposure.
+        self.make_time_array()
+        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
+
     def make_ma_table_dark(self, num_resultants, num_rds_per_res=None):
         """
         The method make_dark() takes a non-resampled dark cube read and converts it into
@@ -211,7 +241,6 @@ class Dark(ReferenceFile):
         """
 
         # TODO rethink logic here to make ma table dark with meta data and read pattern etc.
-
         # Flow control and logging messaging depending on how the Dark() class is initialized
         if self.input_data is not None and self.dark_read_cube is None:
             self.dark_read_cube = self.master_dark
@@ -220,17 +249,8 @@ class Dark(ReferenceFile):
             logging.info(f'Input dark read cube used for MA table resampling.')
         if self.input_data is None and self.dark_read_cube is None:
             raise ValueError('No data supplied to make dark reference file for MA table resampling!')
-        self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
-
-        # Make the time array for the length of the dark read cube exposure.
-        self.make_time_array()
-
-        # Initialize resampled dark cube, error, and time arrays with number of ma tables specs
-        self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
-        self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
-        logging.info(f'Error arrays with number of resultants initialized with zeros.')
-        logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
-        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
+        self.n_reads, ni, _ = np.shape(self.dark_read_cube)
+        self.initialize_cube_arrays(num_resultants, ni)
 
         # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
         if self.ma_table_sequence is not None:
@@ -352,24 +372,29 @@ class Dark(ReferenceFile):
         _, num_warm_pixels = np.shape(warm_pixels)
         logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
 
-    def save_dark(self):
+    def populate_datamodel_tree(self):
         """
-        The method save_dark() writes the resampled dark cube into an asdf file to be saved somewhere on disk.
-        Read
+        Create data model from DMS and populate tree.
         """
-
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-        logging.info(f'Writing new dark reference file to disk.')
 
         # Construct the dark object from the data model.
-        dark_file = rds.DarkRef()
-        dark_file['meta'] = self.meta
-        dark_file['data'] = self.resampled_dark_cube * u.DN
-        dark_file['err'] = self.resampled_dark_cube_err * u.DN
-        dark_file['dq'] = self.mask
+        dark_datamodel_tree = rds.DarkRef()
+        dark_datamodel_tree['meta'] = self.meta
+        dark_datamodel_tree['data'] = self.resampled_dark_cube * u.DN
+        dark_datamodel_tree['err'] = self.resampled_dark_cube_err * u.DN
+        dark_datamodel_tree['dq'] = self.mask
 
-        # af: asdf file tree: {meta, data, err, dq}
+        return dark_datamodel_tree
+
+    def save_dark(self, datamodel_tree=None):
+        """
+        The method save_dark writes the reference file object to the specified asdf outfile.
+        """
+
+        # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': dark_file}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)

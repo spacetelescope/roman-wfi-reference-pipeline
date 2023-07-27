@@ -62,24 +62,25 @@ WFI_REF_OPTICAL_ELEMENTS = {
     WFI_REF_OPTICAL_ELEMENT_PRISM
 }
 
-# TODO verify the values
+# TODO verify key values and convert to a SET
 WFI_REF_TYPES = {
     "DARK": "DARK",
-    "DISTORTION": "Distortion",
-    "FLAT": "Flat",
-    "GAIN": "Gain",
-    "INVERSELINEARITY": "Inverse Linearity",
+    "DISTORTION": "DISTORTION",
+    "FLAT": "FLAT",
+    "GAIN": "GAIN",
+    "INVERSELINEARITY": "INVERSELINEARITY",
     "IPC": "IPC",
-    "LINIEARITY": "Linearity",
-    "MASK": "Mask",
-    "PIXELAREA": "Pixelarea",
-    "READNOISE": "Readnoise",
-    "REF_COMMON": "Ref Common",
-    "REF_EXPOSURE_TYPE": "Ref Exposure Type",
-    "REF_OPTICAL_ELEMENT": "Ref Optical Element",
-    "SATURATION": "Saturation",
-    "SUPERBIAS": "Superbias",
-    "WFI_IMG_PHOTOM": "WFI Img Photom",
+    "LINEARITY": "LINEARITY",
+    "MASK": "MASK",
+    "PIXELAREA": "PIXELAREA",
+    "READNOISE": "READNOISE",
+    "REF_COMMON": "REF_COMMON",
+    "REF_EXPOSURE_TYPE": "REF_EXPOSURE_TYPE",
+    "REF_OPTICAL_ELEMENT": "REF_OPTICAL_ELEMENT",
+    "REFPIX": "REFPIX",
+    "SATURATION": "SATURATION",
+    "SUPERBIAS": "SUPERBIAS",
+    "WFI_IMG_PHOTOM": "WFI_IMG_PHOTOM",
 }
 
 WFI_TYPE_IMAGE = "WFI_IMAGE"

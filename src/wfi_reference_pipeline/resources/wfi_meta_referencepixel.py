@@ -1,26 +1,23 @@
-from dataclasses import dataclass, InitVar
-from itertools import filterfalse
-from typing import List, Optional
+from dataclasses import dataclass
 import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
 @dataclass
-class WFIMetaIPC(WFIMetadata):
+class WFIMetaReferencePixel(WFIMetadata):
     """
-    Class WFIMetaIPC() Metadata Specific to IPC Reference File Type
+    Class WFIMetaReferencePixel() Metadata Specific to ReferencePixel Reference File Type
     inherits WFIMetadata
     All Fields are required and positional with base class fields first
 
     """
-
     # These are required reftype specific
-    ref_optical_element: InitVar[Optional[List[str]]] = []
+    input_units: str
+    output_units: str
 
-    def __post_init__(self, ref_optical_element):
+    def __post_init__(self):
         super().__post_init__()
-        self.reference_type = constants.WFI_REF_TYPES["IPC"]
-        self.optical_element = ref_optical_element
+        self.reference_type = constants.WFI_REF_TYPES["REFPIX"]
 
     def export_asdf_meta(self):
         asdf_meta = {
@@ -34,7 +31,9 @@ class WFIMetaIPC(WFIMetadata):
             'origin': self.origin,
             'instrument': {'name': self.instrument,
                            'detector': self.instrument_detector,
-                           'optical_element': self.optical_element
                            },
+            # Ref type specific meta
+            'input_units': self.input_units,
+            'output_units': self.output_units,
         }
         return asdf_meta
