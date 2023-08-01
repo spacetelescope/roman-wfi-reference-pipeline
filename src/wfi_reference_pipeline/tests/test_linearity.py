@@ -13,7 +13,7 @@ from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 import astropy.units as u
 
 
-def setup_dummy_meta(meta_data):
+def setup_dummy_meta(meta_data=None):
     input_units = u.DN
     output_units = u.dimensionless_unscaled
 
