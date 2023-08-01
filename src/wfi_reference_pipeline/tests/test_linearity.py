@@ -13,12 +13,25 @@ from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 import astropy.units as u
 
 
-def setup_dummy_meta(meta_data=None):
+def setup_dummy_meta():
     input_units = u.DN
     output_units = u.dimensionless_unscaled
 
     linearity_meta_data = [input_units, output_units]
-    return WFIMetaLinearity(*meta_data, *linearity_meta_data).export_asdf_meta()
+
+    pedigree = "DUMMY"
+    description = "For RFP testing."
+    author = "RFP Test Suite"
+    use_after = "2023-01-01T00:00:00.000"
+    telescope = "ROMAN"
+    origin = "STSCI"
+    instrument = "WFI"
+    detector = "WFI01"
+    wfi_ref_type = "LINEARITY"
+    META_DATA_PARAMS = [wfi_ref_type, pedigree, description, author,
+                        use_after, telescope, origin, instrument, detector]
+
+    return WFIMetaLinearity(META_DATA_PARAMS, *linearity_meta_data).export_asdf_meta()
 
 
 # dq flags
