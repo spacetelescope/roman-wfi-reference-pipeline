@@ -31,7 +31,7 @@ def setup_dummy_meta():
     META_DATA_PARAMS = [wfi_ref_type, pedigree, description, author,
                         use_after, telescope, origin, instrument, detector]
 
-    return WFIMetaLinearity(META_DATA_PARAMS, *linearity_meta_data).export_asdf_meta()
+    return WFIMetaLinearity(*META_DATA_PARAMS, *linearity_meta_data).export_asdf_meta()
 
 
 # dq flags
