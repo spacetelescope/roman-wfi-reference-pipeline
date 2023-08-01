@@ -2,7 +2,9 @@ from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
 from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
-from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE, WFI_REF_TYPES, WFI_TYPE_IMAGE
+from wfi_reference_pipeline.utilities.wfi_meta_linearity import WFIMetaLinearity
+from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE
+from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_TYPE_IMAGE
 from astropy import units as u
 
 
@@ -26,14 +28,16 @@ class MakeTestMeta:
         output_units = u.DN
 
         inverselinearity_meta_data = [input_units, output_units]
-        self.meta_inverselinearity = WFIMetaInverseLinearity(*meta_data, *inverselinearity_meta_data)
+        self.meta_inverselinearity = WFIMetaInverseLinearity(*meta_data,
+                                                             *inverselinearity_meta_data)
 
     def _create_test_meta_referencepixel(self, meta_data):
         input_units = u.DN
         output_units = u.DN
 
-        referncepixel_meta_data = [input_units, output_units]
-        self.meta_referencepixel = WFIMetaReferencePixel(*meta_data, *referncepixel_meta_data)
+        referencepixel_meta_data = [input_units, output_units]
+        self.meta_referencepixel = WFIMetaReferencePixel(*meta_data,
+                                                         *referencepixel_meta_data)
 
     def _create_test_meta_dark(self, meta_data):
         ngroups = 1
@@ -45,17 +49,27 @@ class MakeTestMeta:
         type = WFI_TYPE_IMAGE
         ref_optical_element = ["F158"]
 
-        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number, mode, type, ref_optical_element]
+        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
+                          mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+
+    def _create_test_meta_linearity(self, meta_data):
+        input_units = u.DN
+        output_units = u.dimensionless_unscaled
+
+        linearity_meta_data = [input_units, output_units]
+        self.meta_linearity = WFIMetaLinearity(*meta_data, *linearity_meta_data)
 
     def __init__(self, ref_type):
         """
-        Generates a reference type specific MetaData object relevant to the ref_type parameter.
+        Generates a reference type specific MetaData object relevant to the ref_type
+        parameter.
 
         Parameters
         -------
         ref_type: str;
-            String defining the reference file type which will determine the reference meta object created.
+            String defining the reference file type which will determine the reference
+            meta object created.
         """
 
         pedigree = "DUMMY"
@@ -74,8 +88,8 @@ class MakeTestMeta:
         if detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author, use_after, telescope, origin,
-                            instrument, detector]
+        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author,
+                            use_after, telescope, origin, instrument, detector]
 
         if ref_type == "DARK":
             self._create_test_meta_dark(META_DATA_PARAMS)
@@ -87,4 +101,7 @@ class MakeTestMeta:
             self._create_test_meta_ipc(META_DATA_PARAMS)
 
         if ref_type == "REFPIX":
+            self._create_test_meta_referencepixel(META_DATA_PARAMS)
+
+        if ref_type == "LINEARITY":
             self._create_test_meta_referencepixel(META_DATA_PARAMS)

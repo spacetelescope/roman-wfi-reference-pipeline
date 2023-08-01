@@ -2,7 +2,6 @@ import unittest
 import numpy as np
 import numpy.testing as testing
 import tempfile
-from astropy.time import Time
 from ..linearity.linearity import Linearity
 from ..linearity.linearity import get_fit_length, make_linearity_multi
 import os
@@ -10,6 +9,17 @@ import shutil
 from romancal.lib import dqflags
 import yaml
 import pkg_resources
+from wfi_reference_pipeline.utilities.wfi_meta_linearity import WFIMetaLinearity
+import astropy.units as u
+
+
+def setup_dummy_meta(meta_data):
+    input_units = u.DN
+    output_units = u.dimensionless_unscaled
+
+    linearity_meta_data = [input_units, output_units]
+    return WFIMetaLinearity(*meta_data, *linearity_meta_data).export_asdf_meta()
+
 
 # dq flags
 key_nl = 'NONLINEAR'  # Pixel is non linear
@@ -25,16 +35,6 @@ data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.da
                                             "ancillary.yaml")
 with open(data_path, "r") as stream:
     data_anc = yaml.safe_load(stream)
-
-
-def setup_dummy_meta():
-    _meta = dict()
-    _meta['useafter'] = Time.now().iso
-    _meta['pedigree'] = 'DUMMY'
-    _meta['instrument'] = dict()
-    _meta['instrument']['name'] = 'WFI'
-    _meta['instrument']['detector'] = 'WFI01'
-    return _meta
 
 
 class GetFitLengthTestCase(unittest.TestCase):
