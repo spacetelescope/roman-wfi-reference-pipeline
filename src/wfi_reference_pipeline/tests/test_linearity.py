@@ -9,7 +9,7 @@ import shutil
 from romancal.lib import dqflags
 import yaml
 import pkg_resources
-from wfi_reference_pipeline.utilities.wfi_meta_linearity import WFIMetaLinearity
+from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 import astropy.units as u
 
 
