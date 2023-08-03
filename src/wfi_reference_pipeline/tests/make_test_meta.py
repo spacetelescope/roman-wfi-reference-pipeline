@@ -55,7 +55,7 @@ class MakeTestMeta:
 
     def _create_test_meta_linearity(self, meta_data):
         input_units = u.DN
-        output_units = u.dimensionless_unscaled
+        output_units = u.DN
 
         linearity_meta_data = [input_units, output_units]
         self.meta_linearity = WFIMetaLinearity(*meta_data, *linearity_meta_data)

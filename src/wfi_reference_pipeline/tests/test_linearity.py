@@ -10,10 +10,11 @@ from romancal.lib import dqflags
 import yaml
 import pkg_resources
 from .make_test_meta import MakeTestMeta
+from ..constants import WFI_MODE_WIM, WFI_FRAME_TIME
 
 
 def setup_dummy_meta():
-    return MakeTestMeta(ref_type="LINEARITY").export_asdf_meta()
+    return MakeTestMeta(ref_type="LINEARITY").meta_linearity.export_asdf_meta()
 
 
 # dq flags
@@ -24,12 +25,6 @@ key_nlc = 'NO_LIN_CORR'  # No linear correction is available
 flag_nl = dqflags.pixel[key_nl]
 # Using this one for failed fits
 flag_nlc = dqflags.pixel[key_nlc]
-
-# Load ancillary datacube
-data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.data",
-                                            "ancillary.yaml")
-with open(data_path, "r") as stream:
-    data_anc = yaml.safe_load(stream)
 
 
 class GetFitLengthTestCase(unittest.TestCase):
@@ -77,7 +72,7 @@ class FitSingleTestCase(unittest.TestCase):
         """
 
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -91,7 +86,7 @@ class FitSingleTestCase(unittest.TestCase):
         Test fitting a single image with a dq array.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -117,7 +112,7 @@ class FitSingleTestCase(unittest.TestCase):
         Test fitting a single image with no dq, but noise added to it.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -133,7 +128,7 @@ class FitSingleTestCase(unittest.TestCase):
         Test fitting a single image with dq and noise.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -162,7 +157,7 @@ class FitSingleTestCase(unittest.TestCase):
         than the original.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up a polynomial
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -191,7 +186,7 @@ class FitSingleTestCase(unittest.TestCase):
         It should raise a NotImplementedError.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 1, 0)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -213,7 +208,7 @@ class FitSingleTestCase(unittest.TestCase):
         Test fitting a single image fixing slope to 1 and intercept to 0.
         """
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 1, 0)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -228,7 +223,7 @@ class FitSingleTestCase(unittest.TestCase):
 class LinearityMultiTestCase(unittest.TestCase):
     def test_make_linearity_multi_dummy(self):
         _meta = setup_dummy_meta()
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         with self.assertRaises(ValueError):
@@ -236,7 +231,7 @@ class LinearityMultiTestCase(unittest.TestCase):
 
     def test_make_linearity_multi_dq_nounc(self):
         _meta = setup_dummy_meta()
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -317,7 +312,7 @@ class LinearityMultiTestCase(unittest.TestCase):
     def test_make_linearity_multi_dq_useunc(self):
         _meta = setup_dummy_meta()
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
@@ -395,7 +390,7 @@ class LinearityMultiTestCase(unittest.TestCase):
     def test_make_linearity_dq_ngrid(self):
         _meta = setup_dummy_meta()
         # Set up a grid of times
-        t_test = data_anc['frame_time']['WIM'] * np.arange(10)
+        t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
         y_test = np.polyval(poly_coeffs, t_test)
