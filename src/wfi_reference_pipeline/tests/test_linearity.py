@@ -7,8 +7,6 @@ from ..linearity.linearity import get_fit_length, make_linearity_multi
 import os
 import shutil
 from romancal.lib import dqflags
-import yaml
-import pkg_resources
 from .make_test_meta import MakeTestMeta
 from ..constants import WFI_MODE_WIM, WFI_FRAME_TIME
 
