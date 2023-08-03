@@ -7,12 +7,11 @@ import warnings
 from collections.abc import Iterable
 import logging
 from romancal.lib import dqflags
-import yaml
-import pkg_resources
 import astropy.units as u
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_OPTICAL_ELEMENTS, WFI_FRAME_TIME
-from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_DARK
-from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_GRISM, WFI_REF_OPTICAL_ELEMENT_PRISM
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_OPTICAL_ELEMENTS
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_DARK, WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_GRISM
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_PRISM
 
 # logging.getLogger('stpipe').setLevel(logging.WARNING)
 # log_file_str = 'linearity_dev.log'
@@ -28,7 +27,9 @@ flag_nl = dqflags.pixel[key_nl]
 # Using this one for failed fits
 flag_nlc = dqflags.pixel[key_nlc]
 
-bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GRISM, WFI_REF_OPTICAL_ELEMENT_PRISM]
+bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GRISM,
+                        WFI_REF_OPTICAL_ELEMENT_PRISM]
+
 
 class Linearity(ReferenceFile):
 
