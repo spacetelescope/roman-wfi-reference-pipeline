@@ -2,7 +2,7 @@ from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
 from wfi_reference_pipeline.utilities.wfi_meta_ipc import WFIMetaIPC
-from wfi_reference_pipeline.utilities.wfi_meta_linearity import WFIMetaLinearity
+from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE
 from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_TYPE_IMAGE
 from astropy import units as u
