@@ -173,7 +173,7 @@ class Linearity(ReferenceFile):
         self.mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
         self.coeffs[self.coeffs == float('NaN')] = 0
         # Assuming coeffs are unitless?
-        linearity_datamodel_tree['data'] = self.coeffs * u.dimensionless_unscaled
+        linearity_datamodel_tree['data'] = self.coeffs * u.DN
         linearity_datamodel_tree['dq'] = self.mask
 
         return linearity_datamodel_tree
