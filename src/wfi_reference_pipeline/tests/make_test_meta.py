@@ -104,4 +104,4 @@ class MakeTestMeta:
             self._create_test_meta_referencepixel(META_DATA_PARAMS)
 
         if ref_type == "LINEARITY":
-            self._create_test_meta_referencepixel(META_DATA_PARAMS)
+            self._create_test_meta_linearity(META_DATA_PARAMS)
