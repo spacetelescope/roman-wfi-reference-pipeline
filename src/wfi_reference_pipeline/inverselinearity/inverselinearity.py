@@ -98,7 +98,7 @@ class InverseLinearity(ReferenceFile):
         """
 
         # Construct the dark object from the data model.
-        inverselinearity_datamodel_tree = rds.InverseLinearityRef()
+        inverselinearity_datamodel_tree = rds.InverselinearityRef()
         inverselinearity_datamodel_tree['meta'] = self.meta
         inverselinearity_datamodel_tree['coeffs'] = self.inv_coeffs
         inverselinearity_datamodel_tree['dq'] = self.mask
