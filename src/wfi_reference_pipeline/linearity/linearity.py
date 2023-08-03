@@ -10,6 +10,9 @@ from romancal.lib import dqflags
 import yaml
 import pkg_resources
 import astropy.units as u
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_OPTICAL_ELEMENTS, WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_DARK
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_GRISM, WFI_REF_OPTICAL_ELEMENT_PRISM
 
 # logging.getLogger('stpipe').setLevel(logging.WARNING)
 # log_file_str = 'linearity_dev.log'
@@ -25,12 +28,7 @@ flag_nl = dqflags.pixel[key_nl]
 # Using this one for failed fits
 flag_nlc = dqflags.pixel[key_nlc]
 
-# Load ancillary datacube
-data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.data",
-                                            "ancillary.yaml")
-with open(data_path, "r") as stream:
-    data_anc = yaml.safe_load(stream)
-
+bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GRISM, WFI_REF_OPTICAL_ELEMENT_PRISM]
 
 class Linearity(ReferenceFile):
 
@@ -75,17 +73,14 @@ class Linearity(ReferenceFile):
         else:
             pass
         self.times = None
-
         # Get whether we are in spectroscopic or imaging mode
-        im_mode = None
-        for key in data_anc['optical_elements'].keys():
-            if optical_element in data_anc['optical_elements'][key]:
-                im_mode = key
-
+        if optical_element in WFI_REF_OPTICAL_ELEMENTS:
+            if optical_element not in bad_optical_elements:
+                im_mode = WFI_MODE_WIM
         if (im_mode is None) or (im_mode == 'OTHER'):
             raise ValueError('The selected optical element is DARK or not recognized')
 
-        self.times = data_anc['frame_time'][im_mode] * np.arange(self.input_data.shape[0])
+        self.times = WFI_FRAME_TIME[im_mode] * np.arange(self.input_data.shape[0])
         self.fit_complete = False
         self.poly_order = None
         self.coeffs = None
