@@ -7,8 +7,11 @@ import warnings
 from collections.abc import Iterable
 import logging
 from romancal.lib import dqflags
-import yaml
-import pkg_resources
+import astropy.units as u
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_OPTICAL_ELEMENTS
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_DARK, WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_GRISM
+from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_PRISM
 
 # logging.getLogger('stpipe').setLevel(logging.WARNING)
 # log_file_str = 'linearity_dev.log'
@@ -24,12 +27,8 @@ flag_nl = dqflags.pixel[key_nl]
 # Using this one for failed fits
 flag_nlc = dqflags.pixel[key_nlc]
 
-# Load ancillary datacube
-data_path = pkg_resources.resource_filename("wfi_reference_pipeline.resources.data",
-                                            "ancillary.yaml")
-with open(data_path, "r") as stream:
-    data_anc = yaml.safe_load(stream)
-
+bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GRISM,
+                        WFI_REF_OPTICAL_ELEMENT_PRISM]
 
 
 class Linearity(ReferenceFile):
@@ -75,17 +74,14 @@ class Linearity(ReferenceFile):
         else:
             pass
         self.times = None
-
         # Get whether we are in spectroscopic or imaging mode
-        im_mode = None
-        for key in data_anc['optical_elements'].keys():
-            if optical_element in data_anc['optical_elements'][key]:
-                im_mode = key
-
+        if optical_element in WFI_REF_OPTICAL_ELEMENTS:
+            if optical_element not in bad_optical_elements:
+                im_mode = WFI_MODE_WIM
         if (im_mode is None) or (im_mode == 'OTHER'):
             raise ValueError('The selected optical element is DARK or not recognized')
 
-        self.times = data_anc['frame_time'][im_mode] * np.arange(self.input_data.shape[0])
+        self.times = WFI_FRAME_TIME[im_mode] * np.arange(self.input_data.shape[0])
         self.fit_complete = False
         self.poly_order = None
         self.coeffs = None
@@ -163,7 +159,26 @@ class Linearity(ReferenceFile):
         self.fit_complete = True
         self.poly_order = poly_order
 
-    def save_linearity(self, clobber=False):
+    def populate_datamodel_tree(self):
+        """
+        Create data model from DMS and populate tree.
+        """
+
+        # Construct the linearity object from the data model.
+        linearity_datamodel_tree = rds.LinearityRef()
+        linearity_datamodel_tree['meta'] = self.meta
+        nonlinear_pixels = ((self.mask == float('NaN')) |
+                            (self.coeffs[0, :, :] == float('NaN')))
+        nonlinear_pixels = np.where(nonlinear_pixels)
+        self.mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
+        self.coeffs[self.coeffs == float('NaN')] = 0
+        # Assuming coeffs are unitless?
+        linearity_datamodel_tree['data'] = self.coeffs * u.DN
+        linearity_datamodel_tree['dq'] = self.mask
+
+        return linearity_datamodel_tree
+
+    def save_linearity(self, datamodel_tree=None, clobber=False):
         """
         Save a linearity reference file to an asdf file.
 
@@ -174,8 +189,12 @@ class Linearity(ReferenceFile):
         self.clobber = clobber
         # Check if the output file exists, and take appropriate action.
         self.check_output_file(self.outfile)
-        _save_linearity(self.outfile, self.meta, self.coeffs, self.mask,
-                        clobber=self.clobber)
+        af = asdf.AsdfFile()
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
+        af.write_to(self.outfile)
 
 
 def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
@@ -395,8 +414,8 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                     wy = wgt * img_arr_all
                     wy = wy.reshape(nframes_grid, -1)
                     # Clear memory
-                    del(img_arr_all_sq)
-                    del(img_arr_all)
+                    del (img_arr_all_sq)
+                    del (img_arr_all)
                     # Here is where the linear algebra fun starts...
                     # using the weighted least squares estimator
                     # https://en.wikipedia.org/wiki/Weighted_least_squares
@@ -427,7 +446,8 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
 
 def _save_linearity(outfile, meta, coeffs, mask, clobber=False, unc=None):
     """
-    Save a linearity reference file to an asdf file.
+    Save a linearity reference file to an asdf file. This is now a bit redundant
+    but allows make_linearity_multi to save the coefficients to a file.
 
     Parameters
     ----------
