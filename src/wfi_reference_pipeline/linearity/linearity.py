@@ -39,7 +39,7 @@ class Linearity(ReferenceFile):
     method make_linearity() creates the asdf linearity file.
     """
 
-    def __init__(self, linearity_image, out_meta_data, optical_element=None,
+    def __init__(self, linearity_image, meta_data, optical_element=None,
                  bit_mask=None, outfile=None, clobber=False):
         """
         Parameters
@@ -47,7 +47,7 @@ class Linearity(ReferenceFile):
 
         linearity_image: numpy.ndarray; Input (typically a flat-field image) image used
          to perform the linearity fit. It populates self.input_data.
-        out_meta_data: dict; Metadata that will populate the output linearity reference
+        meta_data: dict; Metadata that will populate the output linearity reference
          file.
         clobber: bool; If True, overwrite previously generated linearity file in outfile.
         outfile: str; Path to output linearity file. (Default: roman_linearity.asdf).
@@ -55,13 +55,13 @@ class Linearity(ReferenceFile):
         """
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_linearity.asdf'
-
+        self.img_size = linearity_image.shape[1:]
         # Make sure that the shapes match if initialized to None
         if bit_mask is None:
             bit_mask = np.zeros(linearity_image.shape, dtype=np.uint32)
 
         # Access methods of base class ReferenceFile
-        super(Linearity, self).__init__(linearity_image, out_meta_data, bit_mask=bit_mask,
+        super(Linearity, self).__init__(linearity_image, meta_data, bit_mask=bit_mask,
                                         clobber=clobber)
 
         # Update metadata with file type info if not included.
@@ -75,6 +75,7 @@ class Linearity(ReferenceFile):
             pass
         self.times = None
         # Get whether we are in spectroscopic or imaging mode
+        im_mode = None
         if optical_element in WFI_REF_OPTICAL_ELEMENTS:
             if optical_element not in bad_optical_elements:
                 im_mode = WFI_MODE_WIM
@@ -99,8 +100,8 @@ class Linearity(ReferenceFile):
         """
 
         # Get the dimensions of the image
-        npix_0 = self.input_data.shape[1]
-        npix_1 = self.input_data.shape[2]
+        npix_0 = self.img_size[0]
+        npix_1 = self.img_size[1]
 
         # Load input image
         if np.isscalar(self.times):
@@ -167,15 +168,19 @@ class Linearity(ReferenceFile):
         # Construct the linearity object from the data model.
         linearity_datamodel_tree = rds.LinearityRef()
         linearity_datamodel_tree['meta'] = self.meta
-        nonlinear_pixels = ((self.mask == float('NaN')) |
-                            (self.coeffs[0, :, :] == float('NaN')))
-        nonlinear_pixels = np.where(nonlinear_pixels)
-        self.mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
-        self.coeffs[self.coeffs == float('NaN')] = 0
-        # Assuming coeffs are unitless?
-        linearity_datamodel_tree['data'] = self.coeffs * u.DN
-        linearity_datamodel_tree['dq'] = self.mask
-
+        if self.fit_complete:
+            nonlinear_pixels = ((self.mask == float('NaN')) |
+                                (self.coeffs[0, :, :] == float('NaN')))
+            nonlinear_pixels = np.where(nonlinear_pixels)
+            self.mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
+            self.coeffs[self.coeffs == float('NaN')] = 0
+            self.coeffs = self.coeffs.astype(np.float32)  # to comply with datamodel
+            linearity_datamodel_tree['coeffs'] = self.coeffs * u.DN
+            linearity_datamodel_tree['dq'] = np.sum(self.mask, axis=0).astype(np.uint32)
+        else:
+            linearity_datamodel_tree['coeffs'] = np.zeros((1, self.img_size[0],
+                                                           self.img_size[1]), np.float32)
+            linearity_datamodel_tree['dq'] = np.sum(self.mask, axis=0).astype(np.uint32)
         return linearity_datamodel_tree
 
     def save_linearity(self, datamodel_tree=None, clobber=False):

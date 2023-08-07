@@ -74,16 +74,18 @@ if not ON_GITLAB_ACTIONS:
             # Make RFP Inverse Linearity reference file object for testing.
             test_data = np.ones((11, 1, 1),
                                 dtype=np.float32)  # Dimensions of coefficients are 11x4096x4096.
-            rfp_inverselinearity = Linearity(None, meta_data=linearity_test_meta,
-                                                    inv_coeffs=test_data)
-
+            with self.assertRaises(ValueError):
+                Linearity(test_data, meta_data=linearity_test_meta)
+            rfp_linearity = Linearity(test_data, meta_data=linearity_test_meta,
+                                      optical_element='F184')
+            
             # Make test asdf tree
             tf = asdf.AsdfFile()
-            tf.tree = {'roman': rfp_inverselinearity.populate_datamodel_tree()}
+            tf.tree = {'roman': rfp_linearity.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then validate == TRUE.
-            assert tf.validate() is None        
-        
+            assert tf.validate() is None
+
         def test_rfp_inverselinearity_schema(self):
             """
             Use the WFI reference file pipeline InverseLinearity() module to build
