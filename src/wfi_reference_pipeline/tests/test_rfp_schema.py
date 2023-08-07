@@ -74,7 +74,7 @@ if not ON_GITLAB_ACTIONS:
             # Make RFP Inverse Linearity reference file object for testing.
             test_data = np.ones((11, 1, 1),
                                 dtype=np.float32)  # Dimensions of coefficients are 11x4096x4096.
-            rfp_inverselinearity = Linearity(None, meta_data=linearity_test_meta,
+            rfp_inverselinearity = Linearity(None, out_meta_data=linearity_test_meta,
                                                     inv_coeffs=test_data)
 
             # Make test asdf tree
