@@ -40,7 +40,7 @@ run-pytest:
   artifacts:
     reports:
       coverage_report:
-        coverage_format: cobertura  
+        coverage_format: cobertura
         path: reports/coverage.xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
@@ -49,5 +49,5 @@ run-flake:
   script:
     - pip install flake8
     - ls -l
-    - venv/bin/python3 -m flake8 --exclude=venv *.py
+    - venv/bin/python3 -m flake8 --exclude=venv -- $(find . -name "*.py")
 
