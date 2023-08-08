@@ -49,5 +49,5 @@ run-flake:
   script:
     - pip install flake8
     - ls -l
-    - venv/bin/python3 -m flake8 --exclude=venv -- $(find . -name "*.py")
+    - venv/bin/python3 -m flake8 --exclude=venv *.py
 
