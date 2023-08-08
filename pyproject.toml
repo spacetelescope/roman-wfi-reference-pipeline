@@ -1,9 +1,64 @@
+[project]
+name = "wfi_reference_pipeline"
+description = "Reference file pipeline for the Roman WFI instrument."
+requires-python = ">=3.9"
+authors = [
+    { name = "STScI", email = "help@stsci.edu" },
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "requests",
+    "sphinx",
+    "sphinx_automodapi",
+    "sphinx_rtd_theme",
+    "soc_roman_tools",
+    "romancal",
+]
+dynamic = [
+    "version",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+"Source Code" = "https://grit.stsci.edu/roman/wfi_reference_pipeline"
+
 [build-system]
 requires = [
     "setuptools>=42",
     "setuptools_scm[toml]>=3.4",
-    "wheel"
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = false
+
+[tool.setuptools.packages.find]
+exclude = [
+    "doc",
+    "examples",
+]
+where = [
+    "src",
+]
+namespaces = false
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.package-data]
+"wfi_reference_pipeline.resources" = [
+    "data/*.yaml",
 ]
 
 [tool.setuptools_scm]
-write_to = 'src/wfi_reference_pipeline/version.py'
+write_to = "src/wfi_reference_pipeline/version.py"
