@@ -126,24 +126,43 @@ class ReadNoise(ReferenceFile):
 
         self.n_reads, self.ni, _ = np.shape(self.input_read_cube)
 
+    def initialize_arrays(self, ni=None):
+        """
+
+        Parameters
+        ----------
+        ni: integer; Default=None
+            Number of square pixels of array ni.
+        """
+
+        self.ni = ni
+        # Initialize ramp residual variance array.
+        self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+
+        # Make the time array for the length of the dark read cube exposure.
+        self.make_time_array()
+
     def make_time_array(self):
         """
         The method make_data_time_arrays() will generate a WFI mode dependent time array of the exposure or input
         data supplied to make the read noise reference file.
         """
 
-        if self.meta['exposure']['type'] == 'WFI_IMAGE':
-            frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
-        elif self.meta['exposure']['type'] == 'WFI_GRISM':
-            frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
-        else:
-            logging.info(f'No frame time found for WFI mode specified.')
-            raise ValueError(f'No frame time found for WFI mode specified!')
+        # TODO implement this
+        pass
 
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
-                     f'time of {frame_time} seconds.')
-        self.time_arr = np.array([frame_time * i for i in range(1, self.n_reads + 1)])
+        # if self.meta['exposure']['type'] == 'WFI_IMAGE':
+        #     frame_time = self.ancillary['frame_time']['WIM']  # frame time in imaging mode in seconds
+        # elif self.meta['exposure']['type'] == 'WFI_GRISM':
+        #     frame_time = self.ancillary['frame_time']['WSM']  # frame time in spectral mode in seconds
+        # else:
+        #     logging.info(f'No frame time found for WFI mode specified.')
+        #     raise ValueError(f'No frame time found for WFI mode specified!')
+        #
+        # # Generate the time array depending on WFI mode.
+        # logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
+        #              f'time of {frame_time} seconds.')
+        # self.time_arr = np.array([frame_time * i for i in range(1, self.n_reads + 1)])
 
     def make_ramp_cube_model(self):
         """
@@ -224,21 +243,27 @@ class ReadNoise(ReferenceFile):
         del read_diff_cube
         gc.collect()
 
-    def save_read_noise(self):
+    def populate_datamodel_tree(self):
         """
-        The method save_read_noise() writes the read noise cube into an asdf file to be saved somewhere on disk.
-        Read noise reference file data model does not have data quality or error arrays.
+        Create data model from DMS and populate tree.
         """
-
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
 
         # Construct the read noise object from the data model.
-        rn_file = rds.ReadnoiseRef()
-        rn_file['meta'] = self.meta
-        rn_file['data'] = self.ramp_res_var * u.DN  # Use astropy units to make data array a quantity object.
+        readnoise_datamodel_tree = rds.ReadnoiseRef()
+        readnoise_datamodel_tree['meta'] = self.meta
+        readnoise_datamodel_tree['data'] = self.ramp_res_var * u.DN
 
-        # af: asdf file tree: {meta, data}
+        return readnoise_datamodel_tree
+
+    def save_readnoise(self, datamodel_tree=None):
+        """
+        The method save_readnoise writes the reference file object to the specified asdf outfile.
+        """
+
+        # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': rn_file}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)

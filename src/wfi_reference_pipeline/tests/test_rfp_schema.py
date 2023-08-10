@@ -11,8 +11,10 @@ if not ON_GITLAB_ACTIONS:
     from wfi_reference_pipeline.dark.dark import Dark
     from wfi_reference_pipeline.interpixelcapacitance.interpixelcapacitance import InterPixelCapacitance
     from wfi_reference_pipeline.inverselinearity.inverselinearity import InverseLinearity
-    from wfi_reference_pipeline.referencepixel.referencepixel import ReferencePixel
     from wfi_reference_pipeline.linearity.linearity import Linearity
+    from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
+    from wfi_reference_pipeline.referencepixel.referencepixel import ReferencePixel
+
 
     class TestSchema(unittest.TestCase):
         """
@@ -31,7 +33,7 @@ if not ON_GITLAB_ACTIONS:
 
             # Make RFP Dark reference file object for testing.
             rfp_dark = Dark('test_file.txt', meta_data=dark_test_meta)
-            rfp_dark.initialize_cube_arrays(num_resultants=1, ni=3)
+            rfp_dark.initialize_arrays(num_resultants=1, ni=3)
 
             # Make test asdf tree
             tf = asdf.AsdfFile()
@@ -40,7 +42,7 @@ if not ON_GITLAB_ACTIONS:
             # If none, then validate == TRUE.
             assert tf.validate() is None
 
-        def test_rfp_ipc_schema(self):
+        def test_rfp_interpixelcapacitance_schema(self):
             """
             Use the WFI reference file pipeline IPC() module to build a testable object
             which is then validated against the DMS reference file schema.
@@ -57,31 +59,6 @@ if not ON_GITLAB_ACTIONS:
             # Make test asdf tree
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_ipc.populate_datamodel_tree()}
-            # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
-            assert tf.validate() is None
-
-        def test_rfp_linearity_schema(self):
-            """
-            Use the WFI reference file pipeline Linearity() module to build a testable
-            object which is the validated against the DMS reference file schema.
-            """
-
-            # Make reftype specific data class object and export meta data as dict.
-            tmp = MakeTestMeta(ref_type='LINEARITY')
-            linearity_test_meta = tmp.meta_linearity.export_asdf_meta()
-
-            # Make RFP Inverse Linearity reference file object for testing.
-            test_data = np.ones((11, 1, 1),
-                                dtype=np.float32)  # Dimensions of coefficients are 11x4096x4096.
-            with self.assertRaises(ValueError):
-                Linearity(test_data, meta_data=linearity_test_meta)
-            rfp_linearity = Linearity(test_data, meta_data=linearity_test_meta,
-                                      optical_element='F184')
-            
-            # Make test asdf tree
-            tf = asdf.AsdfFile()
-            tf.tree = {'roman': rfp_linearity.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then validate == TRUE.
             assert tf.validate() is None
@@ -109,6 +86,52 @@ if not ON_GITLAB_ACTIONS:
             # If none, then validate == TRUE.
             assert tf.validate() is None
 
+        def test_rfp_linearity_schema(self):
+            """
+            Use the WFI reference file pipeline Linearity() module to build a testable
+            object which is the validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='LINEARITY')
+            linearity_test_meta = tmp.meta_linearity.export_asdf_meta()
+
+            # Make RFP Linearity reference file object for testing.
+            test_data = np.ones((7, 1, 1),
+                                dtype=np.float32)  # Dimensions of coefficients are 11x4096x4096.
+            with self.assertRaises(ValueError):
+                Linearity(test_data, meta_data=linearity_test_meta)
+            rfp_linearity = Linearity(test_data, meta_data=linearity_test_meta,
+                                      optical_element='F184')
+
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_linearity.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then validate == TRUE.
+            assert tf.validate() is None
+
+        def test_rfp_readnoise_schema(self):
+            """
+            Use the WFI reference file pipeline ReadNoise() module to build
+            testable object which is then validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='READNOISE')
+            readnoise_test_meta = tmp.meta_readnoise.export_asdf_meta()
+
+            # Make RFP Read Noise reference file object for testing.
+            rfp_readnoise = ReadNoise('test_file.txt', meta_data=readnoise_test_meta)
+            rfp_readnoise.initialize_arrays(ni=3)
+
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_readnoise.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then validate == TRUE.
+            assert tf.validate() is None
+
         def test_rfp_referencepixel_schema(self):
             """
             Use the WFI reference file pipeline ReferencePixel() module to build
@@ -129,7 +152,3 @@ if not ON_GITLAB_ACTIONS:
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then validate == TRUE.
             assert tf.validate() is None
-
-
-
-

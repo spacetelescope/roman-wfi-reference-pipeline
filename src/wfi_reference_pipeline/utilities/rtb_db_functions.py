@@ -61,7 +61,7 @@ def get_ma_table_from_rtb_db(ma_table_id):
     return ma_table_meta
 
 
-def make_read_pattern(meta=None, num_resultants=None, num_rds_per_res=None, even_spacing=True):
+def make_read_pattern(num_resultants, num_rds_per_res, uneven=False):
     """
     The method make_read_pattern is an RFP solution to providing a future meta data field from DMS in which a list
     of lists will be supplied with the information about evenly spaced resultants and the indices of the reads
@@ -74,15 +74,12 @@ def make_read_pattern(meta=None, num_resultants=None, num_rds_per_res=None, even
 
     Parameters
     ----------
-    ma_table_meta: dictionary; default=None
-        Dictionary with necessary meta data to make MA table read pattern
     num_resultants: integer; default=None
         Integer number of resultants in exposure.
     num_rds_per_res: integer; default=None
         Integer number of reads per resultant for evenly spaced averaged resultants.
-    even_spacing: keyword; default=True
-        Assuming evenly spaced resultants until read pattern is included in meta data, at which time this might be
-        determined to be unnecessary.
+    uneven: keyword; default=False
+        If True, make a sample unevenly spaced resultant list of lists.
 
     Returns
     -------
@@ -90,19 +87,11 @@ def make_read_pattern(meta=None, num_resultants=None, num_rds_per_res=None, even
         Nested list of lists that are taken created from existing meta data or accessed by new meta roman data models.
     """
 
-    if even_spacing:
-        if meta:
-            num_resultants = meta['exposure']['ngroups']
-            num_rds_per_res = meta['exposure']['nframes']
-            rds_list = list(range(1, num_resultants*num_rds_per_res+1))
-            # Make nested list of lists read_pattern for evenly spaced resultants according to DRM, DMS, or GSFC.
-            read_pattern = [rds_list[i:i+num_resultants] for i in range(0, len(rds_list), num_resultants)]
-        else:
-            rds_list = list(range(1, num_resultants*num_rds_per_res+1))
-            # Make nested list of lists read_pattern for evenly spaced resultants according to DRM, DMS, or GSFC.
-            read_pattern = [rds_list[i:i+num_rds_per_res] for i in range(0, len(rds_list), num_rds_per_res)]
-    else:
-        # Default unevenly spaced MA table sequence for RFP development and testing.
+    if uneven is True:
+        # Make unevenly spaced MA table sequence for RFP development and testing.
         read_pattern = [[1,2], [4,5,6], [9, 10, 11,12], [13]]
-
+    else:
+        rds_list = list(range(1, num_resultants*num_rds_per_res+1))
+        # Make nested list of lists read_pattern for evenly spaced resultants according to DRM, DMS, or GSFC.
+        read_pattern = [rds_list[i:i+num_resultants] for i in range(0, len(rds_list), num_resultants)]
     return read_pattern

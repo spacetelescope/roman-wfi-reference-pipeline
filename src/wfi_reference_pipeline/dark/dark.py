@@ -196,7 +196,7 @@ class Dark(ReferenceFile):
                 self.ma_table_sequence.append(rd)
             self.ma_table_sequence.append('R')
 
-    def initialize_cube_arrays(self, num_resultants=None, ni=None):
+    def initialize_arrays(self, num_resultants=None, ni=None):
         """
 
         Parameters
@@ -208,7 +208,7 @@ class Dark(ReferenceFile):
         """
 
         self.ni = ni
-        # Initialize resampled dark cube and error array as quantity object
+        # Initialize resampled dark cube and error array
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         logging.info(f'Error arrays with number of resultants initialized with zeros.')
