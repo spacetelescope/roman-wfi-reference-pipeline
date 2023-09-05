@@ -14,6 +14,7 @@ if not ON_GITLAB_ACTIONS:
     from wfi_reference_pipeline.linearity.linearity import Linearity
     from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
     from wfi_reference_pipeline.referencepixel.referencepixel import ReferencePixel
+    from wfi_reference_pipeline.saturation.saturation import Saturation
 
 
     class TestSchema(unittest.TestCase):
@@ -149,6 +150,27 @@ if not ON_GITLAB_ACTIONS:
             # Make test asdf tree
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_referencepixel.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then validate == TRUE.
+            assert tf.validate() is None
+
+        def test_rfp_saturation_schema(self):
+            """
+            Use the WFI reference file pipeline Saturation() module to build
+            testable object which is then validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='SATURATION')
+            saturation_test_meta = tmp.meta_saturation.export_asdf_meta()
+
+            # Make RFP Saturation reference file object for testing.
+            rfp_saturation = Saturation(None, meta_data=saturation_test_meta)
+            rfp_saturation.update_dq_mask()
+
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_saturation.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then validate == TRUE.
             assert tf.validate() is None
