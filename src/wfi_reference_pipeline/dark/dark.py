@@ -87,9 +87,6 @@ class Dark(ReferenceFile):
         self.ni = None  # Number of pixels.
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
-        # Metrics attributes
-        self.hot_pixels = None
-        self.warm_pixels = None
 
     def make_master_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
         """
@@ -137,8 +134,9 @@ class Dark(ReferenceFile):
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
             logging.info(f'On read {rd} of {np.max(num_reads_set)}')
+            print('read', rd)
             for fl in range(0, len(self.input_data)):
-                print(fl, 'read')
+                print(fl, 'file')
                 tmp = asdf.open(self.input_data[fl], validate_on_read=False)
                 rd_tmp = tmp.tree['roman']['data']
                 dark_read_cube.append(rd_tmp[rd, :, :])
@@ -229,7 +227,15 @@ class Dark(ReferenceFile):
         logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
 
         # Make the time array for the length of the dark read cube exposure.
-        self.make_time_array()
+        if self.meta['exposure']['type'] == WFI_MODE_WIM:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
+        else:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
+        # Generate the time array depending on WFI mode.
+        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
+                     f'time of {self.frame_time} seconds.')
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
     def make_ma_table_resampled_dark(self, num_resultants, num_rds_per_res, read_pattern=None):
@@ -290,21 +296,6 @@ class Dark(ReferenceFile):
             logging.info(f'MA table resampling with {num_resultants} resultants averaging {num_rds_per_res}'
                          f' reads per resultant complete.')
 
-    def make_time_array(self):
-        """
-        The method make_data_time_array() will generate a WFI mode dependent time array of the exposure or input
-        data supplied.
-        """
-
-        if self.meta['exposure']['type'] == WFI_MODE_WIM:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-        else:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
-
     def calculate_dark_error(self):
         """
         The calc_dark_err_metrics() method computes the error as the variance of the fitted ramp or slope
@@ -340,13 +331,16 @@ class Dark(ReferenceFile):
         # and the variance of the resampled residuals are added in quadrature
         self.resampled_dark_cube_err[0, :, :] = (std * std + dark_rate_var) ** 0.5
 
-    def update_dq_mask(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010):
+    def update_dq_mask(self, dead_pixel_rate=0.0001, hot_pixel_rate=0.015, warm_pixel_rate=0.010):
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
         DQ bit flag.
 
         Parameters
         ----------
+        dead_pixel_rate: float; default = 0.0001 DN/s or ADU/s
+            The dead pixel rate is the number of DN/s determined from detector characterization to be the level at
+            which no detectable signal from dark current would be found in a very long exposure.
         hot_pixel_rate: float; default = 0.015 DN/s or ADU/s
             The hot pixel rate is the number of DN/s determined from detector characterization to be 10-sigma above
             the nominal expectation of dark current.
@@ -357,14 +351,16 @@ class Dark(ReferenceFile):
 
         logging.info(f'Flagging hot and warm pixels and updating DQ array.')
         # Locate hot and warm pixel ni,nj positions in 2D array
+        self.dead_pixels = np.where(self.dark_rate_image < dead_pixel_rate)
         self.hot_pixels = np.where(self.dark_rate_image >= hot_pixel_rate)
         self.warm_pixels = np.where((warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < hot_pixel_rate))
 
         # Set mask DQ flag values
+        self.mask[self.hot_pixels] += self.dqflag_defs['DEAD']
         self.mask[self.hot_pixels] += self.dqflag_defs['HOT']
         self.mask[self.warm_pixels] += self.dqflag_defs['WARM']
 
-    def make_database_metrics(self):
+    def make_metrics_dicts(self):
         """
 
         Parameters
@@ -372,49 +368,67 @@ class Dark(ReferenceFile):
 
         """
 
-        dq_keys = [
-            'dark_id',
-            'dark_file',
-            'num_dead_pix',
-            'num_hot_pix',
-            'num_warm_pix',
-            'hot_pix_rate',
-            'warm_pix_rate']
-        dq_values =[]
+        # # make sure Kerberos ticket is initialized
+        #
+        # #eng = login.connect_server(DSN_name='DWRINSDB')
+        #
 
-        file_keys = [
-                'detector',
-                'exposure_type',
-                'created_date',
-                'use_after',
-                'crds_filename',
-                'crds_delivery_id',
-                'dq',
-                'amp',
-                'struc']
-        file_values = [
-                    self.meta['instrument']['detector'],
-                    self.meta['exposure']['type'],
-                    datetime.datetime.utcnow(),
-                    'test_crds_filename.asdf',
-                    1,
-                    {},
-                    {},
-                    {}
-                    ]
+        db_dark_fl_dict = {'detector': self.meta['instrument']['detector'],
+                            'exposure_type': self.meta['exposure']['type'],
+                            'created_date': datetime.datetime.utcnow(),
+                            'use_after': datetime.datetime.utcnow(),
+                            'crds_filename': 'test_crds_filename.asdf',
+                            'crds_delivery_id': 1}
 
-        # Initialize an empty dictionary and use zip to combine keys and values
-        my_dict = dict(zip(keys, values))
-
-
-        dark_file_dict = {}
-
-        #detector, exposure_type, created_date, use_after, crds_filename, crds_delivery_id, dq, amp, struc
-
-        # Get the number of hot and warm pixels for metric tracking
+        # Get the number of dead, hot, and warm pixels for metric tracking
+        _, num_dead_pixels = np.shape(self.hot_pixels)
         _, num_hot_pixels = np.shape(self.hot_pixels)
         _, num_warm_pixels = np.shape(self.warm_pixels)
         logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
+
+        db_dark_dq_dict = {'num_dead_pix': num_dead_pixels,
+                        'num_hot_pix': num_hot_pixels,
+                        'num_warm_pix': num_warm_pixels,
+                        'hot_pix_rate': 0.015,
+                        'warm_pix_rate': 0.010}
+
+        # Number of SCA amplifiers (4096 pixels / 128 pixels)
+        amp_pixel_width = 128
+        num_amps = 32
+        # Initialize empty lists to store median and mean values for each amplifier
+        median_values = []
+        mean_values = []
+
+        # Loop through amplifier 128 columns at a time
+        for i in range(num_amps):
+            # Define the start and end indices for the current segment
+            start_index = i * amp_pixel_width
+            end_index = (i + 1) * amp_pixel_width
+
+            # Extract the segment from the dark_rate_image
+            amp_i = self.dark_rate_image[:, start_index:end_index]
+
+            # Calculate the median and mean for the current segment
+            median = np.nanmedian(amp_i)
+            mean = np.nanmean(amp_i)
+
+            # Append the results to the lists
+            median_values.append(median)
+            mean_values.append(mean)
+
+        # Create the dictionary with amp_id, median_dark_current, and mean_dark_current
+        db_dark_amp_dict = {
+            'amp_id': list(range(1, num_amps + 1)),
+            'median_dark_current': median_values,
+            'mean_dark_current': mean_values
+        }
+
+        #
+        # dark_struc_dict = {'coefficient': 30.0}
+        #
+        # #rfp_tools.add_new_dark_file(eng, dark_file_dict, dark_dq_dict,
+        #                             dark_struc_dict, dark_amp_dict)
+        #
 
     def populate_datamodel_tree(self):
         """
