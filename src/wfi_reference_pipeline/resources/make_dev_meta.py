@@ -2,8 +2,9 @@ from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
-from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
+from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
+from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE
 from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_TYPE_IMAGE
 from astropy import units as u
@@ -71,6 +72,9 @@ class MakeDevMeta:
         self.meta_referencepixel = WFIMetaReferencePixel(*meta_data,
                                                          *referencepixel_meta_data)
 
+    def _create_dev_meta_saturation(self, meta_data):
+        self.meta_saturation = WFIMetaSaturation(*meta_data)
+
     def __init__(self, ref_type):
         """
         Generates a reference type specific MetaData object relevant to the ref_type
@@ -119,3 +123,6 @@ class MakeDevMeta:
 
         if ref_type == "REFPIX":
             self._create_dev_meta_referencepixel(META_DATA_PARAMS)
+
+        if ref_type == "SATURATION":
+            self._create_dev_meta_saturation(META_DATA_PARAMS)

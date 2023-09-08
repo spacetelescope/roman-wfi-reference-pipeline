@@ -11,7 +11,7 @@ class ReferencePixel(ReferenceFile):
     """
 
     def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', gamma=None, zeta=None, alpha=None,
-                 bit_mask=None, clobber=False, ):
+                 bit_mask=None, clobber=False):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
         file base class.
