@@ -9,9 +9,6 @@ from astropy import units as u
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME
 import datetime
-#from RTB_Database.utilities.login import connect_server
-#from RTB_Database.utilities.table_tools import DatabaseTable
-#from RTB_Database.utilities.table_tools import table_names
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
 
@@ -312,6 +309,8 @@ class Dark(ReferenceFile):
         p, c = np.polyfit(self.resultant_tau_arr,
                           self.resampled_dark_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True)
 
+        #TODO separate fit and dark_rate_image outside of calculate_dark_error
+
         # Reshape results back to 2D arrays.
         self.dark_rate_image = p[0].reshape(self.ni, self.ni)  # the fitted ramp slope image
         self.dark_intercept_image = p[1].reshape(self.ni, self.ni)  # the fitted y intercept
@@ -332,6 +331,7 @@ class Dark(ReferenceFile):
         self.resampled_dark_cube_err[0, :, :] = (std * std + dark_rate_var) ** 0.5
 
     def update_dq_mask(self, dead_pixel_rate=0.0001, hot_pixel_rate=0.015, warm_pixel_rate=0.010):
+        #TODO evaluate options for variabiles like this and sigma clipping with a parameter file?
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
         DQ bit flag.
@@ -362,17 +362,16 @@ class Dark(ReferenceFile):
 
     def make_metrics_dicts(self):
         """
+        The method make_metrics_dicts is used to create reference file type specific
+        metrics for tracking by the data monitoring tool from entries into the
+        the RTB Database.
 
         Parameters
         ----------
 
         """
 
-        # # make sure Kerberos ticket is initialized
-        #
-        # #eng = login.connect_server(DSN_name='DWRINSDB')
-        #
-
+        # Create the dark file dictionary
         db_dark_fl_dict = {'detector': self.meta['instrument']['detector'],
                             'exposure_type': self.meta['exposure']['type'],
                             'created_date': datetime.datetime.utcnow(),
@@ -386,6 +385,7 @@ class Dark(ReferenceFile):
         _, num_warm_pixels = np.shape(self.warm_pixels)
         logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
 
+        # Create the dark dq dictionary
         db_dark_dq_dict = {'num_dead_pix': num_dead_pixels,
                         'num_hot_pix': num_hot_pixels,
                         'num_warm_pix': num_warm_pixels,
@@ -399,16 +399,11 @@ class Dark(ReferenceFile):
         median_values = []
         mean_values = []
 
-        # Loop through amplifier 128 columns at a time
+        # Loop through amplifiers and find stats by amplifier
         for i in range(num_amps):
-            # Define the start and end indices for the current segment
             start_index = i * amp_pixel_width
             end_index = (i + 1) * amp_pixel_width
-
-            # Extract the segment from the dark_rate_image
             amp_i = self.dark_rate_image[:, start_index:end_index]
-
-            # Calculate the median and mean for the current segment
             median = np.nanmedian(amp_i)
             mean = np.nanmean(amp_i)
 
@@ -416,19 +411,24 @@ class Dark(ReferenceFile):
             median_values.append(median)
             mean_values.append(mean)
 
-        # Create the dictionary with amp_id, median_dark_current, and mean_dark_current
+        # Create the dark amp dictionary
         db_dark_amp_dict = {
             'amp_id': list(range(1, num_amps + 1)),
             'median_dark_current': median_values,
             'mean_dark_current': mean_values
         }
 
-        #
-        # dark_struc_dict = {'coefficient': 30.0}
-        #
-        # #rfp_tools.add_new_dark_file(eng, dark_file_dict, dark_dq_dict,
-        #                             dark_struc_dict, dark_amp_dict)
-        #
+        # Create the dark structure dictionary
+        db_dark_struc_dict = {'coefficient': 42.0}
+
+        metric_dict = {
+            'db_dark_fl_dict': db_dark_fl_dict,
+            'db_dark_dq_dict': db_dark_dq_dict,
+            'db_dark_struc_dict': db_dark_struc_dict,
+            'db_dark_amp_dict': db_dark_amp_dict
+        }
+
+        return db_dark_fl_dict, db_dark_dq_dict, db_dark_struc_dict, db_dark_amp_dict
 
     def populate_datamodel_tree(self):
         """

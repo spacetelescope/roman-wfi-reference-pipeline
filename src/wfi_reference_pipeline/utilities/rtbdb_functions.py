@@ -1,20 +1,8 @@
-import wfi_reference_pipeline.resources.data as resource_meta
-import logging, yaml, importlib.resources
-#from RTB_Database.utilities.login import connect_server
-#from RTB_Database.utilities.table_tools import DatabaseTable
-
-# File to empty dictionary of common meta keys.
-meta_yaml_files = importlib.resources.files(resource_meta)
-
-# Load the YAML file contents into a dictionary using safe_load().
-anc_yaml_path = meta_yaml_files.joinpath('ancillary.yaml')
-
-# Load the YAML file contents into a dictionary using safe_load()
-with anc_yaml_path.open() as ayp:
-    anc_data = yaml.safe_load(ayp)
+import logging, json, tempfile, os
+from rtb_db.utilities import rfp_tools, login
 
 
-def get_ma_table_from_rtb_db(ma_table_id):
+def get_ma_table_from_rtbdb(ma_table_id):
     """
     This method get_ma_table_from_rtb_db() accesses the rtb_database repo for methods to connect to the
     the RTB database and access information on MA tables.
@@ -51,11 +39,6 @@ def get_ma_table_from_rtb_db(ma_table_id):
     ma_table_meta['exposure'].update(dict(ngroups=ma_tab_num_resultants, nframes=ma_tab_reads_per_resultant,
                                           groupgap=0, ma_table_name=ma_tab_name, ma_table_number=ma_table_id))
 
-    # Determine WIM or WSM - WFI Imaging or Spectral Mode - from the ma table specs in the RTB database from PRD.
-    if frame_time == anc_data['frame_time']['WIM']:  # frame time in imaging mode in seconds
-        ma_table_meta['exposure'].update({'type': 'WFI_IMAGE', 'p_exptype': 'WFI_IMAGE|'})
-    elif frame_time == anc_data['frame_time']['WSM']:  # frame time in spectral mode in seconds:
-        ma_table_meta['exposure'].update({'type': 'WFI_GRISM', 'p_exptype': 'WFI_GRISM|WFI_PRISM|'})
     logging.info(f'Updated meta data with MA table info.')
 
     return ma_table_meta
@@ -99,3 +82,26 @@ def make_read_pattern(num_resultants=None, num_rds_per_res=None, uneven_spacing=
         # Make nested list of lists read_pattern for evenly spaced resultants according to DRM, DMS, or GSFC.
         read_pattern = [rds_list[i:i+num_resultants] for i in range(0, len(rds_list), num_resultants)]
     return read_pattern
+
+
+def write_metrics_db_dark(dark_file_dict, dark_dq_dict, dark_struc_dict, dark_amp_dict):
+    """
+    This method within the RFP project writes the predetermined multiple dark dictionaries
+    of metrics generated within the Dark() module.
+
+    #TODO - Writing a dictionary of dictionaries for all reference file types would be more efficient regardless of reftype
+    #TODO - Ingesting the number and names of the dictionaries that are written to tables should be mapped ahead of time where the RFP and RTB-DB both access for read and write
+
+    dark_file_dict: dict, default=None
+        This is the file metric dictionary with dates, etc.
+    dark_dq_dict: dict, default=None
+        This is the dq dictionary determined by reftype flags, etc.
+    dark_struc_dict dict, default=None
+        This is the structure dictionary containing 2D spatial information of the detector.
+    dark_amp_dict: dict, default=None
+        This is the amplifier dictionary containing various metrics of sections of pixels according to amplifier.
+    """
+    eng = login.connect_server(DSN_name='DWRINSDB')
+
+    rfp_tools.add_new_dark_file(eng, dark_file_dict, dark_dq_dict,
+                                dark_struc_dict, dark_amp_dict)
