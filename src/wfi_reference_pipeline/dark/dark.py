@@ -218,7 +218,7 @@ class Dark(ReferenceFile):
         self.make_time_array()
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
-    def make_ma_table_dark(self, num_resultants, num_rds_per_res=None):
+    def make_ma_table_dark(self, num_resultants, num_rds_per_res, read_pattern=None):
         """
         The method make_dark() takes a non-resampled dark cube read and converts it into
         a number of resultants that constructed from the mean of a number of reads
@@ -250,23 +250,13 @@ class Dark(ReferenceFile):
         if self.input_data is None and self.dark_read_cube is None:
             raise ValueError('No data supplied to make dark reference file for MA table resampling!')
         self.n_reads, ni, _ = np.shape(self.dark_read_cube)
-        self.initialize_cube_arrays(num_resultants, ni)
+        self.initialize_arrays(num_resultants, ni)
 
         # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
-        if self.ma_table_sequence is not None:
-            print(self.ma_table_sequence[:])
-            msg = f'Using MA table exposure sequence generated with make_ma_table_sequence method() for instructions' \
-                  f'on MA table resampling and averaging of resultants.'
-            logging.info(msg)
-            print(msg)
-            # For unevenly spaced resultant time tau in Casternao et al equation 14 handling the variance based
-            # resultant time
+        if read_pattern:
+            print("Using read pattern for averaging.")
         else:
-            if num_rds_per_res is None:
-                msg = 'Not enough information provided to do MA table resampling. Provide num_resultants with keyword' \
-                      ' num_rds_per_res to perform even resampling averaging or provide ma_table_seq'
-                logging.info(msg)
-                raise ValueError(msg)
+            print("Averaging with even spacing.")
             if num_rds_per_res > self.n_reads:
                 # Check that the length of the reads per resultant is not greater than the available number of reads
                 logging.info(f'Can not average over more reads than supplied in dark read cube.')
@@ -301,11 +291,11 @@ class Dark(ReferenceFile):
         #     else:
         #         logging.info(f'No frame time found for WFI mode specified.')
         #         raise ValueError(f'No frame time found for WFI mode specified!')
-
+        self.frame_time = 3.04
         # # Generate the time array depending on WFI mode.
         # logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame'
         #              f'time of {self.frame_time} seconds.')
-        # self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
 
     def calc_dark_err_metrics(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, hot_pixel_bit=11, warm_pixel_bit=12):
         """
