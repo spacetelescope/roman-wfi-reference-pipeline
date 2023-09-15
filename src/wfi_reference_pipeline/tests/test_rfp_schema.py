@@ -64,6 +64,31 @@ if not ON_GITLAB_ACTIONS:
             # If none, then validate == TRUE.
             assert tf.validate() is None
 
+        def test_rfp_linearity_schema(self):
+            """
+            Use the WFI reference file pipeline Linearity() module to build a testable
+            object which is the validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='LINEARITY')
+            linearity_test_meta = tmp.meta_linearity.export_asdf_meta()
+
+            # Make RFP Linearity reference file object for testing.
+            test_data = np.ones((7, 1, 1),
+                                dtype=np.float32)  # Dimensions of coefficients are 11x4096x4096.
+            with self.assertRaises(ValueError):
+                Linearity(test_data, meta_data=linearity_test_meta)
+            rfp_linearity = Linearity(test_data, meta_data=linearity_test_meta,
+                                      optical_element='F184')
+            
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_linearity.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then validate == TRUE.
+            assert tf.validate() is None
+
         def test_rfp_inverselinearity_schema(self):
             """
             Use the WFI reference file pipeline InverseLinearity() module to build
