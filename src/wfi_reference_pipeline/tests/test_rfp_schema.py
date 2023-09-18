@@ -34,7 +34,7 @@ if not ON_GITLAB_ACTIONS:
 
             # Make RFP Dark reference file object for testing.
             rfp_dark = Dark('test_file.txt', meta_data=dark_test_meta)
-            rfp_dark.initialize_arrays(num_resultants=1, ni=3)
+            rfp_dark.initialize_ma_table_resampling(num_resultants=1, ni=3)
 
             # Make test asdf tree
             tf = asdf.AsdfFile()
