@@ -34,7 +34,7 @@ class Flat(ReferenceFile):
         else:
             pass
 
-    def make_flat(self, low_qe_threshold=0.2, low_qe_bit=13):
+    def make_flat(self, low_qe_threshold=0.2):
         """
         The method make_flat() generates a flat asdf file where input data is divided
         by the mean value. The flattened image file is used to normalize quantum
@@ -71,18 +71,43 @@ class Flat(ReferenceFile):
         rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
         self.input_data[coords_x, coords_y] = rand_low_qe_values
 
+    def update_dq_mask(self, low_qe_bit=13):
+        """
+        Update data quality array bit mask with flag integer value.
+
+        Parameters
+        ----------
+        low_qe_bit: integer; default = 13
+            DQ loq quantum efficiency pixel flag value in romancal library.
+        """
+
         # Add DQ flag for low QE pixels.
         low_qe_pixels = np.where(self.input_data < low_qe_threshold)
         self.mask[low_qe_pixels] += 2 ** low_qe_bit
 
-        # Construct the flat field object from the data model.
-        flatfile = rds.FlatRef()
-        flatfile['meta'] = self.meta
-        flatfile['data'] = self.input_data
-        flatfile['dq'] = self.mask
-        flatfile['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+    def populate_datamodel_tree(self):
+        """
+        Create data model from DMS and populate tree.
+        """
 
-        # Add in the meta data and history to the ASDF tree.
+        # Construct the flat field object from the data model.
+        flat_datamodel_tree = rds.FlatRef()
+        flat_datamodel_tree['meta'] = self.meta
+        flat_datamodel_tree['data'] = self.input_data
+        flat_datamodel_tree['dq'] = self.mask
+        flat_datamodel_tree['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+
+        return flat_datamodel_tree
+
+    def save_flat(self, datamodel_tree=None):
+        """
+        The method save_flat writes the reference file object to the specified asdf outfile.
+        """
+
+        # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': flatfile}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)

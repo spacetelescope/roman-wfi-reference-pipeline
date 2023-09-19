@@ -146,14 +146,14 @@ class Dark(ReferenceFile):
             del clipped_reads
             gc.collect()  # Clean up memory.
 
-        # set reference pixel border to zero for master dark
+        # set reference pixel border to zero for super dark
         # this needs to be done differently for multi sub array jigsaw handling
         # move to when making the mask and final stitching together different pieces to do the border
         self.super_dark[:, :4, :] = 0.
         self.super_dark[:, -4:, :] = 0.
         self.super_dark[:, :, :4] = 0.
         self.super_dark[:, :, -4:] = 0.
-        logging.info(f'Master dark attribute created.')
+        logging.info(f'Super dark attribute created.')
 
     def save_suoer_dark(self, md_outfile=None):
         """

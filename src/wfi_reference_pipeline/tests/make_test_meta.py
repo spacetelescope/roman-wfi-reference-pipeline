@@ -1,4 +1,5 @@
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
@@ -33,6 +34,12 @@ class MakeTestMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+
+    def _create_test_meta_flat(self, meta_data):
+        ref_optical_element = "F158"
+
+        flat_meta_data = [ref_optical_element]
+        self.meta_flat = WFIMetaFlat(*meta_data, *flat_meta_data)
 
     def _create_test_meta_interpixelcapacitance(self, meta_data):
         ref_optical_element = "F158"
@@ -106,6 +113,9 @@ class MakeTestMeta:
 
         if ref_type == "DARK":
             self._create_test_meta_dark(META_DATA_PARAMS)
+
+        if ref_type == "FLAT":
+            self._create_test_meta_flat(META_DATA_PARAMS)
 
         if ref_type == "INVERSELINEARITY":
             self._create_test_meta_inverselinearity(META_DATA_PARAMS)
