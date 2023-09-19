@@ -6,8 +6,7 @@ from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from astropy import units as u
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM
-from wfi_reference_pipeline.constants import WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
 import datetime
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
@@ -17,7 +16,7 @@ class Dark(ReferenceFile):
     """
     Class Dark() inherits the ReferenceFile() base class methods where static meta data for all reference
     file types are written. Under automated operations conditions, a list of dark calibration files from a directory
-    will be the input data for the class to begin generating a dark reference file. A master dark cube of all
+    will be the input data for the class to begin generating a dark reference file. A super dark cube of all
     available reads and exposures will go through outlier rejection and then averaging per a multi-accumulation (MA)
     prescription that is retrieved from the RTB database. The resampled MA-table dark cube is analyzed further to
     flag hot and warm pixels. Statistics on these or additional quantities can be written to the RTB database for
@@ -70,7 +69,7 @@ class Dark(ReferenceFile):
         self.outfile = outfile
         # Additional object attributes
         self.dark_read_cube = input_dark_cube  # Supplied input dark read cube.
-        self.master_dark = None  # A cube of all available reads that is sigma clipped and averaged.
+        self.super_dark = None  # A cube of all available reads that is sigma clipped and averaged.
         self.read_pattern = None  # read pattern from ma table meta data - nested list of lists reads in resultants
         self.ma_table_sequence = []  # For general treatment of unevenly spaced resultant averaging.
         self.resampled_dark_cube = None  # MA table averaged resultant cube.
@@ -79,18 +78,20 @@ class Dark(ReferenceFile):
         self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
         self.dark_rate_image = None  # Rate image from ramp fit.
         self.dark_intercept_image = None  # Intercept image from ramp fit.
+        self.dark_rate_var = None  # Variance in fitted dark rate image.
+        self.dark_intercept_var = None  # Variance in fitted dark intercept image.
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_reads = None  # Number of reads in data cube being analyzed.
         self.ni = None  # Number of pixels.
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
 
-    def make_master_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
+    def make_super_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
         """
-        The method make_master_dark() ingests all files located in a directory as a python object list of
-        filenames with absolute paths. A master dark is created by iterating through each read of every
+        The method super() ingests all files located in a directory as a python object list of
+        filenames with absolute paths. A super dark is created by iterating through each read of every
         dark calibration file, read by read (see NOTE below). A cube of reads is formed into a numpy array and sigma
-        clipped and the mean of the clipped data cube is saved as the master dark class attribute.
+        clipped and the mean of the clipped data cube is saved as the super dark class attribute.
 
         NOTE: The algorithm is file I/O intensive but utilizes less memory while performance is only marginally slower.
         Initial testing was performed by R. Cosentino with 12 dark files that each had 21 reads where this method
@@ -106,10 +107,10 @@ class Dark(ReferenceFile):
             Upper bound limit to filter data
         """
 
-        # Display the directory name where the dark calibration files are located to make the master dark.
-        logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to construct master dark object.')
+        # Display the directory name where the dark calibration files are located to make the super dark.
+        logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to construct super dark object.')
 
-        # Find the dark calibration file with the most number of reads to initialize the master dark cube.
+        # Find the dark calibration file with the most number of reads to initialize the super dark cube.
         tmp_reads = []
         for fl in range(0, len(self.input_data)):
             tmp = asdf.open(self.input_data[fl], validate_on_read=False)
@@ -120,13 +121,13 @@ class Dark(ReferenceFile):
         del tmp_reads, tmp
         gc.collect()
 
-        # The master dark length is the maximum number of reads in all dark calibration files to be used
+        # The super dark length is the maximum number of reads in all dark calibration files to be used
         # when creating the dark reference file. Need to try over files with different lengths
         # to compute average read by read for all files
-        self.master_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
+        self.super_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
         # This method of opening and closing each file read by read is file I/O intensive however
         # it is efficient on memory usage.
-        logging.info(f'Reading dark asdf files read by read to compute average for master dark.')
+        logging.info(f'Reading dark asdf files read by read to compute average for super dark.')
         print('reading files')
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
@@ -141,25 +142,25 @@ class Dark(ReferenceFile):
                 gc.collect()  # clean up memory
             clipped_reads = sigma_clip(dark_read_cube, sigma_lower=sig_clip_md_low, sigma_upper=sig_clip_md_high,
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
-            self.master_dark[rd, :, :] = np.mean(clipped_reads, axis=0)
+            self.super_dark[rd, :, :] = np.mean(clipped_reads, axis=0)
             del clipped_reads
             gc.collect()  # Clean up memory.
 
         # set reference pixel border to zero for master dark
         # this needs to be done differently for multi sub array jigsaw handling
         # move to when making the mask and final stitching together different pieces to do the border
-        self.master_dark[:, :4, :] = 0.
-        self.master_dark[:, -4:, :] = 0.
-        self.master_dark[:, :, :4] = 0.
-        self.master_dark[:, :, -4:] = 0.
+        self.super_dark[:, :4, :] = 0.
+        self.super_dark[:, -4:, :] = 0.
+        self.super_dark[:, :, :4] = 0.
+        self.super_dark[:, :, -4:] = 0.
         logging.info(f'Master dark attribute created.')
 
-    def save_master_dark(self, md_outfile=None):
+    def save_suoer_dark(self, md_outfile=None):
         """
-        The method save_master_dark with default conditions will write the master dark cube into an asdf
+        The method save_super_dark with default conditions will write the super dark cube into an asdf
         file for each detector in the directory from which the input files where pointed to and used to
-        construct the master dark read cube. A user can specify an absolute path or relative file string
-        to write the master dark file name to disk.
+        construct the super dark read cube. A user can specify an absolute path or relative file string
+        to write the super dark file name to disk.
 
         Parameters
         ----------
@@ -169,18 +170,18 @@ class Dark(ReferenceFile):
             data of the input files such as date and detector number  (i.e. WFI01) in the filename.
         """
 
-        meta_md = {'pedigree': "GROUND", 'description': "Master dark internal reference file calibration product"
+        meta_md = {'pedigree': "GROUND", 'description': "Super dark internal reference file calibration product"
                                                         "generated from Reference File Pipeline.",
                    'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
         if md_outfile is None:
-            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector'] + '_master_dark.asdf'
+            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector'] + '_super_dark.asdf'
         else:
-            md_outfile = 'roman_master_dark.asdf'
+            md_outfile = 'roman_super_dark.asdf'
         self.check_output_file(md_outfile)
-        logging.info(f'Saving master dark to disk.')
+        logging.info(f'Saving super dark to disk.')
 
         af = asdf.AsdfFile()
-        af.tree = {'meta': meta_md, 'data': self.master_dark}
+        af.tree = {'meta': meta_md, 'data': self.super_dark}
         af.write_to(md_outfile)
 
     def make_ma_table_sequence(self, read_pattern):
@@ -223,22 +224,10 @@ class Dark(ReferenceFile):
         logging.info(f'Error arrays with number of resultants initialized with zeros.')
         logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
 
-        # Make the time array for the length of the dark read cube exposure.
-        if self.meta['exposure']['type'] == WFI_MODE_WIM:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-        else:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
-
-        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
-
     def make_ma_table_resampled_dark(self, num_resultants, num_rds_per_res, read_pattern=None):
         """
         The method make_ma_table_resampled_dark() starts with the dark read cube, which ia assumed,
-        to not be sampled and in most cases is from the master dark constructed from raw dark
+        to not be sampled and in most cases is from the super dark constructed from raw dark
         calibration level 1 files, and converts it into a number of resultants that constructed
         from the mean of a number of reads as specified by the MA table ID. The number of reads
         per resultant, the number of resultants, and the MA table ID are inputs to creating
@@ -260,14 +249,27 @@ class Dark(ReferenceFile):
 
         # Flow control and logging messaging depending on how the Dark() class is initialized
         if self.input_data is not None and self.dark_read_cube is None:
-            self.dark_read_cube = self.master_dark
-            logging.info(f'Master dark created from input file list used for MA table resampling.')
+            self.dark_read_cube = self.super_dark
+            logging.info(f'Super dark created from input file list used for MA table resampling.')
         if self.dark_read_cube is not None:
             logging.info(f'Input dark read cube used for MA table resampling.')
         if self.input_data is None and self.dark_read_cube is None:
             raise ValueError('No data supplied to make dark reference file for MA table resampling!')
         self.n_reads, ni, _ = np.shape(self.dark_read_cube)
         self.initialize_ma_table_resampling(num_resultants, ni)
+
+        # Make the time array for the length of the dark read cube exposure.
+        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
+        else:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
+        # Generate the time array depending on WFI mode.
+        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
+                     f'time of {self.frame_time} seconds.')
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+
+        num_resultants, _, _ = np.shape(self.resampled_dark_cube)
+        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
         # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
         if read_pattern:
@@ -293,29 +295,29 @@ class Dark(ReferenceFile):
             logging.info(f'MA table resampling with {num_resultants} resultants averaging {num_rds_per_res}'
                          f' reads per resultant complete.')
 
-    def calculate_dark_error(self):
+    def fit_dark_ramp(self):
         """
-        The calc_dark_err_metrics() method computes the error as the variance of the fitted ramp or slope
-        along the time axis for the resultants in the resampled_dark_cube attribute using a 1st order polyfit.
-        The slopes are saved as the dark_rate_image and the variances as the dark_rate_image_var.
+        The fit_dark_ramp() method computes the fitted ramp or slope along the time axis for the resultants in the
+        resampled_dark_cube attribute using a 1st order polyfit. The best fit solutions and variance are saved into
+        attributes.
 
         Parameters
         ----------
         """
 
-        logging.info(f'Computing dark image variance and noise.')
+        logging.info(f'Computing dark rate image.')
         # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
-        num_resultants, _, _ = np.shape(self.resampled_dark_cube)
+
         p, c = np.polyfit(self.resultant_tau_arr,
                           self.resampled_dark_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True)
-
-        #TODO separate fit and dark_rate_image outside of calculate_dark_error
 
         # Reshape results back to 2D arrays.
         self.dark_rate_image = p[0].reshape(self.ni, self.ni)  # the fitted ramp slope image
         self.dark_intercept_image = p[1].reshape(self.ni, self.ni)  # the fitted y intercept
-        dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni)  # covariance matrix slope variance
-        dark_intercept_var = c[1, 1, :].reshape(self.ni, self.ni)  # covariance matrix intercept variance
+        self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni)  # covariance matrix slope variance
+        self.dark_intercept_var = c[1, 1, :].reshape(self.ni, self.ni)  # covariance matrix intercept variance
+
+    def calculate_dark_error(self):
 
         # Generate a dark ramp cube model per the resampled ma table specs.
         self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_cube), self.ni, self.ni), dtype=np.float32)
@@ -328,7 +330,7 @@ class Dark(ReferenceFile):
         # model and the resampled dark cube data, std^2 is therefore the resampled read noise variance
         # the dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
         # and the variance of the resampled residuals are added in quadrature
-        self.resampled_dark_cube_err[0, :, :] = (std * std + dark_rate_var) ** 0.5
+        self.resampled_dark_cube_err[0, :, :] = (std * std + self.dark_rate_var) ** 0.5
 
     def update_dq_mask(self, dead_pixel_rate=0.0001, hot_pixel_rate=0.015, warm_pixel_rate=0.010):
         #TODO evaluate options for variabiles like this and sigma clipping with a parameter file?

@@ -19,6 +19,7 @@ dependencies = [
     "soc_roman_tools",
     "romancal",
     "pandas",
+    "bs4",
 ]
 dynamic = [
     "version",
