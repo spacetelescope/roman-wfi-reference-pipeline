@@ -44,17 +44,9 @@ run-pytest:
         path: reports/coverage.xml
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
-#  NOTE:
-#  Up until now THIS IS ONLY CHECKING SETUP.PY - Remove so we can pass tests.
-#  Will need to update the check for everything but that will be overwhelming and needs its own PR
-#   I (Brad) recommend using Ruff, however to continue using flake8 replace the bottom line with
-#        venv/bin/python3 -m flake8 --exclude=venv -- $(find . -name "*.py")
-#
-#
-# run-flake:
-#   stage: test
-#   script:
-#     - pip install flake8
-#     - ls -l
-#     - venv/bin/python3 -m flake8 --exclude=venv *.py
+run-ruff:
+  stage: test
+  script:
+    - pip install ruff
+    - ruff .
 
