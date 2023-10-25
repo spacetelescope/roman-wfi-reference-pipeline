@@ -1,7 +1,11 @@
 import roman_datamodels.stnode as rds
 from astropy import units as u
 import numpy as np
-import asdf, logging, math, gc, os
+import asdf
+import logging
+import math
+import gc
+import os
 from astropy.stats import sigma_clip
 from ..utilities.logging_functions import configure_logging
 from ..utilities.reference_file import ReferenceFile
@@ -87,7 +91,7 @@ class ReadNoise(ReferenceFile):
 
         # Check input data to initialize ReadNoise().
         if self.input_data is None and self.input_read_cube is None:
-            raise ValueError(f'No data supplied to make read noise reference file!')
+            raise ValueError('No data supplied to make read noise reference file!')
 
     def get_read_cube(self):
         """
@@ -119,10 +123,10 @@ class ReadNoise(ReferenceFile):
             logging.info(f'Using {fl_reads_ordered_list[0][0]} to compute read noise.')
 
         elif self.input_data is None and self.input_read_cube is not None:
-            logging.info(f'User supplied input read cube being used to compute read noise.')
+            logging.info('User supplied input read cube being used to compute read noise.')
         else:
-            logging.info(f'Something is wrong with input data to ReadNoise().')
-            raise ValueError(f'Expected either a file list or an input data read cube. Not both!')
+            logging.info('Something is wrong with input data to ReadNoise().')
+            raise ValueError('Expected either a file list or an input data read cube. Not both!')
 
         self.n_reads, self.ni, _ = np.shape(self.input_read_cube)
 
@@ -171,7 +175,7 @@ class ReadNoise(ReferenceFile):
         estimates for variances in the model fitted parameters.
         """
 
-        logging.info(f'Making ramp model for the input read cube.')
+        logging.info('Making ramp model for the input read cube.')
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
@@ -182,9 +186,9 @@ class ReadNoise(ReferenceFile):
         # Reshape the parameter y-intercept array into a 2D image.
         intercept_image = p[1].reshape(self.ni, self.ni)
         # Reshape the returned covariance matrix slope fit error.
-        ramp_var = v[0, 0, :].reshape(self.ni, self.ni)
+        # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
         # returned covariance matrix intercept error.
-        intercept_var = v[1, 1, :].reshape(self.ni, self.ni)
+        # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
 
         self.ramp_model = np.zeros((len(self.input_read_cube), self.ni, self.ni), dtype=np.float32)
         for tt in range(0, len(self.time_arr)):
@@ -205,7 +209,7 @@ class ReadNoise(ReferenceFile):
             Upper bound limit to filter residuals of ramp fit to data read cube.
         """
 
-        logging.info(f'Computing residuals of ramp model from data to estimate variance component of read noise.')
+        logging.info('Computing residuals of ramp model from data to estimate variance component of read noise.')
 
         residual_cube = self.ramp_model - self.input_read_cube
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
@@ -227,7 +231,7 @@ class ReadNoise(ReferenceFile):
             Upper bound limit to filter difference cube
         """
 
-        logging.info(f'Calculating CDS noise.')
+        logging.info('Calculating CDS noise.')
 
         read_diff_cube = np.zeros((math.ceil(self.n_reads / 2), self.ni, self.ni), dtype=np.float32)
         for i_read in range(0, self.n_reads - 1, 2):

@@ -80,7 +80,7 @@ class WFIsubmit:
                 summary = summary
                 summary += f' Result URL is {self.submission_results.ready_url}'
             else:
-                summary = f'Files have been submitted. No summary provided.'
+                summary = 'Files have been submitted. No summary provided.'
                 send_slack_message(summary, os.environ['WFI_REFFILE_SLACK_TOKEN'],
                                    config_file=None)
 

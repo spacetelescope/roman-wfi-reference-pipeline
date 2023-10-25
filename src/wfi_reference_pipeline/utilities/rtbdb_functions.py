@@ -1,4 +1,4 @@
-import logging, json, tempfile, os
+# import logging TODO - uncomment when needed
 from rtb_db.utilities import rfp_tools, login
 
 
@@ -18,28 +18,30 @@ def get_ma_table_from_rtbdb(ma_table_id):
         A python dictionary of all meta data provided by the RTB database for MA table instructions
         necessary to populate the exposure key required by the Dark roman data model.
     """
+    # TODO - NOTE - COMMENTED OUT ENTIRE ROUTINE AS BASED ON CONNECTION THAT ISN'T IMPORTED - Determine library wtih connect_server and DatabaseTable before
+    #               implementing this code
 
-    # connect to database and access MA table information
-    con, _, _ = connect_server(DSN_name='DWRINSDB')
-    new_tab = DatabaseTable(con, 'ma_table_science')
-    ma_tab = new_tab.read_table()
-    ma_tab_ind = ma_table_id - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
+    # # connect to database and access MA table information
+    # con, _, _ = connect_server(DSN_name='DWRINSDB')
+    # new_tab = DatabaseTable(con, 'ma_table_science')
+    # ma_tab = new_tab.read_table()
+    # ma_tab_ind = ma_table_id - 1  # to match index starting at 0 in database with integer ma table ID starting at 1
 
-    ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
-    ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
-    ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
-    frame_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
-    ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
-    logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
-    logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
-                 f' reads per resultant.')
-    # now update meta data with ma table specs
+    # ma_tab_name = ma_tab.at[ma_tab_ind, 'ma_table_name']
+    # ma_tab_reads_per_resultant = ma_tab.at[ma_tab_ind, 'read_frames_per_resultant']
+    # ma_tab_num_resultants = ma_tab.at[ma_tab_ind, 'resultant_frames_onboard']
+    # frame_time = ma_tab.at[ma_tab_ind, 'detector_read_time']
+    # ma_tab_reset_read_time = ma_tab.at[ma_tab_ind, 'detector_reset_read_time']
+    # logging.info(f'Retrieved RTB Database multi-accumulation (MA) table ID {ma_table_id}.')
+    # logging.info(f'MA table {ma_tab_name} has {ma_tab_num_resultants} resultants and {ma_tab_reads_per_resultant}'
+    #              f' reads per resultant.')
+    # # now update meta data with ma table specs
 
     ma_table_meta = {}  # initialize empty dictionary for MA table meta
-    ma_table_meta['exposure'].update(dict(ngroups=ma_tab_num_resultants, nframes=ma_tab_reads_per_resultant,
-                                          groupgap=0, ma_table_name=ma_tab_name, ma_table_number=ma_table_id))
+    # ma_table_meta['exposure'].update(dict(ngroups=ma_tab_num_resultants, nframes=ma_tab_reads_per_resultant,
+    #                                       groupgap=0, ma_table_name=ma_tab_name, ma_table_number=ma_table_id))
 
-    logging.info(f'Updated meta data with MA table info.')
+    # logging.info('Updated meta data with MA table info.')
 
     return ma_table_meta
 
