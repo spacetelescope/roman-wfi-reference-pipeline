@@ -45,7 +45,7 @@ class MakeDevMeta:
         output_units = u.DN
 
         linearity_meta_data = [input_units, output_units]
-        self.meta_linearity = WFIMetaLinearity(*meta_data, 
+        self.meta_linearity = WFIMetaLinearity(*meta_data,
                                                *linearity_meta_data)
 
     def _create_dev_meta_inverselinearity(self, meta_data):
@@ -103,26 +103,26 @@ class MakeDevMeta:
         if detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        META_DATA_PARAMS = [WFI_REF_TYPES[ref_type], pedigree, description, author,
+        meta_data_params = [WFI_REF_TYPES[ref_type], pedigree, description, author,
                             use_after, telescope, origin, instrument, detector]
 
         if ref_type == "DARK":
-            self._create_dev_meta_dark(META_DATA_PARAMS)
+            self._create_dev_meta_dark(meta_data_params)
 
         if ref_type == "INVERSELINEARITY":
-            self._create_dev_meta_inverselinearity(META_DATA_PARAMS)
+            self._create_dev_meta_inverselinearity(meta_data_params)
 
         if ref_type == "IPC":
-            self._create_dev_meta_ipc(META_DATA_PARAMS)
+            self._create_dev_meta_ipc(meta_data_params)
 
         if ref_type == "LINEARITY":
-            self._create_dev_meta_linearity(META_DATA_PARAMS)
+            self._create_dev_meta_linearity(meta_data_params)
 
         if ref_type == "READNOISE":
-            self._create_dev_meta_readnoise(META_DATA_PARAMS)
+            self._create_dev_meta_readnoise(meta_data_params)
 
         if ref_type == "REFPIX":
-            self._create_dev_meta_referencepixel(META_DATA_PARAMS)
+            self._create_dev_meta_referencepixel(meta_data_params)
 
         if ref_type == "SATURATION":
-            self._create_dev_meta_saturation(META_DATA_PARAMS)
+            self._create_dev_meta_saturation(meta_data_params)
