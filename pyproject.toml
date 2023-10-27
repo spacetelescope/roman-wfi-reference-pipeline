@@ -63,3 +63,7 @@ namespaces = false
 
 [tool.setuptools_scm]
 write_to = "src/wfi_reference_pipeline/version.py"
+
+[tool.ruff.lint]
+select = ["E", "F", "N"]
+ignore = ["E501"]
