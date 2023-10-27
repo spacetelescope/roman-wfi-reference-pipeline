@@ -43,6 +43,27 @@ def get_ma_table_from_rtbdb(ma_table_id):
 
     return ma_table_meta
 
+def new_method_database():
+    """
+    from rtb_db.utilities import login
+    eng = login.connect_server(DSN_name='DWRINSDB')
+    from rtb_db.table_defs.ma_tables import MultiAccumTableScience
+
+    from rtb_db.utilities import table_tools
+    print(table_tools.table_names(eng))
+
+    print('--- one row as a class ---\n', table_tools.select_one_from_table(eng, MultiAccumTableScience, MultiAccumTableScience.ma_table_number == 1), "\n")
+    ma_tab =  table_tools.select_one_from_table(eng, MultiAccumTableScience, MultiAccumTableScience.ma_table_name == "DEV_TEST")
+
+
+    ma_tab =  table_tools.select_one_from_table(eng, MultiAccumTableScience, MultiAccumTableScience.ma_table_name == "DEV_TEST")
+    ma_tab =  table_tools.select_one_from_table(eng, MultiAccumTableScience, MultiAccumTableScience.ma_table_number == 1)
+
+
+    :return:
+    """
+    pass
+
 
 
 def make_read_pattern(num_resultants=None, num_rds_per_res=None, uneven_spacing=False):

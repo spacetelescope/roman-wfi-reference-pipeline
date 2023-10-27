@@ -184,30 +184,9 @@ class Dark(ReferenceFile):
         af.tree = {'meta': meta_md, 'data': self.super_dark}
         af.write_to(md_outfile)
 
-    def make_ma_table_sequence(self, read_pattern):
+    def initialize_arrays(self, num_resultants=None, ni=None):
         """
-        Function to generate a flattened list of integer indices representing reads in each resultant that
-        are separated by the character 'R" to denote the reads composing of a resultant.
-        Example: ma_table_sequence = [1,R,3,4,R] is an exposure where the first resultant is composed of the first
-        read only, with read 2 being a skip, and reads 3 and 4 averaged together in the second resultant.
-
-        Parameters
-        ----------
-        read_pattern: list
-            Nested list of integer lists representing reads per resultant in exposure.
-        """
-
-        rds_per_res_list = list(map(np.shape, read_pattern))
-        for res in read_pattern:
-            for rd in res:
-                self.ma_table_sequence.append(rd)
-            self.ma_table_sequence.append('R')
-
-    def initialize_ma_table_resampling(self, num_resultants=None, ni=None):
-        """
-        Method initialize_ma_table_resampling creates zero cubes or arrays with the number of resultants
-        factoring the number of pixels ni, while also doing the time arrays. This method is additionally
-        required to generate not None attributes for schema testing
+        Method initialize_arrays
 
         Parameters
         ----------
@@ -217,14 +196,33 @@ class Dark(ReferenceFile):
             Number of square pixels of array ni. Cubes are num_resultants x ni x ni.
         """
 
-        self.ni = ni
-        # Initialize resampled dark cube and error array
-        self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
-        self.resampled_dark_cube_err = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
-        logging.info(f'Error arrays with number of resultants initialized with zeros.')
-        logging.info(f'Run calc_dark_err_metrics() to calculate errors.')
+        # Flow control and logging messaging depending on how the Dark() class is instantiated
+        if self.input_data is not None and self.dark_read_cube is None:
+            self.dark_read_cube = self.super_dark
+            logging.info(f'Super dark created from input file list used for MA table resampling.')
+        elif self.dark_read_cube is not None:
+            logging.info(f'Input dark read cube being used.')
+        else:
+            raise ValueError('No data supplied to make dark reference file for MA table resampling!')
 
-    def make_ma_table_resampled_dark(self, num_resultants, num_rds_per_res, read_pattern=None):
+        self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
+        self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
+        self.dark_rate_image =np.zeros((self.ni, self.ni), dtype=np.float32)
+        self.dark_rate_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        logging.info(f'Error arrays with number of resultants initialized with zeros.')
+
+        # Make the time array for the length of the dark read cube exposure.
+        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
+        else:
+            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
+        # Generate the time array depending on WFI mode.
+        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
+                     f'time of {self.frame_time} seconds.')
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
+
+    def make_ma_table_resampled_dark(self, read_pattern=None, num_resultants=None, num_rds_per_res=None):
         """
         The method make_ma_table_resampled_dark() starts with the dark read cube, which ia assumed,
         to not be sampled and in most cases is from the super dark constructed from raw dark
@@ -247,51 +245,34 @@ class Dark(ReferenceFile):
             The user supplied number of reads per resultant in evenly spaced resultants.
         """
 
-        # Flow control and logging messaging depending on how the Dark() class is initialized
-        if self.input_data is not None and self.dark_read_cube is None:
-            self.dark_read_cube = self.super_dark
-            logging.info(f'Super dark created from input file list used for MA table resampling.')
-        if self.dark_read_cube is not None:
-            logging.info(f'Input dark read cube used for MA table resampling.')
-        if self.input_data is None and self.dark_read_cube is None:
-            raise ValueError('No data supplied to make dark reference file for MA table resampling!')
-        self.n_reads, ni, _ = np.shape(self.dark_read_cube)
-        self.initialize_ma_table_resampling(num_resultants, ni)
-
-        # Make the time array for the length of the dark read cube exposure.
-        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-        else:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
-
-        num_resultants, _, _ = np.shape(self.resampled_dark_cube)
-        self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
-
-        # Perform evenly spaced sampling if the keyword num_rds_per_res is supplied and it has an integer value
         if read_pattern:
-            print("Using read pattern for averaging.")
+            num_resultants = len(read_pattern)
+            self.initialize_arrays(num_resultants, ni)
+            # Iterate over each read pattern and average the data
+            for res_i, read_indices in enumerate(read_pattern):
+                for read_i in read_indices:
+                    self.resampled_dark_cube [res_i] += self.dark_read_cube[read_i - 1]  # Adjusted for 0 indexing
+                self.resampled_dark_cube[res_i] /= len(read_indices)
         else:
+            if not isinstance(num_resultants, int) or not isinstance(num_rds_per_res, int):
+                raise ValueError("Both num_resultants and num_rds_per_res must be integers.")
+            if num_resultants is not None or num_rds_per_res is not None:
+                raise ValueError("Both num_resultants and num_rds_per_res must be provided simultaneously.")
             print("Averaging with even spacing.")
             if num_rds_per_res > self.n_reads:
-                # Check that the length of the reads per resultant is not greater than the available number of reads
-                logging.info(f'Can not average over more reads than supplied in dark read cube.')
-                raise ValueError(f'Can not average over more reads than supplied in dark read cube.')
+                raise ValueError('Cannot average over more reads than supplied in the dark read cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
             logging.info(f'Averaging over reads with evenly spaced resultants.')
-            for i_res in range(0, num_resultants):
-                i1 = i_res * num_rds_per_res
+            for res_i in range(num_resultants):
+                i1 = res_i * num_rds_per_res
                 i2 = i1 + num_rds_per_res
                 if i2 > self.n_reads:
                     logging.info(f'Warning: The number of reads per resultant was not evenly divisible into the number'
                                  f' of available reads to average and remainder reads were skipped.')
                     logging.info(f'Resultants after resultant {i_res+1} contain zeros.')
-                    break
-                self.resampled_dark_cube[i_res, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
-            self.resultant_tau_arr[i_res] = np.mean(self.time_arr[i1:i2])
+                    break  # Remaining reads cannot be evenly divided
+                self.resampled_dark_cube[res_i, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
+                self.time_arr[res_i] = np.mean(self.time_arr[i1:i2])
             logging.info(f'MA table resampling with {num_resultants} resultants averaging {num_rds_per_res}'
                          f' reads per resultant complete.')
 
@@ -313,9 +294,8 @@ class Dark(ReferenceFile):
 
         # Reshape results back to 2D arrays.
         self.dark_rate_image = p[0].reshape(self.ni, self.ni)  # the fitted ramp slope image
-        self.dark_intercept_image = p[1].reshape(self.ni, self.ni)  # the fitted y intercept
         self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni)  # covariance matrix slope variance
-        self.dark_intercept_var = c[1, 1, :].reshape(self.ni, self.ni)  # covariance matrix intercept variance
+        # If needed the dark intercept image and variance are p[1] and c[1,1,:]
 
     def calculate_dark_error(self):
 
@@ -358,7 +338,7 @@ class Dark(ReferenceFile):
         self.warm_pixels = np.where((warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < hot_pixel_rate))
 
         # Set mask DQ flag values
-        self.mask[self.hot_pixels] += self.dqflag_defs['DEAD']
+        self.mask[self.dead_pixels] += self.dqflag_defs['DEAD']
         self.mask[self.hot_pixels] += self.dqflag_defs['HOT']
         self.mask[self.warm_pixels] += self.dqflag_defs['WARM']
 
@@ -441,7 +421,8 @@ class Dark(ReferenceFile):
         dark_datamodel_tree = rds.DarkRef()
         dark_datamodel_tree['meta'] = self.meta
         dark_datamodel_tree['data'] = self.resampled_dark_cube * u.DN
-        dark_datamodel_tree['err'] = self.resampled_dark_cube_err * u.DN
+        dark_datamodel_tree['dark_slope'] = self.dark_rate_image * u.DN / u.s
+        dark_datamodel_tree['dark_slope_error'] = (self.dark_rate_var ** 0.5) * u.DN / u.s
         dark_datamodel_tree['dq'] = self.mask
 
         return dark_datamodel_tree

@@ -20,6 +20,9 @@ dependencies = [
     "romancal",
     "pandas",
     "bs4",
+    "pyodbc>=4.0.35", # for rtb-database
+    "sqlalchemy>=2.0.4", # for rtb-database
+
 ]
 dynamic = [
     "version",

@@ -34,7 +34,7 @@ class Flat(ReferenceFile):
         else:
             pass
 
-    def make_flat(self, low_qe_threshold=0.2):
+    def make_flat(self):
         """
         The method make_flat() generates a flat asdf file where input data is divided
         by the mean value. The flattened image file is used to normalize quantum
@@ -64,14 +64,11 @@ class Flat(ReferenceFile):
         mean, _, _ = sigma_clipped_stats(self.input_data)
         self.input_data /= mean
 
-        # Generate between 200-300 pixels with low qe
-        rand_num_lowqe = np.random.randint(200, 300)
-        coords_x = np.random.randint(0, 4088, rand_num_lowqe)
-        coords_y = np.random.randint(0, 4088, rand_num_lowqe)
-        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
-        self.input_data[coords_x, coords_y] = rand_low_qe_values
+    def calc_flat_error(self, low_qe_threshold=0.2):
 
-    def update_dq_mask(self, low_qe_bit=13):
+        pass
+
+    def update_dq_mask(self, low_qe_threshold=0.2, low_qe_bit=13):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -80,6 +77,13 @@ class Flat(ReferenceFile):
         low_qe_bit: integer; default = 13
             DQ loq quantum efficiency pixel flag value in romancal library.
         """
+
+        # Generate between 200-300 pixels with low qe
+        rand_num_lowqe = np.random.randint(200, 300)
+        coords_x = np.random.randint(0, 4088, rand_num_lowqe)
+        coords_y = np.random.randint(0, 4088, rand_num_lowqe)
+        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
+        self.input_data[coords_x, coords_y] = rand_low_qe_values
 
         # Add DQ flag for low QE pixels.
         low_qe_pixels = np.where(self.input_data < low_qe_threshold)

@@ -1,6 +1,6 @@
 pyyaml
 pytest
 crds
-rad
-roman-datamodels
+git+git://github.com/spacetelescope/rad@main
+git+git://github.com/spacetelescope/roman_datamodels@main
 bs4
