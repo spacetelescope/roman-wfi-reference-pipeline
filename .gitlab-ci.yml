@@ -54,7 +54,7 @@ run-ruff:
 # Starting with '.' means not run by GitLab CI/CD. Our package ecosystems will extend this (currently pip).
 .dependabot:
   image:
-    name: docker.io/andrcuns/dependabot-gitlab:0.11.0
+    name: docker.io/andrcuns/dependabot-gitlab:3.7.0-alpha.1
     entrypoint: [""]
   variables:
     GIT_STRATEGY: none
