@@ -51,6 +51,7 @@ run-ruff:
     - ruff .
 
 # Dependabot is scheduled to run weekly, will not be run on every CI invoke (see rules at bottom of this section)
+# Starting with '.' means not run by GitLab CI/CD. Our package ecosystems will extend this (currently pip).
 .dependabot:
   image:
     name: docker.io/andrcuns/dependabot-gitlab:0.11.0
