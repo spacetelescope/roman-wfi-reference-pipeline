@@ -12,16 +12,30 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "requests",
-    "sphinx",
-    "sphinx_automodapi",
-    "sphinx_rtd_theme",
-    "soc_roman_tools",
-    "romancal",
-    "pandas",
+    "astropy>=5.3.1",
+    "crds>=11.17.2",
+    "ipython>=8.12.0",
+    "matplotlib>=3.7.2",
+    "numpy>=1.25.2",
+    "pandas>=2.1.2",
+    "photutils>=1.8.0",
+    "pysiaf>=0.20.0",
+    "rad>=0.17.1",
+    "requests>=2.31.0",
+    "romancal>=0.11.0",
+    "roman-datamodels>=0.17.1",
+    "scipy>=1.11.3",
+    "soc_roman_tools>=0.1.0",
 ]
 dynamic = [
     "version",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=6.21",
+    "sphinx_automodapi>=0.15.0",
+    "sphinx_rtd_theme>=1.2.2",
 ]
 
 [project.readme]
