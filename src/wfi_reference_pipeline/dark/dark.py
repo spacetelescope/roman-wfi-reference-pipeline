@@ -186,7 +186,8 @@ class Dark(ReferenceFile):
 
     def initialize_arrays(self, num_resultants=None, ni=None):
         """
-        Method initialize_arrays
+        Method initialize_arrays makes arrays of the dimensions of the dark_read_cube, which are also required
+        in the data model.
 
         Parameters
         ----------
@@ -205,9 +206,10 @@ class Dark(ReferenceFile):
         else:
             raise ValueError('No data supplied to make dark reference file for MA table resampling!')
 
+        #TODO discuss parallelizatino strategy
         self.n_reads, self.ni, _ = np.shape(self.dark_read_cube)
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
-        self.dark_rate_image =np.zeros((self.ni, self.ni), dtype=np.float32)
+        self.dark_rate_image = np.zeros((self.ni, self.ni), dtype=np.float32)
         self.dark_rate_var = np.zeros((self.ni, self.ni), dtype=np.float32)
         logging.info(f'Error arrays with number of resultants initialized with zeros.')
 
@@ -224,41 +226,43 @@ class Dark(ReferenceFile):
 
     def make_ma_table_resampled_dark(self, read_pattern=None, num_resultants=None, num_rds_per_res=None):
         """
-        The method make_ma_table_resampled_dark() starts with the dark read cube, which ia assumed,
-        to not be sampled and in most cases is from the super dark constructed from raw dark
-        calibration level 1 files, and converts it into a number of resultants that constructed
-        from the mean of a number of reads as specified by the MA table ID. The number of reads
-        per resultant, the number of resultants, and the MA table ID are inputs to creating
-        the resampled dark cube.
-
-        NOTE: Future work will have the MA table ID as input and internally
-        reference the RTB Database to retrieve MA table properties (i.e. the
-        number of reads per resultant and number of resultants, and possible
-        sequence of reads to achieve unevenly spaced resultants. Currently
-        assuming equally spaced resultants.
+        The method make_ma_table_resampled_dark() uses the input read_pattern, which is a nested list of lists,
+        or the number of resultants and reads per resultant to average reads into resultants. If read_pattern
+        is supplied, the even spacing parameters will be ignored.
 
         Parameters
         ----------
-        num_resultants: integer
-            The number of resultants
+        read_pattern: list of lists; Default=None
+            Nested list of lists with integers for averaging reads into resultants.
+        num_resultants: integer; Default=None
+            The number of resultants.
         num_rds_per_res: integer; Default=None
             The user supplied number of reads per resultant in evenly spaced resultants.
         """
 
         if read_pattern:
+            # Use read pattern for resampling by averaging reads into resultants and
+            # get mean time of resultant for tau array
             num_resultants = len(read_pattern)
-            self.initialize_arrays(num_resultants, ni)
-            # Iterate over each read pattern and average the data
-            for res_i, read_indices in enumerate(read_pattern):
-                for read_i in read_indices:
-                    self.resampled_dark_cube [res_i] += self.dark_read_cube[read_i - 1]  # Adjusted for 0 indexing
-                self.resampled_dark_cube[res_i] /= len(read_indices)
+            self.initialize_arrays(num_resultants)
+            # Iterate over each nested list in the read pattern
+            for res_i, read_pattern_frames in enumerate(read_pattern):
+                # Get the average time for the list of frames in the read pattern
+                read_pattern_zero_indices = [i - 1 for i in read_pattern_frames]  # zero index for time array
+                self.resultant_tau_arr[res_i] = np.mean(self.time_arr[read_pattern_zero_indices])
+                # Average the data by summing read by read and dividing by number of raeds
+                for read_i in read_pattern_frames:
+                    self.resampled_dark_cube[res_i] += self.dark_read_cube[read_i - 1]  # Adjusted for 0 indexing
+                self.resampled_dark_cube[res_i] /= len(read_pattern_frames)
         else:
+            # Use even spacing resultant and reads per resultant provided to the method and
+            # get mean time of resultant for tau array
             if not isinstance(num_resultants, int) or not isinstance(num_rds_per_res, int):
                 raise ValueError("Both num_resultants and num_rds_per_res must be integers.")
-            if num_resultants is not None or num_rds_per_res is not None:
+            if num_resultants is None or num_rds_per_res is None:
                 raise ValueError("Both num_resultants and num_rds_per_res must be provided simultaneously.")
             print("Averaging with even spacing.")
+            self.initialize_arrays(num_resultants)
             if num_rds_per_res > self.n_reads:
                 raise ValueError('Cannot average over more reads than supplied in the dark read cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
@@ -269,10 +273,10 @@ class Dark(ReferenceFile):
                 if i2 > self.n_reads:
                     logging.info(f'Warning: The number of reads per resultant was not evenly divisible into the number'
                                  f' of available reads to average and remainder reads were skipped.')
-                    logging.info(f'Resultants after resultant {i_res+1} contain zeros.')
+                    logging.info(f'Resultants after resultant {res_i+1} contain zeros.')
                     break  # Remaining reads cannot be evenly divided
                 self.resampled_dark_cube[res_i, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
-                self.time_arr[res_i] = np.mean(self.time_arr[i1:i2])
+                self.resultant_tau_arr[res_i] = np.mean(self.time_arr[i1:i2])
             logging.info(f'MA table resampling with {num_resultants} resultants averaging {num_rds_per_res}'
                          f' reads per resultant complete.')
 
@@ -281,9 +285,6 @@ class Dark(ReferenceFile):
         The fit_dark_ramp() method computes the fitted ramp or slope along the time axis for the resultants in the
         resampled_dark_cube attribute using a 1st order polyfit. The best fit solutions and variance are saved into
         attributes.
-
-        Parameters
-        ----------
         """
 
         logging.info(f'Computing dark rate image.')
@@ -293,11 +294,15 @@ class Dark(ReferenceFile):
                           self.resampled_dark_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True)
 
         # Reshape results back to 2D arrays.
-        self.dark_rate_image = p[0].reshape(self.ni, self.ni)  # the fitted ramp slope image
-        self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni)  # covariance matrix slope variance
+        self.dark_rate_image = p[0].reshape(self.ni, self.ni).astype(np.float32)  # the fitted ramp slope image
+        self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni).astype(np.float32)  # covariance matrix slope variance
         # If needed the dark intercept image and variance are p[1] and c[1,1,:]
 
     def calculate_dark_error(self):
+        """
+        #TODO re-evaluate the error propagation for dark and how fit_dark_ramp() and this method operate and computational performance
+        Old method of computing dark error
+        """
 
         # Generate a dark ramp cube model per the resampled ma table specs.
         self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_cube), self.ni, self.ni), dtype=np.float32)
@@ -347,10 +352,6 @@ class Dark(ReferenceFile):
         The method make_metrics_dicts is used to create reference file type specific
         metrics for tracking by the data monitoring tool from entries into the
         the RTB Database.
-
-        Parameters
-        ----------
-
         """
 
         # Create the dark file dictionary
