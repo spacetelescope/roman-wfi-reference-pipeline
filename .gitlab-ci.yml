@@ -33,6 +33,7 @@ run-pytest:
   stage: test
   script:
     - pip install -r requirements.txt
+    - pip install bs4
     - pip install pytest pytest-cov
     - pytest --cov=.
     - coverage report
