@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def SimulateReads(n_reads, exptime, darkrate, darkvar):
+def simulate_reads(n_reads, exptime, darkrate, darkvar):
 
     """ The method SimulateReads is a function that takes in the number of reads,
     exptime, darkrate, darkvariance, number of hot pixels, the hot pixel magnitude,

@@ -1,6 +1,10 @@
 import roman_datamodels.stnode as rds
 import numpy as np
-import os, gc, asdf, datetime, logging
+import os
+import gc
+import asdf
+import datetime
+import logging
 from ..utilities.reference_file import ReferenceFile
 from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
@@ -336,7 +340,7 @@ class Dark(ReferenceFile):
             the nominal expectation of dark current.
         """
 
-        logging.info(f'Flagging hot and warm pixels and updating DQ array.')
+        logging.info('Flagging hot and warm pixels and updating DQ array.')
         # Locate hot and warm pixel ni,nj positions in 2D array
         self.dead_pixels = np.where(self.dark_rate_image < dead_pixel_rate)
         self.hot_pixels = np.where(self.dark_rate_image >= hot_pixel_rate)
@@ -404,12 +408,13 @@ class Dark(ReferenceFile):
         # Create the dark structure dictionary
         db_dark_struc_dict = {'coefficient': 42.0}
 
-        metric_dict = {
-            'db_dark_fl_dict': db_dark_fl_dict,
-            'db_dark_dq_dict': db_dark_dq_dict,
-            'db_dark_struc_dict': db_dark_struc_dict,
-            'db_dark_amp_dict': db_dark_amp_dict
-        }
+        # TODO - Verify Use of metric_dict
+        # metric_dict = {
+        #     'db_dark_fl_dict': db_dark_fl_dict,
+        #     'db_dark_dq_dict': db_dark_dq_dict,
+        #     'db_dark_struc_dict': db_dark_struc_dict,
+        #     'db_dark_amp_dict': db_dark_amp_dict
+        # }
 
         return db_dark_fl_dict, db_dark_dq_dict, db_dark_struc_dict, db_dark_amp_dict
 

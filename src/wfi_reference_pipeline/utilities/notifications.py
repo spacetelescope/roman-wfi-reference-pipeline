@@ -5,7 +5,6 @@ Tools for sending notifications from the pipeline.
 import importlib.resources as pkg_resources
 import json
 import logging
-import os
 import requests
 import yaml
 

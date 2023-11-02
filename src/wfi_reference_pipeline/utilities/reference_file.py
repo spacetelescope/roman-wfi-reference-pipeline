@@ -1,8 +1,7 @@
-import os, sys
+import os
 import numpy as np
 from astropy.time import Time
 from romancal.lib import dqflags
-from wfi_reference_pipeline.version import version as PIPELINE_VERSION
 from abc import ABC, abstractmethod
 
 

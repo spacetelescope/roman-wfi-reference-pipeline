@@ -134,18 +134,18 @@ class Linearity(ReferenceFile):
             # In order to fix coefficients we have to do some math.
             # Based on solution here:
             # https://stackoverflow.com/questions/48469889/how-to-fit-a-polynomial-with-some-of-the-coefficients-constrained
-            V = np.vander(time, poly_order + 1)
+            v = np.vander(time, poly_order + 1)
             # Removing the last column of the Vandermonde matrix
             # is equivalent to setting a0 to 0 -> they go from order n to 0
-            V = np.delete(V, -1, axis=1)
+            v = np.delete(v, -1, axis=1)
             # The above slicing it's a view, it creates a read-only array...
             img_arr = np.copy(img_arr.reshape(nframes, -1))
             # Subtract t from the original array, i.e., remove the linear part
             # so the fit is still correct
-            img_arr -= V[:, -1, None]
+            img_arr -= v[:, -1, None]
             # Now drop that column from the Vandermonde matrix
-            V = np.delete(V, -1, axis=1)
-            coeffs, _, _, _ = np.linalg.lstsq(V, img_arr, rcond=None)
+            v = np.delete(v, -1, axis=1)
+            coeffs, _, _, _ = np.linalg.lstsq(v, img_arr, rcond=None)
             coeffs = coeffs.reshape(-1, npix_0, npix_1)
             # Insert the slope=1 and intercept=0
             coeffs = np.insert(coeffs, poly_order - 1,
@@ -424,10 +424,10 @@ def make_linearity_multi(input_lin, meta, poly_order=6, constrained=False,
                     # Here is where the linear algebra fun starts...
                     # using the weighted least squares estimator
                     # https://en.wikipedia.org/wiki/Weighted_least_squares
-                    V = np.vander(t_grid, poly_order + 1)
-                    _aux1 = np.einsum('ij, ik, il', V, wgt.reshape(nframes_grid, -1), V)
+                    v = np.vander(t_grid, poly_order + 1)
+                    _aux1 = np.einsum('ij, ik, il', v, wgt.reshape(nframes_grid, -1), v)
                     _aux1 = np.linalg.inv(_aux1.swapaxes(1, 0))  # (V^T W V)^-1
-                    _aux2 = np.einsum('ijk, lj', _aux1, V)  # (V^T W V)^-1 V^T
+                    _aux2 = np.einsum('ijk, lj', _aux1, v)  # (V^T W V)^-1 V^T
                     coeffs = np.einsum('ijk, ki -> ji', _aux2, wy)
                     # If we want to get uncertainties in the parameters
                     if return_unc:
