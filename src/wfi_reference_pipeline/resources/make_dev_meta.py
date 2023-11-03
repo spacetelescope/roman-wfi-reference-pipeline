@@ -117,7 +117,7 @@ class MakeDevMeta:
             self._create_dev_meta_dark(meta_data_params)
 
         if ref_type == "FLAT":
-            self._create_dev_meta_flat(META_DATA_PARAMS)
+            self._create_dev_meta_flat(meta_data_params)
 
         if ref_type == "INVERSELINEARITY":
             self._create_dev_meta_inverselinearity(meta_data_params)
