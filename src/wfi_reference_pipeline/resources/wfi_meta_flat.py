@@ -1,5 +1,4 @@
 from dataclasses import dataclass, InitVar
-from itertools import filterfalse
 from typing import List, Optional
 import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata

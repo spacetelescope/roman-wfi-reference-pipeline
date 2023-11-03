@@ -19,9 +19,10 @@ def get_ma_table_from_rtbdb(ma_table_number=None):
     # TODO - NOTE - COMMENTED OUT ENTIRE ROUTINE AS BASED ON CONNECTION THAT ISN'T IMPORTED - Determine library wtih connect_server and DatabaseTable before
     #               implementing this code
 
-    ma_tab_num = ma_table_number
     eng = login.connect_server(dsn_name='DWRINSDB')
-    ma_table_dict = rfp_tools.query_ma_table(eng, ma_tab_num)
+    ma_table_dict = rfp_tools.query_ma_table(eng, ma_table_number)
+    if ma_table_dict:
+        logging.info('Successfully read MA Table information from the RTB Database.')
     return ma_table_dict
 
 
