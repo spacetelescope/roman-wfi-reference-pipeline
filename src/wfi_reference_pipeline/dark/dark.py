@@ -3,7 +3,6 @@ import numpy as np
 import os
 import gc
 import asdf
-import datetime
 import logging
 from ..utilities.reference_file import ReferenceFile
 from ..utilities.logging_functions import configure_logging
@@ -131,7 +130,7 @@ class Dark(ReferenceFile):
         self.super_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
         # This method of opening and closing each file read by read is file I/O intensive however
         # it is efficient on memory usage.
-        logging.info(f'Reading dark asdf files read by read to compute average for super dark.')
+        logging.info('Reading dark asdf files read by read to compute average for super dark.')
         print('reading files')
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
@@ -157,7 +156,7 @@ class Dark(ReferenceFile):
         self.super_dark[:, -4:, :] = 0.
         self.super_dark[:, :, :4] = 0.
         self.super_dark[:, :, -4:] = 0.
-        logging.info(f'Super dark attribute created.')
+        logging.info('Super dark attribute created.')
 
     def save_suoer_dark(self, md_outfile=None):
         """
@@ -182,7 +181,7 @@ class Dark(ReferenceFile):
         else:
             md_outfile = 'roman_super_dark.asdf'
         self.check_output_file(md_outfile)
-        logging.info(f'Saving super dark to disk.')
+        logging.info('Saving super dark to disk.')
 
         af = asdf.AsdfFile()
         af.tree = {'meta': meta_md, 'data': self.super_dark}
@@ -204,9 +203,9 @@ class Dark(ReferenceFile):
         # Flow control and logging messaging depending on how the Dark() class is instantiated
         if self.input_data is not None and self.dark_read_cube is None:
             self.dark_read_cube = self.super_dark
-            logging.info(f'Super dark created from input file list used for MA table resampling.')
+            logging.info('Super dark created from input file list used for MA table resampling.')
         elif self.dark_read_cube is not None:
-            logging.info(f'Input dark read cube being used.')
+            logging.info('Input dark read cube being used.')
         else:
             raise ValueError('No data supplied to make dark reference file for MA table resampling!')
 
@@ -215,7 +214,7 @@ class Dark(ReferenceFile):
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)
         self.dark_rate_image = np.zeros((self.ni, self.ni), dtype=np.float32)
         self.dark_rate_var = np.zeros((self.ni, self.ni), dtype=np.float32)
-        logging.info(f'Error arrays with number of resultants initialized with zeros.')
+        logging.info('Error arrays with number of resultants initialized with zeros.')
 
         # Make the time array for the length of the dark read cube exposure.
         if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
@@ -270,13 +269,13 @@ class Dark(ReferenceFile):
             if num_rds_per_res > self.n_reads:
                 raise ValueError('Cannot average over more reads than supplied in the dark read cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
-            logging.info(f'Averaging over reads with evenly spaced resultants.')
+            logging.info('Averaging over reads with evenly spaced resultants.')
             for res_i in range(num_resultants):
                 i1 = res_i * num_rds_per_res
                 i2 = i1 + num_rds_per_res
                 if i2 > self.n_reads:
-                    logging.info(f'Warning: The number of reads per resultant was not evenly divisible into the number'
-                                 f' of available reads to average and remainder reads were skipped.')
+                    logging.info('Warning: The number of reads per resultant was not evenly divisible into the number'
+                                 ' of available reads to average and remainder reads were skipped.')
                     logging.info(f'Resultants after resultant {res_i+1} contain zeros.')
                     break  # Remaining reads cannot be evenly divided
                 self.resampled_dark_cube[res_i, :, :] = np.mean(self.dark_read_cube[i1:i2, :, :], axis=0)
@@ -291,7 +290,7 @@ class Dark(ReferenceFile):
         attributes.
         """
 
-        logging.info(f'Computing dark rate image.')
+        logging.info('Computing dark rate image.')
         # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
 
         p, c = np.polyfit(self.resultant_tau_arr,
