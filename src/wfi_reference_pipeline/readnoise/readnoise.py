@@ -29,7 +29,7 @@ class ReadNoise(ReferenceFile):
     more mature functionality of the reference file pipeline.
     """
 
-    def __init__(self, input_file_list, meta_data=None, bit_mask=None, outfile=None, clobber=False,
+    def __init__(self, input_file_list, meta_data=None, bit_mask=None, outfile='roman_radnoise.asdf', clobber=False,
                  input_data_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -37,7 +37,7 @@ class ReadNoise(ReferenceFile):
 
         Parameters
         ----------
-        input_filelist: string object; default = None
+        input_file_list: string object; default = None
             List of dark calibration filenames with absolute paths. If no file list is provided, an input dark read cube
             should be supplied.
         meta_data: dictionary; default = None
@@ -61,18 +61,16 @@ class ReadNoise(ReferenceFile):
         as ancillary data.
         """
 
-        # Access methods of base class ReferenceFile().
-        super(ReadNoise, self).__init__(input_file_list, meta_data, bit_mask=bit_mask, clobber=clobber)
+        # Access methods of base class ReferenceFile
+        super().__init__(input_file_list, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
-        # Update metadata with read noise file type info if not included.
+        # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
             self.meta['description'] = 'Roman WFI read noise reference file.'
-        else:
-            pass
         if 'reftype' not in self.meta.keys():
             self.meta['reftype'] = 'READNOISE'
-        else:
-            pass
+
+        logging.info(f'Default read noise reference file object: {outfile} ')
 
         # If no output filename given, set default filename.
         self.outfile = outfile if outfile else 'roman_read_noise.asdf'
@@ -141,11 +139,11 @@ class ReadNoise(ReferenceFile):
             Number of square pixels of array ni.
         """
 
-        if self.input_filelist_cube:
+        if self.input_filelist_cube is not None:
             self.input_readnoise_cube = self.input_filelist_cube
             self.n_reads, self.ni, _ = np.shape(self.input_readnoise_cube)
             logging.info('')
-        elif self.input_readnoise_cube:
+        elif self.input_readnoise_cube is not None:
             self.n_reads, self.ni, _ = np.shape(self.input_readnoise_cube)
         else:
             raise ValueError('Expected either an input file list cube or a user supplied input data cube.')
@@ -174,7 +172,8 @@ class ReadNoise(ReferenceFile):
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
-        p, v = np.polyfit(self.time_arr, self.input_readnoise_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
+        p, v = np.polyfit(self.time_arr,
+                          self.input_readnoise_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
 
         # Reshape the parameter slope array into a 2D rate image.
         ramp_image = p[0].reshape(self.ni, self.ni)
@@ -206,6 +205,9 @@ class ReadNoise(ReferenceFile):
 
         logging.info('Computing residuals of ramp model from data to estimate variance component of read noise.')
 
+        self.initialize_arrays()
+        self.make_ramp_cube_model()
+
         residual_cube = self.ramp_model - self.input_readnoise_cube
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
@@ -227,6 +229,9 @@ class ReadNoise(ReferenceFile):
         """
 
         logging.info('Calculating CDS noise.')
+
+        self.initialize_arrays()
+        self.make_ramp_cube_model()
 
         read_diff_cube = np.zeros((math.ceil(self.n_reads / 2), self.ni, self.ni), dtype=np.float32)
         for i_read in range(0, self.n_reads - 1, 2):
