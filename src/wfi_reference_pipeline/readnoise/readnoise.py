@@ -77,7 +77,7 @@ class ReadNoise(ReferenceFile):
         logging.info(f'Default read noise reference file object: {outfile} ')
 
         # Additional object attributes
-        self.input_filelist_cube = None  # Cube of data generated from input file list
+        self.input_file_list_cube = None  # Cube of data generated from input file list
         self.input_readnoise_cube = input_data_cube  # Default to user supplied input data cube, over write if filelist
         self.ramp_model = None  # Ramp model fitted to input data cube.
         self.ramp_res_var = None  # The variance in the residuals of the difference between the ramp model and input
@@ -119,7 +119,7 @@ class ReadNoise(ReferenceFile):
 
             # Get the input dark file with the most number of reads from the sorted list.
             tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
-            self.input_filelist_cube = tmp.tree['roman']['data']
+            self.input_file_list_cube = tmp.tree['roman']['data']
             logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
 
         elif self.input_data is None and self.input_readnoise_cube is not None:
@@ -132,15 +132,10 @@ class ReadNoise(ReferenceFile):
         """
         Method initialize_arrays makes arrays of the dimensions of the dark_read_cube, which are also required
         in the data model.
-
-        Parameters
-        ----------
-        ni: integer; Default=None
-            Number of square pixels of array ni.
         """
 
-        if self.input_filelist_cube is not None:
-            self.input_readnoise_cube = self.input_filelist_cube
+        if self.input_file_list_cube is not None:
+            self.input_readnoise_cube = self.input_file_list_cube
             self.n_reads, self.ni, _ = np.shape(self.input_readnoise_cube)
             logging.info('')
         elif self.input_readnoise_cube is not None:
