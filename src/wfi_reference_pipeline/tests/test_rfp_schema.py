@@ -123,8 +123,10 @@ if not ON_GITLAB_ACTIONS:
             readnoise_test_meta = tmp.meta_readnoise.export_asdf_meta()
 
             # Make RFP Read Noise reference file object for testing.
-            rfp_readnoise = ReadNoise('test_file.txt', meta_data=readnoise_test_meta)
-            rfp_readnoise.initialize_arrays(ni=3)
+            test_data = np.ones((1, 1, 1),
+                                dtype=np.float32)
+            rfp_readnoise = ReadNoise(None, meta_data=readnoise_test_meta, input_data_cube=test_data)
+            rfp_readnoise.initialize_arrays()
 
             # Make test asdf tree
             tf = asdf.AsdfFile()
