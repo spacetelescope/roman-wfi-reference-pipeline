@@ -1,6 +1,6 @@
 astropy==5.3.4
 crds==11.17.10
-ipython==8.17.2
+ipython==8.18.1
 matplotlib==3.8.2
 numpy==1.26.2
 pandas==2.1.3
