@@ -1,0 +1,7 @@
+#
+# This example is to be used as a guide to create/populate config.yml in the same location
+# Whenever altering this file, remember to update config_handler.py::_validate_config()
+#
+Logging:
+  base_dir: "/path/to/log/directory"
+  level: WARNING
