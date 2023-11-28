@@ -5,8 +5,8 @@ import gc
 import asdf
 import datetime
 import logging
-from ..utilities.reference_file import ReferenceFile
-from ..utilities.logging_functions import configure_logging
+from wfi_reference_pipeline.utilities.reference_file import ReferenceFile
+from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from astropy import units as u
