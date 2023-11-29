@@ -11,7 +11,7 @@ def _validate_config(config_file_dict):
     Parameters
     ----------
     config_file_dict : dict
-        The configuration JSON file loaded as a dictionary
+        The configuration YAML file loaded as a dictionary
 
     Notes
     -----
@@ -54,29 +54,21 @@ def get_config():
     settings : dict
         A dictionary that holds the contents of the config file.
     """
-    search_directory = Path.cwd()  # You can replace this with the desired directory
+    config_file_name = "config.yml"
     if os.environ.get("READTHEDOCS") == "True":
-        # Use glob to find files matching the pattern
-        config_file_location = list(
-            search_directory.glob("**/config/example_config.yml")
-        )
-    else:
-        # Users should complete their own configuration file and store it in the main jwql directory
-        config_file_location = list(search_directory.glob("**/config/config.yml"))
+        config_file_name = "example_config.yml"
 
-    # Make sure the file exists
-    if not config_file_location[0]:
+    config_file_location = (Path.cwd().parent / 'config' / config_file_name).resolve()
+
+    if not config_file_location.exists():
         raise FileNotFoundError(
             "The WFI_REFERENCE_PIPELINE package requires a config.yml inside the 'src/wfi_reference_pipeline' folder"
         )
 
-    # Get the first (and hopefully only) matching file
-    config_file = config_file_location[0]
-    with open(config_file, "r") as file:
+    with open(config_file_location, "r") as config_file:
         try:
             # load the yaml
-            settings = yaml.safe_load(file)
-            print(f"YAML Contents:\n{settings}")
+            settings = yaml.safe_load(config_file)
         except yaml.YAMLError as e:
             raise ValueError(
                 f"Incorrectly formatted config.yml file. Please fix YML formatting: {e}"
