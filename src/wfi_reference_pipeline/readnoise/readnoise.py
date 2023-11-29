@@ -10,7 +10,7 @@ from astropy.stats import sigma_clip
 from ..utilities.logging_functions import configure_logging
 from ..utilities.reference_file import ReferenceFile
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
-configure_logging('readnoise_dev', path='/grp/roman/RFP/DEV/logs/')
+configure_logging('readnoise_dev')
 
 
 class ReadNoise(ReferenceFile):

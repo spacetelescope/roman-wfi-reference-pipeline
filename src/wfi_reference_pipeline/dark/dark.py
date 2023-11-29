@@ -13,7 +13,7 @@ from astropy import units as u
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME
 
-configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
+configure_logging('dark_dev')
 
 
 class Dark(ReferenceFile):
