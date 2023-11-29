@@ -39,7 +39,6 @@ def _validate_config(config_file_dict):
     try:
         # Validate YAML data against the schema
         validate(instance=config_file_dict, schema=schema)
-        print("YAML data is valid against the schema.")
     except exceptions.ValidationError as e:
         raise exceptions.ValidationError(
             f"Provided config.json does not match the required YML schema: {e}"
