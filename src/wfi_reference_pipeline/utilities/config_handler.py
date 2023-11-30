@@ -54,6 +54,7 @@ def _validate_config(config_file_dict):
                 "properties": {
                     "log_dir": {"type": "string"},
                     "log_level": {"type": "string"},
+                    "log_tag": {"type": "string"},
                 },
                 "required": ["log_dir", "log_level"],
             },
@@ -86,9 +87,12 @@ def get_config():
 
     config_file_location = _find_config_file(config_filename)
 
-    if not config_file_location.exists():
+    if config_file_location is None:
         raise FileNotFoundError(
-            "The WFI_REFERENCE_PIPELINE package requires a config.yml inside the 'src/wfi_reference_pipeline/config' folder"
+            """The WFI_REFERENCE_PIPELINE package requires a config.yml inside
+            the 'src/wfi_reference_pipeline/config' folder.
+            Use 'src/wfi_reference_pipeline/config/example_config.yml as a template
+            """
         )
 
     with open(config_file_location, "r") as config_file:

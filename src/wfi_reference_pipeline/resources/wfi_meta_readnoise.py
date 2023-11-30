@@ -1,6 +1,7 @@
 from dataclasses import dataclass, InitVar
 from typing import Optional
 import wfi_reference_pipeline.constants as constants
+import logging
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
@@ -53,4 +54,6 @@ class WFIMetaReadNoise(WFIMetadata):
                          'p_exptype': self.p_exptype
                         }
         }
+        logging.debug(f"export_asdf_meta from WFI_MetaReadNoise {asdf_meta}")
+
         return asdf_meta

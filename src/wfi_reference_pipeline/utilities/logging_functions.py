@@ -28,18 +28,21 @@ def configure_logging(target_module):
     """
     log_config = get_logging_config()
 
-    # Added this to make sure nothing is getting in the way of our log file.
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
+    tagged_module = log_config["log_tag"] + target_module
 
-    log_file = make_log_file(target_module, path=log_config["log_dir"])
+    log_file = make_log_file(tagged_module, path=log_config["log_dir"])
+    if log_config["log_level"] == "DEBUG":
+        log_format = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    else:
+        log_format = "%(asctime)s %(levelname)s: %(message)s"
 
     logging.basicConfig(
         filename=log_file,
-        format="%(asctime)s %(levelname)s: %(message)s",
+        format=log_format,
         datefmt="%m/%d/%Y %H:%M:%S %p",
         level=log_config["log_level"],
         filemode="a",
+        force=True,  # remove existing handlers
     )
 
     logging.captureWarnings(False)
