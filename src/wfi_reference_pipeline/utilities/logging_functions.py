@@ -1,3 +1,49 @@
+""" Logging functions for the WFI_REFERENCE_PIPELINE project
+
+Authors
+-------
+
+    - Alex Viana (wfc3ql Version)
+    - Tyler Desjardins
+    - Brad Sappington
+
+Use
+---
+
+    To log the execution of a module, use:
+    ::
+
+        import os
+        import logging
+
+        from jwql.logging.logging_functions import configure_logging
+
+        def my_main_function():
+            pass
+
+        if __name__ == '__main__':
+
+            module = os.path.basename(__file__).replace('.py', '')
+            configure_logging(module)
+
+            my_main_function()
+
+Dependencies
+------------
+
+    The user must have a configuration file named ``config.yml``
+    placed in the /src/wfi_reference_pipeline/config directory.
+    use the "Logging" section of example_config.yml as a template
+
+
+
+References
+----------
+    This code is adopted and updated from python routine
+    ``logging_functions.py`` written by Alex Viana, 2013 for the WFC3
+    Quicklook automation platform.
+"""
+
 import datetime
 import getpass
 import logging
