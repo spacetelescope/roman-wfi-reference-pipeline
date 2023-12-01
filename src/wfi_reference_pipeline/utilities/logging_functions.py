@@ -1,3 +1,49 @@
+""" Logging functions for the WFI_REFERENCE_PIPELINE project
+
+Authors
+-------
+
+    - Alex Viana (wfc3ql Version)
+    - Tyler Desjardins
+    - Brad Sappington
+
+Use
+---
+
+    To log the execution of a module, use:
+    ::
+
+        import os
+        import logging
+
+        from jwql.logging.logging_functions import configure_logging
+
+        def my_main_function():
+            pass
+
+        if __name__ == '__main__':
+
+            module = os.path.basename(__file__).replace('.py', '')
+            configure_logging(module)
+
+            my_main_function()
+
+Dependencies
+------------
+
+    The user must have a configuration file named ``config.yml``
+    placed in the /src/wfi_reference_pipeline/config directory.
+    use the "Logging" section of example_config.yml as a template
+
+
+
+References
+----------
+    This code is adopted and updated from python routine
+    ``logging_functions.py`` written by Alex Viana, 2013 for the WFC3
+    Quicklook automation platform.
+"""
+
 import datetime
 import getpass
 import logging
@@ -6,42 +52,44 @@ import pwd
 import socket
 import sys
 import time
-
 from functools import wraps
 
+from wfi_reference_pipeline.utilities.config_handler import get_logging_config
 
-def configure_logging(target_module, path=None, level=logging.INFO):
-    """Configure the standard logging format.
+
+def configure_logging(target_module):
+    """
+    Configure the standard logging format.
+    Uses fields stored in config.yml nested under 'Logging' property
 
     Parameters
     ----------
     target_module (string):
         The name of the module being logged.
-    path (string):
-        Where to write the log if user-supplied path; default to working dir.
-    level (integer):
-        Minimum logging level to display messages. These are technically
-        integers, but can use inputs like `logging.INFO` or `logging.DEBUG`.
 
     Returns
     -------
     log_file (string):
         The name and path of the log file.
     """
+    log_config = get_logging_config()
 
-    # Added this to make sure nothing is getting in the way of our log file.
-    root = logging.getLogger()
-    if root.handlers:
-        for handler in root.handlers:
-            root.removeHandler(handler)
+    tagged_module = log_config["log_tag"] + target_module
 
-    log_file = make_log_file(target_module, path=path)
+    log_file = make_log_file(tagged_module, path=log_config["log_dir"])
+    if log_config["log_level"] == "DEBUG":
+        log_format = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    else:
+        log_format = "%(asctime)s %(levelname)s: %(message)s"
 
-    logging.basicConfig(filename=log_file,
-                        format='%(asctime)s %(levelname)s: %(message)s',
-                        datefmt='%m/%d/%Y %H:%M:%S %p',
-                        level=level,
-                        filemode='a')
+    logging.basicConfig(
+        filename=log_file,
+        format=log_format,
+        datefmt="%m/%d/%Y %H:%M:%S %p",
+        level=log_config["log_level"],
+        filemode="a",
+        force=True,  # remove existing handlers
+    )
 
     logging.captureWarnings(False)
 
@@ -67,9 +115,9 @@ def make_log_file(target_module, path=None):
         The full path to where the log file will be written to.
     """
 
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
     user = pwd.getpwuid(os.getuid()).pw_name
-    filename = f'{target_module}_{user}_{timestamp}.log'
+    filename = f"{target_module}_{user}_{timestamp}.log"
 
     if not path:
         log_file = os.path.join(os.getcwd(), filename)
@@ -95,15 +143,16 @@ def log_info(func):
     wrapped : func
         The wrapped function.
     """
+
     @wraps(func)
     def wrapped(*a, **kw):
         """do function wrapping"""
 
         # Log environment information
-        logging.info('User: ' + getpass.getuser())
-        logging.info('System: ' + socket.gethostname())
-        logging.info('Python Version: ' + sys.version.replace('\n', ''))
-        logging.info('Python Executable Path: ' + sys.executable)
+        logging.info("User: " + getpass.getuser())
+        logging.info("System: " + socket.gethostname())
+        logging.info("Python Version: " + sys.version.replace("\n", ""))
+        logging.info("Python Executable Path: " + sys.executable)
 
         # Call the function and time it
         t1_cpu = time.process_time()
@@ -117,9 +166,12 @@ def log_info(func):
         minutes_cpu, seconds_cpu = divmod(remainder_cpu, 60)
         hours_time, remainder_time = divmod(t2_time - t1_time, 60 * 60)
         minutes_time, seconds_time = divmod(remainder_time, 60)
-        logging.info(f'Elapsed Real Time: {hours_time:.0f}:'
-                     f'{minutes_time:.0f}:{seconds_time:f}')
-        logging.info(f'Elapsed CPU Time: {hours_cpu:.0f}:'
-                     f'{minutes_cpu:.0f}:{seconds_cpu:f}')
+        logging.info(
+            f"Elapsed Real Time: {hours_time:.0f}:"
+            f"{minutes_time:.0f}:{seconds_time:f}"
+        )
+        logging.info(
+            f"Elapsed CPU Time: {hours_cpu:.0f}:" f"{minutes_cpu:.0f}:{seconds_cpu:f}"
+        )
 
     return wrapped
