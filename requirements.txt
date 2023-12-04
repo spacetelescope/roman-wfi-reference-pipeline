@@ -1,5 +1,5 @@
-astropy==5.3.4
-crds==11.17.10
+astropy==6.0.0
+crds==11.17.13
 ipython==8.18.1
 matplotlib==3.8.2
 numpy==1.26.2
@@ -9,7 +9,7 @@ pysiaf==0.21.0
 PyYAML==6.0.1
 rad==0.18.0
 requests==2.31.0
-romancal==0.12.0
+romancal==0.13.0
 roman-datamodels==0.18.0
 scipy==1.11.4
 soc_roman_tools==0.1.0
