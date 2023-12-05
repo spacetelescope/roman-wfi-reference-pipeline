@@ -57,7 +57,7 @@ class SubmissionForm:
         return self.__dict__
 
 
-class WFIsubmit:
+class WFISubmit:
 
     def __init__(self, files, submission_info, server='test'):
 
