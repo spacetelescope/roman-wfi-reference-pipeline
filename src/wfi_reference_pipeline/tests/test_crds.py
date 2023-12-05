@@ -11,23 +11,23 @@ def test_exceptions():
 
     # Cannot find input files.
     with pytest.raises(FileNotFoundError):
-        _ = submit_files.WFIsubmit(['bad_file_input.asdf'],
+        _ = submit_files.WFISubmit(['bad_file_input.asdf'],
                                      submission_info=si)
 
     # Wrong type of CRDS server.
     with pytest.raises(ValueError):
-        _ = submit_files.WFIsubmit([], submission_info=si,
+        _ = submit_files.WFISubmit([], submission_info=si,
                                      server='bad')
 
     # Input files not given as list.
     with pytest.raises(TypeError):
-        _ = submit_files.WFIsubmit('bad_file_input.asdf',
+        _ = submit_files.WFISubmit('bad_file_input.asdf',
                                      submission_info=si)
 
     # Form details not supplied.
     with pytest.raises(TypeError):
-        _ = submit_files.WFIsubmit([])
+        _ = submit_files.WFISubmit([])
 
     # Empty input file list.
     with pytest.raises(ValueError):
-        _ = submit_files.WFIsubmit([], submission_info=si)
+        _ = submit_files.WFISubmit([], submission_info=si)
