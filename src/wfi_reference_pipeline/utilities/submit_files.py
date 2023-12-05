@@ -48,14 +48,10 @@ class SubmissionForm:
                 list_meta = ' '.join(list_meta)
 
         if self.description == "You didn't update this, did you?":
-            raise ValueError('You did not update the reason for delivery. '/
-                             'Try again and set the description keyword to '/
-                             'something useful!')
+            raise ValueError('You did not update the reason for delivery. Try again and set the description keyword to something useful!')
 
         if self.file_type == 'Blank':
-            raise ValueError('You did not update the reference file type. '/
-                             'Try again and set the file_type keyword to the '/
-                             'correct values!')
+            raise ValueError('You did not update the reference file type. Try again and set the file_type keyword to the correct values!')
 
     def as_dict(self) -> dict:
         return self.__dict__
@@ -69,11 +65,9 @@ class WFIsubmit:
             if len(files) > 0:
                 self.files = files
             else:
-                raise ValueError('Input files list/tuple is empty! '/
-                                 f'Got {files}.')
+                raise ValueError(f'Input files list/tuple is empty! Got {files}.')
         else:
-            raise TypeError('Input files should be a list or tuple. '/
-                            f'Got {type(files)} instead.')
+            raise TypeError(f'Input files should be a list or tuple. Got {type(files)} instead.')
 
         for f in self.files:
             if not os.path.exists(f):
@@ -81,8 +75,7 @@ class WFIsubmit:
 
         self.server = server.lower()
         if self.server not in ('dev', 'test'):
-            raise ValueError('server should be either "test" or "dev". Got '/
-                             f'{self.server} instead.')
+            raise ValueError(f'server should be either "test" or "dev". Got {self.server} instead.')
 
         if isinstance(submission_info, str):
             with open(submission_info, 'r') as subfile:
@@ -90,9 +83,7 @@ class WFIsubmit:
         elif isinstance(submission_info, dict):
             self.submission_dict = submission_info
         else:
-            raise TypeError('submission_info should be either a dictionary '/
-                            'or the string name of a YAML file. Got '/
-                            f'{type(submission_info)} instead.')
+            raise TypeError(f'submission_info should be either a dictionary or the string name of a YAML file. Got {type(submission_info)} instead.')
 
         self.submission_form = Submission('roman', self.server)
         self.submission_results = None
@@ -136,6 +127,4 @@ class WFIsubmit:
                                    config_file=None)
 
         except KeyError:
-            raise Exception('No token found in environment variable '/
-                            '"WFI_REFFILE_SLACK_TOKEN". No Slack message '/
-                            'was sent.')
+            raise Exception('No token found in environment variable "WFI_REFFILE_SLACK_TOKEN". No Slack message was sent.')
