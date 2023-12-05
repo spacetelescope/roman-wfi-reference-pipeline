@@ -5,11 +5,60 @@ the information for the reference file submission.
 
 import os
 import yaml
+from typing import Union
+from dataclasses import dataclass
 from crds.submit import Submission
 from crds.certify import certify_files
 from crds.core import heavy_client
 
 from .notifications import send_slack_message
+
+
+@dataclass(init=True, repr=True)
+class SubmissionForm:
+    deliverer: str = 'WFI Reference File Pipeline'
+    other_email: str = ''
+    instrument: str = 'WFI'
+    file_type: str = 'Blank'
+    history_updated: bool = True
+    pedigree_updated: bool = True
+    keywords_checked: bool = True
+    descrip_updated: bool = True
+    useafter_updated: bool = True
+    useafter_matches: str = 'N/A'
+    compliance_verified: str = 'N/A'
+    etc_delivery: bool = False
+    calpipe_version: str = 'No'
+    replacement_files: bool = False
+    old_reference_files: Union[str, list] = ''
+    replacing_badfiles: str = 'No'
+    jira_issue: Union[str, list] = ''
+    table_rows_changed: str = 'N/A'
+    reprocess_affected: bool = False
+    modes_affected: str = 'All WFI modes'
+    change_level: str = 'MODERATE'
+    correctness_testing: str = 'None'
+    additional_considerations: str = 'None'
+    description: str = "You didn't update this, did you?"
+
+    def __post_init__(self):
+
+        for list_meta in [self.old_reference_files, self.jira_issue]:
+            if isinstance(list_meta, list):
+                list_meta = ' '.join(list_meta)
+
+        if self.description == "You didn't update this, did you?":
+            raise ValueError(f'You did not update the reason for delivery. '
+                             f'Try again and set the description keyword to '
+                             f'something useful!')
+
+        if self.file_type == 'Blank':
+            raise ValueError(f'You did not update the reference file type. '
+                             f'Try again and set the file_type keyword to the '
+                             f'correct values!')
+
+    def as_dict(self) -> dict:
+        return self.__dict__
 
 
 class WFIsubmit:
@@ -74,6 +123,8 @@ class WFIsubmit:
 
     def submit_to_crds(self, summary=None):
 
+        # not sure if we want this flag, but it was in the old submit_files.py
+        #self.submission_form._auto_confirm = True
         self.submission_results = self.submission_form.submit()
         try:
             if summary:
