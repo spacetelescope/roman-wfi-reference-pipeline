@@ -16,8 +16,6 @@ def get_ma_table_from_rtbdb(ma_table_number=None):
     ma_table_dict: dictionary
         A python dictionary of MA Table information. See RTB Database examples for keys and values.
     """
-    # TODO - NOTE - COMMENTED OUT ENTIRE ROUTINE AS BASED ON CONNECTION THAT ISN'T IMPORTED - Determine library wtih connect_server and DatabaseTable before
-    #               implementing this code
 
     eng = login.connect_server(dsn_name='DWRINSDB')
     ma_table_dict = rfp_tools.query_ma_table(eng, ma_table_number)

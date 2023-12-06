@@ -4,13 +4,14 @@ import os
 import gc
 import asdf
 import logging
+import datetime
 from ..utilities.reference_file import ReferenceFile
 from ..utilities.logging_functions import configure_logging
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from astropy import units as u
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
-import datetime
+from pathlib import Path
 
 configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
 
@@ -158,7 +159,7 @@ class Dark(ReferenceFile):
         self.super_dark[:, :, -4:] = 0.
         logging.info('Super dark attribute created.')
 
-    def save_suoer_dark(self, md_outfile=None):
+    def save_suoer_dark(self, superdark_outfile=None):
         """
         The method save_super_dark with default conditions will write the super dark cube into an asdf
         file for each detector in the directory from which the input files where pointed to and used to
@@ -167,25 +168,25 @@ class Dark(ReferenceFile):
 
         Parameters
         ----------
-        md_outfile: str; default = None
+        superdark_outfile: str; default = None
             File string. Absolute or relative path for optional input.
             By default, None is provided but the method below generates the asdf file string from meta
             data of the input files such as date and detector number  (i.e. WFI01) in the filename.
         """
 
-        meta_md = {'pedigree': "GROUND", 'description': "Super dark internal reference file calibration product"
-                                                        "generated from Reference File Pipeline.",
-                   'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
-        if md_outfile is None:
-            md_outfile = os.path.dirname(self.input_data[0]) + '/' + meta_md['detector'] + '_super_dark.asdf'
+        meta_superdark = {'pedigree': "GROUND", 'description': "Super dark internal reference file calibration product"
+                                                               "generated from Reference File Pipeline.",
+                          'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
+        if superdark_outfile is None:
+            superdark_outfile = Path(self.input_data[0] + '/' + meta_superdark['detector'] + '_super_dark.asdf')
         else:
-            md_outfile = 'roman_super_dark.asdf'
-        self.check_output_file(md_outfile)
+            superdark_outfile = 'roman_super_dark.asdf'
+        self.check_output_file(superdark_outfile)
         logging.info('Saving super dark to disk.')
 
         af = asdf.AsdfFile()
-        af.tree = {'meta': meta_md, 'data': self.super_dark}
-        af.write_to(md_outfile)
+        af.tree = {'meta': meta_superdark, 'data': self.super_dark}
+        af.write_to(superdark_outfile)
 
     def initialize_arrays(self, num_resultants=None, ni=None):
         """
@@ -320,7 +321,7 @@ class Dark(ReferenceFile):
         # and the variance of the resampled residuals are added in quadrature
         self.resampled_dark_cube_err[0, :, :] = (std * std + self.dark_rate_var) ** 0.5
 
-    def update_dq_mask(self, dead_pixel_rate=0.0001, hot_pixel_rate=0.015, warm_pixel_rate=0.010):
+    def update_dq_mask(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, dead_pixel_rate=0.0001):
         #TODO evaluate options for variabiles like this and sigma clipping with a parameter file?
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
@@ -339,16 +340,16 @@ class Dark(ReferenceFile):
             the nominal expectation of dark current.
         """
 
-        logging.info('Flagging hot and warm pixels and updating DQ array.')
-        # Locate hot and warm pixel ni,nj positions in 2D array
-        self.dead_pixels = np.where(self.dark_rate_image < dead_pixel_rate)
-        self.hot_pixels = np.where(self.dark_rate_image >= hot_pixel_rate)
-        self.warm_pixels = np.where((warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < hot_pixel_rate))
+        self.hot_pixel_rate = hot_pixel_rate
+        self.warm_pixel_rate = warm_pixel_rate
+        self.dead_pixel_rate = dead_pixel_rate
 
-        # Set mask DQ flag values
-        self.mask[self.dead_pixels] += self.dqflag_defs['DEAD']
-        self.mask[self.hot_pixels] += self.dqflag_defs['HOT']
-        self.mask[self.warm_pixels] += self.dqflag_defs['WARM']
+        logging.info('Flagging dead, hot, and warm pixels and updating DQ array.')
+        # Locate hot and warm pixel ni,nj positions in 2D array
+        self.mask[self.dark_rate_image > self.hot_pixel_rate] += self.dqflag_defs['HOT']
+        self.mask[(self.warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < self.hot_pixel_rate)] \
+            += self.dqflag_defs['WARM']
+        self.mask[self.dark_rate_image < self.dead_pixel_rate] += self.dqflag_defs['DEAD']
 
     def make_metrics_dicts(self):
         """
@@ -365,11 +366,16 @@ class Dark(ReferenceFile):
                             'crds_filename': 'test_crds_filename.asdf',
                             'crds_delivery_id': 1}
 
-        # Get the number of dead, hot, and warm pixels for metric tracking
-        _, num_dead_pixels = np.shape(self.hot_pixels)
-        _, num_hot_pixels = np.shape(self.hot_pixels)
-        _, num_warm_pixels = np.shape(self.warm_pixels)
-        logging.info(f'Found {num_hot_pixels} hot pixels and {num_warm_pixels} warm pixels in dark rate ramp image.')
+        hot_pixel_mask = self.dark_rate_image > self.hot_pixel_rate
+        num_hot_pixels = np.sum(hot_pixel_mask)
+        warm_pixel_mask = (self.warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < self.hot_pixel_rate)
+        num_warm_pixels = np.sum(warm_pixel_mask)
+        dead_pixel_mask = self.dark_rate_image < self.dead_pixel_rate
+        num_dead_pixels = np.sum(dead_pixel_mask)
+
+        logging.info(f'Found {num_hot_pixels} hot pixels,  {num_warm_pixels} warm pixels, and {num_dead_pixels} were'
+                     f'found in the dark rate ramp image.')
+        print('hot, warm, dead pixels', num_hot_pixels, num_warm_pixels, num_dead_pixels)
 
         # Create the dark dq dictionary
         db_dark_dq_dict = {'num_dead_pix': num_dead_pixels,

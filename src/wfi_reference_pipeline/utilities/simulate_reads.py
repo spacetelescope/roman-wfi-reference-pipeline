@@ -1,98 +1,88 @@
 import numpy as np
+import random
+import logging
+from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
 
 
-def simulate_reads(n_reads, exptime, darkrate, darkvar):
+def simulate_dark_reads(n_reads, exp_time=WFI_FRAME_TIME[WFI_MODE_WIM], dark_rate=0.005, dark_var=0.001,
+                        hot_pix_rate=0.015, hot_pix_var=0.010, num_hot_pix=2000, num_hot_pix_var=200,
+                        warm_pix_rate=0.050, warm_pix_var=0.010, num_warm_pix=1000, num_warm_pix_var=100,
+                        dead_pix_rate=0.0001, dead_pix_var=0.00001, num_dead_pix=500, num_dead_pix_var=50):
+    """
+    Function to create a dark read cube with random number of hot, warm, and dead pixels.
 
-    """ The method SimulateReads is a function that takes in the number of reads,
-    exptime, darkrate, darkvariance, number of hot pixels, the hot pixel magnitude,
-    variance in hot pixels so create or simulate a series of reads.
-
-    Parameters - External
+    Parameters
     ----------
-    n_reads = total number of reads in a cube
-    exp_time = is the exposure time or frame read time
-    darkrate = the number of electrons per pixel per second
-    darkvar = variance in the darkrate away from its nominal value
-
-    Parameters - Internal
-    ----------
-    num_hp = total number of hotpixels, recall 4088x4088 ~ 16Mpixels
-    hp_mag = magnitude of hot pixels
-    hp_var = variance in hotpixels away from hp_mag
+    n_reads: int;
+        The number of reads to be simulated into a cube of n_reads x 4096 x 4096.
+    exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
+        WIM exposure time is set to default from constants.py in seconds.
+        WIM exp_time = 3.04 seconds, WSM exp_time = 4.03 seconds
+    dark_rate: float; default = 0.005
+        The simulated detector dark rate in e/p/s electrons per pixel per second.
+    dark_var: float; default = 0.001
+        The variance in the simulated dark rate.
+    hot_pix_rate: float; default = 0.015
+        The simulated hot pixel rate in e/p/s.
+    hot_pix_var: float; default = 0.010
+        The variance in the simulated hot pixel rate.
+    num_hot_pix: int; default = 2000
+        Average random number of hot pixels injected into dark rate image.
+    num_hot_pix_var: int; default = 200
+        The variance in the random number of hot pixels.
+    warm_pix_rate: float; default = 0.050
+        The simulated warm pixel rate in e/p/s.
+    warm_pix_var: float; default = 0.010
+        The variance in the simulated warm pixel rate.
+    dead_pix_rate: float; default = 0.0001
+        The simulated dead pixel rate in e/p/s.
+    dead_pix_var: float; default = 0.00001
+        The variance in the simulated dead pixel rate.
 
     Returns
-    -------
-    read_cube: cube of reads to make darks
+    ----------
+    read_cube [n_reads, 4096, 4096], rate_image [4096, 4096]
     """
 
-    print("Simulating WFI dark reads...")
-    rate_image = np.random.normal(darkrate, scale=darkvar, size=(4096, 4096))
+    logging.info(f'Making dark read cube.')
+    if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
+        print("Making WFI Imaging Mode (WIM) dark read cube with exposure time", exp_time)
+    elif exp_time == WFI_FRAME_TIME[WFI_MODE_WSM]:
+        print("Making WFI Spectral Mode (WSM) dark read cube with exposure time", exp_time)
+    else:
+        raise ValueError('Invalid WFI exposure time.')
 
-    # place a somewhat random number of hotpixels into the rate image
-    num_hotpixels = np.random.randint(1300, 1600)
-    hotpixel_val = 0.015
-    hotpixel_var = 0.010
-    # randomly locate hot pixels on the SCA detector
-    coords_x = np.random.randint(4, 4091, num_hotpixels)  # only place hot pixels on science 4088x4088 grid
-    coords_y = np.random.randint(4, 4091, num_hotpixels)  # only place hot pixels on science 4088x4088 grid
-    # create the randomly located hotpixels and locate within the raadcube
-    hp_pix_array = np.random.normal(hotpixel_val, scale=hotpixel_var, size=(num_hotpixels))
-    # update the rate image with hotpixels
-    rate_image[coords_x, coords_y] = hp_pix_array
+    # Initialize rate image.
+    rate_image = np.random.normal(dark_rate, scale=dark_var, size=(4096, 4096))
+
+    # Get numbers and locations of hot pixels and apply to rate image.
+    hot_pix_count = round(random.gauss(num_hot_pix, num_hot_pix_var))
+    coords_x = np.random.randint(4, 4091, hot_pix_count)
+    coords_y = np.random.randint(4, 4091, hot_pix_count)
+    hot_pixels = np.random.normal(hot_pix_rate, scale=hot_pix_var, size=hot_pix_count)
+    rate_image[coords_x, coords_y] = hot_pixels
+
+    # Get numbers and locations of warm pixels and apply to rate image.
+    warm_pix_count = round(random.gauss(num_warm_pix, num_warm_pix_var))
+    coords_x = np.random.randint(4, 4091, warm_pix_count)
+    coords_y = np.random.randint(4, 4091, warm_pix_count)
+    warm_pixels = np.random.normal(warm_pix_rate, scale=warm_pix_var, size=warm_pix_count)
+    # Over writing any hot pixels as warm pixels.
+    rate_image[coords_x, coords_y] = warm_pixels
+
+    # Get numbers and locations of dead pixels and apply to rate image.
+    dead_pix_count = round(random.gauss(num_dead_pix, num_dead_pix_var))
+    coords_x = np.random.randint(4, 4091, dead_pix_count)
+    coords_y = np.random.randint(4, 4091, dead_pix_count)
+    dead_pixels = np.random.normal(dead_pix_rate, scale=dead_pix_var, size=dead_pix_count)
+    # Over writing any hot pixels or warm pixels as dead pixels.
+    rate_image[coords_x, coords_y] = dead_pixels
 
     read_cube = np.zeros((n_reads, 4096, 4096), dtype=np.float32) # initialize read cube
     for read_r in range(0, n_reads):
         # create read cube by simulating data in reads
-        read_cube[read_r, :, :] = (read_r + 1) * exptime * (rate_image +
-                                                            np.random.randint(0, 10, size=(4096, 4096))/50000.)
-                        # this last term may be read noise but is set low intentionally to check
-
-    # return read_cube
+        read_cube[read_r, :, :] = (read_r + 1) * exp_time * (rate_image +
+                                                             np.random.randint(0, 10, size=(4096, 4096))/50000.)
+        # The random noise is set low intentionally.
+        # If a more realistic noise model is needed, see one of the Roman WFI simulators.
     return read_cube, rate_image
-
-
-
- #    def compute_dark_rate(self, warm_thresh=3, hot_thresh=5,
- #                          unreliable_thresh=1, warm_bit=12, hot_bit=11,
- #                          unreliable_bit=23):
- #
- #        logging.info('Computing sigma-clipped mean dark rate image')
- #        # Compute the mean and standard deviation of all of the darks in
- #        # the input list.
- #        self.rate_image, _, dark_noise = sigma_clipped_stats(self.data,
- #                                                             axis=0)
- #
- #        logging.info('Computing sigma-clipped median and standard deviation '
- #                     'of mean dark rate image')
- #        # Compute the median and standard deviation of the average rate image.
- #        _, dark_rate_med, dark_rate_std = sigma_clipped_stats(self.rate_image)
- #
- #        warm_rate = dark_rate_med + (warm_thresh * dark_rate_std)
- #        hot_rate = dark_rate_med + (hot_thresh * dark_rate_std)
- #
- #        logging.info(f'\tmedian = {dark_rate_med:0.5f} ADU / sec')
- #        logging.info(f'\tstd. dev. = {dark_rate_std:0.5f} ADU / sec')
- #
- #        logging.info('Flagging warm, hot, and unreliable pixels in DQ array')
- #        logging.info(f'\tWarm pixel threshold = {warm_rate:0.5f} ADU / sec')
- #        logging.info(f'\tHot pixel threshold = {hot_rate:0.5f} ADU / sec')
- #        logging.info(f'\tUnreliable pixel threshold = '
- #                     f'{unreliable_thresh:0.5f} ADU / sec')
- #        logging.info('DQ bit values:')
- #        logging.info(f'\tWarm = {warm_bit}')
- #        logging.info(f'\tHot = {hot_bit}')
- #        logging.info(f'\tUnreliable = {unreliable_bit}')
- #
- #        # Mark warm/hot/unreliable pixels.
- #        warm_pixel = np.where((self.rate_image >= warm_rate) &
- #                              (self.rate_image < hot_rate))
- #
- #        hot_pixel = np.where(self.rate_image >= hot_rate)
- #
- #        unreliable_pixel = np.where(dark_noise > unreliable_thresh)
- #
- #        self.mask[warm_pixel] += 2**warm_bit
- #        self.mask[hot_pixel] += 2**hot_bit
- #        self.mask[unreliable_pixel] += 2**unreliable_bit
- #
- #
