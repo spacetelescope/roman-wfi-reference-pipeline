@@ -44,7 +44,7 @@ def simulate_dark_reads(n_reads, exp_time=WFI_FRAME_TIME[WFI_MODE_WIM], dark_rat
     read_cube [n_reads, 4096, 4096], rate_image [4096, 4096]
     """
 
-    logging.info(f'Making dark read cube.')
+    logging.info('Making dark read cube.')
     if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
         print("Making WFI Imaging Mode (WIM) dark read cube with exposure time", exp_time)
     elif exp_time == WFI_FRAME_TIME[WFI_MODE_WSM]:
