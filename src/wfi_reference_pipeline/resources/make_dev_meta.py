@@ -16,7 +16,7 @@ class MakeDevMeta:
     Class to generate any complete reference file MetaData object.
 
     Example Usage:
-    dev_meta_maker = MakeDarkMeta("DARK")
+    dev_meta_maker = MakeDevMeta("DARK")
     dark_meta_data = dev_meta_maker.meta_dark
 
     """

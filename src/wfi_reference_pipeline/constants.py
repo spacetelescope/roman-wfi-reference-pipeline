@@ -1,3 +1,5 @@
+CONFIG_PATH = "src/wfi_reference_pipeline/config/"
+
 WFI_MODE_WIM = "WIM"
 WFI_MODE_WSM = "WSM"
 

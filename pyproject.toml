@@ -20,6 +20,7 @@ dependencies = [
     "pandas>=2.1.2",
     "photutils>=1.8.0",
     "pysiaf>=0.20.0",
+    "PyYAML>=6.0.1",
     "rad>=0.17.1",
     "requests>=2.31.0",
     "romancal>=0.11.0",

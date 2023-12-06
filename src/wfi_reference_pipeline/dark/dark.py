@@ -1,19 +1,16 @@
-import roman_datamodels.stnode as rds
-import numpy as np
-import os
-import gc
-import asdf
-import logging
 import datetime
-from ..utilities.reference_file import ReferenceFile
-from ..utilities.logging_functions import configure_logging
+import gc
+import logging
+import os
+
+import asdf
+import numpy as np
+import roman_datamodels.stnode as rds
+from astropy import units as u
 from astropy.stats import sigma_clip
 from astropy.time import Time
-from astropy import units as u
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
-from pathlib import Path
-
-configure_logging('dark_dev', path='/grp/roman/RFP/DEV/logs/')
+from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
+from wfi_reference_pipeline.utilities.reference_file import ReferenceFile
 
 
 class Dark(ReferenceFile):
@@ -28,8 +25,15 @@ class Dark(ReferenceFile):
     written to disk.
     """
 
-    def __init__(self, dark_file_list, meta_data, bit_mask=None, outfile='roman_dark.asdf', clobber=False,
-                 input_dark_cube=None):
+    def __init__(
+        self,
+        dark_file_list,
+        meta_data,
+        bit_mask=None,
+        outfile="roman_dark.asdf",
+        clobber=False,
+        input_dark_cube=None,
+    ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
         file base class.
@@ -59,15 +63,21 @@ class Dark(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super().__init__(dark_file_list, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
+        super().__init__(
+            dark_file_list,
+            meta_data,
+            bit_mask=bit_mask,
+            clobber=clobber,
+            make_mask=True,
+        )
 
         # Update metadata with file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI dark reference file.'
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'DARK'
+        if "description" not in self.meta.keys():
+            self.meta["description"] = "Roman WFI dark reference file."
+        if "reftype" not in self.meta.keys():
+            self.meta["reftype"] = "DARK"
 
-        logging.info(f'Default dark reference file object: {outfile} ')
+        logging.info(f"Default dark reference file object: {outfile} ")
 
         # Initialize attributes
         self.outfile = outfile
@@ -79,7 +89,9 @@ class Dark(ReferenceFile):
         self.resampled_dark_cube = None  # MA table averaged resultant cube.
         self.resampled_dark_cube_model = None  # MA table resultant ramp model.
         self.resampled_dark_cube_err = None  # MA table averaged resultant error cube.
-        self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
+        self.resultant_tau_arr = (
+            None
+        )  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
         self.dark_rate_image = None  # Rate image from ramp fit.
         self.dark_intercept_image = None  # Intercept image from ramp fit.
         self.dark_rate_var = None  # Variance in fitted dark rate image.
@@ -111,14 +123,16 @@ class Dark(ReferenceFile):
             Upper bound limit to filter data
         """
 
-        # Display the directory name where the dark calibration files are located to make the super dark.
-        logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to construct super dark object.')
+        # Display the directory name where the dark calibration files are located to make the master dark.
+        logging.info(
+            f"Using files from {os.path.dirname(self.input_data[0])} to construct master dark object."
+        )
 
         # Find the dark calibration file with the most number of reads to initialize the super dark cube.
         tmp_reads = []
         for fl in range(0, len(self.input_data)):
             tmp = asdf.open(self.input_data[fl], validate_on_read=False)
-            n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
+            n_rds, _, _ = np.shape(tmp.tree["roman"]["data"])
             tmp_reads.append(n_rds)
             tmp.close()
         num_reads_set = [*set(tmp_reads)]
@@ -128,19 +142,23 @@ class Dark(ReferenceFile):
         # The super dark length is the maximum number of reads in all dark calibration files to be used
         # when creating the dark reference file. Need to try over files with different lengths
         # to compute average read by read for all files
-        self.super_dark = np.zeros((np.max(num_reads_set), 4096, 4096), dtype=np.float32)
+        self.master_dark = np.zeros(
+            (np.max(num_reads_set), 4096, 4096), dtype=np.float32
+        )
         # This method of opening and closing each file read by read is file I/O intensive however
         # it is efficient on memory usage.
-        logging.info('Reading dark asdf files read by read to compute average for super dark.')
-        print('reading files')
+        logging.info(
+            "Reading dark asdf files read by read to compute average for master dark."
+        )
+        print("reading files")
         for rd in range(0, np.max(num_reads_set)):
             dark_read_cube = []
-            logging.info(f'On read {rd} of {np.max(num_reads_set)}')
-            print('read', rd)
+            logging.info(f"On read {rd} of {np.max(num_reads_set)}")
+            print("read", rd)
             for fl in range(0, len(self.input_data)):
-                print(fl, 'file')
+                print(fl, "file")
                 tmp = asdf.open(self.input_data[fl], validate_on_read=False)
-                rd_tmp = tmp.tree['roman']['data']
+                rd_tmp = tmp.tree["roman"]["data"]
                 dark_read_cube.append(rd_tmp[rd, :, :])
                 del tmp, rd_tmp
                 gc.collect()  # clean up memory
@@ -153,11 +171,11 @@ class Dark(ReferenceFile):
         # set reference pixel border to zero for super dark
         # this needs to be done differently for multi sub array jigsaw handling
         # move to when making the mask and final stitching together different pieces to do the border
-        self.super_dark[:, :4, :] = 0.
-        self.super_dark[:, -4:, :] = 0.
-        self.super_dark[:, :, :4] = 0.
-        self.super_dark[:, :, -4:] = 0.
-        logging.info('Super dark attribute created.')
+        self.master_dark[:, :4, :] = 0.0
+        self.master_dark[:, -4:, :] = 0.0
+        self.master_dark[:, :, :4] = 0.0
+        self.master_dark[:, :, -4:] = 0.0
+        logging.info("Master dark attribute created.")
 
     def save_suoer_dark(self, superdark_outfile=None):
         """
@@ -221,14 +239,23 @@ class Dark(ReferenceFile):
         if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
         else:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
+            self.frame_time = WFI_FRAME_TIME[
+                WFI_MODE_WSM
+            ]  # frame time in spectral mode in seconds
         # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+        logging.info(
+            f"Creating exposure time array {self.n_reads} reads long with a frame "
+            f"time of {self.frame_time} seconds."
+        )
+        self.time_arr = np.array(
+            [self.frame_time * i for i in range(1, self.n_reads + 1)]
+        )
+
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
-    def make_ma_table_resampled_dark(self, read_pattern=None, num_resultants=None, num_rds_per_res=None):
+    def make_ma_table_resampled_dark(
+        self, num_resultants, num_rds_per_res, read_pattern=None
+    ):
         """
         The method make_ma_table_resampled_dark() uses the input read_pattern, which is a nested list of lists,
         or the number of resultants and reads per resultant to average reads into resultants. If read_pattern
@@ -309,13 +336,19 @@ class Dark(ReferenceFile):
         """
 
         # Generate a dark ramp cube model per the resampled ma table specs.
-        self.resampled_dark_cube_model = np.zeros((len(self.resampled_dark_cube), self.ni, self.ni), dtype=np.float32)
+        self.resampled_dark_cube_model = np.zeros(
+            (len(self.resampled_dark_cube), self.ni, self.ni), dtype=np.float32
+        )
         for tt in range(0, len(self.resultant_tau_arr)):
-            self.resampled_dark_cube_model[tt, :, :] = self.dark_rate_image * self.resultant_tau_arr[tt] \
-                                                       + self.dark_intercept_image  # y = m*x + b
+            self.resampled_dark_cube_model[tt, :, :] = (
+                self.dark_rate_image * self.resultant_tau_arr[tt]
+                + self.dark_intercept_image
+            )  # y = m*x + b
         # Calculate the residuals of the dark ramp model and the data
         residual_cube = self.resampled_dark_cube_model - self.resampled_dark_cube
-        std = np.std(residual_cube, axis=0)  # this is the standard deviation of residuals from the resampled dark cube
+        std = np.std(
+            residual_cube, axis=0
+        )  # this is the standard deviation of residuals from the resampled dark cube
         # model and the resampled dark cube data, std^2 is therefore the resampled read noise variance
         # the dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
         # and the variance of the resampled residuals are added in quadrature
@@ -359,12 +392,14 @@ class Dark(ReferenceFile):
         """
 
         # Create the dark file dictionary
-        db_dark_fl_dict = {'detector': self.meta['instrument']['detector'],
-                            'exposure_type': self.meta['exposure']['type'],
-                            'created_date': datetime.datetime.utcnow(),
-                            'use_after': datetime.datetime.utcnow(),
-                            'crds_filename': 'test_crds_filename.asdf',
-                            'crds_delivery_id': 1}
+        db_dark_fl_dict = {
+            "detector": self.meta["instrument"]["detector"],
+            "exposure_type": self.meta["exposure"]["type"],
+            "created_date": datetime.datetime.utcnow(),
+            "use_after": datetime.datetime.utcnow(),
+            "crds_filename": "test_crds_filename.asdf",
+            "crds_delivery_id": 1,
+        }
 
         hot_pixel_mask = self.dark_rate_image > self.hot_pixel_rate
         num_hot_pixels = np.sum(hot_pixel_mask)
@@ -378,11 +413,13 @@ class Dark(ReferenceFile):
         print('hot, warm, dead pixels', num_hot_pixels, num_warm_pixels, num_dead_pixels)
 
         # Create the dark dq dictionary
-        db_dark_dq_dict = {'num_dead_pix': num_dead_pixels,
-                        'num_hot_pix': num_hot_pixels,
-                        'num_warm_pix': num_warm_pixels,
-                        'hot_pix_rate': 0.015,
-                        'warm_pix_rate': 0.010}
+        db_dark_dq_dict = {
+            "num_dead_pix": num_dead_pixels,
+            "num_hot_pix": num_hot_pixels,
+            "num_warm_pix": num_warm_pixels,
+            "hot_pix_rate": 0.015,
+            "warm_pix_rate": 0.010,
+        }
 
         # Number of SCA amplifiers (4096 pixels / 128 pixels)
         amp_pixel_width = 128
@@ -405,13 +442,13 @@ class Dark(ReferenceFile):
 
         # Create the dark amp dictionary
         db_dark_amp_dict = {
-            'amp_id': list(range(1, num_amps + 1)),
-            'median_dark_current': median_values,
-            'mean_dark_current': mean_values
+            "amp_id": list(range(1, num_amps + 1)),
+            "median_dark_current": median_values,
+            "mean_dark_current": mean_values,
         }
 
         # Create the dark structure dictionary
-        db_dark_struc_dict = {'coefficient': 42.0}
+        db_dark_struc_dict = {"coefficient": 42.0}
 
         # TODO - Verify Use of metric_dict
         # metric_dict = {
@@ -446,7 +483,7 @@ class Dark(ReferenceFile):
         # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
         if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
+            af.tree = {"roman": datamodel_tree}
         else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
+            af.tree = {"roman": self.populate_datamodel_tree()}
         af.write_to(self.outfile)
