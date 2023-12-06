@@ -9,8 +9,9 @@ import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
 from astropy.time import Time
-from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
+from wfi_reference_pipeline.constants import WFI_TYPE_IMAGE, WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
 from wfi_reference_pipeline.utilities.reference_file import ReferenceFile
+from pathlib import Path
 
 
 class Dark(ReferenceFile):
@@ -142,7 +143,7 @@ class Dark(ReferenceFile):
         # The super dark length is the maximum number of reads in all dark calibration files to be used
         # when creating the dark reference file. Need to try over files with different lengths
         # to compute average read by read for all files
-        self.master_dark = np.zeros(
+        self.super_dark = np.zeros(
             (np.max(num_reads_set), 4096, 4096), dtype=np.float32
         )
         # This method of opening and closing each file read by read is file I/O intensive however
@@ -171,10 +172,10 @@ class Dark(ReferenceFile):
         # set reference pixel border to zero for super dark
         # this needs to be done differently for multi sub array jigsaw handling
         # move to when making the mask and final stitching together different pieces to do the border
-        self.master_dark[:, :4, :] = 0.0
-        self.master_dark[:, -4:, :] = 0.0
-        self.master_dark[:, :, :4] = 0.0
-        self.master_dark[:, :, -4:] = 0.0
+        self.super_dark[:, :4, :] = 0.0
+        self.super_dark[:, -4:, :] = 0.0
+        self.super_dark[:, :, :4] = 0.0
+        self.super_dark[:, :, -4:] = 0.0
         logging.info("Master dark attribute created.")
 
     def save_suoer_dark(self, superdark_outfile=None):

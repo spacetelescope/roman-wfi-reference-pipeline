@@ -20,7 +20,9 @@ def get_ma_table_from_rtbdb(ma_table_number=None):
     eng = login.connect_server(dsn_name='DWRINSDB')
     ma_table_dict = rfp_tools.query_ma_table(eng, ma_table_number)
     if ma_table_dict:
-        logging.info('Successfully read MA Table information from the RTB Database.')
+        logging.info(
+            'Successfully read MA Table information from the RTB Database.'
+        )
     return ma_table_dict
 
 
