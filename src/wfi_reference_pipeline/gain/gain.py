@@ -89,18 +89,29 @@ class Gain(ReferenceFile):
 
         return signal_arr, var_arr
 
-    def save_gain(self):
+    def populate_datamodel_tree(self):
+        """
+        Create data model from DMS and populate tree.
+        """
 
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
+        # Construct the dark object from the data model.
+        gain_datamodel_tree = rds.GainRef()
+        gain_datamodel_tree['meta'] = self.meta
+        gain_datamodel_tree['data'] = self.gain * u.electron / u.DN
 
-        gain_file = rds.GainRef()
-        gain_file['meta'] = self.meta
-        gain_file['data'] = self.gain * u.electron / u.DN
+        return gain_datamodel_tree
 
-        # Add in the meta data and history to the ASDF tree.
+    def save_gain(self, datamodel_tree=None):
+        """
+        The method save_gain writes the reference file object to the specified asdf outfile.
+        """
+
+        # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
-        af.tree = {'roman': gain_file}
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)
 
 
