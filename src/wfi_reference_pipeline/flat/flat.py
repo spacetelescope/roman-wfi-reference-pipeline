@@ -14,7 +14,14 @@ class Flat(ReferenceFile):
     then creates the flat asdf file containing the flattened frame.
     """
 
-    def __init__(self, ramp_image, meta_data, bit_mask=None, outfile=None, clobber=False):
+    def __init__(
+        self,
+        ramp_image,
+        meta_data,
+        bit_mask=None,
+        outfile=None,
+        clobber=False
+    ):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_flat.asdf'
 
@@ -22,7 +29,11 @@ class Flat(ReferenceFile):
             bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
 
         # Access methods of base class ReferenceFile
-        super(Flat, self).__init__(ramp_image,  meta_data,  bit_mask=bit_mask, clobber=clobber)
+        super(Flat, self).__init__(
+            ramp_image,
+            meta_data,
+            bit_mask=bit_mask,
+            clobber=clobber)
 
         # Update metadata with flat file type info if not included.
         if 'description' not in self.meta.keys():
@@ -34,7 +45,7 @@ class Flat(ReferenceFile):
         else:
             pass
 
-    def make_flat(self):
+    def average_flat_cubes(self):
         """
         The method make_flat() generates a flat asdf file where input data is divided
         by the mean value. The flattened image file is used to normalize quantum
@@ -64,6 +75,11 @@ class Flat(ReferenceFile):
         mean, _, _ = sigma_clipped_stats(self.input_data)
         self.input_data /= mean
 
+    def fit_flat_ramp(self):
+
+        pass
+
+
     def calc_flat_error(self, low_qe_threshold=0.2):
 
         pass
@@ -74,9 +90,16 @@ class Flat(ReferenceFile):
 
         Parameters
         ----------
+        low_qe_threshold: float; default = 0.2,
+           Limit below which to flag pixels as low quantum efficiency.
         low_qe_bit: integer; default = 13
             DQ loq quantum efficiency pixel flag value in romancal library.
         """
+
+        self.mask[self.dark_rate_image > self.hot_pixel_rate] += self.dqflag_defs['HOT']
+        self.mask[(self.warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < self.hot_pixel_rate)] \
+            += self.dqflag_defs['WARM']
+        self.mask[self.dark_rate_image < self.dead_pixel_rate] += self.dqflag_defs['DEAD']
 
         # Generate between 200-300 pixels with low qe
         rand_num_lowqe = np.random.randint(200, 300)
