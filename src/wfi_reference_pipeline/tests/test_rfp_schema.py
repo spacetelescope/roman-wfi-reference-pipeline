@@ -42,7 +42,28 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_dark.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
+            assert tf.validate() is None
+
+        def test_rfp_gain_schema(self):
+            """
+            Use the WFI reference file pipeline Gain() module to build a testable object
+            which is then validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='GAIN')
+            gain_test_meta = tmp.meta_gain.export_asdf_meta()
+
+            # Make RFP Gain reference file object for testing.
+            test_data = np.ones((3, 3), dtype=np.float32)
+            rfp_gain = Gain(test_data, meta_data=gain_test_meta)
+
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_gain.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_flat_schema(self):
@@ -84,7 +105,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_ipc.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_linearity_schema(self):
@@ -109,7 +130,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_linearity.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_inverselinearity_schema(self):
@@ -132,7 +153,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_inverselinearity.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_readnoise_schema(self):
@@ -155,7 +176,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_readnoise.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_referencepixel_schema(self):
@@ -176,7 +197,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_referencepixel.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_saturation_schema(self):
@@ -197,5 +218,5 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_saturation.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
