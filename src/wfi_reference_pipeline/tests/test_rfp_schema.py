@@ -10,6 +10,7 @@ if not ON_GITLAB_ACTIONS:
     from wfi_reference_pipeline.tests.make_test_meta import MakeTestMeta
     from wfi_reference_pipeline.dark.dark import Dark
     from wfi_reference_pipeline.flat.flat import Flat
+    from wfi_reference_pipeline.gain.gain import Gain
     from wfi_reference_pipeline.interpixelcapacitance.interpixelcapacitance import InterPixelCapacitance
     from wfi_reference_pipeline.inverselinearity.inverselinearity import InverseLinearity
     from wfi_reference_pipeline.linearity.linearity import Linearity
