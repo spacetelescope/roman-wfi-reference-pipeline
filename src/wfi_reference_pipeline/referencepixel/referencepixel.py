@@ -50,6 +50,7 @@ class ReferencePixel(ReferenceFile):
         self.alpha = alpha
 
     def make_referencepixel_coeffs(self):
+    # def initialize_coefficient_arrays(self): # TEST RENAMING! 
         """
         The method make_inv_linearity_obj creates an object from the DMS data model.
         """
@@ -57,6 +58,9 @@ class ReferencePixel(ReferenceFile):
         self.gamma = np.zeros((32, 286721), dtype=np.complex128)
         self.zeta = np.zeros((32, 286721), dtype=np.complex128)
         self.alpha = np.zeros((32, 286721), dtype=np.complex128)
+
+        print('testing initalize_coeffs_array()')
+        print(self.gamma.real)
 
     def populate_datamodel_tree(self):
         """
@@ -69,6 +73,9 @@ class ReferencePixel(ReferenceFile):
         referencepixel_datamodel_tree['gamma'] = self.gamma
         referencepixel_datamodel_tree['zeta'] = self.zeta
         referencepixel_datamodel_tree['alpha'] = self.alpha
+
+        print('testing populate_datamodel_tree')
+        print(self.gamma.real)
 
         return referencepixel_datamodel_tree
 
