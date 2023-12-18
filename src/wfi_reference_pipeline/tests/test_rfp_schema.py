@@ -36,7 +36,7 @@ if not ON_GITLAB_ACTIONS:
 
             # Make RFP Dark reference file object for testing.
             test_data = np.ones((3, 3, 3), dtype=np.float32)
-            rfp_dark = Dark('test_filelist.txt', meta_data=dark_test_meta, input_dark_cube=test_data)
+            rfp_dark = Dark(None, meta_data=dark_test_meta, input_dark_cube=test_data)
             rfp_dark.initialize_arrays(num_resultants=1, ni=3)
 
             # Make test asdf tree
@@ -44,6 +44,28 @@ if not ON_GITLAB_ACTIONS:
             tf.tree = {'roman': rfp_dark.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then datamodel tree is valid.
+            assert tf.validate() is None
+
+        def test_rfp_flat_schema(self):
+            """
+            Use the WFI reference file pipeline Flat() module to build a testable object
+            which is then validated against the DMS reference file schema.
+            """
+
+            # Make reftype specific data class object and export meta data as dict.
+            tmp = MakeTestMeta(ref_type='FLAT')
+            flat_test_meta = tmp.meta_flat.export_asdf_meta()
+
+            # Make RFP Flat reference file object for testing.
+            test_data = np.ones((3, 3), dtype=np.float32)
+            rfp_flat = Flat(None, meta_data=flat_test_meta, input_rate_array=test_data)
+            rfp_flat.make_flat_rate_image()
+
+            # Make test asdf tree
+            tf = asdf.AsdfFile()
+            tf.tree = {'roman': rfp_flat.populate_datamodel_tree()}
+            # Validate method returns list of exceptions the json schema file failed to match.
+            # If none, then validate == TRUE.
             assert tf.validate() is None
 
         def test_rfp_gain_schema(self):
@@ -65,27 +87,6 @@ if not ON_GITLAB_ACTIONS:
             tf.tree = {'roman': rfp_gain.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
             # If none, then datamodel tree is valid.
-            assert tf.validate() is None
-
-        def test_rfp_flat_schema(self):
-            """
-            Use the WFI reference file pipeline Flat() module to build a testable object
-            which is then validated against the DMS reference file schema.
-            """
-
-            # Make reftype specific data class object and export meta data as dict.
-            tmp = MakeTestMeta(ref_type='FLAT')
-            flat_test_meta = tmp.meta_flat.export_asdf_meta()
-
-            # Make RFP Flat reference file object for testing.
-            test_data = np.ones((3, 3), dtype=np.float32)
-            rfp_flat = Flat(ramp_image=test_data, meta_data=flat_test_meta)
-
-            # Make test asdf tree
-            tf = asdf.AsdfFile()
-            tf.tree = {'roman': rfp_flat.populate_datamodel_tree()}
-            # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
             assert tf.validate() is None
 
         def test_rfp_interpixelcapacitance_schema(self):

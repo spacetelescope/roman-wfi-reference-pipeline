@@ -95,8 +95,8 @@ class Dark(ReferenceFile):
         )  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
         self.dark_rate_image = None  # Rate image from ramp fit.
         self.dark_intercept_image = None  # Intercept image from ramp fit.
-        self.dark_rate_var = None  # Variance in fitted dark rate image.
-        self.dark_intercept_var = None  # Variance in fitted dark intercept image.
+        self.dark_rate_var = None  # Variance in fitted rate image.
+        self.dark_intercept_var = None  # Variance in fitted intercept image.
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_reads = None  # Number of reads in data cube being analyzed.
         self.ni = None  # Number of pixels.
