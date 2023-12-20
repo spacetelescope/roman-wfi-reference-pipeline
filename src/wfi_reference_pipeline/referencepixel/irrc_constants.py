@@ -1,0 +1,52 @@
+'''
+IRRC Constants
+
+These should not change for RST
+
+@author: smaher
+@author: rarendt
+'''
+
+
+NUM_ROWS=4096
+
+NUM_OUTPUT_CHANS = 33
+NUM_COLS_PER_OUTPUT_CHAN = 128
+NUM_COLS= NUM_OUTPUT_CHANS * NUM_COLS_PER_OUTPUT_CHAN
+
+# endOfRowPixelPad is the effective number of pixels sampled during the pause at the end of 
+# each numColsPerOutputChanWithPad. The padding is needed to preserve phase of temporally periodic signals.
+END_OF_ROW_PIXEL_PAD = 12
+
+NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD = NUM_COLS_PER_OUTPUT_CHAN + END_OF_ROW_PIXEL_PAD
+
+ALL_CHAN_RANGE = range(NUM_OUTPUT_CHANS)
+
+#
+# The 33rd output channel is a reference channel
+#
+REFERENCE_CHAN = 32
+
+#
+# Range of non-reference (normal) channels.  Warning this definition only works because REFERENCE_CHAN is 
+# the last channel!
+#
+CHAN_RANGE_WITHOUT_REFERENCES = range(NUM_OUTPUT_CHANS - 1)
+
+
+REFERENCE_ROWS = [0, 1, 2, 3, 4092, 4093, 4094, 4095]
+
+# HDU number of FITS files expected to have the up-the-ramp data
+FITS_DATA_HDU_NUMBER = 1
+
+COEFF_SHAPE = (NUM_OUTPUT_CHANS - 1, int(NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS / 2) + 1)
+
+PIXEL_READ_FREQ_HZ = 203.125e3
+
+#  Calculate normalization factor for reference pixel reference streams.
+#  At the end of the code, sums invloving the refence pixels are multiplied 
+#  by this factor to account for the the fact that only 4 pixels per row are contributing signal.
+#  This makes the reference pixel power spectra comparable to the data and reference output
+#  at low frequency, and will result in gamma and zeta weights closer to untity 
+#  in part B (weight calculation).
+REFPIX_NORM = NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD/4.0
