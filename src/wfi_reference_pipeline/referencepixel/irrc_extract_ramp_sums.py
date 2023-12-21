@@ -32,31 +32,22 @@ from astropy import stats
 import h5py
 import numpy as np
 import scipy.fft as spfft
-from irrc_constants import NUM_OUTPUT_CHANS, END_OF_ROW_PIXEL_PAD, \
+
+from . import irrc_util as util
+from .irrc_util import read_roman_file, exec_channel_func_threads
+from .irrc_constants import NUM_OUTPUT_CHANS, END_OF_ROW_PIXEL_PAD, \
     NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_COLS_PER_OUTPUT_CHAN, NUM_ROWS, \
     NUM_COLS, REFPIX_NORM, PIXEL_READ_FREQ_HZ
 
+import logging
+logger = logging.getLogger('ReferencePixel Sums')
 
-## TO IMPORT STILL 
-from irrc import util 
-# from irrc.config import cfgOutlierStdDevThreshold, cfgFFTInterpolationIterations
-from irrc.util import read_roman_fits, exec_channel_func_threads
-
-## GET RID OF
-# from irrc import logger
-# Allocate singleton logger for this module
-# logger = logger.get_logger(__name__)
-
-
-#
 # Pixel values with sigmas larger than this value are removed (and interpolated over) 
 # during ramp sum extraction.  
-
 # NOTE: this is for the default outlier function; a custom outlier function may ignore this.
 cfgOutlierStdDevThreshold = 4.0
 
 # Number of iterations when doing FFT interpolations
-#
 cfgFFTInterpolationIterations = 3
 
 def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True, 
@@ -77,10 +68,10 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     
     if not os.path.exists(inFileName):
         mesg = f'Input file {inFileName} does not exist. Terminating.'
-        # logger.fatal(mesg)
+        logger.fatal(mesg)
         raise FileNotFoundError(mesg)
         
-    print(f'Performing ramp sum calculation on file {inFileName}')
+    logger.info(f'Performing ramp sum calculation on file {inFileName}')
     
     ext = "_sums.h5"
     if not outDirectory:
@@ -95,8 +86,8 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     
 
             
-    print(f'Input FITS inFileName: {inFileName}')
-    print(f'Output inFileName: {outFileName}')
+    logger.info(f'Input FITS inFileName: {inFileName}')
+    logger.info(f'Output inFileName: {outFileName}')
     
     
     
@@ -107,7 +98,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     numFrames = data0.shape[0]
     if numFrames < 2:
         # _sum_chan_func() requires > 1 frames with (frames - 1) as denominator
-        # logger.fatal(f'IRRC does not support FITS files with fewer than two frames.  File {inFileName} has {numFrames} frames')
+        logger.fatal(f'IRRC does not support FITS files with fewer than two frames.  File {inFileName} has {numFrames} frames')
         raise ValueError("Illegal number of frames")
     
     
@@ -117,7 +108,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #
     # If an external pixel flag array is provided, this is an optional hook use it to modify the incoming data
     if externalPixelFlags is not None:
-        # logger.info('Applying externalPixelFlags to incoming data')
+        logger.info('Applying externalPixelFlags to incoming data')
         preApplyExternalPixelFlagsToData(data0, externalPixelFlags)
       
 
@@ -125,7 +116,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #
     msg = 'Removing linear slopes and offsets'
     #    
-    # logger.info(msg)
+    logger.info(msg)
     util.remove_linear_trends(data0, False)
     
     
@@ -134,7 +125,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #
     msg = 'Generate outlier mask'
     #
-    # logger.info(msg)
+    logger.info(msg)
     # The mask is size of the full pixel field (NUM_ROWS, NUM_COLS).  A value of 0
     # means an outlier and 1 means an inlier.  Outlier pixels in the data will obtain interpolated 
     # values before the ramp sums are generated.
@@ -149,7 +140,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
         # (mean(data0) = 0 after linear trend removal)
         sig_data = np.sqrt(np.sum(data0 ** 2 / (numFrames - 1), axis=0))  
         
-        # logger.info(f'Flagging pixels outside stdev = {cfgOutlierStdDevThreshold}')
+        logger.info(f'Flagging pixels outside stdev = {cfgOutlierStdDevThreshold}')
         exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _find_outliers_chan_func, (util.getReferenceMask(0), 
             sig_data, outliersMask_RowCol, outlierStdDev), multiThread=multiThread)
             
@@ -172,7 +163,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # If an external pixel flag array is provided, call a function to use it to modify the outlier mask.
     # It is expected the function will be modified once ROMAN pixel masks are defined
     if externalPixelFlags is not None:
-        # logger.info('Applying externalPixelFlags to outlier mask')
+        logger.info('Applying externalPixelFlags to outlier mask')
         applyExternalPixelFlagsToOutlierMask(outliersMask_RowCol, externalPixelFlags)
         
     
@@ -181,7 +172,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #    
     msg = 'Apply outlier mask to data (i.e., set outlier pixels to 0)'
     #
-    # logger.info(msg)
+    logger.info(msg)
     for frameNum in range (numFrames):
         data0[frameNum,:,:] *= outliersMask_RowCol
     
@@ -190,17 +181,17 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #    
     msg = 'Convert data and mask from pixel space to time domain by padding'
     #
-    # logger.info(msg)
+    logger.info(msg)
     # From ([frames], flattenedFrame) to (allOutputChans, [frames], rows, cols) 
     outliersMask_ChanRowCol = np.transpose(outliersMask_RowCol.reshape((NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (1, 0, 2))
     data_chansFramesRowsPhyscols = np.transpose(data0.reshape((numFrames, NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (2, 0, 1, 3))
 
-    # logger.info('... Undo alternating reversed readout order to put pixels in time order')
+    logger.info('... Undo alternating reversed readout order to put pixels in time order')
     for chan in range(1, NUM_OUTPUT_CHANS, 2):
         data_chansFramesRowsPhyscols[chan,:,:,:] = data_chansFramesRowsPhyscols[chan,:,:,::-1]
         outliersMask_ChanRowCol[chan,:,:] = outliersMask_ChanRowCol[chan,: ,::-1]
     
-    # logger.info('... Add pad to rows to introduce appropriate delay from guide window scan, etc (i.e., create uniform sample timing)')
+    logger.info('... Add pad to rows to introduce appropriate delay from guide window scan, etc (i.e., create uniform sample timing)')
     dataUniformTime = np.pad(data_chansFramesRowsPhyscols, ((0, 0), (0, 0), (0, 0), (0, END_OF_ROW_PIXEL_PAD)))
     
     
@@ -209,7 +200,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #    
     msg = 'Remove linear trends at frame boundary'
     #
-    # logger.info(msg)
+    logger.info(msg)
     util.remove_linear_trends_per_frame(logger, dataUniformTime, subtractOffsetOnly=False, multiThread=multiThread)
             
 
@@ -219,7 +210,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # Cosine interpolation
     #
     
-    # logger.info('Perform cosine weighted interpolation on zero values to provide preliminary values for bad pixels')
+    logger.info('Perform cosine weighted interpolation on zero values to provide preliminary values for bad pixels')
     
     # dataUniformTime has zero values as a result of 1) earlier flagged outlier pixels, 2) padding for uniform timing,
     # and 3) original 0's in the raw data (from broken pixel, etc.).  The interp_zeros_channel_fun applies the interpolation
@@ -236,7 +227,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # Prepare reference data (while data is in convenient form)
     #
     
-    # logger.info('Prepare left and right column reference pixels') 
+    logger.info('Prepare left and right column reference pixels') 
     
     
     rl = np.copy(dataUniformTime[0,:,:,:])  # need to copy otherwise a reference!
@@ -258,7 +249,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # FFT interpolation
     #
     
-    # logger.info('Perform FFT interpolation')
+    logger.info('Perform FFT interpolation')
     
     # ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     # ; Use Fourier filter/interpolation to replace
@@ -282,7 +273,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
         
     # If an external pixel flag array is provided, this is an optional hook use it to modify the interpolated (and FFT'd) data
     if externalPixelFlags is not None:
-        # logger.info('Applying externalPixelFlags to outlier mask')
+        logger.info('Applying externalPixelFlags to outlier mask')
         applyExternalPixelFlagsToInterpolatedData(dataFFTOut, externalPixelFlags)
             
 
@@ -291,7 +282,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # Calculate sums
     # 
     
-    # logger.info('Sum calculation ..')
+    logger.info('Sum calculation ..')
     sum_nn = np.sum(np.square(np.abs(dataFFTOut)), 1) / (numFrames - 1)
     sum_na = sum_nn.astype(complex)
     sum_nl = np.copy(sum_na)
@@ -318,7 +309,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     f = np.abs(np.fft.rfftfreq(e, 1 / e))
     freq = f * (PIXEL_READ_FREQ_HZ / 2.) / f.max()
     
-    # logger.info(f'Writing to {outFileName}')
+    logger.info(f'Writing to {outFileName}')
     with h5py.File(outFileName, 'w') as hf:
         hf.create_dataset("freq", data=freq)
         hf.create_dataset("sum_nn", data=sum_nn)
@@ -328,8 +319,8 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
         hf.create_dataset("sum_ll", data=sum_ll)
         hf.create_dataset("sum_rr", data=sum_rr)
         hf.create_dataset("sum_lr", data=sum_lr)
-    # logger.info(f'Total wall clock execution (seconds):  {time.time() - startSec}')
-    # logger.info('Done')
+    logger.info(f'Total wall clock execution (seconds):  {time.time() - startSec}')
+    logger.info('Done')
     
     return (sum_nn, sum_na, sum_nl, sum_nr, sum_ll, sum_rr, sum_lr)
 

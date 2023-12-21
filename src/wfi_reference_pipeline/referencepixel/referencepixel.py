@@ -2,9 +2,18 @@ import roman_datamodels.stnode as rds
 import numpy as np
 from ..utilities.reference_file import ReferenceFile
 import asdf
+import logging
+# logging = logging.getLogger('ReferencePixel')
+from ..utilities import logging_functions
+logging_functions.configure_logging("ReferencePixel")
 
-from irrc_extract_ramp_sums import *
-from irrc_generate_weights import *
+
+import os                       # Operating system
+import shutil
+import h5py                     # Needed to read the calibration file that we make > HAD TO INSTALL
+
+from .irrc_extract_ramp_sums import *
+from .irrc_generate_weights import *
 
 class ReferencePixel(ReferenceFile):
     """
@@ -12,7 +21,7 @@ class ReferencePixel(ReferenceFile):
     where static meta data for all reference file types are written.
     """
 
-    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', freq = None, gamma=None, zeta=None, alpha=None,
+    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', freq = None, gamma=None, zeta=None, alpha=None, 
                  bit_mask=None, clobber=False):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -22,6 +31,7 @@ class ReferencePixel(ReferenceFile):
         ----------
 
         input_data: numpy.ndarray; Placeholder. It populates self.input_data.
+            ASSUME IT IS A LIST OF FILES!!
         meta_data: dictionary; default = None
             Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = roman_refpix.asdf
@@ -46,62 +56,69 @@ class ReferencePixel(ReferenceFile):
         if 'reftype' not in self.meta.keys():
             self.meta['reftype'] = 'REFPIX'
 
+        
         # Initialize attributes
         self.outfile = outfile
         self.gamma = gamma
         self.zeta = zeta
         self.alpha = alpha
+        self.freq = freq
 
-    def make_referencepixel_coeffs(self):
+    def make_referencepixel_coeffs(self, tmppath=None):
         """
         The method make_referencepixel_coeffs creates an object from the DMS data model.
+
+        Parameters
+        ----------
+        tmppath: str; default = None
+            Path string. Absolute or relative path for temporary storage of IRRC sums for individual ramps
+            By default, None is provided and the method below produces the folder in the location the script is run.  
         """
 
+        # we assume files is a list of exposures paths and filename for 1 detector. 
+        files = self.input_data
 
-        print('*** Compute IRRC sums for individual ramps...')
+        # assume detector SCA is in self.meta_data()
+        detector = self.meta['instrument']['detector'] # taken from WFIMetaReferencePixel() dictionary style
+        logging.info(f'detector {detector}')
+
+        # create name of folder to save the exposure weight .h5 files
+        if tmppath is None:
+            tmpdir = f'./tmpIRRC_{detector}'
+        else:
+            tmpdir = os.path.join(tmppath, f'tmpIRRC_{detector}')
+
+        # if tmpdir does not exist, create it
+        if not os.path.exists(tmpdir):
+            logging.info(f'creating folder: {tmpdir}')
+            os.mkdir(tmpdir)
+
+        logging.info('*** Compute IRRC sums for individual ramps...')
         for file in files:
-            name = file.split('/')[-1] + '_sums.h5' # SKB: don't redo ones that have been done 
-            if name in caldat: # SKB: don't redo ones that have been done 
-                print('###########', file, 'completed!!  ###########')
-                print()
-                print()
-                print()
-            else:
-                print("*** Processing ramp: ", file)
-                # Save the result in /tmp. On ADAPT, they have it set up so that each
-                # user has a subdirectory in /tmp. The format is /tmp/mpl_<user_name>.
-                # extract(datdir + '/' + file, tmpdir)
+                logging.info(f"*** Processing ramp: {file}")
+                # Save the result in current location in folder temp_{detectr}. 
                 extract(file, tmpdir)
-                print()
-                print()
-                print()
         
         # ===== Compute IRRC frequency dependent weights =====
         # This uses the full data set.
-        print('*** Generate IRRC calibration file...')
+        logging.info('*** Generate IRRC calibration file...')
         # The way that Steve has set this up, the first argument is really just a glob
         # pattern. It is not an actual list of files.
-        glob_pattern = tmpdir + '/' + '*_' + detector + '_*_sums.h5'
-
-        # Make the output filename
-        calfil = libdir + '/irrc_weights_' + detector + '_' + date_beg + '.h5'
+        glob_pattern = tmpdir + '/*_sums.h5'
  
         # Generate frequency dependent weights
-        generate(glob_pattern, calfil)
+        freq, alpha, gamma, zeta = generate(glob_pattern) 
         
+        self.gamma = gamma 
+        self.zeta = zeta 
+        self.alpha = alpha 
+        self.freq = freq 
+
         # ===== Clean up =====
-        # Delete intermediate results
-        files = glob(glob_pattern)
-        for file in files:
-            os.remove(file)
+        # Delete intermediate results and folder
+        shutil.rmtree(tmpdir)
 
 
-        # self.gamma = np.zeros((32, 286721), dtype=np.complex128)
-        # self.zeta = np.zeros((32, 286721), dtype=np.complex128)
-        # self.alpha = np.zeros((32, 286721), dtype=np.complex128)
-
-        # print('testing initalize_coeffs_array()')
-        # print(self.gamma.real)
 
     def populate_datamodel_tree(self):
         """
@@ -114,9 +131,7 @@ class ReferencePixel(ReferenceFile):
         referencepixel_datamodel_tree['gamma'] = self.gamma
         referencepixel_datamodel_tree['zeta'] = self.zeta
         referencepixel_datamodel_tree['alpha'] = self.alpha
-
-        print('testing populate_datamodel_tree')
-        print(self.gamma.real)
+        referencepixel_datamodel_tree['freq'] = self.freq
 
         return referencepixel_datamodel_tree
 

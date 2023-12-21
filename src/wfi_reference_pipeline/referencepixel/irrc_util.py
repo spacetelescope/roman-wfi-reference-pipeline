@@ -4,20 +4,33 @@ Various functions that are common to multiple IRRC steps
 @author: smaher
 @author: rarendt
 '''
-import logging
+
 import threading
 import unittest
 
 from astropy.io import fits
-from irrc.constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS, \
+
+import numpy as np
+import scipy.fft as spfft
+import h5py
+
+from .irrc_polynomial import Polynomial
+from .irrc_constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS, \
     ALL_CHAN_RANGE, REFERENCE_ROWS, FITS_DATA_HDU_NUMBER, \
     NUM_COLS, NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN
 
-from irrc.devtools.Polynomial import Polynomial
-import numpy as np
-import scipy.fft as spfft
-from irrc import constants
+import logging
+logger = logging.getLogger('ReferencePixel util')
 
+def read_roman_file(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
+    if '.h5' in fileName:
+        return read_roman_hdf5(fileName, skipFirstFrame, logger)
+    elif '.fits' in fileName:
+        return read_roman_fits(fileName, skipFirstFrame, logger)
+    elif '.asdf' in fileName:
+        return read_roman_asdf(fileName, skipFirstFrame, logger)
+    else:
+        raise ValueError('can only read in .h5 and .fits.  working on asdf now. ')
 
 def read_roman_fits(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
     '''
@@ -28,35 +41,31 @@ def read_roman_fits(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
     :returns FITS image array
     '''
 
-    ## SKB addition: if/else statement 
-    if '.h5' in fileName:
-        return read_roman_hdf5(fileName, skipFirstFrame, logger)
 
-    else:
-        logger.info(f"Trying to read FITS file: {fileName}")
-        # Cannot use a memory-mapped image: BZERO/BSCALE/BLANK header keywords present.
-        with fits.open(fileName, memmap=False) as hduList:
+    logger.info(f"Trying to read FITS file: {fileName}")
+    # Cannot use a memory-mapped image: BZERO/BSCALE/BLANK header keywords present.
+    with fits.open(fileName, memmap=False) as hduList:
 
-            hduData = hduList[FITS_DATA_HDU_NUMBER]
-            logger.info(f"Reading FITS data of dimensions {hduData.header['NAXIS1']}  x  {hduData.header['NAXIS2']} x {hduData.header['NAXIS3']}")
+        hduData = hduList[FITS_DATA_HDU_NUMBER]
+        logger.info(f"Reading FITS data of dimensions {hduData.header['NAXIS1']}  x  {hduData.header['NAXIS2']} x {hduData.header['NAXIS3']}")
 
-            # numpy.ndarray of type uint16 then float64 after multiplication by gain
-            # FITS has an extra dimension, hence the data[0]
-            # Also remove the first frame due to reset anomalies
-            if skipFirstFrame:
-                data0 = hduData.data[0, 1:]
-            else:
-                data0 = hduData.data[0,:]
+        # numpy.ndarray of type uint16 then float64 after multiplication by gain
+        # FITS has an extra dimension, hence the data[0]
+        # Also remove the first frame due to reset anomalies
+        if skipFirstFrame:
+            data0 = hduData.data[0, 1:]
+        else:
+            data0 = hduData.data[0,:]
 
-        dataShape = data0.shape
-        numCols = dataShape[2]
-        numRows = dataShape[1]
+    dataShape = data0.shape
+    numCols = dataShape[2]
+    numRows = dataShape[1]
 
-        if numCols != NUM_COLS or numRows != NUM_ROWS:
-            raise Exception("File:", fileName, " has incorrect dimensions.  Expecting numRows =", NUM_ROWS, ", numCols =", NUM_COLS)
+    if numCols != NUM_COLS or numRows != NUM_ROWS:
+        raise Exception("File:", fileName, " has incorrect dimensions.  Expecting numRows =", NUM_ROWS, ", numCols =", NUM_COLS)
 
-        # Convert from uint16 to prepare for in-place computations
-        return data0.astype(np.float64)
+    # Convert from uint16 to prepare for in-place computations
+    return data0.astype(np.float64)
 
 def read_roman_hdf5(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
     '''
@@ -84,6 +93,9 @@ def read_roman_hdf5(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
     # Convert from uint16 to prepare for in-place computations
     return data0.astype(np.float64)
 
+def read_roman_asdf(fileName:str, skipFirstFrame:bool, logger:logging.Logger):
+    raise ValueError('cannot read in ASDF yet! ')
+
 
 
 def write_slopes(dataFramesRowsCols:np.ndarray, fileName:str):
@@ -100,7 +112,7 @@ def write_slopes(dataFramesRowsCols:np.ndarray, fileName:str):
     S = np.empty((1,ny,nx))
     S[0] = P.polyfit(dataFramesRowsCols)[1]
     fits.PrimaryHDU(S).writeto(fileName, overwrite=True)
-    print(f'Wrote slopes to file {fileName}')
+    logger.info(f'Wrote slopes to file {fileName}')
 
     
 def remove_linear_trends(data_FramesRowsCols:np.ndarray, subtractOffsetOnly:bool):
@@ -311,7 +323,7 @@ def exec_channel_func_threads(chanIndexRange:range, targetFunc, funcArgs, multiT
     '''
 
     if multiThread:
-        print("Multithreading-> ", end='')
+        logger.info("Multithreading-> ")
         threadList = []
         for c in chanIndexRange:
             funcArgsWithChan = (c,) + funcArgs
@@ -319,19 +331,20 @@ def exec_channel_func_threads(chanIndexRange:range, targetFunc, funcArgs, multiT
 
         for t in threadList:
             t.start()
-            print("m", end='', flush=True)  # 'm' -> multi-threading
+            # print("m", end='', flush=True)  # 'm' -> multi-threading
 
         for t in threadList:
             t.join()
-            print("-", end='', flush=True)
+            # print("-", end='', flush=True)
     else:
-        print("Single threading-> ", end='')
+        logger.info("Single threading-> ")
         for c in chanIndexRange:
             funcArgsWithChan = (c,) + funcArgs
-            print("s", end='', flush=True)  # 's' -> single threading
+            # print("s", end='', flush=True)  # 's' -> single threading
             targetFunc(*funcArgsWithChan)
-            print("-", end='', flush=True)
-    print()  # EOL
+            # print("-", end='', flush=True)
+    logger.info('Done executing over range of channels')
+    # print()  # EOL
 
     
     

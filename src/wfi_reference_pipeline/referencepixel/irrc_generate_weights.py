@@ -10,26 +10,24 @@ repeatedly to new science data to apply the IRRC reduction.
 
 import glob
 import h5py
-from irrc_constants import NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS
 import numpy as np
 import time
-# from irrc import logger, config
-from irrc_util import exec_channel_func_threads
 
 # Allocate singleton logger
-# logger = logger.get_logger(__name__)
+import logging
+logger = logging.getLogger('ReferencePixel Weights')
 
-# The default name for the weights file name
-cfgDefaultIrrcCoeffsFilename = "irrc_coeffs.h5"
 # Type used for storing weights (alpha, gamma, zeta)
 cfgWeightsDtype = np.complex128
     
-def generate(inFileSearchTag:str="*.hd5", outFileName:str=cfgDefaultIrrcCoeffsFilename,
+from .irrc_constants import NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS
+from .irrc_util import exec_channel_func_threads
+
+def generate(inFileSearchTag:str="*.hd5",
              lambdaCoeff:float=0, multiThread:bool=True):
     '''
     Generated output file with weights from one or more input previously processed ramp sums
     :param inFileSearchTag: Python glob pattern for files generated using 'extract_ramp_sums.py'
-    :param outFileName: output weights file name
     :param lambdaCoeff: a scaling factor
     :param multiThread: should the computations use multithreading?
     '''
@@ -39,14 +37,12 @@ def generate(inFileSearchTag:str="*.hd5", outFileName:str=cfgDefaultIrrcCoeffsFi
     inFiles = glob.glob(inFileSearchTag)
     if len(inFiles) < 1:
         raise FileNotFoundError("inFileSearchTag found 0 inFiles: ", inFileSearchTag)
-
-    # logger.info(f'Output file = {outFileName}')
     
-    # logger.info('Reading in ramp sums')
+    logger.info('Reading in ramp sums')
 
     firstFile = True
     for inFile in inFiles:
-        # logger.info(f'    Reading input file: {inFile}')    
+        logger.info(f'    Reading input file: {inFile}')    
         with h5py.File(inFile, 'r') as hf:
             if firstFile:
                 freq = hf["freq"][:]  # [:] to get as numpy array
@@ -66,7 +62,7 @@ def generate(inFileSearchTag:str="*.hd5", outFileName:str=cfgDefaultIrrcCoeffsFi
                 sum_rr += hf["sum_rr"][:]
                 sum_lr += hf["sum_lr"][:]
     
-    # logger.info(f'Construct the reference pixel power filter')
+    logger.info(f'Construct the reference pixel power filter')
     
     # ; construct the reference pixel power filter [1,cos,0,cos,1]
     elen = 512  # length of apodization cosine filter
@@ -123,19 +119,20 @@ def generate(inFileSearchTag:str="*.hd5", outFileName:str=cfgDefaultIrrcCoeffsFi
     gamma = gamma.astype(cfgWeightsDtype)
     zeta = zeta.astype(cfgWeightsDtype)
     
-    # logger.info(f'Writing weights to file {outFileName}') 
-    with h5py.File(outFileName, 'w') as hf:
-        hf.create_dataset("files", data=inFiles)
-        hf.create_dataset("freq", data=freq)
-        hf.create_dataset("alpha", data=alpha)
-        hf.create_dataset("gamma", data=gamma)
-        hf.create_dataset("zeta", data=zeta)
-        hf.create_dataset("lambda", data=lambdaCoeff)
+    ## DO NOT SAVE, JUST RETURN! 
+    # # logger.info(f'Writing weights to file {outFileName}') 
+    # with h5py.File(outFileName, 'w') as hf:
+    #     hf.create_dataset("files", data=inFiles)
+    #     hf.create_dataset("freq", data=freq)
+    #     hf.create_dataset("alpha", data=alpha)
+    #     hf.create_dataset("gamma", data=gamma)
+    #     hf.create_dataset("zeta", data=zeta)
+    #     hf.create_dataset("lambda", data=lambdaCoeff)
         
-    # logger.info(f'Total wall-clock execution (seconds):  {time.time() - startSec}')
-    # logger.info('Done')
+    logger.info(f'Total wall-clock execution (seconds):  {time.time() - startSec}')
+    logger.info('Done')
     
-    return freq, alpha, gamma, zeta, lambdaCoeff
+    return freq, alpha, gamma, zeta#, lambdaCoeff
 
     
 def _channel_coeff_func(chan:int, alpha:np.ndarray, gamma:np.ndarray, zeta:np.ndarray,
