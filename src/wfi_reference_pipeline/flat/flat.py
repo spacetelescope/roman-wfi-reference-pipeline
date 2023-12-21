@@ -26,8 +26,7 @@ class Flat(ReferenceFile):
         bit_mask=None,
         outfile="roman_flat.asdf",
         clobber=False,
-        input_read_cube=None,
-        input_rate_array=None
+        input_flat_cube=None
     ):
 
         # Input dimensions of science array for ReferenceFile() to
@@ -54,16 +53,16 @@ class Flat(ReferenceFile):
         self.outfile = outfile
         # Additional object attributes
         # Inputs
-        self.input_read_cube = input_read_cube  # Supplied input read cube.
-        self.input_rate_array = input_rate_array  # Rate image from ramp fit.
+        self.input_read_cube = input_flat_cube  # Supplied input read cube.
         # Internal
-        self.rate_array = None
-        self.rate_var_array = None
+        self.rate_array = None  # 2D rate array of the science pixels.
+        self.rate_var_array = None  # 3D cute of rate arrays.
         # Flattened products
-        self.flat_rate_image = None
+        self.flat_rate_image = None  # The attribute assigned to the flat['data'].
         self.flat_rate_image_var = None  # Variance in fitted rate image.
         self.flat_intercept = None  # Intercept image from ramp fit.
         self.flat_intercept_var = None  # Variance in fitted intercept image.
+        self.flat_error = None  # The attribute assigned to the flat['err'].
 
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_files = None
@@ -74,23 +73,49 @@ class Flat(ReferenceFile):
 
     def make_flat_rate_image(self):
         """
-
-
+        This method determines the flow of the module based on the input data
+        when the class is instantiated. The flat rate image is created at the
+        end of the method to be the data in the datamodel.
         """
+
+        # Use input files if they exist.
         if self.input_data is not None:
+            print("Got files so making flat rate image from filelist")
             rate_image = self.make_flat_from_files()
-        if self.input_read_cube is not None:
-            n_reads, _, _ = np.shape(self.input_read_cube)
-            rate_image = self.make_flat_from_cube(n_reads)
-        if self.input_rate_array is not None:
-            rate_image = self.input_rate_array
+        # Use input cube if it exists.
+
+        try:
+            shape = self.input_read_cube.shape
+            if len(shape) == 2:
+                print("Cube is already a 2D image to flatten")
+                rate_image = self.input_read_cube
+            elif len(shape) == 3:
+                n_reads = shape[0]
+                rate_image, rate_image_var = self.make_flat_from_cube(n_reads)
+                print("Flat image created from cube with", n_reads, "reads")
+        except AttributeError:
+            print("Input cube does not have a shape attribute or is not a numpy array.")
 
         # Normalize the flat_image by the sigma-clipped mean.
         mean, _, _ = sigma_clipped_stats(rate_image)
         self.flat_rate_image = rate_image / mean
 
     def make_flat_from_files(self):
+        """
+        Go through the files supplied to the module and generate a
+        cube of rate images into an array. This method uses the
+        make_flat_from_cube method also so that the number of reads
+        can vary over multiple input read cubes. The average of all
+        rate arrays in the cube are averaged and returned.
+        return:
 
+        Returns
+        -------
+        avg_rate_image: 2D array;
+            The average of the rate_image_array in the z axis.
+        """
+
+        print("Inside make_flat_from_files() method.")
         self.n_files = len(self.input_data)
         n_reads_per_fl_arr = np.zeros(self.n_files)
         rate_image_array = np.zeros((self.n_files, self.ni, self.ni), dtype=np.float32)
@@ -107,62 +132,60 @@ class Flat(ReferenceFile):
         avg_rate_image = np.mean(rate_image_array, axis=0)
         return avg_rate_image
 
-    def make_flat_from_cube(self, n_reads):
-
-        rate_image, rate_image_var, time_arr = self.initialize_arrays(n_reads=n_reads)
-        rate_image, rate_image_var = self.fit_flat_ramp(time_array=time_arr)
-
-        return rate_image, rate_image_var
-
-    def initialize_arrays(self, n_reads, ni=None):
+    def make_flat_from_cube(self, n_reads, ni=None):
         """
-        Method initialize_arrays makes arrays for the flat rate image of ni x xni.
+        Method finds the fitted rate and variance by first initialize arrays
+        by the number of reads and the number of pixels. The fitted ramp or slope
+        along the time axis for the number of reads in the cube using a 1st order
+        polyfit. The best fit solutions and variance are returned.
+
         Parameters
         ----------
-        ni: integer; Default=None
-            Number of square pixels of array ni x ni.
+        n_reads: integer; Positional required.
+            Number of reads to initialize fitted arrays.
+        ni: integer; Default: None.
+            Number of reads to initialize.
+
+        Returns
+        -------
+        rate_image: 2D array;
+            The fitted rate image from the cube.
+        rate_image_var: 2D array;
+            The variance of the fitted rate image from the cube.
         """
 
-        rate_image = np.zeros((self.ni, self.ni), dtype=np.float32)
-        rate_image_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        # If ni is supplied, overwrite attribute.
+        if ni is not None:
+            self.ni = ni
 
         # Make the time array for the length of the dark read cube exposure.
-        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
+        if self.meta['instrument']['optical_element']:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
         else:
-            raise ValueError('Got frame time other than imaging mode; WFI Flat() is for WIM only.')
-        time_arr = np.array(
+            raise ValueError('Optical element not found; this might not be a flat file.')
+        time_array = np.array(
             [self.frame_time * i for i in range(1, n_reads + 1)]
         )
 
-        return rate_image, rate_image_var, time_arr
-
-    def fit_flat_ramp(self, time_array):
-        """
-        The fit_flat_ramp() method computes the fitted ramp or slope along the time axis for the number of reads
-        in the cube using a 1st order polyfit. The best fit solutions and variance are saved into
-        attributes.
-        """
-
-        logging.info('Computing dark rate image.')
-        # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
-
         p, c = np.polyfit(time_array,
-                          self.input_read_cube.reshape(len(time_array, -1), 1, full=False, cov=True))
+                          self.input_read_cube.reshape(len(time_array), -1), 1, full=False, cov=True)
 
         # Reshape results back to 2D arrays.
         rate_image = p[0].reshape(self.ni, self.ni).astype(np.float32)  # the fitted ramp slope image
         rate_image_var = c[0, 0, :].reshape(self.ni, self.ni).astype(np.float32)  # covariance matrix slope variance
-        # If needed the flat intercept image and variance are p[1] and c[1,1,:]
+
         return rate_image, rate_image_var
 
     def calc_flat_error(self, n_reads):
 
-        high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) / (n_reads * (n_reads * 2 - 1) * self.frame_time)
+        # TODO for future implementation
+        # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
+        # (n_reads * (n_reads * 2 - 1) * self.frame_time)
 
-        pass
+        #
+        self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
 
-    def update_dq_mask(self, low_qe_threshold=0.2, low_qe_bit=13):
+    def update_dq_mask(self, low_qe_threshold=0.2):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -170,25 +193,21 @@ class Flat(ReferenceFile):
         ----------
         low_qe_threshold: float; default = 0.2,
            Limit below which to flag pixels as low quantum efficiency.
-        low_qe_bit: integer; default = 13
-            DQ loq quantum efficiency pixel flag value in romancal library.
         """
 
-        self.mask[self.flat_rate > self.hot_pixel_rate] += self.dqflag_defs['HOT']
-        self.mask[(self.warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < self.hot_pixel_rate)] \
-            += self.dqflag_defs['WARM']
-        self.mask[self.dark_rate_image < self.dead_pixel_rate] += self.dqflag_defs['DEAD']
-
-        # Generate between 200-300 pixels with low qe
+        # TODO remove random loq qe pixels from flat_rate_image
+        # Generate between 200-300 pixels with low qe for DMS builds
         rand_num_lowqe = np.random.randint(200, 300)
         coords_x = np.random.randint(0, 4088, rand_num_lowqe)
         coords_y = np.random.randint(0, 4088, rand_num_lowqe)
-        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100. # low eq in range 0.05 - 0.2
-        self.input_data[coords_x, coords_y] = rand_low_qe_values
+        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
+        self.flat_rate_image[coords_x, coords_y] = rand_low_qe_values
 
-        # Add DQ flag for low QE pixels.
-        low_qe_pixels = np.where(self.input_data < low_qe_threshold)
-        self.mask[low_qe_pixels] += 2 ** low_qe_bit
+        self.low_qe_threshold = low_qe_threshold
+
+        logging.info('Flagging low quantum efficiency pixels and updating DQ array.')
+        # Locate low qe pixel ni,nj positions in 2D array
+        self.mask[self.flat_rate_image < self.low_qe_threshold] += self.dqflag_defs['LOW_QE']
 
     def populate_datamodel_tree(self):
         """
@@ -200,7 +219,7 @@ class Flat(ReferenceFile):
         flat_datamodel_tree['meta'] = self.meta
         flat_datamodel_tree['data'] = self.flat_rate_image
         flat_datamodel_tree['dq'] = self.mask
-        flat_datamodel_tree['err'] = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        flat_datamodel_tree['err'] = self.flat_error
 
         return flat_datamodel_tree
 
