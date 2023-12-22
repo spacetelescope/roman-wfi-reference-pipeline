@@ -58,7 +58,7 @@ if not ON_GITLAB_ACTIONS:
 
             # Make RFP Flat reference file object for testing.
             test_data = np.ones((3, 3), dtype=np.float32)
-            rfp_flat = Flat(None, meta_data=flat_test_meta, input_rate_array=test_data)
+            rfp_flat = Flat(None, meta_data=flat_test_meta, input_flat_cube=test_data)
             rfp_flat.make_flat_rate_image()
 
             # Make test asdf tree
