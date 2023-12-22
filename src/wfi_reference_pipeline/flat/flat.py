@@ -65,8 +65,6 @@ class Flat(ReferenceFile):
         self.flat_error = None  # The attribute assigned to the flat['err'].
 
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
-        self.n_files = None
-        self.n_reads_per_fl = None
         self.ni = 4088
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
@@ -99,6 +97,7 @@ class Flat(ReferenceFile):
         # Normalize the flat_image by the sigma-clipped mean.
         mean, _, _ = sigma_clipped_stats(rate_image)
         self.flat_rate_image = rate_image / mean
+        self.calc_flat_error()
 
     def make_flat_from_files(self):
         """
@@ -116,11 +115,11 @@ class Flat(ReferenceFile):
         """
 
         print("Inside make_flat_from_files() method.")
-        self.n_files = len(self.input_data)
-        n_reads_per_fl_arr = np.zeros(self.n_files)
-        rate_image_array = np.zeros((self.n_files, self.ni, self.ni), dtype=np.float32)
-        rate_image_var_array = np.zeros((self.n_files, self.ni, self.ni), dtype=np.float32)
-        for fl in range(0, self.n_files):
+        n_files = len(self.input_data)
+        n_reads_per_fl_arr = np.zeros(n_files)
+        rate_image_array = np.zeros((n_files, self.ni, self.ni), dtype=np.float32)
+        rate_image_var_array = np.zeros((n_files, self.ni, self.ni), dtype=np.float32)
+        for fl in range(0, n_files):
             tmp = asdf.open(self.input_data[fl], validate_on_read=False)
             n_reads_per_fl_arr[fl], _, _ = np.shape(tmp.tree["roman"]["data"])
             self.input_read_cube = tmp.tree["roman"]["data"]
@@ -176,7 +175,7 @@ class Flat(ReferenceFile):
 
         return rate_image, rate_image_var
 
-    def calc_flat_error(self, n_reads):
+    def calc_flat_error(self):
 
         # TODO for future implementation
         # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
