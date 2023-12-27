@@ -149,7 +149,7 @@ if not ON_GITLAB_ACTIONS:
             test_data = np.ones((11, 1, 1),
                                 dtype=np.float32)  # Dimensions of inverse coefficients are 11x4096x4096.
             rfp_inverselinearity = InverseLinearity(None, meta_data=inverselinearity_test_meta,
-                                                    inv_coeffs=test_data)
+                                                    input_coefficients=test_data)
 
             # Make test asdf tree
             tf = asdf.AsdfFile()
