@@ -41,19 +41,19 @@ class Dark(ReferenceFile):
 
         Parameters
         ----------
-        dark_file_list: string object; default = None
+        dark_file_list: string object;
             List of dark calibration filenames with absolute paths. If no file list is provided, an input dark read cube
             should be supplied.
-        meta_data: dictionary; default = None
+        meta_data: dictionary;
             Dictionary of information for reference file as required by romandatamodels.
-        bit_mask: 2D integer numpy array, default = None
+        bit_mask: 2D integer numpy array, default=None
             A 2D data quality integer array for supplying a mask for the creation of the dark reference file.
-        outfile: string; default = roman_dark.asdf
+        outfile: string; default=roman_dark.asdf
             Filename with path for saved dark reference file.
-        clobber: Boolean; default = False
+        clobber: Boolean; default=False
             True to overwrite the file name outfile if file already exists. False will not overwrite and exception
             will be raised if duplicate file is found.
-        input_dark_cube: numpy array; default = None
+        input_dark_cube: numpy array; default=None
             Cube of dark reads to be resampled into MA table specific dark reference file. Dimensions of
             ni x ni x n_reads, where ni is the number of pixels of a square sub-array of the detector by the number of
             reads (n_reads) in the integration. NOTE - For parallelization only square arrays allowed.

@@ -65,7 +65,7 @@ if not ON_GITLAB_ACTIONS:
             tf = asdf.AsdfFile()
             tf.tree = {'roman': rfp_flat.populate_datamodel_tree()}
             # Validate method returns list of exceptions the json schema file failed to match.
-            # If none, then validate == TRUE.
+            # If none, then datamodel tree is valid.
             assert tf.validate() is None
 
         def test_rfp_gain_schema(self):
