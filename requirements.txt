@@ -1,5 +1,5 @@
 astropy==6.0.0
-crds==11.17.13
+crds==11.17.14
 ipython==8.18.1
 matplotlib==3.8.2
 numpy==1.26.2
