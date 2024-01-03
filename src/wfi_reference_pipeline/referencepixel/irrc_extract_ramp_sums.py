@@ -45,60 +45,59 @@ logger = logging.getLogger('ReferencePixel Sums')
 # Pixel values with sigmas larger than this value are removed (and interpolated over) 
 # during ramp sum extraction.  
 # NOTE: this is for the default outlier function; a custom outlier function may ignore this.
-cfgOutlierStdDevThreshold = 4.0
+cfg_outlier_stddev_threshold = 4.0
 
 # Number of iterations when doing FFT interpolations
-cfgFFTInterpolationIterations = 3
+cfg_FFTinterpolation_iterations = 3
 
-def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True, 
-    skipFirstFrame:bool=True, externalPixelFlags:np.ndarray=None, externalOutlierFunc=None, outlierStdDev:float=cfgOutlierStdDevThreshold):
+def extract(in_file_name:str, out_directory:str=None, multithread:bool=True, 
+    skip_first_frame:bool=True, external_pixel_flags:np.ndarray=None, external_outlier_func=None, outlier_stddev:float=cfg_outlier_stddev_threshold):
     '''
     Extract ramp sums from a single ASDF file.  Generally this is done for several files and then generate is run on the results.
     
-    :param inFileName: input FITS file name
-    :param outDirectory: directory in which to store results
-    :param multiThread: should multithreading be used in various calculations?
-    :param skipFirstFrame: should the first frame of the data be skipped? (it is often skipped to avoid reset settling artifacts)
-    :param externalPixelFlags: optional external pixel flags that get combined with internal outlier mask (as defined in applyExternalPixelFlagsToOutlierMask(); shape (constants.NUM_ROWS, constants.NUM_COLS) 
-    :param externalOutlierFunc: optional alternative to default outlier function; same method signature as _find_outliers_chan_func
-    :param outlierStdDev: number of standard deviations to be considered an 'outlier'.  Used by default outlier function and passed to custom outlier func
+    :param in_file_name: input FITS file name
+    :param out_directory: directory in which to store results
+    :param multithread: should multithreading be used in various calculations?
+    :param skip_first_frame: should the first frame of the data be skipped? (it is often skipped to avoid reset settling artifacts)
+    :param external_pixel_flags: optional external pixel flags that get combined with internal outlier mask (as defined in apply_external_pixel_flags_to_outlier_mask(); shape (constants.NUM_ROWS, constants.NUM_COLS) 
+    :param external_outlier_func: optional alternative to default outlier function; same method signature as _find_outliers_chan_func
+    :param outlier_stddev: number of standard deviations to be considered an 'outlier'.  Used by default outlier function and passed to custom outlier func
     '''
 
-    startSec = time.time()
+    start_sec = time.time()
     
-    if not os.path.exists(inFileName):
-        mesg = f'Input file {inFileName} does not exist. Terminating.'
+    if not os.path.exists(in_file_name):
+        mesg = f'Input file {in_file_name} does not exist. Terminating.'
         logger.fatal(mesg)
         raise FileNotFoundError(mesg)
         
-    logger.info(f'Performing ramp sum calculation on file {inFileName}')
+    logger.info(f'Performing ramp sum calculation on file {in_file_name}')
     
     ext = "_sums.h5"
-    if not outDirectory:
-        outFileName = os.path.basename(inFileName) + ext
+    if not out_directory:
+        out_file_name = os.path.basename(in_file_name) + ext
     else:
-        if not os.path.exists(outDirectory):
-            mesg = f'Output directory {outDirectory} does not exist. Terminating.'
+        if not os.path.exists(out_directory):
+            mesg = f'Output directory {out_directory} does not exist. Terminating.'
             # logger.fatal(mesg)
             raise FileNotFoundError(mesg)
             
-        outFileName = outDirectory + '/' + os.path.basename(inFileName) + ext
+        out_file_name = out_directory + '/' + os.path.basename(in_file_name) + ext
     
 
             
-    logger.info(f'Input FITS inFileName: {inFileName}')
-    logger.info(f'Output inFileName: {outFileName}')
+    logger.info(f'Input FITS in_file_name: {in_file_name}')
+    logger.info(f'Output in_file_name: {out_file_name}')
     
     
     
-    ####################### CHANGE TO READ IN ASDF!!!! ##################
-    ## FOR NOW, ASSUME THE DATA IS IN THE CORRECT FORMAT
-    # Read FITS file
-    data0 = read_roman_file(inFileName, skipFirstFrame, logger)
-    numFrames = data0.shape[0]
-    if numFrames < 2:
+    ####################### CAN READ IN ASDF!!!! ##################
+    # Read file file
+    data0 = read_roman_file(in_file_name, skip_first_frame, logger)
+    num_frames = data0.shape[0]
+    if num_frames < 2:
         # _sum_chan_func() requires > 1 frames with (frames - 1) as denominator
-        logger.fatal(f'IRRC does not support FITS files with fewer than two frames.  File {inFileName} has {numFrames} frames')
+        logger.fatal(f'IRRC does not support FITS files with fewer than two frames.  File {in_file_name} has {num_frames} frames')
         raise ValueError("Illegal number of frames")
     
     
@@ -107,9 +106,9 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # Optional pre-apply externalPixelFalgs to data
     #
     # If an external pixel flag array is provided, this is an optional hook use it to modify the incoming data
-    if externalPixelFlags is not None:
-        logger.info('Applying externalPixelFlags to incoming data')
-        preApplyExternalPixelFlagsToData(data0, externalPixelFlags)
+    if external_pixel_flags is not None:
+        logger.info('Applying external_pixel_flags to incoming data')
+        pre_apply_external_pixel_flags_to_data(data0, external_pixel_flags)
       
 
     #######################
@@ -133,26 +132,26 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # The generating function can be overridden.  The default function classifies outliers as those
     # with a value > outliersStdDev * standard deviation.  NOTE: the reference pix
     
-    if externalOutlierFunc == None:
-        outliersMask_RowCol = np.ones((NUM_ROWS, NUM_COLS), dtype=bool)
+    if external_outlier_func is None:
+        outliers_mask_rowcol = np.ones((NUM_ROWS, NUM_COLS), dtype=bool)
         
         # Prepare one-sigma data for outlier flagging
         # (mean(data0) = 0 after linear trend removal)
-        sig_data = np.sqrt(np.sum(data0 ** 2 / (numFrames - 1), axis=0))  
+        sig_data = np.sqrt(np.sum(data0 ** 2 / (num_frames - 1), axis=0))  
         
-        logger.info(f'Flagging pixels outside stdev = {cfgOutlierStdDevThreshold}')
-        exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _find_outliers_chan_func, (util.getReferenceMask(0), 
-            sig_data, outliersMask_RowCol, outlierStdDev), multiThread=multiThread)
+        logger.info(f'Flagging pixels outside stdev = {cfg_outlier_stddev_threshold}')
+        exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _find_outliers_chan_func, (util.get_reference_mask(0), 
+            sig_data, outliers_mask_rowcol, outlier_stddev), multithread=multithread)
             
     
-        # expand outliersMask_RowCol to mask x,y neighbor of outlier pixels.
-        outliersMask_RowCol = outliersMask_RowCol * np.roll(outliersMask_RowCol, (1, 0), (0, 1)) * np.roll(outliersMask_RowCol,
-            (0, 1), (0, 1)) * np.roll(outliersMask_RowCol, (-1, 0), (0, 1)) * np.roll(outliersMask_RowCol, (0, -1), (0, 1))
+        # expand outliers_mask_rowcol to mask x,y neighbor of outlier pixels.
+        outliers_mask_rowcol = outliers_mask_rowcol * np.roll(outliers_mask_rowcol, (1, 0), (0, 1)) * np.roll(outliers_mask_rowcol,
+            (0, 1), (0, 1)) * np.roll(outliers_mask_rowcol, (-1, 0), (0, 1)) * np.roll(outliers_mask_rowcol, (0, -1), (0, 1))
     else: 
-        outliersMask_RowCol = externalOutlierFunc(data0, (NUM_ROWS, NUM_COLS), outlierStdDev=outlierStdDev)
+        outliers_mask_rowcol = external_outlier_func(data0, (NUM_ROWS, NUM_COLS), outlier_stddev=outlier_stddev)
     
     # reset reference output (last output channel) to not masked
-    outliersMask_RowCol[:, -NUM_COLS_PER_OUTPUT_CHAN:] = 1
+    outliers_mask_rowcol[:, -NUM_COLS_PER_OUTPUT_CHAN:] = 1
     
     
     #######################
@@ -162,9 +161,9 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     
     # If an external pixel flag array is provided, call a function to use it to modify the outlier mask.
     # It is expected the function will be modified once ROMAN pixel masks are defined
-    if externalPixelFlags is not None:
-        logger.info('Applying externalPixelFlags to outlier mask')
-        applyExternalPixelFlagsToOutlierMask(outliersMask_RowCol, externalPixelFlags)
+    if external_pixel_flags is not None:
+        logger.info('Applying external_pixel_flags to outlier mask')
+        apply_external_pixel_flags_to_outlier_mask(outliers_mask_rowcol, external_pixel_flags)
         
     
     
@@ -173,8 +172,8 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     msg = 'Apply outlier mask to data (i.e., set outlier pixels to 0)'
     #
     logger.info(msg)
-    for frameNum in range (numFrames):
-        data0[frameNum,:,:] *= outliersMask_RowCol
+    for framenum in range (num_frames):
+        data0[framenum,:,:] *= outliers_mask_rowcol
     
     
     #######################
@@ -183,16 +182,16 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     #
     logger.info(msg)
     # From ([frames], flattenedFrame) to (allOutputChans, [frames], rows, cols) 
-    outliersMask_ChanRowCol = np.transpose(outliersMask_RowCol.reshape((NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (1, 0, 2))
-    data_chansFramesRowsPhyscols = np.transpose(data0.reshape((numFrames, NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (2, 0, 1, 3))
+    outliers_mask_chanrowcol = np.transpose(outliers_mask_rowcol.reshape((NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (1, 0, 2))
+    data_chans_frames_rowsphyscols = np.transpose(data0.reshape((num_frames, NUM_ROWS, NUM_OUTPUT_CHANS, NUM_COLS_PER_OUTPUT_CHAN)), (2, 0, 1, 3))
 
     logger.info('... Undo alternating reversed readout order to put pixels in time order')
     for chan in range(1, NUM_OUTPUT_CHANS, 2):
-        data_chansFramesRowsPhyscols[chan,:,:,:] = data_chansFramesRowsPhyscols[chan,:,:,::-1]
-        outliersMask_ChanRowCol[chan,:,:] = outliersMask_ChanRowCol[chan,: ,::-1]
+        data_chans_frames_rowsphyscols[chan,:,:,:] = data_chans_frames_rowsphyscols[chan,:,:,::-1]
+        outliers_mask_chanrowcol[chan,:,:] = outliers_mask_chanrowcol[chan,: ,::-1]
     
     logger.info('... Add pad to rows to introduce appropriate delay from guide window scan, etc (i.e., create uniform sample timing)')
-    dataUniformTime = np.pad(data_chansFramesRowsPhyscols, ((0, 0), (0, 0), (0, 0), (0, END_OF_ROW_PIXEL_PAD)))
+    data_uniform_time = np.pad(data_chans_frames_rowsphyscols, ((0, 0), (0, 0), (0, 0), (0, END_OF_ROW_PIXEL_PAD)))
     
     
     
@@ -201,7 +200,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     msg = 'Remove linear trends at frame boundary'
     #
     logger.info(msg)
-    util.remove_linear_trends_per_frame(logger, dataUniformTime, subtractOffsetOnly=False, multiThread=multiThread)
+    util.remove_linear_trends_per_frame(logger, data_uniform_time, subtract_offset_only=False, multithread=multithread)
             
 
 
@@ -212,13 +211,13 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     
     logger.info('Perform cosine weighted interpolation on zero values to provide preliminary values for bad pixels')
     
-    # dataUniformTime has zero values as a result of 1) earlier flagged outlier pixels, 2) padding for uniform timing,
+    # data_uniform_time has zero values as a result of 1) earlier flagged outlier pixels, 2) padding for uniform timing,
     # and 3) original 0's in the raw data (from broken pixel, etc.).  The interp_zeros_channel_fun applies the interpolation
     # to all zero values in order to smooth discontinuities before the FFT interpolation 
     # w = np.sin(np.arange(NUM_OUTPUT_CHANS, dtype=np.float64) / 32 * np.pi)[1:]
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS), util.interp_zeros_channel_fun,
-        (util.getTrigInterpolationFunction(dataUniformTime), dataUniformTime, numFrames, NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD), 
-        multiThread=multiThread)
+        (util.get_trig_interpolation_function(data_uniform_time), data_uniform_time, num_frames, NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD), 
+        multithread=multithread)
 
 
 
@@ -230,17 +229,17 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     logger.info('Prepare left and right column reference pixels') 
     
     
-    rl = np.copy(dataUniformTime[0,:,:,:])  # need to copy otherwise a reference!
-    rr = np.copy(dataUniformTime[31,:,:,:])
+    rl = np.copy(data_uniform_time[0,:,:,:])  # need to copy otherwise a reference!
+    rr = np.copy(data_uniform_time[31,:,:,:])
     # zero reference columns (data is in time domain)
     rl[:,:, 4:] = 0.
     rr[:,:, 4:] = 0.
     
-    rl = np.reshape(rl, (numFrames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS))
-    rr = np.reshape(rr, (numFrames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS))
+    rl = np.reshape(rl, (num_frames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS))
+    rr = np.reshape(rr, (num_frames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS))
 
-    rlFFT = spfft.rfft(rl / rl[0].size) * REFPIX_NORM
-    rrFFT = spfft.rfft(rr / rr[0].size) * REFPIX_NORM
+    rl_fft = spfft.rfft(rl / rl[0].size) * REFPIX_NORM
+    rr_fft = spfft.rfft(rr / rr[0].size) * REFPIX_NORM
               
     
 
@@ -257,13 +256,13 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # ; (b) gaps and normal data in the time-ordered reference data
     # ; This "improves" upon the cosine interpolation performed above.
  
-    dataUniformTime = np.reshape(dataUniformTime, (NUM_OUTPUT_CHANS, numFrames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS)).astype(dtype=np.float64)
+    data_uniform_time = np.reshape(data_uniform_time, (NUM_OUTPUT_CHANS, num_frames, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS)).astype(dtype=np.float64)
 
     # rfft returns size n//2 + 1 
-    dataFFTOut = np.zeros((dataUniformTime.shape[0], dataUniformTime.shape[1], dataUniformTime.shape[2] // 2 + 1), dtype=np.complex128)
+    data_fft_out = np.zeros((data_uniform_time.shape[0], data_uniform_time.shape[1], data_uniform_time.shape[2] // 2 + 1), dtype=np.complex128)
     
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS), util.fft_interp_step_channel_fun, 
-        (dataUniformTime, dataFFTOut, outliersMask_ChanRowCol, util.getFFTApodizeFunction(), cfgFFTInterpolationIterations), multiThread=multiThread)
+        (data_uniform_time, data_fft_out, outliers_mask_chanrowcol, util.get_fft_apodize_function(), cfg_FFTinterpolation_iterations), multithread=multithread)
     
     
     #######################
@@ -272,9 +271,9 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # 
         
     # If an external pixel flag array is provided, this is an optional hook use it to modify the interpolated (and FFT'd) data
-    if externalPixelFlags is not None:
-        logger.info('Applying externalPixelFlags to outlier mask')
-        applyExternalPixelFlagsToInterpolatedData(dataFFTOut, externalPixelFlags)
+    if external_pixel_flags is not None:
+        logger.info('Applying external_pixel_flags to outlier mask')
+        apply_external_pixel_flags_to_interpolated_data(data_fft_out, external_pixel_flags)
             
 
     #######################
@@ -283,20 +282,20 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     # 
     
     logger.info('Sum calculation ..')
-    sum_nn = np.sum(np.square(np.abs(dataFFTOut)), 1) / (numFrames - 1)
+    sum_nn = np.sum(np.square(np.abs(data_fft_out)), 1) / (num_frames - 1)
     sum_na = sum_nn.astype(complex)
     sum_nl = np.copy(sum_na)
     sum_nr = np.copy(sum_na)
     
-    conjData = np.conjugate(dataFFTOut[-1,:,:])
-    conjrl = np.conjugate(rlFFT)
-    conjrr = np.conjugate(rrFFT)            
+    conj_data = np.conjugate(data_fft_out[-1,:,:])
+    conjrl = np.conjugate(rl_fft)
+    conjrr = np.conjugate(rr_fft)            
 
-    exec_channel_func_threads(range(NUM_OUTPUT_CHANS), _sum_chan_func, (dataFFTOut, sum_na, sum_nl, sum_nr, conjData, conjrl, conjrr, numFrames), multiThread=multiThread)
+    exec_channel_func_threads(range(NUM_OUTPUT_CHANS), _sum_chan_func, (data_fft_out, sum_na, sum_nl, sum_nr, conj_data, conjrl, conjrr, num_frames), multithread=multithread)
     
-    sum_ll = np.sum(np.abs(rlFFT) ** 2, 0) / (numFrames - 1)
-    sum_rr = np.sum(np.abs(rrFFT) ** 2, 0) / (numFrames - 1)  # total(abs(r1)^2,2)/(s[3]-1)
-    sum_lr = np.sum(rlFFT * conjrr, 0) / (numFrames - 1)  # total(rl*conj(r1),2)/(s[3]-1)
+    sum_ll = np.sum(np.abs(rl_fft) ** 2, 0) / (num_frames - 1)
+    sum_rr = np.sum(np.abs(rr_fft) ** 2, 0) / (num_frames - 1)  # total(abs(r1)^2,2)/(s[3]-1)
+    sum_lr = np.sum(rl_fft * conjrr, 0) / (num_frames - 1)  # total(rl*conj(r1),2)/(s[3]-1)
 
 
 
@@ -309,8 +308,8 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
     f = np.abs(np.fft.rfftfreq(e, 1 / e))
     freq = f * (PIXEL_READ_FREQ_HZ / 2.) / f.max()
     
-    logger.info(f'Writing to {outFileName}')
-    with h5py.File(outFileName, 'w') as hf:
+    logger.info(f'Writing to {out_file_name}')
+    with h5py.File(out_file_name, 'w') as hf:
         hf.create_dataset("freq", data=freq)
         hf.create_dataset("sum_nn", data=sum_nn)
         hf.create_dataset("sum_na", data=sum_na)
@@ -319,7 +318,7 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
         hf.create_dataset("sum_ll", data=sum_ll)
         hf.create_dataset("sum_rr", data=sum_rr)
         hf.create_dataset("sum_lr", data=sum_lr)
-    logger.info(f'Total wall clock execution (seconds):  {time.time() - startSec}')
+    logger.info(f'Total wall clock execution (seconds):  {time.time() - start_sec}')
     logger.info('Done')
     
     return (sum_nn, sum_na, sum_nl, sum_nr, sum_ll, sum_rr, sum_lr)
@@ -327,47 +326,47 @@ def extract(inFileName:str, outDirectory:str=None, multiThread:bool=True,
 
 
 
-def _find_outliers_chan_func(chan:int, refZeroMask:np.ndarray, sig_data:np.ndarray, outliersMask_RowCol_InOut:np.ndarray, outlierStdDev:float=cfgOutlierStdDevThreshold):
+def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.ndarray, outliers_mask_rowcol_inout:np.ndarray, outlier_stddev:float=cfg_outlier_stddev_threshold):
     '''
-    Set outliersMask_RowCol_InOut to 0 where the sig_data values are >= std of sigmaThreshold.  The evaluation is done separately for
+    Set outliers_mask_rowcol_inout to 0 where the sig_data values are >= std of sigmaThreshold.  The evaluation is done separately for
     reference and normal pixels.
     :param chan: channel number
-    :param refZeroMask: IN ONLY full image mask where reference pixels have value 0
+    :param ref_zero_mask: IN ONLY full image mask where reference pixels have value 0
     :param sig_data:
-    :param outliersMask_RowCol_InOut:  OUT ONLY Sets mask 0 = where pixel value is greater than std dev threshold) 
-    :param outlierStdDev: 
+    :param outliers_mask_rowcol_inout:  OUT ONLY Sets mask 0 = where pixel value is greater than std dev threshold) 
+    :param outlier_stddev: 
     '''
 
-    columnSlice = slice(chan * NUM_COLS_PER_OUTPUT_CHAN, (chan + 1) * NUM_COLS_PER_OUTPUT_CHAN)
-    columnData = (sig_data[:, columnSlice] - sig_data[:, -NUM_COLS_PER_OUTPUT_CHAN:])
+    column_slice = slice(chan * NUM_COLS_PER_OUTPUT_CHAN, (chan + 1) * NUM_COLS_PER_OUTPUT_CHAN)
+    column_data = (sig_data[:, column_slice] - sig_data[:, -NUM_COLS_PER_OUTPUT_CHAN:])
     
-    # Python masked arrays use a 1 where the mask exists (invalid values), so the refZeroMask allows 
-    refZeroMaskChan = refZeroMask[:, columnSlice]
+    # Python masked arrays use a 1 where the mask exists (invalid values), so the ref_zero_mask allows 
+    ref_zero_mask_chan = ref_zero_mask[:, column_slice]
     
-    # Python masked arrays use a 1 where the mask exists (e.g. 1 = ignore values). Therefore refZeroMaskChan, with 0 = reference pixel
+    # Python masked arrays use a 1 where the mask exists (e.g. 1 = ignore values). Therefore ref_zero_mask_chan, with 0 = reference pixel
     #  will have sigma_clip operate on just the reference pixels
 
-    refPixsInliers = stats.sigma_clip(np.ma.array(columnData, mask=refZeroMaskChan), cenfunc='median', stdfunc='std', sigma=outlierStdDev, masked=True)
+    ref_pixs_inliers = stats.sigma_clip(np.ma.array(column_data, mask=ref_zero_mask_chan), cenfunc='median', stdfunc='std', sigma=outlier_stddev, masked=True)
     
-    # The refPixsInliers mask will have 0's for inliers.  Change that to 1's for inliers
-    refPixsInliersOneMask = np.invert(refPixsInliers.mask)
+    # The ref_pixs_inliers mask will have 0's for inliers.  Change that to 1's for inliers
+    ref_pixs_inliers_one_mask = np.invert(ref_pixs_inliers.mask)
             
-    # Invert refZeroMaskChan to now have sigma_clip operated on normal pixels
-    normalZeroMask = np.invert(refZeroMaskChan) 
-    normPixInliers = stats.sigma_clip(np.ma.array(columnData, mask=normalZeroMask), cenfunc='median', stdfunc='std', sigma=outlierStdDev, masked=True)
-    normPixsInliersOneMask = np.invert(normPixInliers.mask)
+    # Invert ref_zero_mask_chan to now have sigma_clip operated on normal pixels
+    normal_zero_mask = np.invert(ref_zero_mask_chan) 
+    norm_pix_inliers = stats.sigma_clip(np.ma.array(column_data, mask=normal_zero_mask), cenfunc='median', stdfunc='std', sigma=outlier_stddev, masked=True)
+    norm_pixs_inliers_one_mask = np.invert(norm_pix_inliers.mask)
 
     # Combine ref and normal pixel inlier (val = 1) masks so the return array has 0's where 
-    outliersMask_RowCol_InOut[:, columnSlice] = np.ma.mask_or(normPixsInliersOneMask, refPixsInliersOneMask)
+    outliers_mask_rowcol_inout[:, column_slice] = np.ma.mask_or(norm_pixs_inliers_one_mask, ref_pixs_inliers_one_mask)
     
 
-def _sum_chan_func(chan:int, dataFFTOut:np.ndarray, sum_no:np.ndarray, sum_nrl:np.ndarray, sum_nr1:np.ndarray,
-                  conjd:np.ndarray, conjrl:np.ndarray, conjr1:np.ndarray, numFrames:int):
+def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_no:np.ndarray, sum_nrl:np.ndarray, sum_nr1:np.ndarray,
+                  conjd:np.ndarray, conjrl:np.ndarray, conjr1:np.ndarray, num_frames:int):
     
-    frameData = dataFFTOut[chan,:,:]
-    sum_no[chan,:] = np.sum(frameData * conjd, 0) / (numFrames - 1)
-    sum_nrl[chan,:] = np.sum(frameData * conjrl, 0) / (numFrames - 1)
-    sum_nr1[chan,:] = np.sum(frameData * conjr1, 0) / (numFrames - 1)      
+    frame_data = data_fft_out[chan,:,:]
+    sum_no[chan,:] = np.sum(frame_data * conjd, 0) / (num_frames - 1)
+    sum_nrl[chan,:] = np.sum(frame_data * conjrl, 0) / (num_frames - 1)
+    sum_nr1[chan,:] = np.sum(frame_data * conjr1, 0) / (num_frames - 1)      
     
 
 
@@ -377,38 +376,38 @@ def _sum_chan_func(chan:int, dataFFTOut:np.ndarray, sum_no:np.ndarray, sum_nrl:n
 # Function hooks for applying external pixel quality flags to various parts of the processing
 #
 
-def preApplyExternalPixelFlagsToData(data:np.ndarray, externalPixelFlags:np.ndarray):
+def pre_apply_external_pixel_flags_to_data(data:np.ndarray, external_pixel_flags:np.ndarray):
     '''
     Called after reading input FITS file.
     
     Optionally use external flags to directly change the detector data after reading from FITS file.
     This could be used to artifically set pixels to values that would be flagged by the outlier function.
     
-    An eguivalent operation would be to provide an externalOutlierFunc to extract() and explictly generate
+    An eguivalent operation would be to provide an external_outlier_func to extract() and explictly generate
     the outlier mask.
     :param data: IN/OUT detector data
-    :param externalPixelFlags: IN external pixel/quality flags provided to extract()
+    :param external_pixel_flags: IN external pixel/quality flags provided to extract()
     '''
 
-def applyExternalPixelFlagsToOutlierMask(outlierMask_RowCol:np.ndarray, externalPixelFlags:np.ndarray):
+def apply_external_pixel_flags_to_outlier_mask(outlier_mask_rowcol:np.ndarray, external_pixel_flags:np.ndarray):
     '''
     Called after outlier mask is generated.
     
     Combine internal outlier mask with external pixel flags.
         
-    :param outlierMask_RowCol: IN/OUT shape (constants.NUM_ROWS, constants.NUM_COLS) where 0 indicates outlier pixels that will have their values interpolated
-    :param externalPixelFlags: IN shape (constants.NUM_ROWS, constants.NUM_COLS) incoming pixel flag array
+    :param outlier_mask_rowcol: IN/OUT shape (constants.NUM_ROWS, constants.NUM_COLS) where 0 indicates outlier pixels that will have their values interpolated
+    :param external_pixel_flags: IN shape (constants.NUM_ROWS, constants.NUM_COLS) incoming pixel flag array
     '''
     # Goofy example for unit testing ... 
-    outlierMask_RowCol[(externalPixelFlags == 0) | (externalPixelFlags <= -2)] = 0
+    outlier_mask_rowcol[(external_pixel_flags == 0) | (external_pixel_flags <= -2)] = 0
 
-def applyExternalPixelFlagsToInterpolatedData(data_RowCol:np.ndarray, externalPixelFlags:np.ndarray):
+def apply_external_pixel_flags_to_interpolated_data(data_rowcol:np.ndarray, external_pixel_flags:np.ndarray):
     '''
     Called after data interpolation but before sum calculation
     
     Apply external pixel flags to interpolated data
         
-    :param outlierMask_RowCol: shape (constants.NUM_ROWS, constants.NUM_COLS) where 0 indicates outlier pixels that will have their values interpolated
-    :param externalPixelFlags: shape (constants.NUM_ROWS, constants.NUM_COLS) incoming pixel flag array
+    :param outlier_mask_rowcol: shape (constants.NUM_ROWS, constants.NUM_COLS) where 0 indicates outlier pixels that will have their values interpolated
+    :param external_pixel_flags: shape (constants.NUM_ROWS, constants.NUM_COLS) incoming pixel flag array
     '''
     pass

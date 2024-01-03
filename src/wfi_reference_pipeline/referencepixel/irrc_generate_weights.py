@@ -13,38 +13,40 @@ import h5py
 import numpy as np
 import time
 
+from .irrc_constants import NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS
+from .irrc_util import exec_channel_func_threads
+
 # Allocate singleton logger
 import logging
 logger = logging.getLogger('ReferencePixel Weights')
 
 # Type used for storing weights (alpha, gamma, zeta)
-cfgWeightsDtype = np.complex128
+cfg_weights_dtype = np.complex128
     
-from .irrc_constants import NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS
-from .irrc_util import exec_channel_func_threads
 
-def generate(inFileSearchTag:str="*.hd5",
-             lambdaCoeff:float=0, multiThread:bool=True):
+
+def generate(in_file_search_tag:str="*.hd5",
+             lambda_coeff:float=0, multithread:bool=True):
     '''
     Generated output file with weights from one or more input previously processed ramp sums
-    :param inFileSearchTag: Python glob pattern for files generated using 'extract_ramp_sums.py'
-    :param lambdaCoeff: a scaling factor
-    :param multiThread: should the computations use multithreading?
+    :param in_file_search_tag: Python glob pattern for files generated using 'extract_ramp_sums.py'
+    :param lambda_coeff: a scaling factor
+    :param multithread: should the computations use multithreading?
     '''
     
-    startSec = time.time()
+    start_sec = time.time()
     
-    inFiles = glob.glob(inFileSearchTag)
-    if len(inFiles) < 1:
-        raise FileNotFoundError("inFileSearchTag found 0 inFiles: ", inFileSearchTag)
+    in_files = glob.glob(in_file_search_tag)
+    if len(in_files) < 1:
+        raise FileNotFoundError("in_file_search_tag found 0 in_files: ", in_file_search_tag)
     
     logger.info('Reading in ramp sums')
 
-    firstFile = True
-    for inFile in inFiles:
-        logger.info(f'    Reading input file: {inFile}')    
-        with h5py.File(inFile, 'r') as hf:
-            if firstFile:
+    first_file = True
+    for infile in in_files:
+        logger.info(f'    Reading input file: {infile}')    
+        with h5py.File(infile, 'r') as hf:
+            if first_file:
                 freq = hf["freq"][:]  # [:] to get as numpy array
                 sum_na = hf["sum_na"][:]
                 sum_nl = hf["sum_nl"][:]
@@ -53,7 +55,7 @@ def generate(inFileSearchTag:str="*.hd5",
                 sum_rr = hf["sum_rr"][:]
                 sum_lr = hf["sum_lr"][:]
                                 
-                firstFile = False
+                first_file = False
             else:
                 sum_na += hf["sum_na"][:]
                 sum_nl += hf["sum_nl"][:]
@@ -62,82 +64,82 @@ def generate(inFileSearchTag:str="*.hd5",
                 sum_rr += hf["sum_rr"][:]
                 sum_lr += hf["sum_lr"][:]
     
-    logger.info(f'Construct the reference pixel power filter')
+    logger.info('Construct the reference pixel power filter')
     
     # ; construct the reference pixel power filter [1,cos,0,cos,1]
     elen = 512  # length of apodization cosine filter
     blen = NUM_ROWS - elen  # max unfiltered frequency (= row freq = 1450 Hz)
-    cosFilter = (np.cos(np.arange(elen, dtype=np.float64) * np.pi / elen) + 1) / 2.0
-    a = np.hstack((np.ones(blen, dtype=np.float64), cosFilter, np.zeros(int(NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS / 2 - 2 * blen - 2 * elen), dtype=np.float64), np.flip(cosFilter), np.ones(blen, dtype=np.float64)))
+    cos_filter = (np.cos(np.arange(elen, dtype=np.float64) * np.pi / elen) + 1) / 2.0
+    a = np.hstack((np.ones(blen, dtype=np.float64), cos_filter, np.zeros(int(NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS / 2 - 2 * blen - 2 * elen), dtype=np.float64), np.flip(cos_filter), np.ones(blen, dtype=np.float64)))
     a2 = np.hstack((a, np.flip(np.roll(a, -1))))
     filter_r = a2
 
     # ignore negative frequencies now that we're doing real-only FFTs
     filter_r = filter_r[:filter_r.size // 2 + 1]
         
-    A = sum_na[-1,:].real + lambdaCoeff * freq.size
-    L = sum_ll + lambdaCoeff * freq.size
-    R = sum_rr + lambdaCoeff * freq.size
+    aa = sum_na[-1,:].real + lambda_coeff * freq.size
+    ll = sum_ll + lambda_coeff * freq.size
+    rr = sum_rr + lambda_coeff * freq.size
 
-    U = np.conjugate(sum_nl[-1,:])
-    V = np.conjugate(sum_nr[-1,:])
+    uu = np.conjugate(sum_nl[-1,:])
+    vv = np.conjugate(sum_nr[-1,:])
 
-    regularColSlice = slice(0, NUM_OUTPUT_CHANS - 1)
-    W = sum_na[regularColSlice,:]
-    X = sum_nr[regularColSlice,:]
-    Y = sum_nl[regularColSlice,:]
-    Z = np.conjugate(sum_lr)
+    regular_col_slice = slice(0, NUM_OUTPUT_CHANS - 1)
+    ww = sum_na[regular_col_slice,:]
+    xx = sum_nr[regular_col_slice,:]
+    yy = sum_nl[regular_col_slice,:]
+    zz = np.conjugate(sum_lr)
                            
     # ; *** !!! Caution. Not clear if this application of the filter is correct.
     # ; It is generalized from the 2-stream corrections of IRS^2, but I'm not sure
     # ; of the derivation of the usage there. R. Arendt
-    U *= filter_r
-    V *= filter_r
+    uu *= filter_r
+    vv *= filter_r
     
     for c in range(NUM_OUTPUT_CHANS - 1):
-        X[c,:] *= np.conjugate(filter_r)
-        Y[c,:] *= np.conjugate(filter_r)
+        xx[c,:] *= np.conjugate(filter_r)
+        yy[c,:] *= np.conjugate(filter_r)
     
-    conjU = np.conjugate(U)
-    conjV = np.conjugate(V)
-    conjZ = np.conjugate(Z)
+    conj_uu = np.conjugate(uu)
+    conj_vv = np.conjugate(vv)
+    conj_zz = np.conjugate(zz)
     
-    denom = A * L * R - R * U * conjU - L * V * conjV + U * Z * conjV - A * Z * conjZ + V * conjU * conjZ
+    denom = aa * ll * rr - rr * uu * conj_uu - ll * vv * conj_vv + uu * zz * conj_vv - aa * zz * conj_zz + vv * conj_uu * conj_zz
     
     #
     # Do weight calculations in complex128 but optional
     # precision downgrade for storage/speed available below
     #
-    alpha = np.empty(W.shape, dtype=np.complex128)
-    gamma = np.empty(W.shape, dtype=np.complex128)
-    zeta = np.empty(W.shape, dtype=np.complex128)   
+    alpha = np.empty(ww.shape, dtype=np.complex128)
+    gamma = np.empty(ww.shape, dtype=np.complex128)
+    zeta = np.empty(ww.shape, dtype=np.complex128)   
                     
     # logger.info('Weight calculation ..')    
-    exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _channel_coeff_func, (alpha, gamma, zeta, A, L, R, U, V, W, X, Y, Z, conjU, conjV, conjZ, denom), multiThread=multiThread)
+    exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _channel_coeff_func, (alpha, gamma, zeta, aa, ll, rr, uu, vv, ww, xx, yy, zz, conj_uu, conj_vv, conj_zz, denom), multithread=multithread)
     
-    alpha = alpha.astype(cfgWeightsDtype)
-    gamma = gamma.astype(cfgWeightsDtype)
-    zeta = zeta.astype(cfgWeightsDtype)
+    alpha = alpha.astype(cfg_weights_dtype)
+    gamma = gamma.astype(cfg_weights_dtype)
+    zeta = zeta.astype(cfg_weights_dtype)
     
     ## DO NOT SAVE, JUST RETURN! 
     # # logger.info(f'Writing weights to file {outFileName}') 
     # with h5py.File(outFileName, 'w') as hf:
-    #     hf.create_dataset("files", data=inFiles)
+    #     hf.create_dataset("files", data=in_files)
     #     hf.create_dataset("freq", data=freq)
     #     hf.create_dataset("alpha", data=alpha)
     #     hf.create_dataset("gamma", data=gamma)
     #     hf.create_dataset("zeta", data=zeta)
-    #     hf.create_dataset("lambda", data=lambdaCoeff)
+    #     hf.create_dataset("lambda", data=lambda_coeff)
         
-    logger.info(f'Total wall-clock execution (seconds):  {time.time() - startSec}')
+    logger.info(f'Total wall-clock execution (seconds):  {time.time() - start_sec}')
     logger.info('Done')
     
-    return freq, alpha, gamma, zeta#, lambdaCoeff
+    return freq, alpha, gamma, zeta#, lambda_coeff
 
     
 def _channel_coeff_func(chan:int, alpha:np.ndarray, gamma:np.ndarray, zeta:np.ndarray,
-                        A:np.ndarray, L:np.ndarray, R:np.ndarray, U:np.ndarray, V:np.ndarray, W:np.ndarray, X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
-                        conjU:np.ndarray, conjV:np.ndarray, conjZ:np.ndarray, denom:np.ndarray):
+                        aa:np.ndarray, ll:np.ndarray, rr:np.ndarray, uu:np.ndarray, vv:np.ndarray, ww:np.ndarray, xx:np.ndarray, yy:np.ndarray, zz:np.ndarray,
+                        conj_uu:np.ndarray, conj_vv:np.ndarray, conj_zz:np.ndarray, denom:np.ndarray):
     '''
     Generate the three streams for a single channel
     :param chan: channel number
@@ -146,23 +148,23 @@ def _channel_coeff_func(chan:int, alpha:np.ndarray, gamma:np.ndarray, zeta:np.nd
     :param zeta: CHANGED IN PLACE - weights for right reference columns
     
     The following are intermediate quantities calculated a priori
-    :param A:
-    :param L:
-    :param R:
-    :param U:
-    :param V:
-    :param W:
-    :param X:
-    :param Y:
-    :param Z:
-    :param conjU:
-    :param conjV:
-    :param conjZ:
+    :param aa:
+    :param ll:
+    :param rr:
+    :param uu:
+    :param vv:
+    :param ww:
+    :param xx:
+    :param yy:
+    :param zz:
+    :param conj_uu:
+    :param conj_vv:
+    :param conj_zz:
     :param denom:
     '''
     
-    alpha[chan,:] = (L * R * W[chan,:] - L * V * X[chan,:] - R * U * Y[chan,:] + U * X[chan,:] * Z + V * Y[chan,:] * conjZ - W[chan,:] * Z * conjZ) / denom
-    gamma[chan,:] = (A * R * Y[chan,:] - A * X[chan,:] * Z - R * W[chan,:] * conjU + V * X[chan,:] * conjU - V * Y[chan,:] * conjV + W[chan,:] * Z * conjV) / denom
-    zeta[chan,:] = (A * L * X[chan,:] - U * X[chan,:] * conjU - L * W[chan,:] * conjV + U * Y[chan,:] * conjV - A * Y[chan,:] * conjZ + W[chan,:] * conjU * conjZ) / denom
+    alpha[chan,:] = (ll * rr * ww[chan,:] - ll * vv * xx[chan,:] - rr * uu * yy[chan,:] + uu * xx[chan,:] * zz + vv * yy[chan,:] * conj_zz - ww[chan,:] * zz * conj_zz) / denom
+    gamma[chan,:] = (aa * rr * yy[chan,:] - aa * xx[chan,:] * zz - rr * ww[chan,:] * conj_uu + vv * xx[chan,:] * conj_uu - vv * yy[chan,:] * conj_vv + ww[chan,:] * zz * conj_vv) / denom
+    zeta[chan,:] = (aa * ll * xx[chan,:] - uu * xx[chan,:] * conj_uu - ll * ww[chan,:] * conj_vv + uu * yy[chan,:] * conj_vv - aa * yy[chan,:] * conj_zz + ww[chan,:] * conj_uu * conj_zz) / denom
 
 

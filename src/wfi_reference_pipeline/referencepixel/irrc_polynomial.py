@@ -24,52 +24,52 @@ class Polynomial():
         self.degree = degree
         
         # Make basis matrix
-        self.B = np.empty((self.nz,degree+1))
+        self.bb = np.empty((self.nz,degree+1))
         for col in np.arange(degree+1):
-            self.B[:,col] = self.z**col
+            self.bb[:,col] = self.z**col
             
         # Make the fitting matrix. This does least squares fitting
-        self.pinvB = np.linalg.pinv(self.B)
+        self.pinv_b = np.linalg.pinv(self.bb)
         
         # Make the modeling matrix. This is used to model the data
         # from the fit
-        self.B_x_pinvB = np.matmul(self.B, self.pinvB)
+        self.b_x_pinvb = np.matmul(self.bb, self.pinv_b)
         
     # Fitter
-    def polyfit(self, D):
+    def polyfit(self, dd):
         """
         Fit polynomial to up-the-ramp sampled data
         
-        Parameters: D, data cube
+        Parameters: dd, data cube
                       An up-the-ramp sampled data cube.
-        Returns:    R, data cube
+        Returns:    rr, data cube
                       Least squares fit of a polynomial to the data
         """
         # Print a warning if not float32
-        if D.dtype != np.float32:
+        if dd.dtype != np.float32:
             print('Warning: This operation is faster using np.float32 input')
         # Pick off dimensions
-        ny = D.shape[1]
-        nx = D.shape[2]
+        ny = dd.shape[1]
+        nx = dd.shape[2]
         # Fit
-        R = np.matmul(self.pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
-        return(R)
+        rr = np.matmul(self.pinv_b, dd.reshape(self.nz,-1)).reshape((-1,ny,nx))
+        return(rr)
     
     # Modeler
-    def polyval(self, D):
+    def polyval(self, dd):
         """
         Model up-the-ramp sampled data using the fit
         
-        Parameters: D, data cube
+        Parameters: dd, data cube
                       An up-the-ramp sampled data cube.
-        Returns:    M, data cube
+        Returns:    mm, data cube
                       A model of the data built from the least squares fit
         """
         # Print a warning if not float32
-        if D.dtype != np.float32:
+        if dd.dtype != np.float32:
             print('Warning: This operation is faster using np.float32 input')
-        ny = D.shape[1]
-        nx = D.shape[2]
+        ny = dd.shape[1]
+        nx = dd.shape[2]
         # Model
-        M = np.matmul(self.B_x_pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
-        return(M)
+        mm = np.matmul(self.b_x_pinvb, dd.reshape(self.nz,-1)).reshape((-1,ny,nx))
+        return(mm)

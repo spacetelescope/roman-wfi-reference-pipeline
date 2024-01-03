@@ -1,19 +1,17 @@
 import roman_datamodels.stnode as rds
-import numpy as np
 from ..utilities.reference_file import ReferenceFile
+
+from .irrc_extract_ramp_sums import extract
+from .irrc_generate_weights import generate
+
 import asdf
+import os                       # Operating system
+import shutil
+
 import logging
-# logging = logging.getLogger('ReferencePixel')
 from ..utilities import logging_functions
 logging_functions.configure_logging("ReferencePixel")
 
-
-import os                       # Operating system
-import shutil
-import h5py                     # Needed to read the calibration file that we make > HAD TO INSTALL
-
-from .irrc_extract_ramp_sums import *
-from .irrc_generate_weights import *
 
 class ReferencePixel(ReferenceFile):
     """
@@ -77,8 +75,7 @@ class ReferencePixel(ReferenceFile):
 
         # we assume files is a list of exposures paths and filename for 1 detector. 
         files = self.input_data
-
-        # assume detector SCA is in self.meta_data()
+        
         detector = self.meta['instrument']['detector'] # taken from WFIMetaReferencePixel() dictionary style
         logging.info(f'detector {detector}')
 
