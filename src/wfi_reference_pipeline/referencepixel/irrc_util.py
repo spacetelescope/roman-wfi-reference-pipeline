@@ -288,12 +288,12 @@ def fft_interp(chandata_framesflat:np.ndarray, read_only_pixels_are_onemask_flat
     '''
 
     num_frames = len(chandata_framesflat)
-    read_only_pixels_indices_Flat = np.where(read_only_pixels_are_onemask_flattenedimage)[0]
+    read_only_pixels_indices_flat = np.where(read_only_pixels_are_onemask_flattenedimage)[0]
 
     for frame in range(num_frames):
 
         chan_framedata_flat = chandata_framesflat[frame]
-        read_only_pixels_values_flat = chan_framedata_flat[read_only_pixels_indices_Flat]
+        read_only_pixels_values_flat = chan_framedata_flat[read_only_pixels_indices_flat]
 
         for _ in range(num_iterations):
 
@@ -301,7 +301,7 @@ def fft_interp(chandata_framesflat:np.ndarray, read_only_pixels_are_onemask_flat
             chan_framedata_flat = spfft.irfft(fft_result * chan_framedata_flat.size, workers=1)
 
             # Return read only pixels
-            chan_framedata_flat[read_only_pixels_indices_Flat] = read_only_pixels_values_flat
+            chan_framedata_flat[read_only_pixels_indices_flat] = read_only_pixels_values_flat
 
         chandata_framesflat[frame,:] = chan_framedata_flat
 

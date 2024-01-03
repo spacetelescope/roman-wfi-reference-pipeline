@@ -48,7 +48,7 @@ logger = logging.getLogger('ReferencePixel Sums')
 cfg_outlier_stddev_threshold = 4.0
 
 # Number of iterations when doing FFT interpolations
-cfg_FFTinterpolation_iterations = 3
+cfg_fft_interpolation_iterations = 3
 
 def extract(in_file_name:str, out_directory:str=None, multithread:bool=True, 
     skip_first_frame:bool=True, external_pixel_flags:np.ndarray=None, external_outlier_func=None, outlier_stddev:float=cfg_outlier_stddev_threshold):
@@ -262,7 +262,7 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     data_fft_out = np.zeros((data_uniform_time.shape[0], data_uniform_time.shape[1], data_uniform_time.shape[2] // 2 + 1), dtype=np.complex128)
     
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS), util.fft_interp_step_channel_fun, 
-        (data_uniform_time, data_fft_out, outliers_mask_chanrowcol, util.get_fft_apodize_function(), cfg_FFTinterpolation_iterations), multithread=multithread)
+        (data_uniform_time, data_fft_out, outliers_mask_chanrowcol, util.get_fft_apodize_function(), cfg_fft_interpolation_iterations), multithread=multithread)
     
     
     #######################
