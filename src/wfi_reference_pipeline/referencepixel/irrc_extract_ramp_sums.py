@@ -86,8 +86,8 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     
 
             
-    logger.info(f'Input FITS in_file_name: {in_file_name}')
-    logger.info(f'Output in_file_name: {out_file_name}')
+    logger.info(f'Input file name: {in_file_name}')
+    logger.info(f'Output file name: {out_file_name}')
     
     
     
@@ -378,9 +378,9 @@ def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_no:np.ndarray, sum_nrl
 
 def pre_apply_external_pixel_flags_to_data(data:np.ndarray, external_pixel_flags:np.ndarray):
     '''
-    Called after reading input FITS file.
+    Called after reading input file.
     
-    Optionally use external flags to directly change the detector data after reading from FITS file.
+    Optionally use external flags to directly change the detector data after reading from  file.
     This could be used to artifically set pixels to values that would be flagged by the outlier function.
     
     An eguivalent operation would be to provide an external_outlier_func to extract() and explictly generate
@@ -388,6 +388,7 @@ def pre_apply_external_pixel_flags_to_data(data:np.ndarray, external_pixel_flags
     :param data: IN/OUT detector data
     :param external_pixel_flags: IN external pixel/quality flags provided to extract()
     '''
+    pass
 
 def apply_external_pixel_flags_to_outlier_mask(outlier_mask_rowcol:np.ndarray, external_pixel_flags:np.ndarray):
     '''

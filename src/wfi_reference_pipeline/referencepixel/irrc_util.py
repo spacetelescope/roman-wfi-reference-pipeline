@@ -7,93 +7,19 @@ Various functions that are common to multiple IRRC steps
 
 import threading
 
-from astropy.io import fits
-
 import numpy as np
 import scipy.fft as spfft
-import h5py
 import asdf
 
-from .irrc_polynomial import Polynomial
 from .irrc_constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS, \
-    ALL_CHAN_RANGE, REFERENCE_ROWS, FITS_DATA_HDU_NUMBER, \
+    ALL_CHAN_RANGE, REFERENCE_ROWS, \
     NUM_COLS, NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN
 
 import logging
 logger = logging.getLogger('ReferencePixel util')
 
+
 def read_roman_file(file_name:str, skip_first_frame:bool, logger:logging.Logger):
-    if '.h5' in file_name:
-        return read_roman_hdf5(file_name, skip_first_frame, logger)
-    elif '.fits' in file_name:
-        return read_roman_fits(file_name, skip_first_frame, logger)
-    elif '.asdf' in file_name:
-        return read_roman_asdf(file_name, skip_first_frame, logger)
-    else:
-        raise ValueError('can only read in .h5 and .fits.  working on asdf now. ')
-
-def read_roman_fits(file_name:str, skip_first_frame:bool, logger:logging.Logger):
-    '''
-    Read a ROMAN FITS file
-    :param file_name: FITS file name
-    :param skip_first_frame: optionally skip first frame
-    :param logger: e.g., irrc.logger.get_logger(name)
-    :returns FITS image array
-    '''
-
-
-    logger.info(f"Trying to read FITS file: {file_name}")
-    # Cannot use a memory-mapped image: BZERO/BSCALE/BLANK header keywords present.
-    with fits.open(file_name, memmap=False) as hdu_list:
-
-        hdu_data = hdu_list[FITS_DATA_HDU_NUMBER]
-        logger.info(f"Reading FITS data of dimensions {hdu_data.header['NAXIS1']}  x  {hdu_data.header['NAXIS2']} x {hdu_data.header['NAXIS3']}")
-
-        # numpy.ndarray of type uint16 then float64 after multiplication by gain
-        # FITS has an extra dimension, hence the data[0]
-        # Also remove the first frame due to reset anomalies
-        if skip_first_frame:
-            data0 = hdu_data.data[0, 1:]
-        else:
-            data0 = hdu_data.data[0,:]
-
-    data_shape = data0.shape
-    num_cols = data_shape[2]
-    num_rows = data_shape[1]
-
-    if num_cols != NUM_COLS or num_rows != NUM_ROWS:
-        raise Exception("File:", file_name, " has incorrect dimensions.  Expecting num_rows =", NUM_ROWS, ", num_cols =", NUM_COLS)
-
-    # Convert from uint16 to prepare for in-place computations
-    return data0.astype(np.float64)
-
-def read_roman_hdf5(file_name:str, skip_first_frame:bool, logger:logging.Logger):
-    '''
-    read a ROMAN hdf5 file
-    written by Sarah Betti based on read_roman_fits()
-    returns a image array
-    '''
-    logger.info(f"Trying to read HDF5 file: {file_name}")
-
-    fil = h5py.File(file_name, 'r')
-    # get data
-    dset = fil['Frames']
-    if skip_first_frame:
-        data0 = np.array(list(dset))[1:]
-    else:
-        data0 = np.array(list(dset))
-
-    data_shape = data0.shape
-    num_cols = data_shape[2]
-    num_rows = data_shape[1]
-
-    if num_cols != NUM_COLS or num_rows != NUM_ROWS:
-        raise Exception("File:", file_name, " has incorrect dimensions.  Expecting num_rows =", NUM_ROWS, ", num_cols =", NUM_COLS)
-    
-    # Convert from uint16 to prepare for in-place computations
-    return data0.astype(np.float64)
-
-def read_roman_asdf(file_name:str, skip_first_frame:bool, logger:logging.Logger):
     '''
     read a ROMAN ASDF file
     written by Sarah Betti based on read_roman_fits()
@@ -103,9 +29,9 @@ def read_roman_asdf(file_name:str, skip_first_frame:bool, logger:logging.Logger)
 
     fil = asdf.open(file_name)
     # get data
-    data = np.array(fil.tree['roman']['data']['value'])
+    data = np.array(fil.tree['roman']['data'].value)
     # get amp33
-    amp33 = np.array(fil.tree['roman']['amp33']['value'])
+    amp33 = np.array(fil.tree['roman']['amp33'].value)
     # combine back together > amp33 added to end of array. 
     dset = np.concatenate([data, amp33], axis=2)
     if skip_first_frame:
@@ -120,24 +46,6 @@ def read_roman_asdf(file_name:str, skip_first_frame:bool, logger:logging.Logger)
     
     # Convert from uint16 to prepare for in-place computations
     return data0.astype(np.float64)
-
-
-
-def write_slopes(data_frames_rowscols:np.ndarray, file_name:str):
-    '''
-    Generate diagnostic per-pixel fitted slopes image and write to FITS file 
-    :param data_frames_rowscols:
-    :param file_name:
-    '''
-    sh = data_frames_rowscols.shape
-    nz = sh[0]
-    ny = sh[1]
-    nx = sh[2]
-    pp = Polynomial(nz, 1)
-    ss = np.empty((1,ny,nx))
-    ss[0] = pp.polyfit(data_frames_rowscols)[1]
-    fits.PrimaryHDU(ss).writeto(file_name, overwrite=True)
-    logger.info(f'Wrote slopes to file {file_name}')
 
     
 def remove_linear_trends(data_frames_rowscols:np.ndarray, subtract_offset_only:bool):
@@ -356,55 +264,12 @@ def exec_channel_func_threads(chan_index_range:range, target_func, func_args, mu
 
         for t in thread_list:
             t.start()
-            # print("m", end='', flush=True)  # 'm' -> multi-threading
 
         for t in thread_list:
             t.join()
-            # print("-", end='', flush=True)
     else:
         logger.info("Single threading-> ")
         for c in chan_index_range:
             func_args_with_chan = (c,) + func_args
-            # print("s", end='', flush=True)  # 's' -> single threading
             target_func(*func_args_with_chan)
-            # print("-", end='', flush=True)
     logger.info('Done executing over range of channels')
-    # print()  # EOL
-
-    
-    
-def destripe(dd:np.ndarray):
-    '''
-    Remove output offsets using inner 2 rows of reference columns on bottom and top of 
-    image area. For each output, the reference correction is linearly interpolated between
-    the reference rows.
-    
-    :param dd: A Roman WFI datacube
-
-    '''
-    
-    # Definitions
-    ny,nx = 4096,4224  # Image dimensions
-    nout = 33          # RST uses 32 outputs plus 1x reference output
-    wout = 128         # 128 pixels per output
-    count = 2          # Discard this many low/high samples for robust statistics
-    y0,y1 = 1.5,4093.5 # We use the inner 2 reference rows on the bottom and top.
-                       #   these are the mean y-coordinates for both.
-    y = np.arange(4096, dtype=np.float32).reshape((1,1,-1,1)) # y-coordinates of all rows shaped for broadcasting
-    
-    # Means of reference pixels in rows. The inner two rows on the bottom
-    # and top are most representative. We discard `count` samples on either 
-    # end of the distribution to make it robust against outliers.
-    bb = np.mean(np.sort(dd[:,1:3,:].reshape((-1,2,nout,wout)).swapaxes(2,3).reshape((-1,2*wout,
-                                nout)), axis=1)[:,count:-count,:], axis=1).reshape((-1,33,1,1))
-    tt = np.mean(np.sort(dd[:,-3:-1,:].reshape((-1,2,nout,wout)).swapaxes(2,3).reshape((-1,2*wout,
-                                    nout)), axis=1)[:,count:-count,:], axis=1).reshape((-1,33,1,1))
-    
-    # Compute reference corrections for all outputs simultaneously interpolating between bottom and top
-    rr = bb + (y-y0)*(tt-bb)/(y1-y0)
-    
-    # Subtract reference correction
-    dd = (dd.reshape((-1,ny,nout,wout)).swapaxes(1,2) - rr).swapaxes(1,2).reshape((-1,ny,nx))
-    
-    # Done!
-    return(dd)

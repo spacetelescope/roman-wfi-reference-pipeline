@@ -114,27 +114,17 @@ def generate(in_file_search_tag:str="*.hd5",
     gamma = np.empty(ww.shape, dtype=np.complex128)
     zeta = np.empty(ww.shape, dtype=np.complex128)   
                     
-    # logger.info('Weight calculation ..')    
+    logger.info('Weight calculation ..')    
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _channel_coeff_func, (alpha, gamma, zeta, aa, ll, rr, uu, vv, ww, xx, yy, zz, conj_uu, conj_vv, conj_zz, denom), multithread=multithread)
     
     alpha = alpha.astype(cfg_weights_dtype)
     gamma = gamma.astype(cfg_weights_dtype)
     zeta = zeta.astype(cfg_weights_dtype)
-    
-    ## DO NOT SAVE, JUST RETURN! 
-    # # logger.info(f'Writing weights to file {outFileName}') 
-    # with h5py.File(outFileName, 'w') as hf:
-    #     hf.create_dataset("files", data=in_files)
-    #     hf.create_dataset("freq", data=freq)
-    #     hf.create_dataset("alpha", data=alpha)
-    #     hf.create_dataset("gamma", data=gamma)
-    #     hf.create_dataset("zeta", data=zeta)
-    #     hf.create_dataset("lambda", data=lambda_coeff)
         
     logger.info(f'Total wall-clock execution (seconds):  {time.time() - start_sec}')
     logger.info('Done')
     
-    return freq, alpha, gamma, zeta#, lambda_coeff
+    return freq, alpha, gamma, zeta
 
     
 def _channel_coeff_func(chan:int, alpha:np.ndarray, gamma:np.ndarray, zeta:np.ndarray,
