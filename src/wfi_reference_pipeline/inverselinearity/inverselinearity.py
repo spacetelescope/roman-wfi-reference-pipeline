@@ -88,25 +88,25 @@ class InverseLinearity(ReferenceFile):
         sca_id_arr = [22066, 21815, 21946, 22073, 21816, 20663, 22069, 21641, 21813, 22078, 21947, 22077, 22067, 21814,
                       21645, 21643, 21319, 20833]
 
-        # Create a dictionary to map all wfi detectors to sca id numbers
+        # Create a dictionary to map all wfi detectors to sca id numbers.
         wfi_to_sca = dict(zip(wfi_arr, sca_id_arr))
         det_number = int(wfi_det[3:])
         sca_id = wfi_to_sca[wfi_det]
 
         # Make inverse linearity file string with absolute path to central storage from the detector input and the
-        # mapping to WFI tags
+        # mapping to WFI tags.
         inv_file_dir = '/grp/roman/bellini/WFIsim/CNL/new/'
         inv_file = inv_file_dir + 'LNC_SCA' + str(det_number).zfill(2) + '.fits'
 
-        # Open the SCA file to get inverse linearity coefficients as np.float32
+        # Open the SCA file to get inverse linearity coefficients as np.float32.
         with fits.open(inv_file) as hdul:
             self.inverselinearity_coefficients = hdul[0].data.astype(np.float32)
 
-        # Update meta data
+        # Update meta data and add sca id number.
         self.meta.update({'pedigree': 'GROUND'})
         self.meta['instrument'].update({'SCA': sca_id})
 
-    def update_dq_mask(self, tolerance=1.0):
+    def update_dq_mask(self, tolerance=1):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -119,10 +119,11 @@ class InverseLinearity(ReferenceFile):
         ----------
         tolerance: float; default = 1.0,
            The number of counts away from the test count value to determine if a pixel has
-           adequate inverse linearity coefficients. .
+           adequate inverse linearity coefficients.
         """
 
-        # Look at DCL data for zero in linear term and replace with suitable array to return count value.
+        # Look at DCL data for zero in linear term and replace with array to return count value.
+        # Applying no correction for DCL data that didn't generate inverse coefficients.
         bad_dcl_data = np.where(self.inverselinearity_coefficients[1, :, :] == 0)
         replacement_coefficients = np.array([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.float32)
         for x, y in zip(bad_dcl_data[0], bad_dcl_data[1]):
@@ -130,11 +131,11 @@ class InverseLinearity(ReferenceFile):
 
         # Check the inverse linearity coefficients with a test count rate.
         test_count = 20000.
-        test_count_value_array = test_count * self.inverselinearity_coefficients
-        test_count_sum_array = np.sum(test_count_value_array, axis=0)
+        #TODO confirm tolerance with calibration block for default value.
+        test_count_value_array = np.polyval(self.inverselinearity_coefficients[::-1], test_count)
 
         # Compare test count rate and see if outside the tolerance.
-        differences = np.abs(test_count_sum_array - test_count)
+        differences = np.abs(test_count_value_array - test_count)
         outside_tolerance = differences > (tolerance * test_count)
 
         # Update mask based on where the test was outside the tolerance.
