@@ -1,41 +1,35 @@
 '''
-IRRC Constants
+IRRC Constants : various constants that do not change for WFI detectors
 
-These should not change for RST
 
 @author: smaher
 @author: rarendt
 '''
 
-
 NUM_ROWS=4096
 
+# CHANS = amplifiers = outputs
 NUM_OUTPUT_CHANS = 33
 NUM_COLS_PER_OUTPUT_CHAN = 128
-NUM_COLS= NUM_OUTPUT_CHANS * NUM_COLS_PER_OUTPUT_CHAN
+NUM_COLS = NUM_OUTPUT_CHANS * NUM_COLS_PER_OUTPUT_CHAN
 
-# endOfRowPixelPad is the effective number of pixels sampled during the pause at the end of 
-# each numColsPerOutputChanWithPad. The padding is needed to preserve phase of temporally periodic signals.
+# END_OF_ROW_PIXEL_PAD is the effective number of pixels sampled during the pause at the end of 
+# each NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD. The padding is needed to preserve phase of temporally periodic signals.
 END_OF_ROW_PIXEL_PAD = 12
 
 NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD = NUM_COLS_PER_OUTPUT_CHAN + END_OF_ROW_PIXEL_PAD
 
 ALL_CHAN_RANGE = range(NUM_OUTPUT_CHANS)
 
-#
-# The 33rd output channel is a reference channel
-#
+# The 33rd amplifier is a reference amplifier.  python is 0-indexed, so this is index 32. 
 REFERENCE_CHAN = 32
 
-#
 # Range of non-reference (normal) channels.  Warning this definition only works because REFERENCE_CHAN is 
 # the last channel!
-#
 CHAN_RANGE_WITHOUT_REFERENCES = range(NUM_OUTPUT_CHANS - 1)
 
-
+# reference columns are included in amplifiers 1 and 32 (or 0 and 31 for python 0-indexing)
 REFERENCE_ROWS = [0, 1, 2, 3, 4092, 4093, 4094, 4095]
-
 
 COEFF_SHAPE = (NUM_OUTPUT_CHANS - 1, int(NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS / 2) + 1)
 

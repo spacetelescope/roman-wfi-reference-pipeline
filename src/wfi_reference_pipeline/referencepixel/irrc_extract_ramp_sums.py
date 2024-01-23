@@ -6,20 +6,18 @@ Specifically, given the following definitions
     n -> normal pixel
     a -> reference output
     rl -> left reference pixels
-    r1 -> right reference pixels
+    rr -> right reference pixels
 
 compute the following:
-
-    n*n
     n*a
     n*rl
-    n*r1
+    n*rr
     a*a
     a*rl
-    a*r1
+    a*rr
     rl*rl
-    r1*r1
-    rl*r1 
+    rr*rr
+    rl*rr 
 
 @author: rarendt
 @author: smaher
@@ -42,26 +40,21 @@ from .irrc_constants import NUM_OUTPUT_CHANS, END_OF_ROW_PIXEL_PAD, \
 import logging
 logger = logging.getLogger('ReferencePixel Sums')
 
-# Pixel values with sigmas larger than this value are removed (and interpolated over) 
-# during ramp sum extraction.  
-# NOTE: this is for the default outlier function; a custom outlier function may ignore this.
-cfg_outlier_stddev_threshold = 4.0
-
-# Number of iterations when doing FFT interpolations
-cfg_fft_interpolation_iterations = 3
 
 def extract(in_file_name:str, out_directory:str=None, multithread:bool=True, 
-    skip_first_frame:bool=True, external_pixel_flags:np.ndarray=None, external_outlier_func=None, outlier_stddev:float=cfg_outlier_stddev_threshold):
+    skip_first_frame:bool=True, external_pixel_flags:np.ndarray=None, external_outlier_func=None, outlier_stddev:float=4.0,
+    cfg_fft_interpolation_iterations:int=3):
     '''
     Extract ramp sums from a single ASDF file.  Generally this is done for several files and then generate is run on the results.
     
-    :param in_file_name: input FITS file name
+    :param in_file_name: input ASDF file name
     :param out_directory: directory in which to store results
     :param multithread: should multithreading be used in various calculations?
     :param skip_first_frame: should the first frame of the data be skipped? (it is often skipped to avoid reset settling artifacts)
     :param external_pixel_flags: optional external pixel flags that get combined with internal outlier mask (as defined in apply_external_pixel_flags_to_outlier_mask(); shape (constants.NUM_ROWS, constants.NUM_COLS) 
     :param external_outlier_func: optional alternative to default outlier function; same method signature as _find_outliers_chan_func
     :param outlier_stddev: number of standard deviations to be considered an 'outlier'.  Used by default outlier function and passed to custom outlier func
+    :param cfg_fft_interpolation_iterations: Number of iterations when doing FFT interpolations
     '''
 
     start_sec = time.time()
@@ -89,10 +82,7 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     logger.info(f'Input file name: {in_file_name}')
     logger.info(f'Output file name: {out_file_name}')
     
-    
-    
-    ####################### CAN READ IN ASDF!!!! ##################
-    # Read file file
+    # Read .asdf file
     data0 = read_roman_file(in_file_name, skip_first_frame, logger)
     num_frames = data0.shape[0]
     if num_frames < 2:
@@ -139,7 +129,7 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
         # (mean(data0) = 0 after linear trend removal)
         sig_data = np.sqrt(np.sum(data0 ** 2 / (num_frames - 1), axis=0))  
         
-        logger.info(f'Flagging pixels outside stdev = {cfg_outlier_stddev_threshold}')
+        logger.info(f'Flagging pixels outside stdev = {outlier_stddev}')
         exec_channel_func_threads(range(NUM_OUTPUT_CHANS - 1), _find_outliers_chan_func, (util.get_reference_mask(0), 
             sig_data, outliers_mask_rowcol, outlier_stddev), multithread=multithread)
             
@@ -294,8 +284,8 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS), _sum_chan_func, (data_fft_out, sum_na, sum_nl, sum_nr, conj_data, conjrl, conjrr, num_frames), multithread=multithread)
     
     sum_ll = np.sum(np.abs(rl_fft) ** 2, 0) / (num_frames - 1)
-    sum_rr = np.sum(np.abs(rr_fft) ** 2, 0) / (num_frames - 1)  # total(abs(r1)^2,2)/(s[3]-1)
-    sum_lr = np.sum(rl_fft * conjrr, 0) / (num_frames - 1)  # total(rl*conj(r1),2)/(s[3]-1)
+    sum_rr = np.sum(np.abs(rr_fft) ** 2, 0) / (num_frames - 1)  
+    sum_lr = np.sum(rl_fft * conjrr, 0) / (num_frames - 1)  
 
 
 
@@ -311,7 +301,6 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     logger.info(f'Writing to {out_file_name}')
     with h5py.File(out_file_name, 'w') as hf:
         hf.create_dataset("freq", data=freq)
-        hf.create_dataset("sum_nn", data=sum_nn)
         hf.create_dataset("sum_na", data=sum_na)
         hf.create_dataset("sum_nl", data=sum_nl)
         hf.create_dataset("sum_nr", data=sum_nr)
@@ -326,7 +315,7 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
 
 
 
-def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.ndarray, outliers_mask_rowcol_inout:np.ndarray, outlier_stddev:float=cfg_outlier_stddev_threshold):
+def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.ndarray, outliers_mask_rowcol_inout:np.ndarray, outlier_stddev:float=4.0):
     '''
     Set outliers_mask_rowcol_inout to 0 where the sig_data values are >= std of sigmaThreshold.  The evaluation is done separately for
     reference and normal pixels.
@@ -360,13 +349,13 @@ def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.nda
     outliers_mask_rowcol_inout[:, column_slice] = np.ma.mask_or(norm_pixs_inliers_one_mask, ref_pixs_inliers_one_mask)
     
 
-def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_no:np.ndarray, sum_nrl:np.ndarray, sum_nr1:np.ndarray,
-                  conjd:np.ndarray, conjrl:np.ndarray, conjr1:np.ndarray, num_frames:int):
+def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_no:np.ndarray, sum_nrl:np.ndarray, sum_nrr:np.ndarray,
+                  conjd:np.ndarray, conjrl:np.ndarray, conjrr:np.ndarray, num_frames:int):
     
     frame_data = data_fft_out[chan,:,:]
     sum_no[chan,:] = np.sum(frame_data * conjd, 0) / (num_frames - 1)
     sum_nrl[chan,:] = np.sum(frame_data * conjrl, 0) / (num_frames - 1)
-    sum_nr1[chan,:] = np.sum(frame_data * conjr1, 0) / (num_frames - 1)      
+    sum_nrr[chan,:] = np.sum(frame_data * conjrr, 0) / (num_frames - 1)      
     
 
 
