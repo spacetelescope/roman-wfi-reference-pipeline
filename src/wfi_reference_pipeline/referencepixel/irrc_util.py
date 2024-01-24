@@ -10,6 +10,8 @@ import threading
 import numpy as np
 import scipy.fft as spfft
 import asdf
+import h5py
+from astropy.io import fits
 
 from .irrc_constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS, \
     ALL_CHAN_RANGE, REFERENCE_ROWS, \
@@ -18,8 +20,78 @@ from .irrc_constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS,
 import logging
 logger = logging.getLogger('ReferencePixel util')
 
+def read_roman_file(file_name:str, skip_first_frame:bool):
+    if '.h5' in file_name:
+        return read_roman_hdf5(file_name, skip_first_frame)
+    elif '.fits' in file_name:
+        return read_roman_fits(file_name, skip_first_frame)
+    elif '.asdf' in file_name:
+        return read_roman_asdf(file_name, skip_first_frame)
+    else:
+        raise ValueError('can only read in .h5, .asdf, or .fits.')
 
-def read_roman_file(file_name:str, skip_first_frame:bool, logger:logging.Logger):
+def read_roman_fits(file_name:str, skip_first_frame:bool):
+    '''
+    Read a ROMAN FITS file
+    :param file_name: FITS file name
+    :param skip_first_frame: optionally skip first frame
+    :param logger: e.g., irrc.logger.get_logger(name)
+    :returns FITS image array
+    '''
+
+    logger.info(f"Trying to read FITS file: {file_name}")
+    # Cannot use a memory-mapped image: BZERO/BSCALE/BLANK header keywords present.
+    with fits.open(file_name, memmap=False) as hdu_list:
+
+        hdu_data = hdu_list[1]
+        logger.info(f"Reading FITS data of dimensions {hdu_data.header['NAXIS1']}  x  {hdu_data.header['NAXIS2']} x {hdu_data.header['NAXIS3']}")
+
+        # numpy.ndarray of type uint16 then float64 after multiplication by gain
+        # FITS has an extra dimension, hence the data[0]
+        # Also remove the first frame due to reset anomalies
+        if skip_first_frame:
+            data0 = hdu_data.data[0, 1:]
+        else:
+            data0 = hdu_data.data[0,:]
+
+    data_shape = data0.shape
+    num_cols = data_shape[2]
+    num_rows = data_shape[1]
+
+    if num_cols != NUM_COLS or num_rows != NUM_ROWS:
+        raise Exception("File:", file_name, " has incorrect dimensions.  Expecting num_rows =", NUM_ROWS, ", num_cols =", NUM_COLS)
+
+    # Convert from uint16 to prepare for in-place computations
+    return data0.astype(np.float64)
+
+def read_roman_hdf5(file_name:str, skip_first_frame:bool):
+    '''
+    read a ROMAN hdf5 file
+    written by Sarah Betti based on read_roman_fits()
+    returns a image array
+    '''
+    logger.info(f"Trying to read HDF5 file: {file_name}")
+
+    fil = h5py.File(file_name, 'r')
+    # get data
+    dset = fil['Frames']
+    if skip_first_frame:
+        data0 = np.array(list(dset))[1:]
+    else:
+        data0 = np.array(list(dset))
+
+    data_shape = data0.shape
+    num_cols = data_shape[2]
+    num_rows = data_shape[1]
+
+    if num_cols != NUM_COLS or num_rows != NUM_ROWS:
+        raise Exception("File:", file_name, " has incorrect dimensions.  Expecting num_rows =", NUM_ROWS, ", num_cols =", NUM_COLS)
+    
+    # Convert from uint16 to prepare for in-place computations
+    return data0.astype(np.float64)
+
+
+def read_roman_file(file_name:str, skip_first_frame:bool):
     '''
     read a ROMAN ASDF file
     written by Sarah Betti based on read_roman_fits()

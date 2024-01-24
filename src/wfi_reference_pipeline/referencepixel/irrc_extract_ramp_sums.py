@@ -82,12 +82,11 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     logger.info(f'Input file name: {in_file_name}')
     logger.info(f'Output file name: {out_file_name}')
     
-    # Read .asdf file
+    # Read file
     data0 = read_roman_file(in_file_name, skip_first_frame, logger)
     num_frames = data0.shape[0]
     if num_frames < 2:
-        # _sum_chan_func() requires > 1 frames with (frames - 1) as denominator
-        logger.fatal(f'IRRC does not support FITS files with fewer than two frames.  File {in_file_name} has {num_frames} frames')
+        logger.fatal(f'IRRC does not support exposures with fewer than two frames.  File {in_file_name} has {num_frames} frames')
         raise ValueError("Illegal number of frames")
     
     
