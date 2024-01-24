@@ -83,7 +83,7 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     logger.info(f'Output file name: {out_file_name}')
     
     # Read file
-    data0 = read_roman_file(in_file_name, skip_first_frame, logger)
+    data0 = read_roman_file(in_file_name, skip_first_frame)
     num_frames = data0.shape[0]
     if num_frames < 2:
         logger.fatal(f'IRRC does not support exposures with fewer than two frames.  File {in_file_name} has {num_frames} frames')

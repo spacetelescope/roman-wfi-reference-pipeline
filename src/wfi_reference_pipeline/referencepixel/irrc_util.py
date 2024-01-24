@@ -91,7 +91,7 @@ def read_roman_hdf5(file_name:str, skip_first_frame:bool):
     return data0.astype(np.float64)
 
 
-def read_roman_file(file_name:str, skip_first_frame:bool):
+def read_roman_asdf(file_name:str, skip_first_frame:bool):
     '''
     read a ROMAN ASDF file
     written by Sarah Betti based on read_roman_fits()
