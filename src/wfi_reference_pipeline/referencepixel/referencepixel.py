@@ -7,6 +7,7 @@ from .irrc_generate_weights import generate
 import asdf
 import os                       # Operating system
 import shutil
+import h5py
 
 import logging
 from ..utilities import logging_functions
@@ -62,7 +63,7 @@ class ReferencePixel(ReferenceFile):
         self.zeta = zeta
         self.alpha = alpha
 
-    def make_referencepixel_coeffs(self, tmppath=None, ):
+    def make_referencepixel_coeffs(self, tmppath=None):
         """
         The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
         Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.  
@@ -117,11 +118,29 @@ class ReferencePixel(ReferenceFile):
         self.zeta = zeta 
         self.alpha = alpha 
 
+        #TODO add in the files to the metadata as list
+
         # ===== Clean up =====
         # Delete intermediate results and folder
         shutil.rmtree(tmpdir)
 
 
+    def make_hdf5_weights(self):
+        """
+        open an .h5 weight file and convert to .asdf file
+        """
+        # we assume files is a list of weight paths
+        files = self.input_data
+        if isinstance(files, str):
+            files = [files]
+
+        for file in files:
+            with h5py.File(file, 'r') as hf:
+                self.alpha = hf["alpha"][:]
+                self.gamma = hf["gamma"][:]
+                self.zeta = hf["zeta"][:]
+
+        
 
     def populate_datamodel_tree(self):
         """
