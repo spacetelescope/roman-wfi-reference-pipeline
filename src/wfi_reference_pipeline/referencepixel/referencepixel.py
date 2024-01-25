@@ -15,11 +15,13 @@ logging_functions.configure_logging("ReferencePixel")
 
 class ReferencePixel(ReferenceFile):
     """
-    Class InvLinearity() inherits the ReferenceFile() base class methods
+    Class ReferencePixel() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written.
+    Under automated operations conditions, a list of dark calibration files from a directory will be the input data for the class to begin generatoring a reference pixel reference pixel.
+    Each file will be run through IRRC, which will generate per expsoure sums necessary to minimize Fn = alpha*Fa + gamma*Fl + zeta*Fr, which are then combined to create a final reference pixel reference file coefficientts.  
     """
 
-    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', freq = None, gamma=None, zeta=None, alpha=None, 
+    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', gamma=None, zeta=None, alpha=None, 
                  bit_mask=None, clobber=False):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -28,13 +30,12 @@ class ReferencePixel(ReferenceFile):
         Parameters
         ----------
 
-        input_data: numpy.ndarray; Placeholder. It populates self.input_data.
-            ASSUME IT IS A LIST OF FILES!!
+        input_data: string object; default = None
+            List of dark calibration filenames with absolute paths for one detector
         meta_data: dictionary; default = None
             Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = roman_refpix.asdf
             Filename with path for saved reference correction reference file.
-        freq: 
         gamma: 2D complex128 numpy array
         zeta: 2D complex128 numpy array
         alpha: 2D complex128 numpy array
@@ -60,11 +61,13 @@ class ReferencePixel(ReferenceFile):
         self.gamma = gamma
         self.zeta = zeta
         self.alpha = alpha
-        self.freq = freq
 
-    def make_referencepixel_coeffs(self, tmppath=None):
+    def make_referencepixel_coeffs(self, tmppath=None, ):
         """
-        The method make_referencepixel_coeffs creates an object from the DMS data model.
+        The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
+        Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.  
+
+        NOTE: Initial testing was performed by S. Betti with 100 dark files each with 55 reads.  Each file took ~134s to calculate the sums and ~4hours to compute the final coefficients.  The peak memory usage was 40 GB.  
 
         Parameters
         ----------
@@ -75,21 +78,27 @@ class ReferencePixel(ReferenceFile):
 
         # we assume files is a list of exposures paths and filename for 1 detector. 
         files = self.input_data
+
+        # Display the directory name where the dark calibration files are located to make the reference pixel reference file
+        logging.info(
+            f"Using files from {os.path.dirname(files[0])} to construct reference coeffienct object."
+        )
         
         detector = self.meta['instrument']['detector'] # taken from WFIMetaReferencePixel() dictionary style
         logging.info(f'detector {detector}')
 
         # create name of folder to save the exposure weight .h5 files
         if tmppath is None:
-            tmpdir = f'./tmpIRRC_{detector}'
+            tmpdir = f'./tmp_IRRC_{detector}'
         else:
-            tmpdir = os.path.join(tmppath, f'tmpIRRC_{detector}')
+            tmpdir = os.path.join(tmppath, f'tmp_IRRC_{detector}')
 
         # if tmpdir does not exist, create it
         if not os.path.exists(tmpdir):
-            logging.info(f'creating folder: {tmpdir}')
+            logging.info(f'creating temporary folder to save individual exposure sums at : {tmpdir}')
             os.mkdir(tmpdir)
 
+        # ===== Compute IRRC sums for individaul ramps =====
         logging.info('*** Compute IRRC sums for individual ramps...')
         for file in files:
                 logging.info(f"*** Processing ramp: {file}")
@@ -99,17 +108,14 @@ class ReferencePixel(ReferenceFile):
         # ===== Compute IRRC frequency dependent weights =====
         # This uses the full data set.
         logging.info('*** Generate IRRC calibration file...')
-        # The way that Steve has set this up, the first argument is really just a glob
-        # pattern. It is not an actual list of files.
         glob_pattern = tmpdir + '/*_sums.h5'
  
         # Generate frequency dependent weights
-        freq, alpha, gamma, zeta = generate(glob_pattern) 
+        alpha, gamma, zeta = generate(glob_pattern) 
         
         self.gamma = gamma 
         self.zeta = zeta 
         self.alpha = alpha 
-        self.freq = freq 
 
         # ===== Clean up =====
         # Delete intermediate results and folder
@@ -128,8 +134,7 @@ class ReferencePixel(ReferenceFile):
         referencepixel_datamodel_tree['gamma'] = self.gamma
         referencepixel_datamodel_tree['zeta'] = self.zeta
         referencepixel_datamodel_tree['alpha'] = self.alpha
-        referencepixel_datamodel_tree['freq'] = self.freq
-
+        
         return referencepixel_datamodel_tree
 
     def save_referencepixel(self, datamodel_tree=None):

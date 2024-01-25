@@ -1,9 +1,10 @@
 '''
 IRRC Constants : various constants that do not change for WFI detectors
 
+Written by (Rauscher et al., in prep):
+    - S. Maher
+    - R. Arendt
 
-@author: smaher
-@author: rarendt
 '''
 
 NUM_ROWS=4096

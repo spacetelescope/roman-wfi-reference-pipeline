@@ -1,8 +1,9 @@
 '''
-Various functions that are common to multiple IRRC steps
+Various functions that are common to multiple IRRC steps performed in irrc_extract_ramp_sums and irrc_generate_weights
 
-@author: smaher
-@author: rarendt
+Written by (Rauscher et al., in prep):
+    - S. Maher
+    - R. Arendt
 '''
 
 import threading
@@ -128,9 +129,7 @@ def remove_linear_trends(data_frames_rowscols:np.ndarray, subtract_offset_only:b
     :return per-pixel image array of modeled m (slope) and b (offset) 
     '''
 
-    num_frames = len(data_frames_rowscols)
-    num_rows = len(data_frames_rowscols[0])
-    num_cols = len(data_frames_rowscols[0][0])
+    num_frames, num_rows, num_cols = data_frames_rowscols.shape
 
     # for mat multiply
     data_frames_rowscols = data_frames_rowscols.reshape((num_frames, num_cols * num_rows))
@@ -165,8 +164,7 @@ def remove_linear_trends_per_frame(logger:logging.Logger, data_chans_frames_rows
     :param subtract_offset_only: if True, only the liner model offset is removed.  If False, the offset and slope are removed
     '''
 
-    num_frames = len(data_chans_frames_rowschancols[0])
-    num_rows = len(data_chans_frames_rowschancols[0][0])
+    _, num_frames, num_rows, _ = data_chans_frames_rowschancols.shape
     time_domain_range = np.arange(NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * num_rows, dtype=data_chans_frames_rowschancols.dtype).reshape(num_rows, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD)
     time_domain_range = time_domain_range - time_domain_range.mean()
 
@@ -225,7 +223,7 @@ def interp_zeros_channel_fun(chan_number:int, interp_func:np.ndarray, data_chans
         dat = np.reshape(data_chans_frames_rowscols[chan_number, frame,:,:], num_cols_per_output_chan_with_pad * num_rows)
 
         # Apply to areas with 0 value.
-        apply_mask = np.where(dat != 0, 1, 0)
+        apply_mask = (dat != 0).astype(int)
 
         data_convolve = np.convolve(dat, interp_func, mode='same')  # 'same' -> /edge_wrap in IDL
         apply_mask_convolve = np.convolve(apply_mask, interp_func, mode='same')

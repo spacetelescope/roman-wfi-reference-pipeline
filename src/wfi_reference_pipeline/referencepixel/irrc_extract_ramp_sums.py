@@ -9,18 +9,19 @@ Specifically, given the following definitions
     rr -> right reference pixels
 
 compute the following:
-    n*a
-    n*rl
-    n*rr
-    a*a
-    a*rl
-    a*rr
-    rl*rl
-    rr*rr
-    rl*rr 
+    n x n* 
+    n x l*
+    n x r*
+    l x l*
+    r x r*
+    l x r*
+    a x a*
+    a x l*
+    a x r*
 
-@author: rarendt
-@author: smaher
+Written by (Rauscher et al., in prep):
+    - R. Arendt
+    - S. Maher
 '''
 
 import os
@@ -266,33 +267,36 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
             
 
     #######################
-    #    
     # Calculate sums
-    # 
-    
+
     logger.info('Sum calculation ..')
+    # sum_nn = sum_nl = sum_na = sum_nr > sums for the 33 amplifiers
     sum_nn = np.sum(np.square(np.abs(data_fft_out)), 1) / (num_frames - 1)
     sum_na = sum_nn.astype(complex)
     sum_nl = np.copy(sum_na)
     sum_nr = np.copy(sum_na)
     
+    # conjugate of the 33rd reference amplifier
     conj_data = np.conjugate(data_fft_out[-1,:,:])
+    # conjugate of the left reference columnes
     conjrl = np.conjugate(rl_fft)
+    # conjugate of the right reference columns
     conjrr = np.conjugate(rr_fft)            
 
+    # sum_na = (n x n*)
+    # sum_nl = (n x l*)
+    # sum_nr = (n x r*)
     exec_channel_func_threads(range(NUM_OUTPUT_CHANS), _sum_chan_func, (data_fft_out, sum_na, sum_nl, sum_nr, conj_data, conjrl, conjrr, num_frames), multithread=multithread)
     
+    # sum_ll = (l x l*)
     sum_ll = np.sum(np.abs(rl_fft) ** 2, 0) / (num_frames - 1)
+    # sum_rr = (r x r*)
     sum_rr = np.sum(np.abs(rr_fft) ** 2, 0) / (num_frames - 1)  
+    # sum_lf = (l x r*)
     sum_lr = np.sum(rl_fft * conjrr, 0) / (num_frames - 1)  
 
-
-
     #######################
-    #    
     # Write results
-    # 
-        
     e = NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD * NUM_ROWS
     f = np.abs(np.fft.rfftfreq(e, 1 / e))
     freq = f * (PIXEL_READ_FREQ_HZ / 2.) / f.max()
@@ -300,18 +304,16 @@ def extract(in_file_name:str, out_directory:str=None, multithread:bool=True,
     logger.info(f'Writing to {out_file_name}')
     with h5py.File(out_file_name, 'w') as hf:
         hf.create_dataset("freq", data=freq)
-        hf.create_dataset("sum_na", data=sum_na)
-        hf.create_dataset("sum_nl", data=sum_nl)
-        hf.create_dataset("sum_nr", data=sum_nr)
-        hf.create_dataset("sum_ll", data=sum_ll)
-        hf.create_dataset("sum_rr", data=sum_rr)
-        hf.create_dataset("sum_lr", data=sum_lr)
+        hf.create_dataset("sum_na", data=sum_na) # (n x n*)
+        hf.create_dataset("sum_nl", data=sum_nl) # (n x l*)
+        hf.create_dataset("sum_nr", data=sum_nr) # (n x r*)
+        hf.create_dataset("sum_ll", data=sum_ll) # (l x l*)
+        hf.create_dataset("sum_rr", data=sum_rr) # (r x r*)
+        hf.create_dataset("sum_lr", data=sum_lr) # (l x r*)
     logger.info(f'Total wall clock execution (seconds):  {time.time() - start_sec}')
     logger.info('Done')
     
     return (sum_nn, sum_na, sum_nl, sum_nr, sum_ll, sum_rr, sum_lr)
-
-
 
 
 def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.ndarray, outliers_mask_rowcol_inout:np.ndarray, outlier_stddev:float=4.0):
@@ -348,13 +350,13 @@ def _find_outliers_chan_func(chan:int, ref_zero_mask:np.ndarray, sig_data:np.nda
     outliers_mask_rowcol_inout[:, column_slice] = np.ma.mask_or(norm_pixs_inliers_one_mask, ref_pixs_inliers_one_mask)
     
 
-def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_no:np.ndarray, sum_nrl:np.ndarray, sum_nrr:np.ndarray,
-                  conjd:np.ndarray, conjrl:np.ndarray, conjrr:np.ndarray, num_frames:int):
+def _sum_chan_func(chan:int, data_fft_out:np.ndarray, sum_na:np.ndarray, sum_nl:np.ndarray, sum_nr:np.ndarray,
+                  conj_data:np.ndarray, conjrl:np.ndarray, conjrr:np.ndarray, num_frames:int):
     
     frame_data = data_fft_out[chan,:,:]
-    sum_no[chan,:] = np.sum(frame_data * conjd, 0) / (num_frames - 1)
-    sum_nrl[chan,:] = np.sum(frame_data * conjrl, 0) / (num_frames - 1)
-    sum_nrr[chan,:] = np.sum(frame_data * conjrr, 0) / (num_frames - 1)      
+    sum_na[chan,:] = np.sum(frame_data * conj_data, 0) / (num_frames - 1)
+    sum_nl[chan,:] = np.sum(frame_data * conjrl, 0) / (num_frames - 1)
+    sum_nr[chan,:] = np.sum(frame_data * conjrr, 0) / (num_frames - 1)      
     
 
 
