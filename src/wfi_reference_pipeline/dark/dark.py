@@ -90,9 +90,7 @@ class Dark(ReferenceFile):
         self.resampled_dark_cube = None  # MA table averaged resultant cube.
         self.resampled_dark_cube_model = None  # MA table resultant ramp model.
         self.resampled_dark_cube_err = None  # MA table averaged resultant error cube.
-        self.resultant_tau_arr = (
-            None
-        )  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
+        self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14.
         self.dark_rate_image = None  # Rate image from ramp fit.
         self.dark_intercept_image = None  # Intercept image from ramp fit.
         self.dark_rate_var = None  # Variance in fitted rate image.
@@ -102,6 +100,10 @@ class Dark(ReferenceFile):
         self.ni = None  # Number of pixels.
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
+
+        # Check input data to initialize Dark().
+        if self.input_data is None and self.dark_read_cube is None:
+            raise ValueError('No data supplied to make dark reference file!')
 
     def make_super_dark(self, sig_clip_md_low=3.0, sig_clip_md_high=3.0):
         """

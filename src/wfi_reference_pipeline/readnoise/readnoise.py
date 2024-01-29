@@ -27,7 +27,12 @@ class ReadNoise(ReferenceFile):
     more mature functionality of the reference file pipeline.
     """
 
-    def __init__(self, input_file_list, meta_data=None, bit_mask=None, outfile='roman_radnoise.asdf', clobber=False,
+    def __init__(self,
+                 input_file_list,
+                 meta_data=None,
+                 bit_mask=None,
+                 outfile='roman_radnoise.asdf',
+                 clobber=False,
                  input_data_cube=None):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -60,7 +65,13 @@ class ReadNoise(ReferenceFile):
         """
 
         # Access methods of base class ReferenceFile
-        super().__init__(input_file_list, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
+        super().__init__(
+            input_file_list,
+            meta_data,
+            bit_mask=bit_mask,
+            clobber=clobber,
+            make_mask=True
+        )
 
         # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
@@ -68,81 +79,92 @@ class ReadNoise(ReferenceFile):
         if 'reftype' not in self.meta.keys():
             self.meta['reftype'] = 'READNOISE'
 
-        logging.info(f'Default read noise reference file object: {outfile} ')
-
-        # If no output filename given, set default filename.
-        self.outfile = outfile if outfile else 'roman_read_noise.asdf'
-        logging.info(f'Default read noise reference file object: {outfile} ')
-
+        # Initialize attributes
+        self.outfile = outfile
         # Additional object attributes
-        self.input_file_list_cube = None  # Cube of data generated from input file list
-        self.input_readnoise_cube = input_data_cube  # Default to user supplied input data cube, over write if filelist
-        self.ramp_model = None  # Ramp model fitted to input data cube.
-        self.ramp_res_var = None  # The variance in the residuals of the difference between the ramp model and input
-        # data cube that was created from one of the dark calibration files or the input_read_cube supplied.
-        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs of reads/frames.
+        # Inputs
+        self.input_data_cube = input_data_cube  # Default to user supplied input data cube, over write if filelist
+        # Internal
+        self.ramp_model = None  # Ramp model fitted to a data cube.
+        self.ramp_res_var = None  # The variance of residuals of the difference between the ramp model and a
+        # data cube.
+        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs of reads
+        # in a data cube.
+        # Readnoise attributes
+        self.readnoise_image = None
+
         # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
         self.n_reads = None  # Number of reads in data cube being analyzed.
         self.ni = None  # Number of pixels.
         self.frame_time = None  # Mode dependent exposure frame time per read.
         self.time_arr = None  # Time array of an exposure or input data.
 
-        # Check input data to initialize ReadNoise().
-        if self.input_data is None and self.input_readnoise_cube is None:
+        # Check input data to instantiated ReadNoise().
+        if self.input_data is None and self.input_data_cube is None:
             raise ValueError('No data supplied to make read noise reference file!')
+        if self.input_data is not None and len(self.input_data) > 0 and \
+                self.input_data_cube is not None and len(self.input_data_cube) > 0:
+            raise ValueError('Two inputs provided. Not sure how to proceed. Provide files or a data cube; not both.')
 
-    def make_read_cube(self):
+    def make_readnoise_image(self):
         """
-        The method make_read_cube() looks through the filelist provided to the ReadNoise module and finds the file with
-        the most number of reads in that list. It currently sorts the files in descending order of the number
-        of reads such that the first index will be the file with the most number of reads and the last will have the
-        fewest. This functionality could be useful for looking at how many reads are necessary to accurately quantify
-        the read noise.
+        This method determines the flow of the module based on the input data
+        when the class is instantiated. The read noise rate image is created at the
+        end of the method to be the data in the datamodel.
         """
 
-        # Determine what type of input data was passed. If input data is not none, then go through the list of files.
-        if self.input_data is not None and self.input_readnoise_cube is None:
-            logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to find file longest exposure'
-                         f'and the most number of reads.')
-            # Go through all dark files to sort them from the longest to shortest number of reads available.
-            fl_reads_ordered_list = []
-            for fl in range(0, len(self.input_data)):
-                tmp = asdf.open(self.input_data[fl], validate_on_read=False)
-                n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
-                fl_reads_ordered_list.append([self.input_data[fl],n_rds])
-                tmp.close()
-            # Sort the list of files in reverse order such that the file with the most number of reads is always in
-            # the zero index first element of the list.
-            fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
+        # Use input files if they exist.
+        if self.input_data is not None:
+            logging.info('Using file list to make make read noise.')
+            self.select_data_cube()
+            self.readnoise_image = self.comp_ramp_res_var()
+        # Attempt to use input data cube.
+        try:
+            shape = self.input_data_cube.shape
+            if len(shape) == 2:
+                logging.info('Input data is a 2D array. Writing array to self.readnoise_image.')
+                self.readnoise_image = self.input_data_cube
+            if len(shape) == 3:
+                n_reads = shape[0]
+                logging.info(f'Input data cube has {n_reads} reads.')
+                self.readnoise_image = self.comp_ramp_res_var()
+        except Exception as e:
+            raise ValueError('Input data is not a compatible numpy array shape.') from e
 
-            # Get the input dark file with the most number of reads from the sorted list.
-            tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
-            self.input_file_list_cube = tmp.tree['roman']['data']
-            logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
+    def select_data_cube(self):
+        """
+        The method select_data_cube() looks through the file list provided to ReadNoise() and finds the file with
+        the most number of reads. It sorts the files in descending order by the number of reads such that the
+        first index will be the file with the most number of reads and the last will have the fewest.
 
-        elif self.input_data is None and self.input_readnoise_cube is not None:
-            logging.info('No files to make read cube. User supplied input read cube.')
-            raise ValueError('User supplied input read cube. No action taken by method make_read_cube()!')
-        else:
-            raise ValueError('Expected either a file list or an input data read cube. Not both!')
+        #TODO This could be useful to compare cube with varying numbers of reads and the calculated read noise.
+        """
 
-    def initialize_arrays(self):
+        logging.info(f'Using files from {os.path.dirname(self.input_data[0])} to find file longest exposure'
+                     f'and the most number of reads.')
+        # Go through all files to sort them from the longest to shortest number of reads available.
+        fl_reads_ordered_list = []
+        for fl in range(0, len(self.input_data)):
+            tmp = asdf.open(self.input_data[fl], validate_on_read=False)
+            n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
+            fl_reads_ordered_list.append([self.input_data[fl], n_rds])
+            tmp.close()
+        # Sort the list of files in reverse order such that the file with the most number of reads is always in
+        # the zero index first element of the list.
+        fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
+
+        # Get the input file with the most number of reads from the sorted list.
+        tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
+        self.input_data_cube = tmp.tree['roman']['data']
+        logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
+
+    def _initialize_arrays(self):
         """
         Method initialize_arrays makes arrays of the dimensions of the dark_read_cube, which are also required
         in the data model.
         """
 
-        if self.input_file_list_cube is not None:
-            self.input_readnoise_cube = self.input_file_list_cube
-            self.n_reads, self.ni, _ = np.shape(self.input_readnoise_cube)
-            logging.info('')
-        elif self.input_readnoise_cube is not None:
-            self.n_reads, self.ni, _ = np.shape(self.input_readnoise_cube)
-        else:
-            raise ValueError('Expected either an input file list cube or a user supplied input data cube.')
-
-        # Initialize ramp residual variance array.
-        self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        self.n_reads, self.ni, _ = np.shape(self.input_data_cube)
 
         # Make the time array for the length of the dark read cube exposure.
         if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
@@ -154,7 +176,7 @@ class ReadNoise(ReferenceFile):
                      f'time of {self.frame_time} seconds.')
         self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
 
-    def make_ramp_cube_model(self):
+    def _make_ramp_cube_model(self):
         """
         Method make_ramp_cube_model performs a linear fit to the input read cube for each pixel. The slope
         and intercept are returned along with the covariance matrix which has the corresponding diagonal error
@@ -166,7 +188,7 @@ class ReadNoise(ReferenceFile):
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
         p, v = np.polyfit(self.time_arr,
-                          self.input_readnoise_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
+                          self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
 
         # Reshape the parameter slope array into a 2D rate image.
         ramp_image = p[0].reshape(self.ni, self.ni)
@@ -198,14 +220,17 @@ class ReadNoise(ReferenceFile):
 
         logging.info('Computing residuals of ramp model from data to estimate variance component of read noise.')
 
-        self.initialize_arrays()
-        self.make_ramp_cube_model()
+        self._initialize_arrays()
+        self._make_ramp_cube_model()
 
-        residual_cube = self.ramp_model - self.input_readnoise_cube
+        # Initialize ramp residual variance array.
+        self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        residual_cube = self.ramp_model - self.input_data_cube
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
         std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std*std)
+        self.ramp_res_var = np.float32(std * std)
+        return self.ramp_res_var
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
@@ -223,15 +248,15 @@ class ReadNoise(ReferenceFile):
 
         logging.info('Calculating CDS noise.')
 
-        self.initialize_arrays()
-        self.make_ramp_cube_model()
+        self._initialize_arrays()
+        self._make_ramp_cube_model()
 
         read_diff_cube = np.zeros((math.ceil(self.n_reads / 2), self.ni, self.ni), dtype=np.float32)
         for i_read in range(0, self.n_reads - 1, 2):
             # Avoid index error if n_reads is odd and disregard the last read because it does not form a pair.
             logging.info(f'Calculating correlated double sampling between frames {i_read} and {i_read + 1}')
-            rd1 = self.ramp_model[i_read, :, :] - self.input_readnoise_cube[i_read, :, :]
-            rd2 = self.ramp_model[i_read + 1, :, :] - self.input_readnoise_cube[i_read + 1, :, :]
+            rd1 = self.ramp_model[i_read, :, :] - self.input_data_cube[i_read, :, :]
+            rd2 = self.ramp_model[i_read + 1, :, :] - self.input_data_cube[i_read + 1, :, :]
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2 - rd1
         clipped_diff_cube = sigma_clip(read_diff_cube, sigma_lower=sig_clip_cds_low, sigma_upper=sig_clip_cds_high,
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
@@ -239,6 +264,8 @@ class ReadNoise(ReferenceFile):
 
         del read_diff_cube
         gc.collect()
+
+        return self.cds_noise
 
     def populate_datamodel_tree(self):
         """
@@ -248,7 +275,7 @@ class ReadNoise(ReferenceFile):
         # Construct the read noise object from the data model.
         readnoise_datamodel_tree = rds.ReadnoiseRef()
         readnoise_datamodel_tree['meta'] = self.meta
-        readnoise_datamodel_tree['data'] = self.ramp_res_var * u.DN
+        readnoise_datamodel_tree['data'] = self.readnoise_image * u.DN
 
         return readnoise_datamodel_tree
 
