@@ -12,6 +12,7 @@ from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYP
 
 
 class ReadNoise(ReferenceFile):
+    #TODO I know this is probably too verbose but review and trim fluff as needed
     """
     Class ReadNoise() inherits the ReferenceFile() base class methods where static meta data for all reference
     file types are written. Under automated operational conditions, a dark calibration file with the most number
@@ -73,12 +74,14 @@ class ReadNoise(ReferenceFile):
             make_mask=True
         )
 
+        #TODO We could probably pass the REFTYPE object into the base class to populate these meta in a standard way
         # Update metadata with file type info if not included.
         if 'description' not in self.meta.keys():
             self.meta['description'] = 'Roman WFI read noise reference file.'
         if 'reftype' not in self.meta.keys():
             self.meta['reftype'] = 'READNOISE'
 
+        #TODO Would feedback on how many attributes I have and if they seem logical and organized properly
         # Initialize attributes
         self.outfile = outfile
         # Additional object attributes
@@ -99,6 +102,11 @@ class ReadNoise(ReferenceFile):
         self.frame_time = None  # Mode dependent exposure frame time per read.
         self.time_arr = None  # Time array of an exposure or input data.
 
+        #TODO input data into the module through the base class should ALWAYS be a list of files
+        # Additional inputs are needed also but not each module is the same or will have the same number or types of additional inputs
+        #TODO can we standardize the flow here such that if files are provided run under normal automated operations and
+        # when provided other additional input it uses that.
+        #TODO Think of user from public github wanting to input different data - files vs cubes
         # Check input data to instantiated ReadNoise().
         if self.input_data is None and self.input_data_cube is None:
             raise ValueError('No data supplied to make read noise reference file!')
@@ -113,10 +121,14 @@ class ReadNoise(ReferenceFile):
         end of the method to be the data in the datamodel.
         """
 
+        #TODO is should be the generic type method in each reference file type that is called after the class is instantiated
+        # Utilize nested methods from most complex starting with files to simplest where an array is sent to make the file
+
         # Use input files if they exist.
         if self.input_data is not None:
+            print('Makeing READNOISE from input files')
             logging.info('Using file list to make make read noise.')
-            self.select_data_cube()
+            self._select_data_cube()
             self.readnoise_image = self.comp_ramp_res_var()
         # Attempt to use input data cube.
         try:
@@ -131,7 +143,7 @@ class ReadNoise(ReferenceFile):
         except Exception as e:
             raise ValueError('Input data is not a compatible numpy array shape.') from e
 
-    def select_data_cube(self):
+    def _select_data_cube(self):
         """
         The method select_data_cube() looks through the file list provided to ReadNoise() and finds the file with
         the most number of reads. It sorts the files in descending order by the number of reads such that the
@@ -145,7 +157,7 @@ class ReadNoise(ReferenceFile):
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
         for fl in range(0, len(self.input_data)):
-            tmp = asdf.open(self.input_data[fl], validate_on_read=False)
+            tmp = asdf.open(self.input_data[fl])
             n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
             fl_reads_ordered_list.append([self.input_data[fl], n_rds])
             tmp.close()
@@ -154,8 +166,9 @@ class ReadNoise(ReferenceFile):
         fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
 
         # Get the input file with the most number of reads from the sorted list.
-        tmp = asdf.open(fl_reads_ordered_list[0][0], validate_on_read=False)
+        tmp = asdf.open(fl_reads_ordered_list[0][0])
         self.input_data_cube = tmp.tree['roman']['data']
+        #TODO logging info? every method? starting something, ending something? Status along the way or only useful info
         logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
 
     def _initialize_arrays(self):
@@ -183,6 +196,9 @@ class ReadNoise(ReferenceFile):
         estimates for variances in the model fitted parameters.
         """
 
+        #TODO fitting a ramp to a cube of data is probably common to all modules
+        #TODO making a ramp model is probably common to all modules
+
         logging.info('Making ramp model for the input read cube.')
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
@@ -204,6 +220,8 @@ class ReadNoise(ReferenceFile):
             # Construct a simple linear model y = m*x + b.
             self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
 
+    #TODO default parameter values for accessible methods
+    # What about inaccessible methods?
     def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
         """
         Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
@@ -218,6 +236,9 @@ class ReadNoise(ReferenceFile):
             Upper bound limit to filter residuals of ramp fit to data read cube.
         """
 
+        #TODO this wants to be a method accessible to a user to produce the readnoise reference files
+        # If this is selected, comp_cds_noise should not be available
+
         logging.info('Computing residuals of ramp model from data to estimate variance component of read noise.')
 
         self._initialize_arrays()
@@ -225,7 +246,7 @@ class ReadNoise(ReferenceFile):
 
         # Initialize ramp residual variance array.
         self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
-        residual_cube = self.ramp_model - self.input_data_cube
+        residual_cube = self.ramp_model - self.input_data_cube.value
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
         std = np.std(clipped_res_cube, axis=0)
@@ -246,6 +267,9 @@ class ReadNoise(ReferenceFile):
             Upper bound limit to filter difference cube
         """
 
+        #TODO this wants to be a method accessible to a user to produce the readnoise reference files
+        # If this is selected, comp_ramp_res_var should not be available
+
         logging.info('Calculating CDS noise.')
 
         self._initialize_arrays()
@@ -262,6 +286,7 @@ class ReadNoise(ReferenceFile):
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
 
+        #TODO keeping track of memory resources might be a good thing to do for each module. I'd like to be lean
         del read_diff_cube
         gc.collect()
 
@@ -283,6 +308,9 @@ class ReadNoise(ReferenceFile):
         """
         The method save_readnoise writes the reference file object to the specified asdf outfile.
         """
+
+        #TODO if we made an abstract method in base class that appended save_ with REFTYPE that might be slick
+        # but also probably hard to do but this is the same code in each module
 
         # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()

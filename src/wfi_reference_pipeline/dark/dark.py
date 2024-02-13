@@ -257,7 +257,7 @@ class Dark(ReferenceFile):
         self.resultant_tau_arr = np.zeros(num_resultants, dtype=np.float32)
 
     def make_ma_table_resampled_dark(
-        self, num_resultants, num_rds_per_res, read_pattern=None
+        self, num_resultants=None, num_rds_per_res=None, read_pattern=None
     ):
         """
         The method make_ma_table_resampled_dark() uses the input read_pattern, which is a nested list of lists,
