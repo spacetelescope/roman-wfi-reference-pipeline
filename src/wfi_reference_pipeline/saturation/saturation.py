@@ -29,7 +29,7 @@ class Saturation(ReferenceFile):
         clobber: Boolean; default = False
             True to overwrite the file name outfile if file already exists. False will not overwrite and exception
             will be raised if duplicate file is found.
-        saturation_theshold: integer; default = 55000.
+        saturation_threshold: integer; default = 55000.
             Minimum count pixel count level to be flagged saturated.
         """
 
