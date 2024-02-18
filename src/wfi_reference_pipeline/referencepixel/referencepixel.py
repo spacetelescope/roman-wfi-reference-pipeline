@@ -55,14 +55,13 @@ class ReferencePixel(ReferenceFile):
         if 'reftype' not in self.meta.keys():
             self.meta['reftype'] = 'REFPIX'
 
-
         # Initialize attributes
         self.outfile = outfile
         self.gamma = gamma
         self.zeta = zeta
         self.alpha = alpha
 
-    def make_referencepixel_coeffs(self, tmppath=None, ):
+    def make_referencepixel_coeffs(self, tmppath=None):
         """
         The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
         Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.
@@ -120,8 +119,6 @@ class ReferencePixel(ReferenceFile):
         # ===== Clean up =====
         # Delete intermediate results and folder
         shutil.rmtree(tmpdir)
-
-
 
     def populate_datamodel_tree(self):
         """
