@@ -35,7 +35,7 @@ class Flat(ReferenceFile):
             bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
 
         # Access methods of base class ReferenceFile
-        super(Flat, self).__init__(
+        super().__init__(
             flat_file_list,
             meta_data,
             bit_mask=bit_mask,
