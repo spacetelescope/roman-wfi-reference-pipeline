@@ -213,8 +213,10 @@ if not ON_GITLAB_ACTIONS:
             referencepixel_test_meta = tmp.meta_referencepixel.export_asdf_meta()
 
             # Make RFP Reference Pixel reference file object for testing.
-            rfp_referencepixel = ReferencePixel(None, meta_data=referencepixel_test_meta)
-            rfp_referencepixel.make_referencepixel_coeffs()
+            shape = (3,3)
+            test_coeff = np.ones(shape, dtype=complex)
+            rfp_referencepixel = ReferencePixel(None, meta_data=referencepixel_test_meta,
+                                                alpha=test_coeff, zeta=test_coeff, gamma=test_coeff)
 
             # Make test asdf tree
             tf = asdf.AsdfFile()
