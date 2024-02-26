@@ -10,7 +10,7 @@ from astropy import units as u
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from wfi_reference_pipeline.constants import WFI_TYPE_IMAGE, WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
-from wfi_reference_pipeline.utilities.reference_file import ReferenceFile
+from wfi_reference_pipeline.reference_file import ReferenceFile
 from pathlib import Path
 
 

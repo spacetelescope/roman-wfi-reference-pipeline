@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 import asdf
 import numpy as np
 from astropy.stats import sigma_clipped_stats

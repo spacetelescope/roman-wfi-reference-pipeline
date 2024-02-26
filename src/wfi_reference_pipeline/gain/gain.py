@@ -1,7 +1,7 @@
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 # from ..utilities.logging_functions import log_info
 from astropy import units as u
 

@@ -3,7 +3,7 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 from astropy.stats import sigma_clipped_stats
 
