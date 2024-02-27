@@ -58,9 +58,17 @@ def _validate_config(config_file_dict):
                 },
                 "required": ["log_dir", "log_level"],
             },
+            "DataFiles": {
+                "type": "object",
+                "properties": {
+                    "prep_dir": {"type": "string"},
+                    "calibrated_dir": {"type": "string"},
+                },
+                "required": ["prep_dir", "calibrated_dir"],
+            },
         },
         # List which entries are needed (all of them)
-        "required": ["Logging"],
+        "required": ["Logging", "Outputs"],
     }
 
     # Test that the provided config file dict matches the schema
@@ -110,3 +118,6 @@ def get_config():
 
 def get_logging_config():
     return get_config()["Logging"]
+
+def get_datafiles_config():
+    return get_config()["DataFiles"]

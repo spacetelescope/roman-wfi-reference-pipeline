@@ -9,3 +9,8 @@ Logging:
   log_dir: "/PATH/TO/LOG/DIR"
   log_level: INFO
   log_tag: "DEV_"
+
+DataFiles:
+  # prep_dir: string location to store prepped files
+  prep_dir: "/PATH/TO/DATAFILES/PREPPED"
+  calibrated_dir: "/PATH/TO/DATAFILES/CALIBRATED"
