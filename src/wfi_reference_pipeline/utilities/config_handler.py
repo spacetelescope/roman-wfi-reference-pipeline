@@ -17,11 +17,15 @@ def _find_config_file(config_filename):
 
     """
     current_path = Path.cwd()
-    # move up our directory path until we find pyproject.toml
-    root_path = next(
-        (path for path in current_path.parents if (path / "pyproject.toml").is_file()),
-        None,
-    )
+    this_path = Path(current_path) / "pyproject.toml"
+    if this_path.is_file():
+        root_path = current_path
+    else:
+        # move up our directory path until we find pyproject.toml
+        root_path = next(
+            (path for path in current_path.parents if (path / "pyproject.toml").is_file()),
+            None,
+        )
 
     # once we have our root path, grab the path to the config_file
     config_file_path = root_path / CONFIG_PATH / config_filename
@@ -68,7 +72,7 @@ def _validate_config(config_file_dict):
             },
         },
         # List which entries are needed (all of them)
-        "required": ["Logging", "Outputs"],
+        "required": ["Logging", "DataFiles"],
     }
 
     # Test that the provided config file dict matches the schema
