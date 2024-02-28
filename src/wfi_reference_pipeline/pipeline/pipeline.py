@@ -2,25 +2,46 @@ import os
 import logging
 import roman_datamodels as rdm
 
+from pathlib import Path
 from romancal.dq_init import DQInitStep
 from romancal.saturation import SaturationStep
 from romancal.linearity import LinearityStep
 
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
+from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.utilities.file_handler import get_calibrated_output_file_path, get_prep_output_file_path
-from wfi_reference_pipeline.utilities import logging_functions
+from wfi_reference_pipeline.utilities.logging_functions import configure_logging, log_info
 
-logging_functions.configure_logging("Pipeline")
+configure_logging("Readnoise_Pipeline")
 
-class Pipeline():
+class Pipeline():   # TODO RENAME TO ReadnoisePipeline
 
     def __init__(self):
+        self.readnoise_uncal_files = []
         self.readnoise_files_prepped = []
         self.readnoise_datamodels_prepped = []
 
+    @log_info
+    def readnoise_select_uncal_files(self):
+
+        self.readnoise_uncal_files.clear()
+        logging.info("READNOISE SELECT_FILES")
+
+        """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG """
+        # Get files from input directory
+        ingest_dir = get_datafiles_config()["ingest_dir"]
+        ingest_path = Path(ingest_dir)
+        files = [str(file) for file in ingest_path.glob(f"r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
+        # files = list(ingest_path.glob(f"r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
+
+        self.readnoise_uncal_files = files
+        logging.info(f"Ingesting {len(files)} Files: {files}")
+
+    @log_info
     def readnoise_prep(self, file_list):
-        logging.info("readnoise prep")
+        # TODO - Remove existing READNOISE files from prepped directory before running
+        logging.info("READNOISE PREP")
         self.readnoise_files_prepped.clear()
         self.readnoise_datamodels_prepped.clear()
         for file in file_list:
@@ -41,6 +62,7 @@ class Pipeline():
 
         logging.info('Finished PREPPING input DARK files to make READNOISE reference file from RFP')
 
+    @log_info
     def readnoise_pipe(self, file_list):
 
         # TODO load config file with defaults or other params to run pipeline
@@ -49,7 +71,7 @@ class Pipeline():
         # into methods and then the array is reassmebled to save to disk
         # TODO Quality Check before writing file to disk. Where should a QC check be done?
 
-        logging.info('Starting RFP to make READNOISE')
+        logging.info('READNOISE PIPE')
         tmp = MakeDevMeta(ref_type='READNOISE')  # TODO replace with MakeMeta which gets actual information from files
         readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         outfile = get_calibrated_output_file_path('roman_dev_readnoise_from_DAAPI_dev_files.asdf')
@@ -59,8 +81,10 @@ class Pipeline():
 
         rfp_readnoise.save_readnoise()
         os.chmod(outfile, 0o666)
+        logging.info('Finished RFP to make READNOISE')
 
-    def run_readnoise(self, file_list):
-        self.readnoise_prep(file_list)
+    def run_readnoise_pipeline(self):
+        self.readnoise_select_uncal_files()
+        self.readnoise_prep(self.readnoise_uncal_files)
         self.readnoise_pipe(self.readnoise_files_prepped) # TODO change this to self.readnoise_datamodels_prepped when code can handle it.
 
