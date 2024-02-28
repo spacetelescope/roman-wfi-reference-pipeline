@@ -89,13 +89,11 @@ if test_flow == 1:
     # outfile = write_path + 'roman_dev_readnoise.asdf'
 
 #TODO for Brad development of pipeline
-rfp_readnoise_pipe_all = 0
+rfp_readnoise_pipe_all = 1
 if rfp_readnoise_pipe_all == 1:
     # REFTYPE_PIPE.READNOISE
 
     # TODO START STANDARD INGEST
-
-    # TODO we will need logging
 
     # Step 1 - The RFP automatically quiries DAAPI and downloads aka copies files from MAST
     # to somewhere on grp/roman where the RFP will know to look for new files.
@@ -105,23 +103,13 @@ if rfp_readnoise_pipe_all == 1:
         # continues depending on ref type criteria - e.g. number of files per detector
     # Step 3 - Check if criteria to make specific reference file is met
 
-    print('Starting REFTYPE PREP for READNOISE')
-    # Get files frominput directory
-    input_dir = '/grp/roman/RFP/DEV/DAAPI_dev/asdf_files/'
-    # Declare directory to write output of REFTYPE_PREP
-    # files = glob.glob(input_dir + f'r0044401001001001001_01101_000*_WFI01_uncal.asdf')
-    files = glob.glob(input_dir + f'r0032101001001001001_01101_0001_WFI01_uncal.asdf')
-    files.sort()
-    print(files)
-
     # TODO STOP STANDARD INGEST
 
     pipeline = Pipeline()
-    print("begin run_readnoise")
-    pipeline.run_readnoise(files)
+    pipeline.run_readnoise_pipeline()
 
 
-rfp_readnoise_pipe_only = 1
+rfp_readnoise_pipe_only = 0
 if rfp_readnoise_pipe_only == 1:
 
     #ingest prepped data
