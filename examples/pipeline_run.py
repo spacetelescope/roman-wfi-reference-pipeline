@@ -1,8 +1,11 @@
+# ruff: noqa
 import asdf, sys, psutil, os, glob, logging, time
+from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.pipeline.pipeline import Pipeline
+from pathlib import Path
 import numpy as np
 import roman_datamodels as rdm
 
@@ -78,14 +81,21 @@ if test_flow == 1:
     print('Made file: ', RFPreadnoise.outfile)
     print('New read noise image average is ', np.mean(RFPreadnoise.readnoise_image))
 
+    # scratch_files = glob.glob(write_path + '*.asdf')
+    # # only one detector right now
+    # # need to execute by detector
+    # for i in range(0, len(scratch_files)):
+    #     os.remove(scratch_files[i])
+    # outfile = write_path + 'roman_dev_readnoise.asdf'
+
 #TODO for Brad development of pipeline
-rfp_readnoise_pipe = 1
-if rfp_readnoise_pipe == 1:
+rfp_readnoise_pipe_all = 0
+if rfp_readnoise_pipe_all == 1:
     # REFTYPE_PIPE.READNOISE
 
     # TODO START STANDARD INGEST
 
-    #TODO we will need logging
+    # TODO we will need logging
 
     # Step 1 - The RFP automatically quiries DAAPI and downloads aka copies files from MAST
     # to somewhere on grp/roman where the RFP will know to look for new files.
@@ -97,10 +107,8 @@ if rfp_readnoise_pipe == 1:
 
     print('Starting REFTYPE PREP for READNOISE')
     # Get files frominput directory
-    # input_dir = '/grp/roman/RFP/DEV/DAAPI_dev/asdf_files/'
-    input_dir = '/Users/bsappington/repositories/test/rfp_test_data/asdf_files/'
+    input_dir = '/grp/roman/RFP/DEV/DAAPI_dev/asdf_files/'
     # Declare directory to write output of REFTYPE_PREP
-    output_prep_dir = '/grp/roman/RFP/DEV/DAAPI_dev/' + 'REFTYPE_PREPPED/' + 'READNOISE/'  # Maybe READY is a good suffix?
     # files = glob.glob(input_dir + f'r0044401001001001001_01101_000*_WFI01_uncal.asdf')
     files = glob.glob(input_dir + f'r0032101001001001001_01101_0001_WFI01_uncal.asdf')
     files.sort()
@@ -113,12 +121,17 @@ if rfp_readnoise_pipe == 1:
     pipeline.run_readnoise(files)
 
 
+rfp_readnoise_pipe_only = 1
+if rfp_readnoise_pipe_only == 1:
 
+    #ingest prepped data
+    prep_dir = get_datafiles_config()["prep_dir"]
+    prep_path = Path(prep_dir)
 
+    # Get all readnoise files in the directory
+    prepped_asdf_files = prep_path.glob(f"*READNOISE_PREPPED.asdf")
+    # Convert the generator to a list if needed
+    file_list = list(prepped_asdf_files)
 
-    # scratch_files = glob.glob(write_path + '*.asdf')
-    # # only one detector right now
-    # # need to execute by detector
-    # for i in range(0, len(scratch_files)):
-    #     os.remove(scratch_files[i])
-    # outfile = write_path + 'roman_dev_readnoise.asdf'
+    pipeline = Pipeline()
+    pipeline.readnoise_pipe(file_list)
