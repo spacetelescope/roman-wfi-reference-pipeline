@@ -2,7 +2,7 @@ from pathlib import Path
 
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 
-def get_prep_output_file_path(self, filename, ref_type):
+def get_prep_output_file_path(filename, ref_type):
     """Return a file path for a prepped file using established formatting
         /PATH/IN/CONFIG/filenameREFTYPE_PREPPED.asdf
 
@@ -16,7 +16,7 @@ def get_prep_output_file_path(self, filename, ref_type):
     output_path = Path(prep_dir) / prepped_filename
     return output_path
 
-def get_calibrated_output_file_path(self, filename):
+def get_calibrated_output_file_path(filename):
     """Return a file path for a calibrated file using established formatting
         /PATH/IN/CONFIG/filename
 
