@@ -32,7 +32,7 @@ class ReadNoise(ReferenceFile):
                  input_file_list,
                  meta_data=None,
                  bit_mask=None,
-                 outfile='roman_radnoise.asdf',
+                 outfile='roman_readnoise.asdf',
                  clobber=False,
                  input_data_cube=None):
         """
