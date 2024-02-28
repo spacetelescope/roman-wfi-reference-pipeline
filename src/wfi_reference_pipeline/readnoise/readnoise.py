@@ -246,7 +246,7 @@ class ReadNoise(ReferenceFile):
 
         # Initialize ramp residual variance array.
         self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
-        residual_cube = self.ramp_model - self.input_data_cube
+        residual_cube = self.ramp_model - self.input_data_cube.value      # TODO - THIS BREAKS!
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
         std = np.std(clipped_res_cube, axis=0)
