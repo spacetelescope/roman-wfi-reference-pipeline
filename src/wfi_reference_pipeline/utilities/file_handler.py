@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
-
 def format_prep_output_file_path(prep_dir, filename, ref_type):
     """Return a file path for a prepped file using established formatting
         /PATH/IN/CONFIG/filenameREFTYPE_PREPPED.asdf
