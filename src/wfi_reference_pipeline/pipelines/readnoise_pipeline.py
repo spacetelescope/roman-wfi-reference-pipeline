@@ -1,4 +1,3 @@
-import os
 import logging
 import roman_datamodels as rdm
 
@@ -84,7 +83,7 @@ class ReadnoisePipeline(Pipeline):
         rfp_readnoise.make_readnoise_image()
 
         rfp_readnoise.save_readnoise()
-        os.chmod(out_file_path, 0o666)
+        out_file_path.chmod(0o666)
         logging.info('Finished RFP to make READNOISE')
 
 
