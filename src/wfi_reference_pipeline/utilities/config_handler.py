@@ -65,10 +65,11 @@ def _validate_config(config_file_dict):
             "DataFiles": {
                 "type": "object",
                 "properties": {
+                    "ingest_dir": {"type": "string"},
                     "prep_dir": {"type": "string"},
                     "calibrated_dir": {"type": "string"},
                 },
-                "required": ["prep_dir", "calibrated_dir"],
+                "required": ["ingest_dir", "prep_dir", "calibrated_dir"],
             },
         },
         # List which entries are needed (all of them)

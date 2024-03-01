@@ -9,3 +9,9 @@ Logging:
   log_dir: "/grp/roman/RFP/DEV/scratch/"
   log_level: INFO
   log_tag: "DEV_"
+
+DataFiles:
+  # prep_dir: string location to store prepped files
+  ingest_dir: "/PATH/TO/DATAFILES/INGEST"
+  prep_dir: "/PATH/TO/DATAFILES/PREPPED"
+  calibrated_dir: "/PATH/TO/DATAFILES/CALIBRATED"
