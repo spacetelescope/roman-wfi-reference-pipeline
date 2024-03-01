@@ -4,7 +4,7 @@ from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.pipeline.pipeline import Pipeline
+from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline
 from pathlib import Path
 import numpy as np
 import roman_datamodels as rdm
@@ -105,8 +105,8 @@ if rfp_readnoise_pipe_all == 1:
 
     # TODO STOP STANDARD INGEST
 
-    pipeline = Pipeline()
-    pipeline.run_readnoise_pipeline()
+    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline.restart_pipeline()
 
 
 rfp_readnoise_pipe_only = 0
@@ -121,5 +121,5 @@ if rfp_readnoise_pipe_only == 1:
     # Convert the generator to a list if needed
     file_list = list(prepped_asdf_files)
 
-    pipeline = Pipeline()
-    pipeline.readnoise_pipe(file_list)
+    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline.run_pipeline(file_list)
