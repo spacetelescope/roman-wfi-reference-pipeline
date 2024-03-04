@@ -81,7 +81,7 @@ class ReadnoisePipeline(Pipeline):
             # self._datamodels_prepped.append(result)
             self._files_prepped.append(prep_output_file_path)
 
-        logging.info('Finished PREPPING input DARK files to make READNOISE reference file from RFP')
+        logging.info('Finished PREPPING files to make READNOISE reference file from RFP')
 
     @log_info
     def run_pipeline(self, file_list):
