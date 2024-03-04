@@ -4,7 +4,7 @@
 *.ipynb_checkpoints*
 .pytest_cache
 wfi_reference_pipeline/config/slack.yml
-src/wfi_reference_pipeline/config/config.yml
+*src/wfi_reference_pipeline/config/config.yml
 build/*
 dist/*
 *.egg-info/
@@ -18,4 +18,3 @@ src/docs/_build/*
 .coverage.*
 reports/coverage.xml
 *.DS_Store
-*src/wfi_reference_pipeline/config/config.yml
