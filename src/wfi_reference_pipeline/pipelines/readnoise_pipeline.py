@@ -51,7 +51,7 @@ class ReadnoisePipeline(Pipeline):
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
         # files = [str(file) for file in self.ingest_path.glob(f"r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
-        files = list(self.ingest_path.glob(f"r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
+        files = list(self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")

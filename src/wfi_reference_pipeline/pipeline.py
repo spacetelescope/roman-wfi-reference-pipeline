@@ -28,7 +28,7 @@ class Pipeline(ABC):
             self.prep_path = Path(self._datafiles_config["prep_dir"])
             self.calibrated_out_path = Path(self._datafiles_config["calibrated_dir"])
         except (FileNotFoundError, ValueError) as e:
-            print("ERROR READING CONFIG FILE - {e}")
+            print(f"ERROR READING CONFIG FILE - {e}")
             exit()
 
     @abstractmethod
