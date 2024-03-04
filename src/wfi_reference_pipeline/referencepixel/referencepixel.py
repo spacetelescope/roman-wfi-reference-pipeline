@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 
 from .irrc_extract_ramp_sums import extract
 from .irrc_generate_weights import generate
@@ -18,10 +18,10 @@ class ReferencePixel(ReferenceFile):
     Class ReferencePixel() inherits the ReferenceFile() base class methods
     where static meta data for all reference file types are written.
     Under automated operations conditions, a list of dark calibration files from a directory will be the input data for the class to begin generatoring a reference pixel reference pixel.
-    Each file will be run through IRRC, which will generate per expsoure sums necessary to minimize Fn = alpha*Fa + gamma*Fl + zeta*Fr, which are then combined to create a final reference pixel reference file coefficientts.  
+    Each file will be run through IRRC, which will generate per expsoure sums necessary to minimize Fn = alpha*Fa + gamma*Fl + zeta*Fr, which are then combined to create a final reference pixel reference file coefficientts.
     """
 
-    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', gamma=None, zeta=None, alpha=None, 
+    def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', gamma=None, zeta=None, alpha=None,
                  bit_mask=None, clobber=False):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
@@ -64,25 +64,25 @@ class ReferencePixel(ReferenceFile):
     def make_referencepixel_coeffs(self, tmppath=None):
         """
         The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
-        Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.  
+        Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.
 
-        NOTE: Initial testing was performed by S. Betti with 100 dark files each with 55 reads.  Each file took ~134s to calculate the sums and ~4hours to compute the final coefficients.  The peak memory usage was 40 GB.  
+        NOTE: Initial testing was performed by S. Betti with 100 dark files each with 55 reads.  Each file took ~134s to calculate the sums and ~4hours to compute the final coefficients.  The peak memory usage was 40 GB.
 
         Parameters
         ----------
         tmppath: str; default = None
             Path string. Absolute or relative path for temporary storage of IRRC sums for individual ramps
-            By default, None is provided and the method below produces the folder in the location the script is run.  
+            By default, None is provided and the method below produces the folder in the location the script is run.
         """
 
-        # we assume files is a list of exposures paths and filename for 1 detector. 
+        # we assume files is a list of exposures paths and filename for 1 detector.
         files = self.input_data
 
         # Display the directory name where the dark calibration files are located to make the reference pixel reference file
         logging.info(
             f"Using files from {os.path.dirname(files[0])} to construct reference coeffienct object."
         )
-        
+
         detector = self.meta['instrument']['detector'] # taken from WFIMetaReferencePixel() dictionary style
         logging.info(f'detector {detector}')
 
@@ -101,20 +101,20 @@ class ReferencePixel(ReferenceFile):
         logging.info('*** Compute IRRC sums for individual ramps...')
         for file in files:
                 logging.info(f"*** Processing ramp: {file}")
-                # Save the result in current location in folder temp_{detectr}. 
+                # Save the result in current location in folder temp_{detectr}.
                 extract(file, tmpdir)
-        
+
         # ===== Compute IRRC frequency dependent weights =====
         # This uses the full data set.
         logging.info('*** Generate IRRC calibration file...')
         glob_pattern = tmpdir + '/*_sums.h5'
- 
+
         # Generate frequency dependent weights
-        alpha, gamma, zeta = generate(glob_pattern) 
-        
-        self.gamma = gamma 
-        self.zeta = zeta 
-        self.alpha = alpha 
+        alpha, gamma, zeta = generate(glob_pattern)
+
+        self.gamma = gamma
+        self.zeta = zeta
+        self.alpha = alpha
 
         # ===== Clean up =====
         # Delete intermediate results and folder
@@ -131,7 +131,7 @@ class ReferencePixel(ReferenceFile):
         referencepixel_datamodel_tree['gamma'] = self.gamma
         referencepixel_datamodel_tree['zeta'] = self.zeta
         referencepixel_datamodel_tree['alpha'] = self.alpha
-        
+
         return referencepixel_datamodel_tree
 
     def save_referencepixel(self, datamodel_tree=None):

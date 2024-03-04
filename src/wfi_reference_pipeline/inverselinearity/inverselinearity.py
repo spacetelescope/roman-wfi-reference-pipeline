@@ -1,6 +1,6 @@
 import roman_datamodels.stnode as rds
 import numpy as np
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 from astropy.io import fits
 import asdf
 
