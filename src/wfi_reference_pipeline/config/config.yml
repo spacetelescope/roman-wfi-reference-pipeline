@@ -1,0 +1,15 @@
+Logging:
+  # log_dir: string location to store logs
+  # log_level: Minimum level to show in log - DEBUG, WARNING, INFO, ERROR, CRITICAL
+  # log_tag: user defined tag to prepend to log file name.  Can be empty string or used for convenience - "PROD_, DEV_, USERNAME_, etc."
+  log_dir: "/PATH/TO/LOG/DIR"
+  log_level: INFO
+  log_tag: "DEV_"
+
+DataFiles:
+  # ingest_dir: string location to ingest uncalibrated files
+  # prep_dir: string location to store prepped files
+  # calibrated_dir: string location to store CRDS ready calibrated files
+  ingest_dir: "/PATH/TO/DATAFILES/INGEST"
+  prep_dir: "/PATH/TO/DATAFILES/PREPPED"
+  calibrated_dir: "/PATH/TO/DATAFILES/CALIBRATED"
