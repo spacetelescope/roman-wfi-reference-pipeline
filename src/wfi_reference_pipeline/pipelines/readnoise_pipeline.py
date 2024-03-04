@@ -28,7 +28,7 @@ class ReadnoisePipeline(Pipeline):
         readnoise_pipeline = ReadnoisePipeline()
         readnoise_pipeline.select_uncal_files()
         readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
-        readnoise_pipeline.run_pipeline(readnoise_pipeline.files_prepped)
+        readnoise_pipeline.run_pipeline(readnoise_pipeline.prepped_files)
 
         or
 
@@ -50,20 +50,20 @@ class ReadnoisePipeline(Pipeline):
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
-        # files = [str(file) for file in self.ingest_path.glob(f"r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
-        files = list(self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
+        files = [str(file) for file in self.ingest_path.glob(f"r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
+        # files = list(self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
     @log_info
-    def prep_pipeline(self, file_list):
+    def prep_pipeline(self, file_list=None):
 
         # TODO - Remove existing READNOISE files from prepped directory before running
         logging.info("READNOISE PREP")
         # Convert file_list to a list of Path type files
         file_list = list(map(Path, file_list))
-        self.files_prepped.clear()
+        self.prepped_files.clear()
         # self._datamodels_prepped.clear()
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -71,15 +71,16 @@ class ReadnoisePipeline(Pipeline):
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
+            # TODO - make the save_results out directory configurable
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
-            result = LinearityStep.call(result, save_results=True)
+            result = LinearityStep.call(result, save_results=False)
 
             prep_output_file_path = format_prep_output_file_path(self.prep_path, result.meta.filename[:-10], "READNOISE")  # TODO standardize the extraction of the filename
             result.save(path=prep_output_file_path)
 
             # self._datamodels_prepped.append(result)
-            self.files_prepped.append(prep_output_file_path)
+            self.prepped_files.append(prep_output_file_path)
 
         logging.info('Finished PREPPING files to make READNOISE reference file from RFP')
 

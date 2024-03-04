@@ -18,7 +18,7 @@ class Pipeline(ABC):
 
     def __init__(self):
         self.uncal_files = []
-        self.files_prepped = []
+        self.prepped_files = []
         # self._datamodels_prepped = []  # TODO - Enable this or too much memory? If using pass to run_pipeline in restart_pipeline
         try:
             # Initialize logging named for the derived class
@@ -55,5 +55,5 @@ class Pipeline(ABC):
     def restart_pipeline(self):
         self.select_uncal_files()
         self.prep_pipeline(self.uncal_files)
-        self.run_pipeline(self.files_prepped)
+        self.run_pipeline(self.prepped_files)
 
