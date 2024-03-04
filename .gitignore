@@ -3,8 +3,8 @@
 *.idea
 *.ipynb_checkpoints*
 .pytest_cache
-wfi_reference_pipeline/config/slack.yml
-src/wfi_reference_pipeline/config/config.yml
+wfi_reference_pipeline/config/slack_dev.yml
+*src/wfi_reference_pipeline/config/config.yml
 build/*
 dist/*
 *.egg-info/

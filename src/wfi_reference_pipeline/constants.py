@@ -64,7 +64,7 @@ WFI_REF_OPTICAL_ELEMENTS = {
     WFI_REF_OPTICAL_ELEMENT_PRISM
 }
 
-# TODO verify key values and convert to a SET
+# TODO verify key values and convert to a SET full of Constant strings
 WFI_REF_TYPES = {
     "DARK": "DARK",
     "DISTORTION": "DISTORTION",

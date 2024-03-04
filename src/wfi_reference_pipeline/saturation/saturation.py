@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 import asdf
 from astropy import units as u
 import numpy as np

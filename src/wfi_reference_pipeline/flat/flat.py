@@ -3,7 +3,7 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 from astropy.stats import sigma_clipped_stats
 
@@ -57,7 +57,7 @@ class Flat(ReferenceFile):
         # Internal
         self.rate_array = None  # 2D rate array of the science pixels.
         self.rate_var_array = None  # 3D cute of rate arrays.
-        # Flattened products
+        # Flattened attributes
         self.flat_rate_image = None  # The attribute assigned to the flat['data'].
         self.flat_rate_image_var = None  # Variance in fitted rate image.
         self.flat_intercept = None  # Intercept image from ramp fit.
@@ -68,6 +68,13 @@ class Flat(ReferenceFile):
         self.ni = 4088
         self.frame_time = None  # Frame time from ancillary data.
         self.time_arr = None  # Time array of an exposure.
+
+        # Check input data to instantiated Flat().
+        if self.input_data is None and self.input_read_cube is None:
+            raise ValueError('No data supplied to make flat reference file!')
+        if self.input_data is not None and len(self.input_data) > 0 and \
+                self.input_read_cube is not None and len(self.input_read_cube) > 0:
+            raise ValueError('Two inputs provided. Not sure how to proceed. Provide files or a data cube; not both.')
 
     def make_flat_rate_image(self):
         """
@@ -80,14 +87,13 @@ class Flat(ReferenceFile):
         if self.input_data is not None:
             print("Got files so making flat rate image from filelist")
             rate_image = self.make_flat_from_files()
-        # Use input cube if it exists.
-
+        # Attempt to use input data cube.
         try:
             shape = self.input_read_cube.shape
             if len(shape) == 2:
-                print("Cube is already a 2D image to flatten")
+                print("Input data is a 2D array to flatten")
                 rate_image = self.input_read_cube
-            elif len(shape) == 3:
+            if len(shape) == 3:
                 n_reads = shape[0]
                 rate_image, rate_image_var = self.make_flat_from_cube(n_reads)
                 print("Flat image created from cube with", n_reads, "reads")

@@ -8,7 +8,7 @@ from astropy import units as u
 import roman_datamodels.stnode as rds
 from soc_roman_tools.siaf import siaf
 
-from ..utilities.reference_file import ReferenceFile
+from ..reference_file import ReferenceFile
 # from ..utilities.reference_catalog import ReferenceCatalog  TODO - Verify Existence
 
 
