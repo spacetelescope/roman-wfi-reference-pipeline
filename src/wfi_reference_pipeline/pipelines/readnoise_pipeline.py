@@ -15,6 +15,26 @@ from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class ReadnoisePipeline(Pipeline):
+    """
+    Derived from Pipeline Base Class
+    This is the entry point for all Readnoise Pipeline functionality
+    Gives user access to:
+        select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
+        prep_pipeline : Preparing the pipeline using romancal routines and save output
+        run_pipeline: Calibrate the data and create new asdf file for CRDS delivery
+        restart_pipeline: (derived from Pipeline) Run all steps from scratch
+
+    Usage:
+        readnoise_pipeline = ReadnoisePipeline()
+        readnoise_pipeline.select_uncal_files()
+        readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
+        readnoise_pipeline.run_pipeline(readnoise_pipeline.files_prepped)
+
+        or
+
+        readnoise_pipeline.restart_pipeline()
+
+    """
 
     def __init__(self):
         # Initialize baseclass from here for access to this class name
@@ -25,7 +45,7 @@ class ReadnoisePipeline(Pipeline):
     @log_info
     def select_uncal_files(self):
 
-        self._uncal_files.clear()
+        self.uncal_files.clear()
         logging.info("READNOISE SELECT_UNCAL_FILES")
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
@@ -33,7 +53,7 @@ class ReadnoisePipeline(Pipeline):
         # files = [str(file) for file in self.ingest_path.glob(f"r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(self.ingest_path.glob(f"r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
 
-        self._uncal_files = files
+        self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
     @log_info
@@ -44,7 +64,7 @@ class ReadnoisePipeline(Pipeline):
         # Convert file_list to a list of Path type files
         file_list = list(map(Path, file_list))
         self._files_prepped.clear()
-        self._datamodels_prepped.clear()
+        # self._datamodels_prepped.clear()
         for file in file_list:
             logging.info("OPENING - " + file.name)
             in_file = rdm.open(file)
@@ -58,7 +78,7 @@ class ReadnoisePipeline(Pipeline):
             prep_output_file_path = format_prep_output_file_path(self.prep_path, result.meta.filename[:-10], "READNOISE")  # TODO standardize the extraction of the filename
             result.save(path=prep_output_file_path)
 
-            self._datamodels_prepped.append(result)
+            # self._datamodels_prepped.append(result)
             self._files_prepped.append(prep_output_file_path)
 
         logging.info('Finished PREPPING input DARK files to make READNOISE reference file from RFP')

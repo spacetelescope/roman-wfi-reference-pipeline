@@ -12,7 +12,6 @@ from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYP
 
 
 class ReadNoise(ReferenceFile):
-    #TODO I know this is probably too verbose but review and trim fluff as needed
     """
     Class ReadNoise() inherits the ReferenceFile() base class methods where static meta data for all reference
     file types are written. Under automated operational conditions, a dark calibration file with the most number

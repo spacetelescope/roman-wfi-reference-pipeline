@@ -1,4 +1,8 @@
 # ruff: noqa
+
+# THIS IS A TEMPORARY SCRIPT USED FOR DEVELOPMENT TESTING AND INFO SHARING BETWEEN RICK AND BRAD
+# TODO - DELETE WHEN NOT NEEDED OR UPDATE INFORMATION AND INCLUDE IN TEST SUITE
+
 import asdf, sys, psutil, os, glob, logging, time
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
