@@ -63,7 +63,7 @@ class ReadnoisePipeline(Pipeline):
         logging.info("READNOISE PREP")
         # Convert file_list to a list of Path type files
         file_list = list(map(Path, file_list))
-        self._files_prepped.clear()
+        self.files_prepped.clear()
         # self._datamodels_prepped.clear()
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -79,7 +79,7 @@ class ReadnoisePipeline(Pipeline):
             result.save(path=prep_output_file_path)
 
             # self._datamodels_prepped.append(result)
-            self._files_prepped.append(prep_output_file_path)
+            self.files_prepped.append(prep_output_file_path)
 
         logging.info('Finished PREPPING files to make READNOISE reference file from RFP')
 
