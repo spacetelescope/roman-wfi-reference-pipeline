@@ -125,7 +125,7 @@ class ReadNoise(ReferenceFile):
 
         # Use input files if they exist.
         if self.input_data is not None:
-            print('Makeing READNOISE from input files')
+            print('Making READNOISE from input files')
             logging.info('Using file list to make make read noise.')
             self._select_data_cube()
             self.readnoise_image = self.comp_ramp_res_var()
@@ -155,19 +155,17 @@ class ReadNoise(ReferenceFile):
                      f'and the most number of reads.')
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
-        for fl in range(0, len(self.input_data)):
-            tmp = asdf.open(self.input_data[fl])
-            n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
-            fl_reads_ordered_list.append([self.input_data[fl], n_rds])
-            tmp.close()
+        for fl in range(0, len(self.input_data)):   # TODO - SAPP can the n_reads be in the metadata?
+            with asdf.open(self.input_data[fl]) as tmp:
+                n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
+                fl_reads_ordered_list.append([self.input_data[fl], n_rds])
         # Sort the list of files in reverse order such that the file with the most number of reads is always in
         # the zero index first element of the list.
         fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
 
         # Get the input file with the most number of reads from the sorted list.
-        tmp = asdf.open(fl_reads_ordered_list[0][0])
-        self.input_data_cube = tmp.tree['roman']['data']
-        #TODO logging info? every method? starting something, ending something? Status along the way or only useful info
+        with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
+            self.input_data_cube = tmp.tree['roman']['data']
         logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
 
     def _initialize_arrays(self):
