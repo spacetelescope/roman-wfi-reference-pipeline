@@ -1,3 +1,8 @@
+#
+# These example values are to be used as a template to guide the user and will not work as-is.
+# This file IS NOT MEANT to have real values stored in our repo and should remain in the gitignore list
+# Whenever altering this file template, remember to update config_handler.py::_validate_config()
+#
 Logging:
   # log_dir: string location to store logs
   # log_level: Minimum level to show in log - DEBUG, WARNING, INFO, ERROR, CRITICAL
