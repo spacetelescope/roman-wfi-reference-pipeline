@@ -3,6 +3,7 @@ from pathlib import Path
 
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
+from wfi_reference_pipeline.utilities.file_handler import FileHandler
 
 class Pipeline(ABC):
     """
@@ -16,9 +17,10 @@ class Pipeline(ABC):
         Restart_pipeline general functionality (run from scratch)
     """
 
-    def __init__(self):
+    def __init__(self, ref_type):
         self.uncal_files = []
         self.prepped_files = []
+        self.ref_type = ref_type
         # self._datamodels_prepped = []  # TODO - Enable this or too much memory? If using pass to run_pipeline in restart_pipeline
         try:
             # Initialize logging named for the derived class
@@ -26,10 +28,12 @@ class Pipeline(ABC):
             self._datafiles_config = get_datafiles_config()
             self.ingest_path = Path(self._datafiles_config["ingest_dir"])
             self.prep_path = Path(self._datafiles_config["prep_dir"])
-            self.calibrated_out_path = Path(self._datafiles_config["calibrated_dir"])
+            self.pipeline_out_path = Path(self._datafiles_config["calibrated_dir"])
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
             exit()
+        self.file_handler = FileHandler(self.ref_type, self.prep_path, self.pipeline_out_path)
+
 
     @abstractmethod
     def select_uncal_files(self):

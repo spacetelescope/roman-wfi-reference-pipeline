@@ -10,7 +10,6 @@ from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipeline import Pipeline
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.utilities.file_handler import format_prep_output_file_path, format_calibrated_output_file_path, remove_existing_prepped_files_for_ref_type
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
@@ -39,8 +38,7 @@ class ReadnoisePipeline(Pipeline):
 
     def __init__(self):
         # Initialize baseclass from here for access to this class name
-        super().__init__()
-        self.ref_type = REF_TYPE_READNOISE
+        super().__init__(REF_TYPE_READNOISE)
 
     @log_info
     def select_uncal_files(self):
@@ -64,7 +62,7 @@ class ReadnoisePipeline(Pipeline):
 
         # Clean up previous runs
         self.prepped_files.clear()
-        remove_existing_prepped_files_for_ref_type(self.prep_path, self.ref_type)
+        self.file_handler.remove_existing_prepped_files_for_ref_type()
 
         # Convert file_list to a list of Path type files
         file_list = list(map(Path, file_list))
@@ -80,7 +78,7 @@ class ReadnoisePipeline(Pipeline):
             result = SaturationStep.call(result, save_results=False)
             result = LinearityStep.call(result, save_results=False)
 
-            prep_output_file_path = format_prep_output_file_path(self.prep_path, result.meta.filename[:-10], "READNOISE")  # TODO standardize the extraction of the filename
+            prep_output_file_path = self.file_handler.format_prep_output_file_path(result.meta.filename[:-10])  # TODO standardize the extraction of the filename
             result.save(path=prep_output_file_path)
 
             # self._datamodels_prepped.append(result)
@@ -102,13 +100,14 @@ class ReadnoisePipeline(Pipeline):
         file_list = list(map(Path, file_list))
         tmp = MakeDevMeta(ref_type=self.ref_type)  # TODO replace with MakeMeta which gets actual information from files
         readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
-        out_file_path = format_calibrated_output_file_path(self.calibrated_out_path, 'roman_dev_readnoise_from_DAAPI_dev_files.asdf') # TODO make this name generic
+        out_file_path = self.file_handler.format_pipeline_output_file_path('roman_dev_readnoise_from_DAAPI_dev_files.asdf') # TODO make this name generic
 
         rfp_readnoise = ReadNoise(file_list, meta_data=readnoise_dev_meta, outfile=out_file_path, clobber=True)
         rfp_readnoise.make_readnoise_image()
 
         rfp_readnoise.save_readnoise()
         out_file_path.chmod(0o666)
+        logging.info(f"Saved {out_file_path}")
         logging.info('Finished RFP to make READNOISE')
         print('Finished RFP to make READNOISE')
 

@@ -93,7 +93,7 @@ if test_flow == 1:
     #     os.remove(scratch_files[i])
     # outfile = write_path + 'roman_dev_readnoise.asdf'
 
-rfp_readnoise_pipe_all = 0
+rfp_readnoise_pipe_all = 1
 if rfp_readnoise_pipe_all == 1:
     # REFTYPE_PIPE.READNOISE
 
@@ -111,7 +111,7 @@ if rfp_readnoise_pipe_all == 1:
     readnoise_pipeline = ReadnoisePipeline()
     readnoise_pipeline.restart_pipeline()
 
-rfp_readnoise_ingest_prep_only = 1
+rfp_readnoise_ingest_prep_only = 0
 if rfp_readnoise_ingest_prep_only == 1:
     # REFTYPE_PIPE.READNOISE
     readnoise_pipeline = ReadnoisePipeline()
