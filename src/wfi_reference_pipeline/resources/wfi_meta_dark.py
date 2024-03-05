@@ -27,7 +27,7 @@ class WFIMetaDark(WFIMetadata):
 
     def __post_init__(self, mode, type, ref_optical_element):
         super().__post_init__()
-        self.reference_type = constants.WFI_REF_TYPES["DARK"]
+        self.reference_type = constants.REF_TYPE_DARK
         if mode in constants.WFI_MODES:
             self.mode = mode
             # TODO Currently hard coding these values in, will need to evaluate later

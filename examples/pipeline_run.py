@@ -9,6 +9,7 @@ from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline
+from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from pathlib import Path
 import numpy as np
 import roman_datamodels as rdm
@@ -35,7 +36,7 @@ make_WIM_readnoise = 0
 if make_WIM_readnoise == 1:
     for d in range(0, 1):
         for det in range(1, 2):
-            tmp = MakeDevMeta(ref_type='READNOISE')
+            tmp = MakeDevMeta(ref_type=REF_TYPE_READNOISE)
             readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
             readnoise_dev_meta.update({'useafter': dates[d]})
             readnoise_dev_meta['instrument'].update({'detector': 'WFI' + f"{det:02d}"})
@@ -55,7 +56,7 @@ if make_WIM_readnoise == 1:
 
 test_flow = 0
 if test_flow == 1:
-    tmp = MakeDevMeta(ref_type='READNOISE')
+    tmp = MakeDevMeta(ref_type=REF_TYPE_READNOISE)
     readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
     dev_rate_image = np.random.normal(loc=5, scale=1, size=(4096, 4096)).astype(np.float32)
     num_cube_reads = 20

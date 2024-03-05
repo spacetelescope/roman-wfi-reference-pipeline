@@ -18,7 +18,8 @@ class MakeDevMeta:
     Class to generate any complete reference file MetaData object.
 
     Example Usage:
-    dev_meta_maker = MakeDevMeta("DARK")
+    from wfi_reference_pipeline.constants import REF_TYPE_DARK
+    dev_meta_maker = MakeDevMeta(ref_type=REF_TYPE_DARK)
     dark_meta_data = dev_meta_maker.meta_dark
 
     """
@@ -117,7 +118,7 @@ class MakeDevMeta:
         if detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        meta_data_params = [WFI_REF_TYPES[ref_type], pedigree, description, author,
+        meta_data_params = [ref_type, pedigree, description, author,
                             use_after, telescope, origin, instrument, detector]
 
         if ref_type == "DARK":

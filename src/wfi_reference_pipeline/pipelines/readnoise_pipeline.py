@@ -6,6 +6,7 @@ from romancal.dq_init import DQInitStep
 from romancal.saturation import SaturationStep
 from romancal.linearity import LinearityStep
 
+from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipeline import Pipeline
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
@@ -96,7 +97,7 @@ class ReadnoisePipeline(Pipeline):
         logging.info('READNOISE PIPE')
 
         file_list = list(map(Path, file_list))
-        tmp = MakeDevMeta(ref_type='READNOISE')  # TODO replace with MakeMeta which gets actual information from files
+        tmp = MakeDevMeta(ref_type=REF_TYPE_READNOISE)  # TODO replace with MakeMeta which gets actual information from files
         readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = format_calibrated_output_file_path(self.calibrated_out_path, 'roman_dev_readnoise_from_DAAPI_dev_files.asdf') # TODO make this name generic
 
