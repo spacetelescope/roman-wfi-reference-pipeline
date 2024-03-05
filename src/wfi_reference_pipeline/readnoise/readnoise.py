@@ -7,16 +7,16 @@ import math
 import gc
 import os
 from astropy.stats import sigma_clip
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
 
 
-class ReadNoise(ReferenceFile):
+class ReadNoise(ReferenceType):
     """
-    Class ReadNoise() inherits the ReferenceFile() base class methods where static meta data for all reference
+    Class ReadNoise() inherits the ReferenceType() base class methods where static meta data for all reference
     file types are written. Under automated operational conditions, a dark calibration file with the most number
     of reads for each detector will be selected from a list of dark calibration input files from the input data variable
-    in ReferenceFile() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
+    in ReferenceType() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
     best available data to measure the variance of the detector read by read. A ramp model for all available reads
     will be subtracted from the input data cube that is constructed from the input file list provided and the variance
     in the residuals is determined to be the best measurement of the read noise (Casterano and Cosentino email
@@ -35,7 +35,7 @@ class ReadNoise(ReferenceFile):
                  clobber=False,
                  input_data_cube=None):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -57,14 +57,14 @@ class ReadNoise(ReferenceFile):
             of the detector by the number of reads (n_reads). NOTE - For parallelization only square arrays allowed.
         ----------
         self.input_data: attribute;
-            The first positional variable in the ReadNoise class instance assigned in base class ReferenceFile().
+            The first positional variable in the ReadNoise class instance assigned in base class ReferenceType().
             For ReadNoise() self.input_data is a list of string filenames with paths.
 
-        See ReferenceFile() base class for additional attributes available to all reference file types such
+        See ReferenceType() base class for additional attributes available to all reference file types such
         as ancillary data.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             input_file_list,
             meta_data,

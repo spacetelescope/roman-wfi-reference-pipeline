@@ -1,19 +1,19 @@
 import roman_datamodels.stnode as rds
-from wfi_reference_pipeline.reference_file import ReferenceFile
+from wfi_reference_pipeline.reference_type import ReferenceType
 import asdf
 import numpy as np
 
 
-class InterPixelCapacitance(ReferenceFile):
+class InterPixelCapacitance(ReferenceType):
     """
-    Class ipc() inherits the ReferenceFile() base class methods
+    Class ipc() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_mask() creates the asdf mask file.
     """
 
     def __init__(self, meta_data, user_ipc=None, outfile='roman_ipcfile.asdf', clobber=False):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -22,11 +22,11 @@ class InterPixelCapacitance(ReferenceFile):
             Dictionary of information for reference file as required by romandatamodels.
         outfile: string; default = 'roman_ipcfile.asdf'
         self.input_data: variable;
-            The first positional variable in the IPC class instance assigned in base class ReferenceFile().
+            The first positional variable in the IPC class instance assigned in base class ReferenceType().
             For IPC() self.input_data must be a 3x3 numpy array.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(user_ipc, meta_data, clobber=clobber)
 
         # Update metadata with file type info if not included.

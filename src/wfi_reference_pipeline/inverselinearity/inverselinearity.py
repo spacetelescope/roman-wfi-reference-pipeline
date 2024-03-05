@@ -1,13 +1,13 @@
 import roman_datamodels.stnode as rds
 import numpy as np
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 from astropy.io import fits
 import asdf
 
 
-class InverseLinearity(ReferenceFile):
+class InverseLinearity(ReferenceType):
     """
-    Class InverseLinearity() inherits the ReferenceFile() base class methods
+    Class InverseLinearity() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method get_coeffs_from_dcl retrieves inverse linearity coefficients
     determined from DCL data by Bellini et al. (~2021), which are used to
@@ -25,7 +25,7 @@ class InverseLinearity(ReferenceFile):
                  input_coefficients=None):
 
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -45,7 +45,7 @@ class InverseLinearity(ReferenceFile):
             User input inverse linearity coefficients.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             inverselinearity_file_list,
             meta_data,

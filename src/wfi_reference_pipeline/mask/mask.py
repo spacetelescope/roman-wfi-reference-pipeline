@@ -1,12 +1,12 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 import asdf
 import numpy as np
 
 
-class Mask(ReferenceFile):
+class Mask(ReferenceType):
     """
-    Class Mask() inherits the ReferenceFile() base class methods
+    Class Mask() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_mask() creates the asdf mask file.
 
@@ -22,7 +22,7 @@ class Mask(ReferenceFile):
         clobber=False
     ):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -40,12 +40,12 @@ class Mask(ReferenceFile):
             will be raised if duplicate file is found.
         -------
         self.input_data: variable;
-            The first positional variable in the Mask class instance assigned in base class ReferenceFile().
+            The first positional variable in the Mask class instance assigned in base class ReferenceType().
             For Mask() self.input_data is a user input uint32 array.
             #TODO look at bit_mask vs mask_image possibly redundant
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             mask_image,
             meta_data,

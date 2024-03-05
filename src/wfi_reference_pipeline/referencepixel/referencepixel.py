@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 
 from .irrc_extract_ramp_sums import extract
 from .irrc_generate_weights import generate
@@ -13,9 +13,9 @@ from ..utilities import logging_functions
 logging_functions.configure_logging("ReferencePixel")
 
 
-class ReferencePixel(ReferenceFile):
+class ReferencePixel(ReferenceType):
     """
-    Class ReferencePixel() inherits the ReferenceFile() base class methods
+    Class ReferencePixel() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
     Under automated operations conditions, a list of dark calibration files from a directory will be the input data for the class to begin generatoring a reference pixel reference pixel.
     Each file will be run through IRRC, which will generate per expsoure sums necessary to minimize Fn = alpha*Fa + gamma*Fl + zeta*Fr, which are then combined to create a final reference pixel reference file coefficientts.
@@ -24,7 +24,7 @@ class ReferencePixel(ReferenceFile):
     def __init__(self, input_data, meta_data, outfile='roman_refpix.asdf', gamma=None, zeta=None, alpha=None,
                  bit_mask=None, clobber=False):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -46,7 +46,7 @@ class ReferencePixel(ReferenceFile):
             will be raised if duplicate file is found.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(input_data, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=False)
 
         # Update metadata with file type info if not included.
