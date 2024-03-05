@@ -10,13 +10,13 @@ from astropy import units as u
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from wfi_reference_pipeline.constants import WFI_TYPE_IMAGE, WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
-from wfi_reference_pipeline.reference_file import ReferenceFile
+from wfi_reference_pipeline.reference_type import ReferenceType
 from pathlib import Path
 
 
-class Dark(ReferenceFile):
+class Dark(ReferenceType):
     """
-    Class Dark() inherits the ReferenceFile() base class methods where static meta data for all reference
+    Class Dark() inherits the ReferenceType() base class methods where static meta data for all reference
     file types are written. Under automated operations conditions, a list of dark calibration files from a directory
     will be the input data for the class to begin generating a dark reference file. A super dark cube of all
     available reads and exposures will go through outlier rejection and then averaging per a multi-accumulation (MA)
@@ -36,7 +36,7 @@ class Dark(ReferenceFile):
         input_dark_cube=None,
     ):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -59,11 +59,11 @@ class Dark(ReferenceFile):
             reads (n_reads) in the integration. NOTE - For parallelization only square arrays allowed.
         -------
         self.input_data: variable;
-            The first positional variable in the Dark class instance assigned in base class ReferenceFile().
+            The first positional variable in the Dark class instance assigned in base class ReferenceType().
             For Dark() self.input_data is a list of string filenames with paths.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             dark_file_list,
             meta_data,

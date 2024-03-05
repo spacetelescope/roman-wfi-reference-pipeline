@@ -116,7 +116,7 @@ class MakeTestMeta:
         if detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        meta_data_params = [WFI_REF_TYPES[ref_type], pedigree, description, author,
+        meta_data_params = [ref_type, pedigree, description, author,
                             use_after, telescope, origin, instrument, detector]
 
         if ref_type == "DARK":

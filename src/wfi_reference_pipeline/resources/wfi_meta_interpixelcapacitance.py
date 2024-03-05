@@ -18,7 +18,7 @@ class WFIMetaIPC(WFIMetadata):
 
     def __post_init__(self, ref_optical_element):
         super().__post_init__()
-        self.reference_type = constants.WFI_REF_TYPES["IPC"]
+        self.reference_type = constants.REF_TYPE_IPC
         self.optical_element = ref_optical_element
 
     def export_asdf_meta(self):

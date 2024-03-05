@@ -1,20 +1,20 @@
 import roman_datamodels.stnode as rds
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 import asdf
 from astropy import units as u
 import numpy as np
 
 
-class Saturation(ReferenceFile):
+class Saturation(ReferenceType):
     """
-    Class Saturation() inherits the ReferenceFile() base class methods
+    Class Saturation() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
     """
 
     def __init__(self, input_data, meta_data, outfile='roman_saturation.asdf', bit_mask=None, clobber=False,
                  saturation_threshold=55000.):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         base class.
 
         Parameters
@@ -33,7 +33,7 @@ class Saturation(ReferenceFile):
             Minimum count pixel count level to be flagged saturated.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(input_data, meta_data, bit_mask=bit_mask, clobber=clobber, make_mask=True)
 
         # Update metadata with file type info if not included.

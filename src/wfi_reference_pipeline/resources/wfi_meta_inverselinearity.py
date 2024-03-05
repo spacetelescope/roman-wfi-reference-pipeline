@@ -18,7 +18,7 @@ class WFIMetaInverseLinearity(WFIMetadata):
 
     def __post_init__(self):
         super().__post_init__()
-        self.reference_type = constants.WFI_REF_TYPES["INVERSELINEARITY"]
+        self.reference_type = constants.REF_TYPE_INVERSELINEARITY
 
     def export_asdf_meta(self):
         asdf_meta = {

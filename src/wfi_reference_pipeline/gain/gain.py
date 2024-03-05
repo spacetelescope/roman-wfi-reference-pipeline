@@ -1,15 +1,15 @@
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 # from ..utilities.logging_functions import log_info
 from astropy import units as u
 
 
 # @log_info
-class Gain(ReferenceFile):
+class Gain(ReferenceType):
     """
-    Class Gain() inherits the ReferenceFile() base class methods
+    Class Gain() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_gain() creates the asdf gain file.
     """
@@ -20,7 +20,7 @@ class Gain(ReferenceFile):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_gain.asdf'
 
-        # Access methods of base class ReferenceFile.
+        # Access methods of base class ReferenceType.
         super(Gain, self).__init__(input_data, meta_data, bit_mask=bit_mask,
                                    clobber=clobber)
 

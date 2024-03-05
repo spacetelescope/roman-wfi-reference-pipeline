@@ -3,15 +3,15 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 from astropy.stats import sigma_clipped_stats
 
 
-class Flat(ReferenceFile):
+class Flat(ReferenceType):
 
     """
-    Class Flat() inherits the ReferenceFile() base class methods where
+    Class Flat() inherits the ReferenceType() base class methods where
     static meta data for all reference file types are written. The class
     ingests a list of files and finds all exposures with the same filter
     within some maximum date range. Fit ramps to all available filter
@@ -29,12 +29,12 @@ class Flat(ReferenceFile):
         input_flat_cube=None
     ):
 
-        # Input dimensions of science array for ReferenceFile() to
+        # Input dimensions of science array for ReferenceType() to
         # to properly generate dq array mask for Flat().
         if bit_mask is None:
             bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             flat_file_list,
             meta_data,

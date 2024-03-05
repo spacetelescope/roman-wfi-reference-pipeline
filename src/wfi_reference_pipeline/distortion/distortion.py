@@ -8,13 +8,13 @@ from astropy import units as u
 import roman_datamodels.stnode as rds
 from soc_roman_tools.siaf import siaf
 
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 # from ..utilities.reference_catalog import ReferenceCatalog  TODO - Verify Existence
 
 
-class Distortion(ReferenceFile):
+class Distortion(ReferenceType):
     """
-    Class Distortion() inherits the ReferenceFile() base class methods
+    Class Distortion() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_distortion() creates the ASDF distortion reference file.
     """
@@ -24,7 +24,7 @@ class Distortion(ReferenceFile):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_distortion.asdf'
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super(Distortion, self).__init__(cdt_model, meta_data, bit_mask=bit_mask,
                                          clobber=clobber)
 

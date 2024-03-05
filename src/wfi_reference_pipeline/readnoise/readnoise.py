@@ -7,16 +7,16 @@ import math
 import gc
 import os
 from astropy.stats import sigma_clip
-from ..reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
 
 
-class ReadNoise(ReferenceFile):
+class ReadNoise(ReferenceType):
     """
-    Class ReadNoise() inherits the ReferenceFile() base class methods where static meta data for all reference
+    Class ReadNoise() inherits the ReferenceType() base class methods where static meta data for all reference
     file types are written. Under automated operational conditions, a dark calibration file with the most number
     of reads for each detector will be selected from a list of dark calibration input files from the input data variable
-    in ReferenceFile() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
+    in ReferenceType() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
     best available data to measure the variance of the detector read by read. A ramp model for all available reads
     will be subtracted from the input data cube that is constructed from the input file list provided and the variance
     in the residuals is determined to be the best measurement of the read noise (Casterano and Cosentino email
@@ -35,7 +35,7 @@ class ReadNoise(ReferenceFile):
                  clobber=False,
                  input_data_cube=None):
         """
-        The __init__ method initializes the class with proper input variables needed by the ReferenceFile()
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
 
         Parameters
@@ -57,14 +57,14 @@ class ReadNoise(ReferenceFile):
             of the detector by the number of reads (n_reads). NOTE - For parallelization only square arrays allowed.
         ----------
         self.input_data: attribute;
-            The first positional variable in the ReadNoise class instance assigned in base class ReferenceFile().
+            The first positional variable in the ReadNoise class instance assigned in base class ReferenceType().
             For ReadNoise() self.input_data is a list of string filenames with paths.
 
-        See ReferenceFile() base class for additional attributes available to all reference file types such
+        See ReferenceType() base class for additional attributes available to all reference file types such
         as ancillary data.
         """
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super().__init__(
             input_file_list,
             meta_data,
@@ -125,7 +125,7 @@ class ReadNoise(ReferenceFile):
 
         # Use input files if they exist.
         if self.input_data is not None:
-            print('Makeing READNOISE from input files')
+            print('Making READNOISE from input files')
             logging.info('Using file list to make make read noise.')
             self._select_data_cube()
             self.readnoise_image = self.comp_ramp_res_var()
@@ -155,19 +155,17 @@ class ReadNoise(ReferenceFile):
                      f'and the most number of reads.')
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
-        for fl in range(0, len(self.input_data)):
-            tmp = asdf.open(self.input_data[fl])
-            n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
-            fl_reads_ordered_list.append([self.input_data[fl], n_rds])
-            tmp.close()
+        for fl in range(0, len(self.input_data)):   # TODO - can the n_reads be in the DAAPI metadata so we can avoid opening each file just to get that?
+            with asdf.open(self.input_data[fl]) as tmp:
+                n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
+                fl_reads_ordered_list.append([self.input_data[fl], n_rds])
         # Sort the list of files in reverse order such that the file with the most number of reads is always in
         # the zero index first element of the list.
         fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
 
         # Get the input file with the most number of reads from the sorted list.
-        tmp = asdf.open(fl_reads_ordered_list[0][0])
-        self.input_data_cube = tmp.tree['roman']['data']
-        #TODO logging info? every method? starting something, ending something? Status along the way or only useful info
+        with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
+            self.input_data_cube = tmp.tree['roman']['data']
         logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
 
     def _initialize_arrays(self):
