@@ -111,8 +111,15 @@ if rfp_readnoise_pipe_all == 1:
     readnoise_pipeline = ReadnoisePipeline()
     readnoise_pipeline.restart_pipeline()
 
+rfp_readnoise_ingest_prep_only = 1
+if rfp_readnoise_ingest_prep_only == 1:
+    # REFTYPE_PIPE.READNOISE
+    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline.select_uncal_files()
+    readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
 
-rfp_readnoise_pipe_only = 1
+
+rfp_readnoise_pipe_only = 0
 if rfp_readnoise_pipe_only == 1:
 
     #ingest prepped data

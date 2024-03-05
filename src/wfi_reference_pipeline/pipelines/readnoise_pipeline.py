@@ -10,7 +10,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipeline import Pipeline
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.utilities.file_handler import format_prep_output_file_path, format_calibrated_output_file_path
+from wfi_reference_pipeline.utilities.file_handler import format_prep_output_file_path, format_calibrated_output_file_path, remove_existing_prepped_files_for_ref_type
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
@@ -40,8 +40,7 @@ class ReadnoisePipeline(Pipeline):
     def __init__(self):
         # Initialize baseclass from here for access to this class name
         super().__init__()
-
-        # TODO input ref type specific configuration
+        self.ref_type = REF_TYPE_READNOISE
 
     @log_info
     def select_uncal_files(self):
@@ -51,8 +50,8 @@ class ReadnoisePipeline(Pipeline):
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
-        files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
-        # files = list(self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
+        # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
+        files = list(self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf"))
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
@@ -62,9 +61,13 @@ class ReadnoisePipeline(Pipeline):
 
         # TODO - Remove existing READNOISE files from prepped directory before running
         logging.info("READNOISE PREP")
+
+        # Clean up previous runs
+        self.prepped_files.clear()
+        remove_existing_prepped_files_for_ref_type(self.prep_path, self.ref_type)
+
         # Convert file_list to a list of Path type files
         file_list = list(map(Path, file_list))
-        self.prepped_files.clear()
         # self._datamodels_prepped.clear()
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -97,7 +100,7 @@ class ReadnoisePipeline(Pipeline):
         logging.info('READNOISE PIPE')
 
         file_list = list(map(Path, file_list))
-        tmp = MakeDevMeta(ref_type=REF_TYPE_READNOISE)  # TODO replace with MakeMeta which gets actual information from files
+        tmp = MakeDevMeta(ref_type=self.ref_type)  # TODO replace with MakeMeta which gets actual information from files
         readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = format_calibrated_output_file_path(self.calibrated_out_path, 'roman_dev_readnoise_from_DAAPI_dev_files.asdf') # TODO make this name generic
 

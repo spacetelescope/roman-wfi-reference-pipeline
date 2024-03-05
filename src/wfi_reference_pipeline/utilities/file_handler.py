@@ -1,5 +1,21 @@
 from pathlib import Path
 
+def _get_prepped_file_suffix(ref_type):
+    return ref_type.upper() + '_PREPPED.asdf'
+
+
+def remove_existing_prepped_files_for_ref_type(prep_dir, ref_type):
+    # TODO create check_ref_type
+    #if valid_ref_type(ref_Type):
+    file_path_to_remove = Path(prep_dir)
+    print(file_path_to_remove.name)
+    matching_files = file_path_to_remove.glob('*' + _get_prepped_file_suffix(ref_type))
+
+    # Delete each matching file
+    for file in matching_files:
+        file.unlink()
+        print(f"removing {file}")
+
 def format_prep_output_file_path(prep_dir, filename, ref_type):
     """Return a file path for a prepped file using established formatting
         /PATH/IN/CONFIG/filenameREFTYPE_PREPPED.asdf
@@ -9,7 +25,7 @@ def format_prep_output_file_path(prep_dir, filename, ref_type):
     settings : string
         Path for prepped file
     """
-    prepped_filename = filename + ref_type.upper() + '_PREPPED.asdf'
+    prepped_filename = filename + _get_prepped_file_suffix(ref_type)
     output_path = Path(prep_dir) / prepped_filename
     return output_path
 
