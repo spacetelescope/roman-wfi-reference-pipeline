@@ -155,7 +155,7 @@ class ReadNoise(ReferenceFile):
                      f'and the most number of reads.')
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
-        for fl in range(0, len(self.input_data)):   # TODO - SAPP can the n_reads be in the metadata?
+        for fl in range(0, len(self.input_data)):   # TODO - can the n_reads be in the DAAPI metadata so we can avoid opening each file just to get that?
             with asdf.open(self.input_data[fl]) as tmp:
                 n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
                 fl_reads_ordered_list.append([self.input_data[fl], n_rds])

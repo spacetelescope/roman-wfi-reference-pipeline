@@ -92,8 +92,7 @@ if test_flow == 1:
     #     os.remove(scratch_files[i])
     # outfile = write_path + 'roman_dev_readnoise.asdf'
 
-#TODO for Brad development of pipeline
-rfp_readnoise_pipe_all = 1
+rfp_readnoise_pipe_all = 0
 if rfp_readnoise_pipe_all == 1:
     # REFTYPE_PIPE.READNOISE
 
@@ -107,13 +106,12 @@ if rfp_readnoise_pipe_all == 1:
         # continues depending on ref type criteria - e.g. number of files per detector
     # Step 3 - Check if criteria to make specific reference file is met
 
-    # TODO STOP STANDARD INGEST
 
     readnoise_pipeline = ReadnoisePipeline()
     readnoise_pipeline.restart_pipeline()
 
 
-rfp_readnoise_pipe_only = 0
+rfp_readnoise_pipe_only = 1
 if rfp_readnoise_pipe_only == 1:
 
     #ingest prepped data
