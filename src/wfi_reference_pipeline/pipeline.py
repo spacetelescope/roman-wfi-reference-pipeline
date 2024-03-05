@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
-from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
+from wfi_reference_pipeline.utilities.logging_functions import configure_logging
+
 
 class Pipeline(ABC):
     """
