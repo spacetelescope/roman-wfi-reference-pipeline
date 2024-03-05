@@ -106,5 +106,6 @@ class ReadnoisePipeline(Pipeline):
         rfp_readnoise.save_readnoise()
         out_file_path.chmod(0o666)
         logging.info('Finished RFP to make READNOISE')
+        print('Finished RFP to make READNOISE')
 
 
