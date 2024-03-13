@@ -7,7 +7,6 @@ from .irrc_generate_weights import generate
 import asdf
 import os                       # Operating system
 import shutil
-
 import logging
 from ..utilities import logging_functions
 logging_functions.configure_logging("ReferencePixel")
@@ -115,6 +114,8 @@ class ReferencePixel(ReferenceType):
         self.gamma = gamma
         self.zeta = zeta
         self.alpha = alpha
+
+        #TODO add in the files to the metadata as list
 
         # ===== Clean up =====
         # Delete intermediate results and folder
