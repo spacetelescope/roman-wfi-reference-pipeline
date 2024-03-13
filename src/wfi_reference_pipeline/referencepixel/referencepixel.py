@@ -7,8 +7,6 @@ from .irrc_generate_weights import generate
 import asdf
 import os                       # Operating system
 import shutil
-import h5py
-
 import logging
 from ..utilities import logging_functions
 logging_functions.configure_logging("ReferencePixel")
