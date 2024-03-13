@@ -55,7 +55,7 @@ wfi\_reference\_pipeline.utilities.notifications module
 wfi\_reference\_pipeline.utilities.reference\_file module
 -------------------------------------------------------------
 
-.. automodule:: src.wfi_reference_pipeline.utilities.reference_file
+.. automodule:: src.wfi_reference_pipeline.utilities.reference_type
    :members:
    :undoc-members:
    :show-inheritance:

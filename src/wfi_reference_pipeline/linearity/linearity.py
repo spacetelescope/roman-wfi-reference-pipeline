@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from ..utilities.reference_file import ReferenceFile
+from ..reference_type import ReferenceType
 import asdf
 import numpy as np
 from astropy.stats import sigma_clipped_stats
@@ -31,10 +31,10 @@ bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GR
                         WFI_REF_OPTICAL_ELEMENT_PRISM]
 
 
-class Linearity(ReferenceFile):
+class Linearity(ReferenceType):
 
     """
-    Class Linearity() inherits the ReferenceFile() base class methods
+    Class Linearity() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_linearity() creates the asdf linearity file.
     """
@@ -60,7 +60,7 @@ class Linearity(ReferenceFile):
         if bit_mask is None:
             bit_mask = np.zeros(linearity_image.shape, dtype=np.uint32)
 
-        # Access methods of base class ReferenceFile
+        # Access methods of base class ReferenceType
         super(Linearity, self).__init__(linearity_image, meta_data, bit_mask=bit_mask,
                                         clobber=clobber)
 

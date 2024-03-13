@@ -1,6 +1,6 @@
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-image: python:3.9
+image: python:3.10
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -49,7 +49,7 @@ run-ruff:
   stage: test
   script:
     - pip install ruff
-    - ruff .
+    - ruff check .
 
 # Dependabot is scheduled to run weekly, will not be run on every CI invoke (see rules at bottom of this section)
 # Starting with '.' means not run by GitLab CI/CD. Our package ecosystems will extend this (currently pip).

@@ -5,9 +5,9 @@ from romancal.lib import dqflags
 from abc import ABC, abstractmethod
 
 
-class ReferenceFile(ABC):
+class ReferenceType(ABC):
     """
-    Base class ReferenceFile() for all reference file types.
+    Base class ReferenceType() for all reference file types.
 
     Returns
     -------
