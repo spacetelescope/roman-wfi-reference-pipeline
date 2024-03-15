@@ -19,7 +19,7 @@ class ReadnoisePipeline(Pipeline):
     Gives user access to:
         select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
         prep_pipeline : Preparing the pipeline using romancal routines and save output
-        run_pipeline: Calibrate the data and create new asdf file for CRDS delivery
+        run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
         restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
