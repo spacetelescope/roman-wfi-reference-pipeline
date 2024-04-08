@@ -7,7 +7,7 @@ import asdf, sys, psutil, os, glob, logging, time
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
-from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
+from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from pathlib import Path

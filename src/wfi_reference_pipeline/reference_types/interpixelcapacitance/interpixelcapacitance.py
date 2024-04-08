@@ -1,5 +1,5 @@
 import roman_datamodels.stnode as rds
-from wfi_reference_pipeline.reference_type import ReferenceType
+from ..reference_type import ReferenceType
 import asdf
 import numpy as np
 

@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 import numpy.testing as testing
 import tempfile
-from ..linearity.linearity import Linearity
-from ..linearity.linearity import get_fit_length, make_linearity_multi
+from wfi_reference_pipeline.reference_types.linearity.linearity import Linearity
+from wfi_reference_pipeline.reference_types.linearity.linearity import get_fit_length, make_linearity_multi
 import os
 import shutil
 from romancal.lib import dqflags
