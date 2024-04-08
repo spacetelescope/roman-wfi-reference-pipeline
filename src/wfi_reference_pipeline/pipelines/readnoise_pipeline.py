@@ -63,7 +63,11 @@ class ReadnoisePipeline(Pipeline):
         self.file_handler.remove_existing_prepped_files_for_ref_type()
 
         # Convert file_list to a list of Path type files
-        file_list = list(map(Path, file_list))
+        if file_list is not None:
+            file_list = list(map(Path, file_list))
+        else:
+            file_list = self.uncal_files
+
         # self._datamodels_prepped.clear()
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -89,7 +93,7 @@ class ReadnoisePipeline(Pipeline):
         )
 
     @log_info
-    def run_pipeline(self, file_list):
+    def run_pipeline(self, file_list=None):
         # TODO load config file with defaults or other params to run pipeline
         # TODO I dont know if ReadNoise will need to be parallelized but dark might be, my thinking is that the class
         # would be instantiated for the whole detector and then outside of here, sub arrays are organized and send individually
@@ -98,7 +102,11 @@ class ReadnoisePipeline(Pipeline):
 
         logging.info("READNOISE PIPE")
 
-        file_list = list(map(Path, file_list))
+        if file_list is not None:
+            file_list = list(map(Path, file_list))
+        else:
+            file_list = self.prepped_files
+            
         tmp = MakeDevMeta(
             ref_type=self.ref_type
         )  # TODO replace with MakeMeta which gets actual information from files

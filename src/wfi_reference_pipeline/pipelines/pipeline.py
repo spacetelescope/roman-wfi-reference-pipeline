@@ -59,6 +59,6 @@ class Pipeline(ABC):
 
     def restart_pipeline(self):
         self.select_uncal_files()
-        self.prep_pipeline(self.uncal_files)
-        self.run_pipeline(self.prepped_files)
+        self.prep_pipeline()
+        self.run_pipeline()
 
