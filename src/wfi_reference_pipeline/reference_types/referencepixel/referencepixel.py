@@ -8,7 +8,7 @@ import asdf
 import os                       # Operating system
 import shutil
 import logging
-from ..utilities import logging_functions
+from wfi_reference_pipeline.utilities.logging_functions import logging_functions
 logging_functions.configure_logging("ReferencePixel")
 
 
