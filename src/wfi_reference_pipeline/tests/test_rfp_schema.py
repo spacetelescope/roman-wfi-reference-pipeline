@@ -8,16 +8,16 @@ if not ON_GITLAB_ACTIONS:
     import unittest
     import numpy as np
     from wfi_reference_pipeline.tests.make_test_meta import MakeTestMeta
-    from wfi_reference_pipeline.dark.dark import Dark
-    from wfi_reference_pipeline.flat.flat import Flat
-    from wfi_reference_pipeline.gain.gain import Gain
-    from wfi_reference_pipeline.interpixelcapacitance.interpixelcapacitance import InterPixelCapacitance
-    from wfi_reference_pipeline.inverselinearity.inverselinearity import InverseLinearity
-    from wfi_reference_pipeline.linearity.linearity import Linearity
-    from wfi_reference_pipeline.mask.mask import Mask
-    from wfi_reference_pipeline.readnoise.readnoise import ReadNoise
-    from wfi_reference_pipeline.referencepixel.referencepixel import ReferencePixel
-    from wfi_reference_pipeline.saturation.saturation import Saturation
+    from wfi_reference_pipeline.reference_types.dark.dark import Dark
+    from wfi_reference_pipeline.reference_types.flat.flat import Flat
+    from wfi_reference_pipeline.reference_types.gain.gain import Gain
+    from wfi_reference_pipeline.reference_types.interpixelcapacitance.interpixelcapacitance import InterPixelCapacitance
+    from wfi_reference_pipeline.reference_types.inverselinearity.inverselinearity import InverseLinearity
+    from wfi_reference_pipeline.reference_types.linearity.linearity import Linearity
+    from wfi_reference_pipeline.reference_types.mask.mask import Mask
+    from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
+    from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
+    from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 
 
     class TestSchema(unittest.TestCase):
