@@ -1,6 +1,3 @@
-import os
-
-
 import asdf
 import unittest
 import numpy as np
