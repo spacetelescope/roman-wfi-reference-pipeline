@@ -2,7 +2,7 @@ import os
 
 # TODO Enable this test once RTB-DATABASE is up and running.
 ON_GITLAB_ACTIONS = "GITLAB_CI" in os.environ
-if not ON_GITLAB_ACTIONS:
+if True:
 
     import asdf
     import unittest
