@@ -200,6 +200,7 @@ class ReadNoise(ReferenceType):
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
+        # TODO - This will currently blow up with some test data, try except, or
         p, v = np.polyfit(self.time_arr,
                           self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
 
