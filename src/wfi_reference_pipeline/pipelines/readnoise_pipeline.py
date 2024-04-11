@@ -55,7 +55,6 @@ class ReadnoisePipeline(Pipeline):
 
     @log_info
     def prep_pipeline(self, file_list=None):
-        # TODO - Remove existing READNOISE files from prepped directory before running
         logging.info("READNOISE PREP")
 
         # Clean up previous runs
@@ -68,24 +67,22 @@ class ReadnoisePipeline(Pipeline):
         else:
             file_list = self.uncal_files
 
-        # self._datamodels_prepped.clear()
+
         for file in file_list:
             logging.info("OPENING - " + file.name)
             in_file = rdm.open(file)
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
-            # TODO - make the save_results out directory configurable
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
             result = LinearityStep.call(result, save_results=False)
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
-                result.meta.filename[:-10]
-            )  # TODO standardize the extraction of the filename
+                result.meta.filename
+            )  # TODO standardize the extraction of the filename TO LAST UNDERSCORE
             result.save(path=prep_output_file_path)
 
-            # self._datamodels_prepped.append(result)
             self.prepped_files.append(prep_output_file_path)
 
         logging.info(
@@ -106,7 +103,7 @@ class ReadnoisePipeline(Pipeline):
             file_list = list(map(Path, file_list))
         else:
             file_list = self.prepped_files
-            
+
         tmp = MakeDevMeta(
             ref_type=self.ref_type
         )  # TODO replace with MakeMeta which gets actual information from files

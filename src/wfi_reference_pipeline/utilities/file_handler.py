@@ -40,15 +40,26 @@ class FileHandler:
             file.unlink()
             logging.info(f"Cleaning Prep folder for {self.ref_type}: Removing {file}")
 
-    def format_prep_output_file_path(self, filename):
+    def format_prep_output_file_path(self, input_filename):
         """Return a file path for a prepped file using established formatting
             /PATH/IN/CONFIG/filenameREFTYPE_PREPPED.asdf
+
+            Replaces all string elements after the final `_` or `.` with an
+            established suffix.
 
         Returns
         -------
         output_path: Path()
             Path for prepped file
         """
+        cut_index = input_filename.rfind('_')
+        if (cut_index == -1):
+            cut_index = input_filename.rfind('.')
+        if (cut_index == -1):
+            filename = input_filename
+        else:
+            filename = input_filename[:cut_index]
+
         prepped_filename = filename + self._get_prepped_file_suffix()
         output_path = self.prep_path / prepped_filename
         return output_path
