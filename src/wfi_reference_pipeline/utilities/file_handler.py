@@ -24,7 +24,7 @@ class FileHandler:
 
     def _get_prepped_file_suffix(self):
         """All prepped files should have the same suffix of <ref_type>_PREPPED.asdf"""
-        return self.ref_type + "_PREPPED.asdf"
+        return "_" + self.ref_type + "_PREPPED.asdf"
 
     def remove_existing_prepped_files_for_ref_type(self):
         """Remove previous PREPPED files for the reference type

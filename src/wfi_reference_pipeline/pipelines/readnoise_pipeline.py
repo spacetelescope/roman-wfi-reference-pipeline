@@ -80,7 +80,7 @@ class ReadnoisePipeline(Pipeline):
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
-            )  # TODO standardize the extraction of the filename TO LAST UNDERSCORE
+            )
             result.save(path=prep_output_file_path)
 
             self.prepped_files.append(prep_output_file_path)
