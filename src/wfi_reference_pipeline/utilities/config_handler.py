@@ -67,9 +67,9 @@ def _validate_config(config_file_dict):
                 "properties": {
                     "ingest_dir": {"type": "string"},
                     "prep_dir": {"type": "string"},
-                    "output_dir": {"type": "string"},
+                    "crds_ready_dir": {"type": "string"},
                 },
-                "required": ["ingest_dir", "prep_dir", "output_dir"],
+                "required": ["ingest_dir", "prep_dir", "crds_ready_dir"],
             },
         },
         # List which entries are needed (all of them)
