@@ -60,7 +60,7 @@ class FileHandler:
         Returns
         -------
         output_path : Path()
-            Path for calibrated file
+            Path for crds ready deliverable file
         """
         # TODO add identifiers to filename (date? other format?), and asdf extension if it doesn't exist
         # TODO delete existing files like we do with prep???
