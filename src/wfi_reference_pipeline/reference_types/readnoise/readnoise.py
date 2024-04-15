@@ -8,7 +8,7 @@ import gc
 import os
 from astropy.stats import sigma_clip
 from ..reference_type import ReferenceType
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME, REF_TYPE_READNOISE
 
 
 class ReadNoise(ReferenceType):
@@ -72,6 +72,9 @@ class ReadNoise(ReferenceType):
             clobber=clobber,
             make_mask=True
         )
+
+        if meta_data['reftype'] is not REF_TYPE_READNOISE:
+            raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting {REF_TYPE_READNOISE}")
 
         #TODO We could probably pass the REFTYPE object into the base class to populate these meta in a standard way
         # Update metadata with file type info if not included.

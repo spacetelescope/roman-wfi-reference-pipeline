@@ -25,7 +25,6 @@ class ReferenceType(ABC):
                  make_mask=False, mask_size=(4096, 4096)):
 
         self.input_data = data
-        # TODO VERIFY THAT meta_data IS TYPE OF ONE OF THE REFERENCE FILE OBJECTS
         self.meta = meta_data
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel

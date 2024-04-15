@@ -64,16 +64,27 @@ class FileHandler:
         output_path = self.prep_path / prepped_filename
         return output_path
 
-    def format_pipeline_output_file_path(self, filename):
+    def format_pipeline_output_file_path(self, mode, detector, **kwargs):
         """Return a file path for a calibrated file using established formatting
             /PATH/IN/CONFIG/filename
+
+            formatting is of stle:
+            # roman_<REFTYPE>_<MODE>_<VARIABLE_KWARGS>_<DETECTOR>.asdf
 
         Returns
         -------
         output_path : Path()
             Path for calibrated file
         """
-        # TODO add identifiers to filename (date? other format?), and asdf extension if it doesn't exist
         # TODO delete existing files like we do with prep???
+
+        prefix_string = f"roman_{self.ref_type}_{mode}"
+        variable_string = ""
+        for _, value in kwargs.items():
+            variable_string = f"{variable_string}_{value}"
+
+        filename =f"{prefix_string}{variable_string}_{detector}.asdf"
+
+
         output_path = self.pipeline_out_path / filename
         return output_path

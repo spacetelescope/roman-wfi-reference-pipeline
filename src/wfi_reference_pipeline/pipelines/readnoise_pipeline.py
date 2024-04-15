@@ -109,8 +109,9 @@ class ReadnoisePipeline(Pipeline):
         )  # TODO replace with MakeMeta which gets actual information from files
         readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = self.file_handler.format_pipeline_output_file_path(
-            "roman_dev_readnoise_from_DAAPI_dev_files.asdf"
-        )  # TODO make this name generic
+            tmp.meta_readnoise.mode,
+            tmp.meta_readnoise.instrument_detector
+        )
 
         rfp_readnoise = ReadNoise(
             file_list, meta_data=readnoise_dev_meta, outfile=out_file_path, clobber=True
