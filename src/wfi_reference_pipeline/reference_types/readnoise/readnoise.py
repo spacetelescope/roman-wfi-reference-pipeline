@@ -8,7 +8,8 @@ import gc
 import os
 from astropy.stats import sigma_clip
 from ..reference_type import ReferenceType
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME, REF_TYPE_READNOISE
+from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
 
 
 class ReadNoise(ReferenceType):
@@ -73,15 +74,10 @@ class ReadNoise(ReferenceType):
             make_mask=True
         )
 
-        if meta_data['reftype'] is not REF_TYPE_READNOISE:
-            raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting {REF_TYPE_READNOISE}")
-
-        #TODO We could probably pass the REFTYPE object into the base class to populate these meta in a standard way
-        # Update metadata with file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI read noise reference file.'
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'READNOISE'
+        if not isinstance(meta_data, WFIMetaReadNoise):
+            raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaReadNoise")
+        if len(self.meta.description) == 0:
+            self.meta.description = 'Roman WFI read noise reference file.'
 
         #TODO Would feedback on how many attributes I have and if they seem logical and organized properly
         # Initialize attributes
@@ -180,7 +176,7 @@ class ReadNoise(ReferenceType):
         self.n_reads, self.ni, _ = np.shape(self.input_data_cube)
 
         # Make the time array for the length of the dark read cube exposure.
-        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
+        if self.meta.type == WFI_TYPE_IMAGE:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
         else:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
@@ -300,7 +296,7 @@ class ReadNoise(ReferenceType):
 
         # Construct the read noise object from the data model.
         readnoise_datamodel_tree = rds.ReadnoiseRef()
-        readnoise_datamodel_tree['meta'] = self.meta
+        readnoise_datamodel_tree['meta'] = self.meta.export_asdf_meta()
         readnoise_datamodel_tree['data'] = self.readnoise_image * u.DN
 
         return readnoise_datamodel_tree

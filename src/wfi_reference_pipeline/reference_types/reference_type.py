@@ -30,9 +30,9 @@ class ReferenceType(ABC):
         self.dqflag_defs = dqflags.pixel
         self.clobber = clobber
 
-        # Allow for input string udesafter to be converted to astropy time object.
-        if isinstance(self.meta['useafter'], str):
-            self.meta['useafter'] = Time(self.meta['useafter'])
+        # Allow for input string use_after to be converted to astropy time object.
+        if isinstance(self.meta.use_after, str):
+            self.meta.use_after = Time(self.meta.use_after)
 
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):

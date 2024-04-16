@@ -107,14 +107,15 @@ class ReadnoisePipeline(Pipeline):
         tmp = MakeDevMeta(
             ref_type=self.ref_type
         )  # TODO replace with MakeMeta which gets actual information from files
-        readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
+        # readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_readnoise.mode,
-            tmp.meta_readnoise.instrument_detector
+            tmp.meta_readnoise.instrument_detector,
+            date="timetest"
         )
 
         rfp_readnoise = ReadNoise(
-            file_list, meta_data=readnoise_dev_meta, outfile=out_file_path, clobber=True
+            file_list, meta_data=tmp.meta_readnoise, outfile=out_file_path, clobber=True
         )
         rfp_readnoise.make_readnoise_image()
 
