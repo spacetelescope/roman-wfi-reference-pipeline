@@ -111,7 +111,6 @@ class ReadnoisePipeline(Pipeline):
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_readnoise.mode,
             tmp.meta_readnoise.instrument_detector,
-            date="timetest"
         )
 
         rfp_readnoise = ReadNoise(
@@ -119,8 +118,6 @@ class ReadnoisePipeline(Pipeline):
         )
         rfp_readnoise.make_readnoise_image()
 
-        rfp_readnoise.save_readnoise()
-        out_file_path.chmod(0o666)
-        logging.info(f"Saved {out_file_path}")
+        rfp_readnoise.save_pipeline_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")

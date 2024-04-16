@@ -299,18 +299,3 @@ class ReadNoise(ReferenceType):
 
         return readnoise_datamodel_tree
 
-    def save_readnoise(self, datamodel_tree=None):
-        """
-        The method save_readnoise writes the reference file object to the specified asdf outfile.
-        """
-
-        #TODO if we made an abstract method in base class that appended save_ with REFTYPE that might be slick
-        # but also probably hard to do but this is the same code in each module
-
-        # Use datamodel tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)

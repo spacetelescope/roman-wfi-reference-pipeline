@@ -1,3 +1,5 @@
+import asdf
+import logging
 import os
 import numpy as np
 from astropy.time import Time
@@ -52,6 +54,21 @@ class ReferenceType(ABC):
             else:
                 raise FileExistsError(f'''{outfile} already exists,
                                           and clobber={self.clobber}!''')
+
+    def save_pipeline_outfile(self, datamodel_tree=None):
+        """
+        Writes the reference file object to the specified asdf outfile.
+        """
+
+        # Use datamodel tree if supplied. Else write tree from module.
+        af = asdf.AsdfFile()
+        if datamodel_tree:
+            af.tree = {'roman': datamodel_tree}
+        else:
+            af.tree = {'roman': self.populate_datamodel_tree()}
+        af.write_to(self.outfile)
+        os.chmod(self.outfile, 0o777)
+        logging.info(f"Saved {self.outfile}")
 
     # Enforce method for all reference file reftype modules used in schema testing.
     @abstractmethod
