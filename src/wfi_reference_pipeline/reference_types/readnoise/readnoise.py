@@ -79,16 +79,13 @@ class ReadNoise(ReferenceType):
         if len(self.meta.description) == 0:
             self.meta.description = 'Roman WFI read noise reference file.'
 
-        #TODO Would feedback on how many attributes I have and if they seem logical and organized properly
-        # Initialize attributes
         self.outfile = outfile
         # Additional object attributes
         # Inputs
         self.input_data_cube = input_data_cube  # Default to user supplied input data cube, over write if filelist
         # Internal
         self.ramp_model = None  # Ramp model fitted to a data cube.
-        self.ramp_res_var = None  # The variance of residuals of the difference between the ramp model and a
-        # data cube.
+        self.ramp_res_var = None  # The variance of residuals of the difference between the ramp model and a data cube.
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs of reads
         # in a data cube.
         # Readnoise attributes
@@ -199,23 +196,27 @@ class ReadNoise(ReferenceType):
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
-        # TODO - This will currently blow up with some test data, try except, or
-        p, v = np.polyfit(self.time_arr,
-                          self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
 
-        # Reshape the parameter slope array into a 2D rate image.
-        ramp_image = p[0].reshape(self.ni, self.ni)
-        # Reshape the parameter y-intercept array into a 2D image.
-        intercept_image = p[1].reshape(self.ni, self.ni)
-        # Reshape the returned covariance matrix slope fit error.
-        # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
-        # returned covariance matrix intercept error.
-        # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
+        try:
+            p, v = np.polyfit(self.time_arr,
+                              self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
+            # Reshape the parameter slope array into a 2D rate image.
+            ramp_image = p[0].reshape(self.ni, self.ni)
+            # Reshape the parameter y-intercept array into a 2D image.
+            intercept_image = p[1].reshape(self.ni, self.ni)
+            # Reshape the returned covariance matrix slope fit error.
+            # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
+            # returned covariance matrix intercept error.
+            # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
 
-        self.ramp_model = np.zeros((self.n_reads, self.ni, self.ni), dtype=np.float32)
-        for tt in range(0, len(self.time_arr)):
-            # Construct a simple linear model y = m*x + b.
-            self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
+            self.ramp_model = np.zeros((self.n_reads, self.ni, self.ni), dtype=np.float32)
+            for tt in range(0, len(self.time_arr)):
+                # Construct a simple linear model y = m*x + b.
+                self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
+
+        except (ValueError, TypeError) as e:
+            logging.error(f"Unable to make_ramp_cube_model with error {e}")
+            # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, I ASSUME WE CAN'T JUST LOG IT
 
     #TODO default parameter values for accessible methods
     # What about inaccessible methods?
@@ -256,6 +257,8 @@ class ReadNoise(ReferenceType):
         correlated double sampling between pairs of reads in the data cube as a noise term from the standard deviation
         of the differences from all read pairs.
 
+        Intended to be accessible to a user to produce the readnoise reference files
+
         Parameters
         ----------
         sig_clip_cds_low: float; default = 5.0
@@ -264,7 +267,6 @@ class ReadNoise(ReferenceType):
             Upper bound limit to filter difference cube
         """
 
-        #TODO this wants to be a method accessible to a user to produce the readnoise reference files
         # If this is selected, comp_ramp_res_var should not be available
 
         logging.info('Calculating CDS noise.')
@@ -282,10 +284,6 @@ class ReadNoise(ReferenceType):
         clipped_diff_cube = sigma_clip(read_diff_cube, sigma_lower=sig_clip_cds_low, sigma_upper=sig_clip_cds_high,
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
-
-        #TODO keeping track of memory resources might be a good thing to do for each module. I'd like to be lean
-        del read_diff_cube
-        gc.collect()
 
         return self.cds_noise
 
