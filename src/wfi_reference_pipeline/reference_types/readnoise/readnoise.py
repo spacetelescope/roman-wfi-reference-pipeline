@@ -1,15 +1,21 @@
-import roman_datamodels.stnode as rds
-from astropy import units as u
-import numpy as np
-import asdf
 import logging
 import math
-import gc
 import os
+
+import asdf
+import numpy as np
+import roman_datamodels.stnode as rds
+from astropy import units as u
 from astropy.stats import sigma_clip
-from ..reference_type import ReferenceType
+from wfi_reference_pipeline.constants import (
+    WFI_FRAME_TIME,
+    WFI_MODE_WIM,
+    WFI_MODE_WSM,
+    WFI_TYPE_IMAGE,
+)
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
+
+from ..reference_type import ReferenceType
 
 
 class ReadNoise(ReferenceType):
