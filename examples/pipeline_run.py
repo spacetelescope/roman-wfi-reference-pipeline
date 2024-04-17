@@ -3,7 +3,7 @@
 # THIS IS A TEMPORARY SCRIPT USED FOR DEVELOPMENT TESTING AND INFO SHARING BETWEEN RICK AND BRAD
 # TODO - DELETE WHEN NOT NEEDED OR UPDATE INFORMATION AND INCLUDE IN TEST SUITE
 
-import asdf, sys, psutil, os, glob, logging, time
+import asdf, sys, os, glob, logging, time
 from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
@@ -49,7 +49,7 @@ if make_WIM_readnoise == 1:
             RFPreadnoise = ReadNoise(None, meta_data=readnoise_dev_meta, outfile=outfile,
                                      clobber=True, input_data_cube=sim_read_cube)
             RFPreadnoise.comp_ramp_res_var()
-            RFPreadnoise.save_readnoise()
+            RFPreadnoise.save_pipeline_outfile()
             print('Made file -> ', outfile)
             # Set file permissions to read+write for owner, group and global
             os.chmod(outfile, 0o666)
@@ -72,8 +72,7 @@ if test_flow == 1:
     print('Testing image creation')
     RFPreadnoise = ReadNoise(None, meta_data=readnoise_dev_meta, outfile=outfile, clobber=True, input_data_cube=dev_rate_image)
     RFPreadnoise.make_readnoise_image()
-    RFPreadnoise.save_readnoise()
-    os.chmod(outfile, 0o666)
+    RFPreadnoise.save_pipeline_outfile()
     print('Made file: ', RFPreadnoise.outfile)
     print('New read noise image average is ', np.mean(RFPreadnoise.readnoise_image))
 
@@ -81,8 +80,7 @@ if test_flow == 1:
     print('Testing cube creation')
     RFPreadnoise = ReadNoise(None, meta_data=readnoise_dev_meta, outfile=outfile, clobber=True, input_data_cube=sim_read_cube)
     RFPreadnoise.make_readnoise_image()
-    RFPreadnoise.save_readnoise()
-    os.chmod(outfile, 0o666)
+    RFPreadnoise.save_pipeline_outfile()
     print('Made file: ', RFPreadnoise.outfile)
     print('New read noise image average is ', np.mean(RFPreadnoise.readnoise_image))
 
@@ -93,7 +91,7 @@ if test_flow == 1:
     #     os.remove(scratch_files[i])
     # outfile = write_path + 'roman_dev_readnoise.asdf'
 
-rfp_readnoise_pipe_all = 1
+rfp_readnoise_pipe_all = 0
 if rfp_readnoise_pipe_all == 1:
     # REFTYPE_PIPE.READNOISE
 

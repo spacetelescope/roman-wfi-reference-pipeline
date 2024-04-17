@@ -23,7 +23,6 @@ class WFIMetaReadNoise(WFIMetadata):
         self.reference_type = constants.REF_TYPE_READNOISE
         if mode in constants.WFI_MODES:
             self.mode = mode
-            # TODO Currently hard coding these values in, will need to evaluate later
             if mode == constants.WFI_MODE_WIM:
                 self.p_exptype = constants.WFI_P_EXPTYPE_IMAGE
             elif mode == constants.WFI_MODE_WSM:

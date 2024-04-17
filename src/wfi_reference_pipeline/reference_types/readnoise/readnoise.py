@@ -1,14 +1,21 @@
-import roman_datamodels.stnode as rds
-from astropy import units as u
-import numpy as np
-import asdf
 import logging
 import math
-import gc
 import os
+
+import asdf
+import numpy as np
+import roman_datamodels.stnode as rds
+from astropy import units as u
 from astropy.stats import sigma_clip
+from wfi_reference_pipeline.constants import (
+    WFI_FRAME_TIME,
+    WFI_MODE_WIM,
+    WFI_MODE_WSM,
+    WFI_TYPE_IMAGE,
+)
+from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
+
 from ..reference_type import ReferenceType
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_MODE_WSM, WFI_TYPE_IMAGE, WFI_FRAME_TIME
 
 
 class ReadNoise(ReferenceType):
@@ -73,23 +80,18 @@ class ReadNoise(ReferenceType):
             make_mask=True
         )
 
-        #TODO We could probably pass the REFTYPE object into the base class to populate these meta in a standard way
-        # Update metadata with file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI read noise reference file.'
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'READNOISE'
+        if not isinstance(meta_data, WFIMetaReadNoise):
+            raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaReadNoise")
+        if len(self.meta.description) == 0:
+            self.meta.description = 'Roman WFI read noise reference file.'
 
-        #TODO Would feedback on how many attributes I have and if they seem logical and organized properly
-        # Initialize attributes
         self.outfile = outfile
         # Additional object attributes
         # Inputs
         self.input_data_cube = input_data_cube  # Default to user supplied input data cube, over write if filelist
         # Internal
         self.ramp_model = None  # Ramp model fitted to a data cube.
-        self.ramp_res_var = None  # The variance of residuals of the difference between the ramp model and a
-        # data cube.
+        self.ramp_res_var = None  # The variance of residuals of the difference between the ramp model and a data cube.
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs of reads
         # in a data cube.
         # Readnoise attributes
@@ -177,7 +179,7 @@ class ReadNoise(ReferenceType):
         self.n_reads, self.ni, _ = np.shape(self.input_data_cube)
 
         # Make the time array for the length of the dark read cube exposure.
-        if self.meta['exposure']['type'] == WFI_TYPE_IMAGE:
+        if self.meta.type == WFI_TYPE_IMAGE:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
         else:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
@@ -200,23 +202,27 @@ class ReadNoise(ReferenceType):
 
         # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
         # covariance matrix v are returned.
-        # TODO - This will currently blow up with some test data, try except, or
-        p, v = np.polyfit(self.time_arr,
-                          self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
 
-        # Reshape the parameter slope array into a 2D rate image.
-        ramp_image = p[0].reshape(self.ni, self.ni)
-        # Reshape the parameter y-intercept array into a 2D image.
-        intercept_image = p[1].reshape(self.ni, self.ni)
-        # Reshape the returned covariance matrix slope fit error.
-        # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
-        # returned covariance matrix intercept error.
-        # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
+        try:
+            p, v = np.polyfit(self.time_arr,
+                              self.input_data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
+            # Reshape the parameter slope array into a 2D rate image.
+            ramp_image = p[0].reshape(self.ni, self.ni)
+            # Reshape the parameter y-intercept array into a 2D image.
+            intercept_image = p[1].reshape(self.ni, self.ni)
+            # Reshape the returned covariance matrix slope fit error.
+            # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
+            # returned covariance matrix intercept error.
+            # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
 
-        self.ramp_model = np.zeros((self.n_reads, self.ni, self.ni), dtype=np.float32)
-        for tt in range(0, len(self.time_arr)):
-            # Construct a simple linear model y = m*x + b.
-            self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
+            self.ramp_model = np.zeros((self.n_reads, self.ni, self.ni), dtype=np.float32)
+            for tt in range(0, len(self.time_arr)):
+                # Construct a simple linear model y = m*x + b.
+                self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
+
+        except (ValueError, TypeError) as e:
+            logging.error(f"Unable to make_ramp_cube_model with error {e}")
+            # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, I ASSUME WE CAN'T JUST LOG IT
 
     #TODO default parameter values for accessible methods
     # What about inaccessible methods?
@@ -257,6 +263,8 @@ class ReadNoise(ReferenceType):
         correlated double sampling between pairs of reads in the data cube as a noise term from the standard deviation
         of the differences from all read pairs.
 
+        Intended to be accessible to a user to produce the readnoise reference files
+
         Parameters
         ----------
         sig_clip_cds_low: float; default = 5.0
@@ -265,7 +273,6 @@ class ReadNoise(ReferenceType):
             Upper bound limit to filter difference cube
         """
 
-        #TODO this wants to be a method accessible to a user to produce the readnoise reference files
         # If this is selected, comp_ramp_res_var should not be available
 
         logging.info('Calculating CDS noise.')
@@ -284,10 +291,6 @@ class ReadNoise(ReferenceType):
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
 
-        #TODO keeping track of memory resources might be a good thing to do for each module. I'd like to be lean
-        del read_diff_cube
-        gc.collect()
-
         return self.cds_noise
 
     def populate_datamodel_tree(self):
@@ -297,23 +300,8 @@ class ReadNoise(ReferenceType):
 
         # Construct the read noise object from the data model.
         readnoise_datamodel_tree = rds.ReadnoiseRef()
-        readnoise_datamodel_tree['meta'] = self.meta
+        readnoise_datamodel_tree['meta'] = self.meta.export_asdf_meta()
         readnoise_datamodel_tree['data'] = self.readnoise_image * u.DN
 
         return readnoise_datamodel_tree
 
-    def save_readnoise(self, datamodel_tree=None):
-        """
-        The method save_readnoise writes the reference file object to the specified asdf outfile.
-        """
-
-        #TODO if we made an abstract method in base class that appended save_ with REFTYPE that might be slick
-        # but also probably hard to do but this is the same code in each module
-
-        # Use datamodel tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)

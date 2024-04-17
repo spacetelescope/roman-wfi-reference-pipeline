@@ -55,7 +55,6 @@ class ReadnoisePipeline(Pipeline):
 
     @log_info
     def prep_pipeline(self, file_list=None):
-        # TODO - Remove existing READNOISE files from prepped directory before running
         logging.info("READNOISE PREP")
 
         # Clean up previous runs
@@ -68,24 +67,22 @@ class ReadnoisePipeline(Pipeline):
         else:
             file_list = self.uncal_files
 
-        # self._datamodels_prepped.clear()
+
         for file in file_list:
             logging.info("OPENING - " + file.name)
             in_file = rdm.open(file)
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
-            # TODO - make the save_results out directory configurable
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
             result = LinearityStep.call(result, save_results=False)
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
-                result.meta.filename[:-10]
-            )  # TODO standardize the extraction of the filename
+                result.meta.filename
+            )
             result.save(path=prep_output_file_path)
 
-            # self._datamodels_prepped.append(result)
             self.prepped_files.append(prep_output_file_path)
 
         logging.info(
@@ -106,22 +103,21 @@ class ReadnoisePipeline(Pipeline):
             file_list = list(map(Path, file_list))
         else:
             file_list = self.prepped_files
-            
+
         tmp = MakeDevMeta(
             ref_type=self.ref_type
         )  # TODO replace with MakeMeta which gets actual information from files
-        readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
+        # readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = self.file_handler.format_pipeline_output_file_path(
-            "roman_dev_readnoise_from_DAAPI_dev_files.asdf"
-        )  # TODO make this name generic
+            tmp.meta_readnoise.mode,
+            tmp.meta_readnoise.instrument_detector,
+        )
 
         rfp_readnoise = ReadNoise(
-            file_list, meta_data=readnoise_dev_meta, outfile=out_file_path, clobber=True
+            file_list, meta_data=tmp.meta_readnoise, outfile=out_file_path, clobber=True
         )
         rfp_readnoise.make_readnoise_image()
 
-        rfp_readnoise.save_readnoise()
-        out_file_path.chmod(0o666)
-        logging.info(f"Saved {out_file_path}")
+        rfp_readnoise.save_pipeline_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")
