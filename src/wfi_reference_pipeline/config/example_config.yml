@@ -17,4 +17,4 @@ DataFiles:
   # crds_ready_dir: string location to store CRDS ready deliverable reference files
   ingest_dir: "/PATH/TO/DATAFILES/INGEST"
   prep_dir: "/PATH/TO/DATAFILES/PREPPED"
-  output_dir: "/PATH/TO/DATAFILES/CRDS_READY"
+  crds_ready_dir: "/PATH/TO/DATAFILES/CRDS_READY"

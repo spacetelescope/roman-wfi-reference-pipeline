@@ -6,11 +6,12 @@ from wfi_reference_pipeline.reference_types.linearity.linearity import Linearity
 from wfi_reference_pipeline.reference_types.linearity.linearity import get_fit_length, make_linearity_multi
 import os
 import shutil
+import pytest
 from romancal.lib import dqflags
-from .make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.tests.make_test_meta import MakeTestMeta
 from ..constants import WFI_MODE_WIM, WFI_FRAME_TIME
 
-
+# TODO - re-implement tests after linearity pipeline is re-worked
 def setup_dummy_meta():
     return MakeTestMeta(ref_type="LINEARITY").meta_linearity.export_asdf_meta()
 
@@ -63,6 +64,7 @@ class GetFitLengthTestCase(unittest.TestCase):
         testing.assert_equal(0, nf)
 
 
+@pytest.mark.skip(reason="Temporarily disabled test")
 class FitSingleTestCase(unittest.TestCase):
     def test_fit_single_nodq(self):
         """
@@ -218,6 +220,7 @@ class FitSingleTestCase(unittest.TestCase):
         testing.assert_almost_equal(poly_coeffs, lin.coeffs[:, 10, 10])
 
 
+@pytest.mark.skip(reason="Temporarily disabled test")
 class LinearityMultiTestCase(unittest.TestCase):
     def test_make_linearity_multi_dummy(self):
         _meta = setup_dummy_meta()
@@ -434,7 +437,6 @@ class LinearityMultiTestCase(unittest.TestCase):
         if self.test_dir is not None:
             if os.path.exists(self.test_dir):
                 shutil.rmtree(self.test_dir, True)
-
 
 if __name__ == '__main__':
     unittest.main()

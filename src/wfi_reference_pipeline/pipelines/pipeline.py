@@ -22,7 +22,6 @@ class Pipeline(ABC):
         self.uncal_files = []
         self.prepped_files = []
         self.ref_type = ref_type
-        # self._datamodels_prepped = []  # TODO - Enable this or too much memory? If using pass to run_pipeline in restart_pipeline
         try:
             # Initialize logging named for the derived class
             configure_logging(f"{self.__class__.__name__}")

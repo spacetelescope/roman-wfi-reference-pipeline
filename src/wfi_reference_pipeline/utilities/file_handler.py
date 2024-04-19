@@ -24,7 +24,7 @@ class FileHandler:
 
     def _get_prepped_file_suffix(self):
         """All prepped files should have the same suffix of <ref_type>_PREPPED.asdf"""
-        return self.ref_type + "_PREPPED.asdf"
+        return "_" + self.ref_type + "_PREPPED.asdf"
 
     def remove_existing_prepped_files_for_ref_type(self):
         """Remove previous PREPPED files for the reference type
@@ -40,29 +40,51 @@ class FileHandler:
             file.unlink()
             logging.info(f"Cleaning Prep folder for {self.ref_type}: Removing {file}")
 
-    def format_prep_output_file_path(self, filename):
+    def format_prep_output_file_path(self, input_filename):
         """Return a file path for a prepped file using established formatting
             /PATH/IN/CONFIG/filenameREFTYPE_PREPPED.asdf
+
+            Replaces all string elements after the final `_` or `.` with an
+            established suffix.
 
         Returns
         -------
         output_path: Path()
             Path for prepped file
         """
+        cut_index = input_filename.rfind('_')
+        if (cut_index == -1):
+            cut_index = input_filename.rfind('.')
+        if (cut_index == -1):
+            filename = input_filename
+        else:
+            filename = input_filename[:cut_index]
+
         prepped_filename = filename + self._get_prepped_file_suffix()
         output_path = self.prep_path / prepped_filename
         return output_path
 
-    def format_pipeline_output_file_path(self, filename):
+    def format_pipeline_output_file_path(self, mode, detector, **kwargs):
         """Return a file path for a calibrated file using established formatting
             /PATH/IN/CONFIG/filename
+
+            formatting is of stle:
+            # roman_<REFTYPE>_<MODE>_<VARIABLE_KWARGS>_<DETECTOR>.asdf
 
         Returns
         -------
         output_path : Path()
             Path for crds ready deliverable file
         """
-        # TODO add identifiers to filename (date? other format?), and asdf extension if it doesn't exist
         # TODO delete existing files like we do with prep???
+
+        prefix_string = f"roman_{self.ref_type}_{mode}"
+        variable_string = ""
+        for _, value in kwargs.items():
+            variable_string = f"{variable_string}_{value}"
+
+        filename =f"{prefix_string}{variable_string}_{detector}.asdf"
+
+
         output_path = self.pipeline_out_path / filename
         return output_path
