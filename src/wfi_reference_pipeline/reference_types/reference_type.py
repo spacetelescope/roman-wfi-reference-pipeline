@@ -15,7 +15,6 @@ class ReferenceType(ABC):
     -------
     self.input_data: attribute;
         Class dependent variable assigned as attribute. Intended to be list of files or numpy array.
-        If not used, returned as none.
     self.meta_data: object;
         ref type specific metadata object
     self.ancillary: attribute;
@@ -23,18 +22,23 @@ class ReferenceType(ABC):
     self.dqflag_defs:
     """
 
-    def __init__(self, data, meta_data, bit_mask=None, clobber=False,
-                 make_mask=False, mask_size=(4096, 4096)):
+    def __init__(self,
+                 input_data,
+                 meta_data,
+                 bit_mask=None,
+                 clobber=False,
+                 make_mask=False,
+                 mask_size=(4096, 4096)):
 
-        self.input_data = data
-        self.meta = meta_data
+        self.input_data = input_data
+        self.meta_data = meta_data
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
         self.clobber = clobber
 
         # Allow for input string use_after to be converted to astropy time object.
-        if isinstance(self.meta.use_after, str):
-            self.meta.use_after = Time(self.meta.use_after)
+        if isinstance(self.meta_data.use_after, str):
+            self.meta_data.use_after = Time(self.meta_data.use_after)
 
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):
@@ -46,7 +50,7 @@ class ReferenceType(ABC):
             else:
                 self.mask = None
 
-    def check_output_file(self, outfile):
+    def check_outfile(self, outfile):
         # Check if the output file exists, and take appropriate action.
         if os.path.exists(outfile):
             if self.clobber:
@@ -55,7 +59,7 @@ class ReferenceType(ABC):
                 raise FileExistsError(f'''{outfile} already exists,
                                           and clobber={self.clobber}!''')
 
-    def save_pipeline_outfile(self, datamodel_tree=None):
+    def save_outfile(self, datamodel_tree=None):
         """
         Writes the reference file object to the specified asdf outfile.
         """

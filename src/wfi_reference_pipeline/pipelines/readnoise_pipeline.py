@@ -118,6 +118,6 @@ class ReadnoisePipeline(Pipeline):
         )
         rfp_readnoise.make_readnoise_image()
 
-        rfp_readnoise.save_pipeline_outfile()
+        rfp_readnoise.save_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")
