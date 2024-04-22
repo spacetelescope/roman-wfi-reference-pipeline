@@ -59,9 +59,9 @@ class ReadNoise(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         user_input: numpy array; default = None
-            User supplied input which can be image array or data cube.
-            NOTE - For parallelization only square arrays allowed.
-        ----------
+            User supplied input which can be image array or data cube. Intended for Build support file creation.
+        ---------
+        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
