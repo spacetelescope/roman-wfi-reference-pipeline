@@ -1,5 +1,5 @@
 import pytest
-from ..utilities import submit_files
+from .. import submit_files
 
 
 def test_exceptions():
