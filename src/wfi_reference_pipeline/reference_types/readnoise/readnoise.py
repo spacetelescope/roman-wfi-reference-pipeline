@@ -106,13 +106,12 @@ class ReadNoise(ReferenceType):
 
     def make_readnoise_image(self):
         """
-        This method determines the flow of the module based on the input data
+        This method determines the flow of the module based on modle inputs
         when the class is instantiated. The read noise rate image is created at the
-        end of the method to be the data in the datamodel.
+        end of the method to be the data in the data model.
         """
 
-        #TODO is should be the generic type method in each reference file type that is called after the class is instantiated
-        # Utilize nested methods from most complex starting with files to simplest where an array is sent to make the file
+        #TODO this is the primary method to make a valid ref type file.
 
         # Use input files if they exist.
         if self.file_list:
@@ -150,7 +149,8 @@ class ReadNoise(ReferenceType):
                      f'and the most number of reads.')
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
-        for fl in range(0, len(self.file_list)):   # TODO - can the n_reads be in the DAAPI metadata so we can avoid opening each file just to get that?
+        for fl in range(0, len(self.file_list)):
+            #TODO update using rdm.open() method
             with asdf.open(self.file_list[fl]) as tmp:
                 n_rds, _, _ = np.shape(tmp.tree['roman']['data'])
                 fl_reads_ordered_list.append([self.file_list[fl], n_rds])
@@ -159,6 +159,7 @@ class ReadNoise(ReferenceType):
         fl_reads_ordered_list.sort(key=lambda x: x[1], reverse=True)
 
         # Get the input file with the most number of reads from the sorted list.
+        #TODO update using rdm.open() method
         with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
             self.data_cube = tmp.tree['roman']['data']
             if isinstance(self.data_cube, u.Quantity):  # Only access data from quantity object.
@@ -171,6 +172,8 @@ class ReadNoise(ReferenceType):
         Method initialize_arrays makes arrays of the dimensions of the dark_read_cube, which are also required
         in the data model.
         """
+
+        #TODO investigate migrating along with ramp_cube_model to ReferenceType()
 
         self.n_reads, self.ni, _ = np.shape(self.data_cube)
 
@@ -191,8 +194,7 @@ class ReadNoise(ReferenceType):
         estimates for variances in the model fitted parameters.
         """
 
-        #TODO fitting a ramp to a cube of data is probably common to all modules
-        #TODO making a ramp model is probably common to all modules
+        #TODO investigate migrating to ReferenceType() base class for all modules to have standardized ramp model
 
         logging.info('Making ramp model for the input read cube.')
 
