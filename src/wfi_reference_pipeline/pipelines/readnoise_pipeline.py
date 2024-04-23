@@ -67,7 +67,6 @@ class ReadnoisePipeline(Pipeline):
         else:
             file_list = self.uncal_files
 
-
         for file in file_list:
             logging.info("OPENING - " + file.name)
             in_file = rdm.open(file)
@@ -113,11 +112,13 @@ class ReadnoisePipeline(Pipeline):
             tmp.meta_readnoise.instrument_detector,
         )
 
-        rfp_readnoise = ReadNoise(
-            file_list, meta_data=tmp.meta_readnoise, outfile=out_file_path, clobber=True
+        rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
+                                  file_list=file_list,
+                                  data_array=None,
+                                  outfile=out_file_path,
+                                  clobber=True
         )
         rfp_readnoise.make_readnoise_image()
-
-        rfp_readnoise.save_outfile()
+        rfp_readnoise.generate_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")
