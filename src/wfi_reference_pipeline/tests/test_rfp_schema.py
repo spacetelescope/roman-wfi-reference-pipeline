@@ -192,7 +192,7 @@ class TestSchema(unittest.TestCase):
         # Make RFP Read Noise reference file object for testing.
         test_data = np.ones((1,1),
                             dtype=np.float32)
-        
+
         rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                                   data_array=test_data)
         # Make test asdf tree

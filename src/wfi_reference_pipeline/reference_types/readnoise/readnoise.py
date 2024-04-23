@@ -54,7 +54,7 @@ class ReadNoise(ReferenceType):
             List of file names with absolute paths. Intended for primary use during automated operations.
         data_array: numpy array; default = None
             Input which can be image array or data cube. Intended for development support file creation or as input
-            for reference file modules no
+            for reference file types not generated from a file list.
         bit_mask: 2D integer numpy array, default = None
             A 2D data quality integer mask array to be applied to reference file.
         outfile: string; default = roman_readnoise.asdf
@@ -136,7 +136,7 @@ class ReadNoise(ReferenceType):
         logging.info('Making read noise image.')
         self.readnoise_image = self.comp_ramp_res_var()
 
-    def _select_data_cube(self):
+    def _select_data_cube_from_file_list(self):
         """
         The method select_data_cube() looks through the file list provided to ReadNoise() and finds the file with
         the most number of reads. It sorts the files in descending order by the number of reads such that the
