@@ -96,7 +96,7 @@ class ReadNoise(ReferenceType):
         if self.file_list:
             # Get file list properties and select data cube.
             self.n_files = len(self.file_list)
-            self._select_data_cube()
+            self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
             # Get data array properties.
