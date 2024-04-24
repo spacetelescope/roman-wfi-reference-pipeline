@@ -1,5 +1,5 @@
 import pytest
-from .. import submit_files
+from wfi_reference_pipeline.utilities import submit_files
 
 
 def test_exceptions():

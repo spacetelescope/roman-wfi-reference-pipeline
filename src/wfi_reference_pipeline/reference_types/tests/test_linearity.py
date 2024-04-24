@@ -9,7 +9,7 @@ import shutil
 import pytest
 from romancal.lib import dqflags
 from wfi_reference_pipeline.reference_types.tests.make_test_meta import MakeTestMeta
-from ...constants import WFI_MODE_WIM, WFI_FRAME_TIME
+from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_FRAME_TIME
 
 # TODO - re-implement tests after linearity pipeline is re-worked
 # TODO -  CHANGE TO USE PYTEST
