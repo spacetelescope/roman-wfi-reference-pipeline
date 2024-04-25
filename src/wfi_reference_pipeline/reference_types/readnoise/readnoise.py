@@ -85,18 +85,11 @@ class ReadNoise(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI read noise reference file.'
 
-        # Check to make sure ReadNoise is instantiated with one valid input.
-        if self.file_list is None and self.data_array is None:
-            raise ValueError('No data supplied to make read noise reference file!')
-        if self.file_list is not None and len(self.file_list) > 0 and \
-                self.data_array is not None and len(self.data_array) > 0:
-            raise ValueError('Two inputs provided. Provide file list or data array; not both!')
-
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
             self.n_files = len(self.file_list)
-            self._select_data_cube()
+            self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
             # Get data array properties.
