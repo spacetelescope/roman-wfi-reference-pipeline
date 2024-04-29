@@ -62,7 +62,6 @@ class ReadNoise(ReferenceType):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
-
         ---------
         NOTE - For parallelization only square arrays allowed.
 
@@ -80,12 +79,13 @@ class ReadNoise(ReferenceType):
             make_mask=True
         )
 
+        # Default meta creation for moedule specific ref type.
         if not isinstance(meta_data, WFIMetaReadNoise):
             raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaReadNoise")
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI read noise reference file.'
 
-        # Check to make sure ReadNoise is instantiated with one valid input.
+        # Check to make sure module is instantiated with one valid input.
         if self.file_list is None and self.data_array is None:
             raise ValueError('No data supplied to make read noise reference file!')
         if self.file_list is not None and len(self.file_list) > 0 and \
@@ -172,7 +172,6 @@ class ReadNoise(ReferenceType):
         Initialize time array after getting frame time from meta.
         Initialize empty ramp_model.
         """
-
 
         self.n_reads, self.ni, _ = np.shape(self.data_cube)
 
