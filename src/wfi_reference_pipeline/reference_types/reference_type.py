@@ -34,11 +34,18 @@ class ReferenceType(ABC):
                  make_mask=False,
                  mask_size=(4096, 4096)):
 
-        self.meta_data = meta_data
-        # Allow for input string use_after to be converted to astropy time object.
-        if isinstance(self.meta_data.use_after, str):
-            self.meta_data.use_after = Time(self.meta_data.use_after)
+        # Check to make sure ReferenceType is instantiated with one valid input.
+        if file_list is None and data_array is None:
+            raise ValueError("No data supplied to make reference file! You MUST supply 'file_list' or 'data_array' parameters")
+        if file_list is not None and len(file_list) > 0 and \
+           data_array is not None and len(data_array) > 0:
+            raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'data_array'")
 
+        # Allow for input string use_after to be converted to astropy time object.
+        if isinstance(meta_data.use_after, str):
+            meta_data.use_after = Time(meta_data.use_after)
+
+        self.meta_data = meta_data
         self.file_list = file_list
         self.data_array = data_array
 

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import yaml
@@ -86,7 +85,7 @@ def _validate_config(config_file_dict):
         )
 
 
-def get_config():
+def get_config(config_filename="config.yml"):
     """Return a dictionary that holds the contents of config.yml
 
     Returns
@@ -94,10 +93,6 @@ def get_config():
     settings : dict
         A dictionary that holds the contents of the config file.
     """
-    config_filename = "config.yml"
-    if os.environ.get("READTHEDOCS") == "True":
-        config_filename = "example_config.yml"
-
     config_file_location = _find_config_file(config_filename)
 
     if config_file_location is None:
@@ -121,8 +116,8 @@ def get_config():
     return settings
 
 
-def get_logging_config():
-    return get_config()["Logging"]
+def get_logging_config(config_file="config.yml"):
+    return get_config(config_file)["Logging"]
 
-def get_datafiles_config():
-    return get_config()["DataFiles"]
+def get_datafiles_config(config_file="config.yml"):
+    return get_config(config_file)["DataFiles"]

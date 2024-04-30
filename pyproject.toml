@@ -82,3 +82,10 @@ write_to = "src/wfi_reference_pipeline/version.py"
 [tool.ruff.lint]
 select = ["E", "F", "N"]
 ignore = ["E501"]
+
+[tool.coverage.run]
+source = ["wfi_reference_pipeline"]
+omit = [
+    "**/tests/*",
+    "wfi_reference_pipeline/version.py",
+]
