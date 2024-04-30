@@ -24,6 +24,14 @@ class MakeDevMeta:
 
     """
 
+    @staticmethod
+    def set_useafter(meta_object, use_after):
+        meta_object.use_after = use_after
+
+    @staticmethod
+    def set_detector(meta_object, detector):
+        meta_object.instrument_detector = detector
+
     def _create_dev_meta_dark(self, meta_data):
         ngroups = 6
         nframes = 8
@@ -102,24 +110,24 @@ class MakeDevMeta:
             meta object created.
         """
 
-        pedigree = "DUMMY"
-        description = "For RFP Development and DMS Build Support."
-        author = "RFP"
-        use_after = "2023-01-01T00:00:00.000"
-        telescope = "ROMAN"
-        origin = "STSCI"
-        instrument = "WFI"
-        detector = "WFI01"
+        self.pedigree = "DUMMY"
+        self.description = "For RFP Development and DMS Build Support."
+        self.author = "RFP"
+        self.use_after = "2023-01-01T00:00:00.000"
+        self.telescope = "ROMAN"
+        self.origin = "STSCI"
+        self.instrument = "WFI"
+        self.detector = "WFI01"
 
         if ref_type not in WFI_REF_TYPES:
             raise ValueError(f"ref_type must be one of: {WFI_REF_TYPES}")
-        if pedigree not in WFI_PEDIGREE:
+        if self.pedigree not in WFI_PEDIGREE:
             raise ValueError(f"pedigree must be one of: {WFI_PEDIGREE}")
-        if detector not in WFI_DETECTORS:
+        if self.detector not in WFI_DETECTORS:
             raise ValueError(f"detector must be one of: {WFI_DETECTORS}")
 
-        meta_data_params = [ref_type, pedigree, description, author,
-                            use_after, telescope, origin, instrument, detector]
+        meta_data_params = [ref_type, self.pedigree, self.description, self.author,
+                            self.use_after, self.telescope, self.origin, self.instrument, self.detector]
 
         if ref_type == "DARK":
             self._create_dev_meta_dark(meta_data_params)

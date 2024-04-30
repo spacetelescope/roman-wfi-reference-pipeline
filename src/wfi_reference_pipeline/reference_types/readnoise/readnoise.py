@@ -92,6 +92,12 @@ class ReadNoise(ReferenceType):
                 self.data_array is not None and len(self.data_array) > 0:
             raise ValueError('Two inputs provided. Provide file list or data array; not both!')
 
+        # Attributes to make reference file with valid data model.
+        self.readnoise_image = None  # The attribute 'data' in data model.
+        self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
+        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
+        # of reads in data cube.
+
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
@@ -100,25 +106,20 @@ class ReadNoise(ReferenceType):
             # Must make_readnoise_image() to finish creating reference file.
         else:
             # Get data array properties.
-            try:
-                dim = self.data_array.shape
-                if isinstance(self.data_array, u.Quantity):  # Only access data from quantity object.
-                    self.data_array = self.data_array.value
-                if len(dim) == 2:
-                    logging.info('The input 2D data array is now self.readnoise_image.')
-                    self.readnoise_image = self.data_array
-                    logging.info('Ready to generate reference file.')
-                if len(dim) == 3:
-                    logging.info('User supplied 3D data cube to make read noise reference file.')
-                    self.data_cube = self.data_array
-                    self.readnoise_image = None  # Making read noise from data cube
-                    # Must make_readnoise_image() to finish creating reference file.
-            except Exception as e:
-                raise ValueError('Input data is not a valid numpy array of dimension 2 or 3.') from e
-
-        self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
-        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
-        # of reads in data cube.
+            dim = self.data_array.shape
+            if isinstance(self.data_array, u.Quantity):  # Only access data from quantity object.
+                self.data_array = self.data_array.value
+            elif len(dim) == 2:
+                logging.info('The input 2D data array is now self.readnoise_image.')
+                self.readnoise_image = self.data_array
+                logging.info('Ready to generate reference file.')
+            elif len(dim) == 3:
+                logging.info('User supplied 3D data cube to make read noise reference file.')
+                self.data_cube = self.data_array
+                # Must call make_readnoise_image() to finish creating reference file.
+                logging.info('Must call make_readnoise_image() to finish creating reference file.')
+            else:
+                ValueError('Input data is not a valid numpy array of dimension 2 or 3.')
 
         #TODO data cube class
         #self.data_cube = None  # Data cube processed by methods to make read noise image.
@@ -174,7 +175,6 @@ class ReadNoise(ReferenceType):
         """
 
         self.n_reads, self.ni, _ = np.shape(self.data_cube)
-
         # Make the time array for the length of the dark read cube exposure.
         if self.meta_data.type == WFI_TYPE_IMAGE:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
