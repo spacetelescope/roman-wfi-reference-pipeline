@@ -24,11 +24,11 @@ class MakeDevMeta:
 
     """
 
-    def set_useafter(meta_object, use_after):
-        meta_object.use_after = use_after
+    def set_useafter(self, use_after):
+        self.use_after = use_after
 
-    def set_detector(meta_object, detector):
-        meta_object.instrument_detector = detector
+    def set_detector(self, detector):
+        self.detector = detector
 
     def _create_dev_meta_dark(self, meta_data):
         ngroups = 6

@@ -78,7 +78,7 @@ class ReadNoise(ReferenceType):
             make_mask=True
         )
 
-        # Default meta creation for moedule specific ref type.
+        # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaReadNoise):
             raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaReadNoise")
         if len(self.meta_data.description) == 0:
