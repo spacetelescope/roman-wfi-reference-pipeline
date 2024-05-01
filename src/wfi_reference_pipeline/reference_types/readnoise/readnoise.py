@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds

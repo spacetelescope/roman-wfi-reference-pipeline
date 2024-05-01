@@ -1,14 +1,9 @@
 import logging
-import math
-import os
-
-import asdf
 import datetime
 import numpy as np
 import roman_datamodels.stnode as rds
 import roman_datamodels as rdm
 from astropy import units as u
-from astropy.stats import sigma_clip
 from wfi_reference_pipeline.constants import (
     WFI_FRAME_TIME,
     WFI_MODE_WIM,
