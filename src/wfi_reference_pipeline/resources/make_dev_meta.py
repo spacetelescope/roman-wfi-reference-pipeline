@@ -24,11 +24,9 @@ class MakeDevMeta:
 
     """
 
-    @staticmethod
     def set_useafter(meta_object, use_after):
         meta_object.use_after = use_after
 
-    @staticmethod
     def set_detector(meta_object, detector):
         meta_object.instrument_detector = detector
 
@@ -76,6 +74,7 @@ class MakeDevMeta:
         inverselinearity_meta_data = [input_units, output_units]
         self.meta_inverselinearity = WFIMetaInverseLinearity(*meta_data,
                                                              *inverselinearity_meta_data)
+
     def _create_dev_meta_mask(self, meta_data):
         self.meta_mask = WFIMetaMask(*meta_data)
 
