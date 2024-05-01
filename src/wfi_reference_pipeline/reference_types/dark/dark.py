@@ -167,9 +167,9 @@ class Dark(ReferenceType):
             Number of square pixels of array ni. Cubes are num_resultants x ni x ni.
         """
 
-        if ni is None:
+
         #TODO discuss parallelizatino strategy and cube class
-            self.n_reads, self.ni, _ = np.shape(self.data_cube)
+        self.n_reads, self.ni, _ = np.shape(self.data_cube)
 
         #TODO not to be in cube class
         self.resampled_dark_cube = np.zeros((num_resultants, self.ni, self.ni), dtype=np.float32)

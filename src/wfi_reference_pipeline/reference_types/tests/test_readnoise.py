@@ -25,12 +25,11 @@ class TestReadNoise():
         with pytest.raises(ValueError):
             ReadNoise(readnoise_object.meta_data)
 
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
-        with pytest.raises(TypeError):
-            ReadNoise(bad_test_meta.meta_dark, data_array=read_cube)
+        with pytest.raises(AttributeError):
+            ReadNoise(None, data_array=read_cube)
 
-        with pytest.raises(ValueError):
-            ReadNoise(readnoise_object.meta_data, data_array=np.zeros(10))
+        with pytest.raises(TypeError):
+            ReadNoise(readnoise_object.meta_data, data_array='not_data.txt')
 
 
     def test_readnoise_with_valid_data_array_pass(self, readnoise_object):

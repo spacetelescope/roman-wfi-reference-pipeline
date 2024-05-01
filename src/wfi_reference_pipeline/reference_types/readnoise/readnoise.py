@@ -105,11 +105,13 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
-            # Get data array properties.
-            dim = self.data_array.shape
+            if not isinstance(self.data_array, (np.ndarray, u.Quantity)):
+                raise TypeError("Input data is neither a numpy array nor a Quantity object.")
             if isinstance(self.data_array, u.Quantity):  # Only access data from quantity object.
                 self.data_array = self.data_array.value
-            elif len(dim) == 2:
+                logging.info('Quantity object detected. Extracted data values.')
+            dim = self.data_array.shape
+            if len(dim) == 2:
                 logging.info('The input 2D data array is now self.readnoise_image.')
                 self.readnoise_image = self.data_array
                 logging.info('Ready to generate reference file.')
@@ -119,7 +121,7 @@ class ReadNoise(ReferenceType):
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.info('Must call make_readnoise_image() to finish creating reference file.')
             else:
-                ValueError('Input data is not a valid numpy array of dimension 2 or 3.')
+                raise ValueError('Input data is not a valid numpy array of dimension 2 or 3.')
 
         #TODO data cube class
         #self.data_cube = None  # Data cube processed by methods to make read noise image.

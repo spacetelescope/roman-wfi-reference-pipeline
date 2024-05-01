@@ -36,7 +36,9 @@ class TestSchema(unittest.TestCase):
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=None,
                         data_array=test_data)
+        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
         rfp_dark._initialize_arrays(num_resultants=1, ni=3)
+        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
