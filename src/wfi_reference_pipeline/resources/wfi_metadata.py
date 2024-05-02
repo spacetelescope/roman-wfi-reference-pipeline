@@ -22,7 +22,7 @@ class WFIMetadata(ABC):
     instrument_detector: str
 
     @property
-    def use_after(self) -> Union[str, Time]:
+    def use_after(self) -> Time:
         return self._use_after
 
     @use_after.setter
