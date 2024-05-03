@@ -84,13 +84,6 @@ class ReadNoise(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI read noise reference file.'
 
-        # Check to make sure module is instantiated with one valid input.
-        if self.file_list is None and self.data_array is None:
-            raise ValueError('No data supplied to make read noise reference file!')
-        if self.file_list is not None and len(self.file_list) > 0 and \
-                self.data_array is not None and len(self.data_array) > 0:
-            raise ValueError('Two inputs provided. Provide file list or data array; not both!')
-
         # Attributes to make reference file with valid data model.
         self.readnoise_image = None  # The attribute 'data' in data model.
         self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.

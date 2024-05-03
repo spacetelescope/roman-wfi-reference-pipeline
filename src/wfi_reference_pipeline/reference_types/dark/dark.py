@@ -80,13 +80,6 @@ class Dark(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI dark reference file.'
 
-        # Check to make sure module is instantiated with one valid input.
-        if self.file_list is None and self.data_array is None:
-            raise ValueError('No data supplied to make dark reference file!')
-        if self.file_list is not None and len(self.file_list) > 0 and \
-                self.data_array is not None and len(self.data_array) > 0:
-            raise ValueError('Two inputs provided. Provide file list or data array; not both!')
-
         logging.info(f"Default dark reference file object: {outfile} ")
 
         # Module flow creating reference file

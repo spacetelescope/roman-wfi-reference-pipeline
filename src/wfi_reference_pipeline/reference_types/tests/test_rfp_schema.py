@@ -19,7 +19,6 @@ class TestSchema(unittest.TestCase):
     """
     Class test suite for all RFP schema tests
     """
-    #@pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_dark_schema(self):
         """
         Use the WFI reference file pipeline Dark() module to build a testable object
