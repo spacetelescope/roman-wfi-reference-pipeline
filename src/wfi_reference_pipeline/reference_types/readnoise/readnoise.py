@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
@@ -62,7 +61,6 @@ class ReadNoise(ReferenceType):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
-
         ---------
         NOTE - For parallelization only square arrays allowed.
 
@@ -80,10 +78,17 @@ class ReadNoise(ReferenceType):
             make_mask=True
         )
 
+        # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaReadNoise):
             raise TypeError(f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaReadNoise")
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI read noise reference file.'
+
+        # Attributes to make reference file with valid data model.
+        self.readnoise_image = None  # The attribute 'data' in data model.
+        self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
+        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
+        # of reads in data cube.
 
         # Module flow creating reference file
         if self.file_list:
@@ -92,10 +97,12 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
-            # Get data array properties.
-            dim = self.data_array.shape
+            if not isinstance(self.data_array, (np.ndarray, u.Quantity)):
+                raise TypeError("Input data is neither a numpy array nor a Quantity object.")
             if isinstance(self.data_array, u.Quantity):  # Only access data from quantity object.
                 self.data_array = self.data_array.value
+                logging.info('Quantity object detected. Extracted data values.')
+            dim = self.data_array.shape
             if len(dim) == 2:
                 logging.info('The input 2D data array is now self.readnoise_image.')
                 self.readnoise_image = self.data_array
@@ -103,14 +110,10 @@ class ReadNoise(ReferenceType):
             elif len(dim) == 3:
                 logging.info('User supplied 3D data cube to make read noise reference file.')
                 self.data_cube = self.data_array
-                self.readnoise_image = None  # Making read noise from data cube
-                # Must make_readnoise_image() to finish creating reference file.
+                # Must call make_readnoise_image() to finish creating reference file.
+                logging.info('Must call make_readnoise_image() to finish creating reference file.')
             else:
                 raise ValueError('Input data is not a valid numpy array of dimension 2 or 3.')
-
-        self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
-        self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
-        # of reads in data cube.
 
         #TODO data cube class
         #self.data_cube = None  # Data cube processed by methods to make read noise image.
@@ -165,9 +168,7 @@ class ReadNoise(ReferenceType):
         Initialize empty ramp_model.
         """
 
-
         self.n_reads, self.ni, _ = np.shape(self.data_cube)
-
         # Make the time array for the length of the dark read cube exposure.
         if self.meta_data.type == WFI_TYPE_IMAGE:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds

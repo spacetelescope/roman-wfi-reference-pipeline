@@ -19,7 +19,6 @@ class TestSchema(unittest.TestCase):
     """
     Class test suite for all RFP schema tests
     """
-    @pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_dark_schema(self):
         """
         Use the WFI reference file pipeline Dark() module to build a testable object
@@ -28,12 +27,17 @@ class TestSchema(unittest.TestCase):
 
         # Make reftype specific data class object and export meta data as dict.
         tmp = MakeTestMeta(ref_type='DARK')
-        dark_test_meta = tmp.meta_dark.export_asdf_meta()
 
-        # Make RFP Dark reference file object for testing.
-        test_data = np.ones((3, 3, 3), dtype=np.float32)
-        rfp_dark = Dark(None, meta_data=dark_test_meta, input_dark_cube=test_data)
-        rfp_dark.initialize_arrays(num_resultants=1, ni=3)
+        # Make RFP Read Noise reference file object for testing.
+        test_data = np.ones((3, 3, 3),
+                            dtype=np.float32)
+
+        rfp_dark = Dark(meta_data=tmp.meta_dark,
+                        file_list=None,
+                        data_array=test_data)
+        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
+        rfp_dark.make_ma_table_resampled_cube(num_resultants=3, num_rds_per_res=1)
+        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
