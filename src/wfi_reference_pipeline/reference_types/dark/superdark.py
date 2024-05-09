@@ -1,7 +1,6 @@
 import datetime
 import gc
 import logging
-import os
 import time
 import asdf
 import numpy as np
@@ -12,7 +11,6 @@ from pathlib import Path
 import roman_datamodels as rdm
 import psutil
 from datetime import datetime
-from ..reference_type.ReferenceType import check_outfile
 
 
 def get_mem_usage():
@@ -431,7 +429,7 @@ class SuperDark:
 
             nonzero_slices = np.where(~np.all(self.reads_from_all_files == 0, axis=(1, 2)))[0]
             reduced_array = self.reads_from_all_files[nonzero_slices]
-            print(f'Sigma clipping reads from all files for read')
+            print('Sigma clipping reads from all files for read')
             clipped_reads = sigma_clip(reduced_array,
                                         sigma_lower=sig_clip_sd_low,
                                         sigma_upper=sig_clip_sd_high,
