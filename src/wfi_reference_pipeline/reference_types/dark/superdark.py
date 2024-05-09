@@ -12,6 +12,7 @@ from pathlib import Path
 import roman_datamodels as rdm
 import psutil
 from datetime import datetime
+from ..reference_type.ReferenceType import check_outfile
 
 
 def get_mem_usage():
@@ -58,6 +59,7 @@ class SuperDark:
         self.input_path = Path(input_path)
         self.file_list = file_list
         self.outfile = outfile
+        self.superdark = None
         self.superdark_A = None
         self.superdark_B = None
         self.superdark_C = None
@@ -198,6 +200,8 @@ class SuperDark:
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
                     try:
+                        #TODO figure out why appending a frame is doubling memory every file
+                        # This is different from testing a year ago
                         with rdm.open(file_path) as af:
                             logging.info(f"Opening file {file_path}")
                             #print(f"Opening file {file_path}")
@@ -453,6 +457,8 @@ class SuperDark:
         print(f"Total time taken for method C: {elapsed_time:.2f} seconds")
         logging.info(f"Total time taken for method CA: {elapsed_time:.2f} seconds")
 
+        self.superdark = self.superdark_C
+
     def write_suoerdark(self, outfile=None):
         """
         The method save_super_dark with default conditions will write the super dark cube into an asdf
@@ -479,13 +485,13 @@ class SuperDark:
         meta_superdark = {'pedigree': "GROUND", 'description': "Super dark internal reference file calibration product"
                                                                "generated from Reference File Pipeline.",
                           'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
-        if superdark_outfile is None:
-            superdark_outfile = Path(self.input_data[0] + '/' + meta_superdark['detector'] + '_super_dark.asdf')
+        if outfile is None:
+            superdark_outfile = Path(self.input_path + '/' + meta_superdark['detector'] + '_superdark.asdf')
         else:
-            superdark_outfile = 'roman_super_dark.asdf'
-        self.check_output_file(superdark_outfile)
-        logging.info('Saving super dark to disk.')
+            superdark_outfile = 'roman_' + meta_superdark['detector'] + 'superdark.asdf'
+        self.check_outfile(superdark_outfile)
+        logging.info('Saving superdark asdf to disk.')
 
         af = asdf.AsdfFile()
-        af.tree = {'meta': meta_superdark, 'data': self.super_dark}
+        af.tree = {'meta': meta_superdark, 'data': self.superdark}
         af.write_to(superdark_outfile)
