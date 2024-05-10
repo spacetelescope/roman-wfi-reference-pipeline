@@ -457,7 +457,7 @@ class SuperDark:
 
         self.superdark = self.superdark_C
 
-    def write_suoerdark(self, outfile=None):
+    def write_superdark(self, outfile=None):
         """
         The method save_super_dark with default conditions will write the super dark cube into an asdf
         file for each detector in the directory from which the input files where pointed to and used to
@@ -480,16 +480,18 @@ class SuperDark:
         self.superdark[:, :, :4] = 0.0
         self.superdark[:, :, -4:] = 0.0
 
-        meta_superdark = {'pedigree': "GROUND", 'description': "Super dark internal reference file calibration product"
-                                                               "generated from Reference File Pipeline.",
-                          'date': Time(datetime.datetime.now()), 'detector': self.meta['instrument']['detector']}
+        meta_superdark = {'pedigree': "DUMMY",
+                          'description': "Super dark file calibration product "
+                                         "generated from Reference File Pipeline.",
+                          'date': Time(datetime.now()),
+                          'detector': 'WFO01',
+                          'filelist': self.file_list}
         if outfile is None:
-            superdark_outfile = Path(self.input_path + '/' + meta_superdark['detector'] + '_superdark.asdf')
-        else:
-            superdark_outfile = 'roman_' + meta_superdark['detector'] + 'superdark.asdf'
-        self.check_outfile(superdark_outfile)
+            outfile = Path(self.input_path) / (meta_superdark['detector'] + '_superdark.asdf')
+        #self.check_outfile(superdark_outfile)
         logging.info('Saving superdark asdf to disk.')
 
         af = asdf.AsdfFile()
-        af.tree = {'meta': meta_superdark, 'data': self.superdark}
-        af.write_to(superdark_outfile)
+        af.tree = {'meta': meta_superdark,
+                   'data': self.superdark}
+        af.write_to(outfile)
