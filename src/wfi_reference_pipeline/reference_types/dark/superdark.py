@@ -429,8 +429,10 @@ class SuperDark:
 
             nonzero_slices = np.where(~np.all(self.reads_from_all_files == 0, axis=(1, 2)))[0]
             reduced_array = self.reads_from_all_files[nonzero_slices]
+            # Remove NaNs from the array using boolean indexing
+            reduced_array_no_nans = reduced_array[~np.isnan(reduced_array)]
             print('Sigma clipping reads from all files for read')
-            clipped_reads = sigma_clip(reduced_array,
+            clipped_reads = sigma_clip(reduced_array_no_nans,
                                         sigma_lower=sig_clip_sd_low,
                                         sigma_upper=sig_clip_sd_high,
                                         cenfunc=np.mean,
@@ -486,6 +488,10 @@ class SuperDark:
                           'date': Time(datetime.now()),
                           'detector': 'WFO01',
                           'filelist': self.file_list}
+
+        #TODO need filename to have date in YYYYMMDD format probably....need to get meta data from
+        # files to populate superdark meta - what is relevant besides detector and filelist and mode?
+
         if outfile is None:
             outfile = Path(self.input_path) / (meta_superdark['detector'] + '_superdark.asdf')
         #self.check_outfile(superdark_outfile)
