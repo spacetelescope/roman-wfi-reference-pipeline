@@ -384,9 +384,10 @@ class SuperDark:
         current_datetime = datetime.now()
         print("Current date and time:", current_datetime)
 
-        self.n_reads_list = n_reads_list_sorted
-        self.file_list = file_list_sorted
-        self.max_reads = max_reads
+        # Uncomment these or figure out a way to have inputs
+        # self.n_reads_list = n_reads_list_sorted
+        # self.file_list = file_list_sorted
+        # self.max_reads = max_reads
         self.superdark_C = np.zeros((self.max_reads, 4096, 4096), dtype=np.float32)
 
         timing_start_method_C = time.time()
