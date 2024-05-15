@@ -7,6 +7,7 @@ from romancal.saturation import SaturationStep
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
+from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb
@@ -87,6 +88,11 @@ class DarkPipeline(Pipeline):
             "Finished PREPPING files to make DARK reference file from RFP"
         )
 
+        logging.info(
+            "Starting to make SUPERDARK from PREPPED DARK asdf files"
+        )
+
+
     @log_info
     def run_pipeline(self, file_list=None):
         logging.info("DARK PIPE")
@@ -110,7 +116,7 @@ class DarkPipeline(Pipeline):
                         outfile=out_file_path,
                         clobber=True
         )
-        ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=1)
+        ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)
         rfp_dark.make_ma_table_resampled_cube(read_pattern=ma_table_dict[read_pattern])
         rfp_dark.make_dark_rate_image()
         rfp_dark.generate_outfile()
