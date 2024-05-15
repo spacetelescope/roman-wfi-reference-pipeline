@@ -383,9 +383,9 @@ class SuperDark:
             print(f"On read {read_i} of {self.max_reads}")
             self.read_i_from_all_files = np.zeros((len(self.file_list), 4096, 4096), dtype=np.float32)
             for file_f in range(0, len(self.file_list)):
-                file_name = self.file_list[fn]
+                file_name = self.file_list[file_f]
                 file_path = self.input_path.joinpath(file_name)
-                if read_i <= self.n_reads_list[fn]:
+                if read_i <= self.n_reads_list[file_f]:
                     # If the file to be opened has a valid read index then open the file and
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
