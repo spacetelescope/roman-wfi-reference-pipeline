@@ -96,9 +96,8 @@ class SuperDark:
             logging.info(f"Opening file {file_path}")
             try:
                 with rdm.open(file_path) as af:
-                    meta = af.meta
-                    filename = meta.filename
-                    read_pattern = meta.exposure.read_pattern
+                    filename = af.meta.filename
+                    read_pattern = af.meta.exposure.read_pattern
                 del af
                 gc.collect()
             except Exception as e:
@@ -107,15 +106,10 @@ class SuperDark:
 
             # Process each file's metadata here
             # TODO figure out what we need from each file
-            # print(f"File: {meta.filename}")
-            # print(f"Read Pattern: {meta.exposure.read_pattern}")
-            # print(f"Start Time: {meta.exposure.start_time}")
-            # print(f"Exposure Type: {meta.exposure.type}")
-            # print(f"Memory used in file_name loop after opening file: {get_mem_usage():.2f} GB")
-            logging.info(f"File: {meta.filename}")
-            logging.info(f"Read Pattern: {meta.exposure.read_pattern}")
-            logging.info(f"Start Time: {meta.exposure.start_time}")
-            logging.info(f"Exposure Type: {meta.exposure.type}")
+            print(f"File: {filename}")
+            print(f"Read Pattern: {read_pattern}")
+            logging.info(f"File: {filename}")
+            logging.info(f"Read Pattern: {read_pattern}")
 
             file_name_list.append(filename)
             n_reads_list.append(read_pattern[-1][0])  #TODO why is [0] needed to not have LNode([46])
@@ -219,9 +213,8 @@ class SuperDark:
                         # del tmp, data
                         # gc.collect()
 
-                    except Exception as e:
-                        logging.error(f"Error opening file {file_path}: {e}")
-                        print(f"Error opening file {file_path}: {e}")
+                    except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
+                        logging.warning(f"Could not open {file_path} - {e}")
                 else:
                     # Skip this file if it has less reads than the read index.
                     # print('skipping file', file_path)
@@ -311,9 +304,8 @@ class SuperDark:
                             summed_read_i_from_all_files += data[read_i, :, :]  # Get read according to rd index from data
                             file_count_per_read += 1  # Increase file counter
                             print(f"Memory in file loop method B: {get_mem_usage():.2f} GB")
-                    except Exception as e:
-                        logging.error(f"Error opening file {file_path}: {e}")
-                        print(f"Error opening file {file_path}: {e}")
+                    except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
+                        logging.warning(f"Could not open {file_path} - {e}")
                 else:
                     # Skip this file if it has less reads than the read index.
                     # print('skipping file', file_path)
@@ -398,9 +390,8 @@ class SuperDark:
                                 data = data.value
                             self.read_i_from_all_files[file_f, :, :] = data[read_i, :, :]
                             print(f"Memory in file loop method C: {get_mem_usage():.2f} GB")
-                    except Exception as e:
-                        logging.error(f"Error opening file {file_path}: {e}")
-                        print(f"Error opening file {file_path}: {e}")
+                    except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
+                        logging.warning(f"Could not open {file_path} - {e}")
                 else:
                     # Skip this file if it has less reads than the read index.
                     print('skipping file', file_path)
