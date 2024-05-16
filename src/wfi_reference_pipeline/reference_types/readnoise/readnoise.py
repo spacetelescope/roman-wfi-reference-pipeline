@@ -12,6 +12,7 @@ from wfi_reference_pipeline.constants import (
     WFI_MODE_WSM,
     WFI_TYPE_IMAGE,
 )
+from wfi_reference_pipeline.reference_types.data_cube_model import DataCubeModel
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
 from ..reference_type import ReferenceType
@@ -115,13 +116,7 @@ class ReadNoise(ReferenceType):
             else:
                 raise ValueError('Input data is not a valid numpy array of dimension 2 or 3.')
 
-        #TODO data cube class
-        #self.data_cube = None  # Data cube processed by methods to make read noise image.
-        self.ni = None  # Number of pixels.
-        self.n_reads = None  # Number of reads in data.
-        self.ramp_model = None  # Ramp model of data cube.
-        self.frame_time = None  # Mode dependent exposure frame time per read.
-        self.time_arr = None  # Time array of data cube.
+        self.data_cube_model = DataCubeModel(self.data_cube, self.meta_data.type)
 
     def make_readnoise_image(self):
         """
@@ -160,63 +155,6 @@ class ReadNoise(ReferenceType):
 
         logging.info(f'Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube.')
 
-    def _initialize_arrays(self):
-        """
-        # TODO data cube class
-        Get dimensions of self.data_cube.
-        Initialize time array after getting frame time from meta.
-        Initialize empty ramp_model.
-        """
-
-        self.n_reads, self.ni, _ = np.shape(self.data_cube)
-        # Make the time array for the length of the dark read cube exposure.
-        if self.meta_data.type == WFI_TYPE_IMAGE:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-        else:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
-        # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
-                     f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
-
-    def _make_ramp_cube_model(self):
-        """
-        # TODO data cube class
-        Change this to fit ramp model with optional input for order of polyfit with default order = 1
-        Return or save to attribute the ramp image and intercept image.
-        Keep covariance matrices in code for future use determination.
-
-        Method make_ramp_cube_model performs a linear fit to the input read cube for each pixel. The slope
-        and intercept are returned along with the covariance matrix which has the corresponding diagonal error
-        estimates for variances in the model fitted parameters.
-        """
-
-
-        logging.info('Making ramp model for the input read cube.')
-
-        # Reshape the 2D array into a 1D array for input into np.polyfit(). The model fit parameters p and
-        # covariance matrix v are returned.
-
-        try:
-            p, v = np.polyfit(self.time_arr,
-                              self.data_cube.reshape(len(self.time_arr), -1), 1, full=False, cov=True)
-            # Reshape the parameter slope array into a 2D rate image.
-            ramp_image = p[0].reshape(self.ni, self.ni)
-            # Reshape the parameter y-intercept array into a 2D image.
-            intercept_image = p[1].reshape(self.ni, self.ni)
-            # Reshape the returned covariance matrix slope fit error.
-            # ramp_var = v[0, 0, :].reshape(self.ni, self.ni) TODO -VERIFY USE
-            # returned covariance matrix intercept error.
-            # intercept_var = v[1, 1, :].reshape(self.ni, self.ni) TODO - VERIFY USE
-
-            self.ramp_model = np.zeros((self.n_reads, self.ni, self.ni), dtype=np.float32)
-            for tt in range(0, len(self.time_arr)):
-                # Construct a simple linear model y = m*x + b.
-                self.ramp_model[tt, :, :] = ramp_image * self.time_arr[tt] + intercept_image
-
-        except (ValueError, TypeError) as e:
-            logging.error(f"Unable to make_ramp_cube_model with error {e}")
-            # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, I ASSUME WE CAN'T JUST LOG IT - For cube class discussion
 
     #TODO default parameter values for accessible methods
     # What about inaccessible methods?
@@ -239,12 +177,12 @@ class ReadNoise(ReferenceType):
 
         logging.info('Computing residuals of ramp model from data to estimate variance component of read noise.')
 
-        self._initialize_arrays()
-        self._make_ramp_cube_model()
+        # self._initialize_arrays() # TODO - remove, handled in cube class init
+        # self._fit_ramp_model() # TODO - will handle automatically in cube class?
 
         # Initialize ramp residual variance array.
-        self.ramp_res_var = np.zeros((self.ni, self.ni), dtype=np.float32)
-        residual_cube = self.ramp_model - self.data_cube
+        self.ramp_res_var = np.zeros((self.cube_model.nr_pixels, self.cube_model.nr_pixels), dtype=np.float32)
+        residual_cube = self.data_cube_model.ramp_model - self.data_cube
         clipped_res_cube = sigma_clip(residual_cube, sigma_lower=sig_clip_res_low, sigma_upper=sig_clip_res_high,
                                       cenfunc=np.mean, axis=0, masked=False, copy=False)
         std = np.std(clipped_res_cube, axis=0)
@@ -271,15 +209,15 @@ class ReadNoise(ReferenceType):
 
         logging.info('Calculating CDS noise.')
 
-        self._initialize_arrays()
-        self._make_ramp_cube_model()
+        self._initialize_arrays() # TODO - remove, handled in cube class init
+        self._fit_ramp_model() # TODO - will handle automatically in cube class?
 
-        read_diff_cube = np.zeros((math.ceil(self.n_reads / 2), self.ni, self.ni), dtype=np.float32)
-        for i_read in range(0, self.n_reads - 1, 2):
+        read_diff_cube = np.zeros((math.ceil(self.cube_model.nr_reads / 2), self.cube_model.nr_pixels, self.cube_model.nr_pixels), dtype=np.float32)
+        for i_read in range(0, self.cube_model.nr_reads - 1, 2):
             # Avoid index error if n_reads is odd and disregard the last read because it does not form a pair.
             logging.info(f'Calculating correlated double sampling between frames {i_read} and {i_read + 1}')
-            rd1 = self.ramp_model[i_read, :, :] - self.data_cube[i_read, :, :]
-            rd2 = self.ramp_model[i_read + 1, :, :] - self.data_cube[i_read + 1, :, :]
+            rd1 = self.data_cube_model.ramp_model[i_read, :, :] - self.data_cube[i_read, :, :]
+            rd2 = self.data_cube_model.ramp_model[i_read + 1, :, :] - self.data_cube[i_read + 1, :, :]
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2 - rd1
         clipped_diff_cube = sigma_clip(read_diff_cube, sigma_lower=sig_clip_cds_low, sigma_upper=sig_clip_cds_high,
                                        cenfunc=np.mean, axis=0, masked=False, copy=False)
