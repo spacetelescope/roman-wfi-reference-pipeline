@@ -76,6 +76,9 @@ class DarkPipeline(Pipeline):
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
+            #TODO Need to confirm steps from romancal and their functionality
+            result =
+
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
