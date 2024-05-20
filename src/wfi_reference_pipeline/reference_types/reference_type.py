@@ -17,7 +17,7 @@ class ReferenceType(ABC):
         Reference type specific meta data object.
     self.file_list: attribute;
 
-    self.data_array: attribute;
+    self.ref_type_data: attribute;
         Class dependent variable assigned as attribute. Intended to be list of files or numpy array.
     self.ancillary: attribute;
         Other data for WFI such as filter names, frame times, WFI mode.
@@ -27,7 +27,7 @@ class ReferenceType(ABC):
     def __init__(self,
                  meta_data,
                  file_list=None,
-                 data_array=None,
+                 ref_type_data=None,
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
@@ -35,11 +35,11 @@ class ReferenceType(ABC):
                  mask_size=(4096, 4096)):
 
         # Check to make sure ReferenceType is instantiated with one valid input.
-        if file_list is None and data_array is None:
-            raise ValueError("No data supplied to make reference file! You MUST supply 'file_list' or 'data_array' parameters")
+        if file_list is None and ref_type_data is None:
+            raise ValueError("No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
         if file_list is not None and len(file_list) > 0 and \
-           data_array is not None and len(data_array) > 0:
-            raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'data_array'")
+           ref_type_data is not None and len(ref_type_data) > 0:
+            raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'ref_type_data'")
 
         # Allow for input string use_after to be converted to astropy time object.
         if isinstance(meta_data.use_after, str):
@@ -47,7 +47,7 @@ class ReferenceType(ABC):
 
         self.meta_data = meta_data
         self.file_list = file_list
-        self.data_array = data_array
+        self.ref_type_data = ref_type_data
 
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):

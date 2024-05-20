@@ -7,7 +7,8 @@ import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
-from wfi_reference_pipeline.reference_types.data_cube_model import DataCubeModel
+from wfi_reference_pipeline.reference_types.data_cube import ReadnoiseDataCube
+from wfi_reference_pipeline.reference_types.data_cube import fit_ramp_model
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
 from ..reference_type import ReferenceType
@@ -33,7 +34,7 @@ class ReadNoise(ReferenceType):
         self,
         meta_data,
         file_list=None,
-        data_array=None,
+        ref_type_data=None,
         bit_mask=None,
         outfile="roman_readnoise.asdf",
         clobber=False,
@@ -48,7 +49,7 @@ class ReadNoise(ReferenceType):
             Object of meta information converted to dictionary when writing reference file.
         file_list: List of strings; default = None
             List of file names with absolute paths. Intended for primary use during automated operations.
-        data_array: numpy array; default = None
+        ref_type_data: numpy array; default = None
             Input which can be image array or data cube. Intended for development support file creation or as input
             for reference file types not generated from a file list.
         bit_mask: 2D integer numpy array, default = None
@@ -68,7 +69,7 @@ class ReadNoise(ReferenceType):
         super().__init__(
             meta_data=meta_data,
             file_list=file_list,
-            data_array=data_array,
+            ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
             clobber=clobber,
@@ -87,7 +88,8 @@ class ReadNoise(ReferenceType):
         self.readnoise_image = None  # The attribute 'data' in data model.
         self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
-        # of reads in data cube.
+
+
 
         # Module flow creating reference file
         if self.file_list:
@@ -96,25 +98,26 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
-            if not isinstance(self.data_array, (np.ndarray, u.Quantity)):
+            if not isinstance(self.ref_type_data, (np.ndarray, u.Quantity)):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
             if isinstance(
-                self.data_array, u.Quantity
+                self.ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
-                self.data_array = self.data_array.value
+                self.ref_type_data = self.ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
-            dim = self.data_array.shape
+            dim = self.ref_type_data.shape
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.readnoise_image.")
-                self.readnoise_image = self.data_array
+                self.readnoise_image = self.ref_type_data
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = self.data_array
+                self.data_cube = ReadnoiseDataCube(self.ref_type_data, self.meta_data.type)
+
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.debug(
                     "Must call make_readnoise_image() to finish creating reference file."
@@ -124,7 +127,6 @@ class ReadNoise(ReferenceType):
                     "Input data is not a valid numpy array of dimension 2 or 3."
                 )
 
-        self.data_cube_model = DataCubeModel(self.data_cube, self.meta_data.type)
 
     def make_readnoise_image(self):
         """
@@ -134,9 +136,9 @@ class ReadNoise(ReferenceType):
         logging.info("Making read noise image.")
         self.readnoise_image = self.comp_ramp_res_var()
 
-    def _select_data_cube_from_file_list(self):
+    def _select_ref_type_data_from_file_list(self):
         """
-        The method select_data_cube() looks through the file list provided to ReadNoise() and finds the file with
+        Looks through the file list provided to ReadNoise() and finds the file with
         the most number of reads. It sorts the files in descending order by the number of reads such that the
         first index will be the file with the most number of reads and the last will have the fewest.
         """
@@ -159,11 +161,11 @@ class ReadNoise(ReferenceType):
         # Get the input file with the most number of reads from the sorted list.
         # TODO update using rdm.open() method
         with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
-            self.data_cube = tmp.tree["roman"]["data"]
+            self.ref_type_data = tmp.tree["roman"]["data"]
             if isinstance(
-                self.data_cube, u.Quantity
+                self.ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
-                self.data_cube = self.data_cube.value
+                self.ref_type_data = self.ref_type_data.value
 
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
@@ -197,9 +199,9 @@ class ReadNoise(ReferenceType):
 
         # Initialize ramp residual variance array.
         self.ramp_res_var = np.zeros(
-            (self.cube_model.nr_pixels, self.cube_model.nr_pixels), dtype=np.float32
+            (self.data_cube.nr_pixels, self.data_cube.nr_pixels), dtype=np.float32
         )
-        residual_cube = self.data_cube_model.ramp_model - self.data_cube
+        residual_cube = self.data_cube.ramp_model - self.ref_type_data
         clipped_res_cube = sigma_clip(
             residual_cube,
             sigma_lower=sig_clip_res_low,
@@ -233,29 +235,26 @@ class ReadNoise(ReferenceType):
 
         logging.info("Calculating CDS noise.")
 
-        self._initialize_arrays()  # TODO - remove, handled in cube class init
-        self._fit_ramp_model()  # TODO - will handle automatically in cube class?
-
         read_diff_cube = np.zeros(
             (
-                math.ceil(self.cube_model.nr_reads / 2),
-                self.cube_model.nr_pixels,
-                self.cube_model.nr_pixels,
+                math.ceil(self.data_cube.nr_reads / 2),
+                self.data_cube.nr_pixels,
+                self.data_cube.nr_pixels,
             ),
             dtype=np.float32,
         )
-        for i_read in range(0, self.cube_model.nr_reads - 1, 2):
+        for i_read in range(0, self.data_cube.nr_reads - 1, 2):
             # Avoid index error if n_reads is odd and disregard the last read because it does not form a pair.
             logging.debug(
                 f"Calculating correlated double sampling between frames {i_read} and {i_read + 1}"
             )
             rd1 = (
-                self.data_cube_model.ramp_model[i_read, :, :]
-                - self.data_cube[i_read, :, :]
+                self.data_cube.ramp_model[i_read, :, :]
+                - self.ref_type_data[i_read, :, :]
             )
             rd2 = (
-                self.data_cube_model.ramp_model[i_read + 1, :, :]
-                - self.data_cube[i_read + 1, :, :]
+                self.data_cube.ramp_model[i_read + 1, :, :]
+                - self.ref_type_data[i_read + 1, :, :]
             )
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2 - rd1
         clipped_diff_cube = sigma_clip(
