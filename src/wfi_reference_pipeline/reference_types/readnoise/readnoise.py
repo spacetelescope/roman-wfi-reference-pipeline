@@ -198,7 +198,7 @@ class ReadNoise(ReferenceType):
 
         # Initialize ramp residual variance array.
         self.ramp_res_var = np.zeros(
-            (self.data_cube.nr_pixels, self.data_cube.nr_pixels), dtype=np.float32
+            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
         residual_cube = self.data_cube.ramp_model - self.ref_type_data
         clipped_res_cube = sigma_clip(
@@ -236,14 +236,14 @@ class ReadNoise(ReferenceType):
 
         read_diff_cube = np.zeros(
             (
-                math.ceil(self.data_cube.nr_reads / 2),
-                self.data_cube.nr_pixels,
-                self.data_cube.nr_pixels,
+                math.ceil(self.data_cube.num_reads / 2),
+                self.data_cube.num_i_pixels,
+                self.data_cube.num_j_pixels,
             ),
             dtype=np.float32,
         )
-        for i_read in range(0, self.data_cube.nr_reads - 1, 2):
-            # Avoid index error if n_reads is odd and disregard the last read because it does not form a pair.
+        for i_read in range(0, self.data_cube.num_reads - 1, 2):
+            # Avoid index error if num_reads is odd and disregard the last read because it does not form a pair.
             logging.debug(
                 f"Calculating correlated double sampling between frames {i_read} and {i_read + 1}"
             )
