@@ -97,25 +97,25 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
-            if not isinstance(self.ref_type_data, (np.ndarray, u.Quantity)):
+            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
             if isinstance(
-                self.ref_type_data, u.Quantity
+                ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
-                self.ref_type_data = self.ref_type_data.value
+                ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
-            dim = self.ref_type_data.shape
+            dim = ref_type_data.shape
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.readnoise_image.")
-                self.readnoise_image = self.ref_type_data
+                self.readnoise_image = ref_type_data
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = ReadnoiseDataCube(self.ref_type_data, self.meta_data.type)
+                self.data_cube = ReadnoiseDataCube(ref_type_data, self.meta_data.type)
 
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.debug(
@@ -135,7 +135,7 @@ class ReadNoise(ReferenceType):
         logging.info("Making read noise image.")
         self.readnoise_image = self.comp_ramp_res_var()
 
-    def _select_ref_type_data_from_file_list(self):
+    def _select_data_cube_from_file_list(self):
         """
         Looks through the file list provided to ReadNoise() and finds the file with
         the most number of reads. It sorts the files in descending order by the number of reads such that the
@@ -160,15 +160,16 @@ class ReadNoise(ReferenceType):
         # Get the input file with the most number of reads from the sorted list.
         # TODO update using rdm.open() method
         with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
-            self.ref_type_data = tmp.tree["roman"]["data"]
+            ref_type_data = tmp.tree["roman"]["data"]
             if isinstance(
-                self.ref_type_data, u.Quantity
+                ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
-                self.ref_type_data = self.ref_type_data.value
+                ref_type_data = self.ref_type_data.value
 
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
+        self.data_cube = ReadnoiseDataCube(ref_type_data, self.meta_data.type)
 
     # TODO default parameter values for accessible methods
     # What about inaccessible methods?
@@ -200,7 +201,7 @@ class ReadNoise(ReferenceType):
         self.ramp_res_var = np.zeros(
             (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
-        residual_cube = self.data_cube.ramp_model - self.ref_type_data
+        residual_cube = self.data_cube.ramp_model - self.data_cube.data
         clipped_res_cube = sigma_clip(
             residual_cube,
             sigma_lower=sig_clip_res_low,
@@ -249,11 +250,11 @@ class ReadNoise(ReferenceType):
             )
             rd1 = (
                 self.data_cube.ramp_model[i_read, :, :]
-                - self.ref_type_data[i_read, :, :]
+                - self.data_cube.data[i_read, :, :]
             )
             rd2 = (
                 self.data_cube.ramp_model[i_read + 1, :, :]
-                - self.ref_type_data[i_read + 1, :, :]
+                - self.data_cube.data[i_read + 1, :, :]
             )
             read_diff_cube[math.floor((i_read + 1) / 2), :, :] = rd2 - rd1
         clipped_diff_cube = sigma_clip(

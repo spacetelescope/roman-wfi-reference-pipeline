@@ -24,7 +24,8 @@ class DataCube(ABC):
     self.wfi_type: constant string WFI_TYPE_IMAGE, WFI_TYPE_GRISM, or WFI_TYPE_PRISM
     """
 
-    def __init__(self, ref_type_data, wfi_type):
+    def __init__(self, data, wfi_type):
+        self.data = data
         self.frame_time = None  # wfi_mode dependent exposure frame time per read.
         self.num_i_pixels = None  # number of pixels in 2D frames/reads, assume square pixels only, 4096x4096 is standard but not default
         self.num_j_pixels = None  # the j value of the datacube should always be the same size as the num_i_pixels.
@@ -34,7 +35,7 @@ class DataCube(ABC):
         # Initialize Arrays
         # Make the time array for the length of the dark read cube exposure.
         # Generate the time array depending on WFI mode.
-        self.num_reads, self.num_i_pixels, self.num_j_pixels = np.shape(ref_type_data)
+        self.num_reads, self.num_i_pixels, self.num_j_pixels = np.shape(self.data)
         if self.num_i_pixels != self.num_j_pixels:
             raise ValueError(
                 f"DataCube initialization not correct shape: ({self.num_reads}, {self.num_i_pixels}, {self.num_j_pixels})"

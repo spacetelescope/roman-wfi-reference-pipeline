@@ -47,8 +47,7 @@ class ReferenceType(ABC):
 
         self.meta_data = meta_data
         self.file_list = file_list
-        self.ref_type_data = ref_type_data
-
+        
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):
             print("Mask provided. Skipping internal mask generation.")
