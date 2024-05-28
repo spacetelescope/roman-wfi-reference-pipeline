@@ -1,5 +1,5 @@
 import logging
-from rtb_db.utilities import rfp_tools, login
+#from rtb_db.utilities import rfp_tools, login
 
 
 def get_ma_table_from_rtbdb(ma_table_number=None):

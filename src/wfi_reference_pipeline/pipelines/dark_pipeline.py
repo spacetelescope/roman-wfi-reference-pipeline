@@ -7,7 +7,7 @@ from romancal.saturation import SaturationStep
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
+#from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb
@@ -48,7 +48,8 @@ class DarkPipeline(Pipeline):
         # Get files from input directory
         # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(
-            self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf")
+            #self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
+            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")
         )
 
         self.uncal_files = files
@@ -77,8 +78,6 @@ class DarkPipeline(Pipeline):
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
             #TODO Need to confirm steps from romancal and their functionality
-            result =
-
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
@@ -120,7 +119,8 @@ class DarkPipeline(Pipeline):
                         clobber=True
         )
         ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)
-        rfp_dark.make_ma_table_resampled_cube(read_pattern=ma_table_dict[read_pattern])
+        read_pattern = [[1], [2,3], [5,6,7], [10]]
+        rfp_dark.make_ma_table_resampled_cube(read_pattern=read_pattern)
         rfp_dark.make_dark_rate_image()
         rfp_dark.generate_outfile()
         logging.info("Finished RFP to make DARK")

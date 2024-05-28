@@ -24,7 +24,7 @@ from romancal.assign_wcs import AssignWcsStep
 from romancal.photom import PhotomStep
 
 
-rfp_dark_pipe_all = 1
+rfp_dark_pipe_all = 0
 if rfp_dark_pipe_all == 1:
     # REFTYPE_PIPE.DARK
 
@@ -36,7 +36,8 @@ if rfp_dark_pipe_all == 1:
     dark_pipeline = DarkPipeline()
     dark_pipeline.restart_pipeline()
 
-rfp_dark_ingest_prep_only = 0
+
+rfp_dark_ingest_prep_only = 1
 if rfp_dark_ingest_prep_only == 1:
     # REFTYPE_PIPE.DARK
     dark_pipeline = DarkPipeline()
@@ -56,5 +57,6 @@ if rfp_dark_pipe_only == 1:
     # Convert the generator to a list if needed
     file_list = list(prepped_asdf_files)
 
+    #TODO why is this giving a posixpath error?
     dark_pipeline = DarkPipeline()
     dark_pipeline.run_pipeline(file_list)
