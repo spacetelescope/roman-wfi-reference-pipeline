@@ -94,6 +94,10 @@ class DarkPipeline(Pipeline):
             "Starting to make SUPERDARK from PREPPED DARK asdf files"
         )
 
+        #TODO send preppred files into SuperDark and figure out how to name superdark.asdf file naming scheme
+        #superdark = SuperDark(self.prepped_files,
+        #                      outfile='superdark_XXXX.asdf')
+
 
     @log_info
     def run_pipeline(self, file_list=None):
