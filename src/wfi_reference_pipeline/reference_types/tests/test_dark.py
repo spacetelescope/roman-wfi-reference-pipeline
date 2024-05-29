@@ -40,7 +40,8 @@ class TestDark:
 
     def test_make_dark_rate_image_pass(self, dark_object):
         dark_object.make_dark_rate_image()
-        assert dark_object.dark_rate_image.shape == (4096, 4096)
-        assert dark_object.dark_rate_var.shape == (4096, 4096)
-        assert dark_object.num_resultants == 3
-        assert dark_object.ni == 4096
+        assert dark_object.data_cube.dark_rate_image.shape == (4096, 4096)
+        assert dark_object.data_cube.dark_rate_var.shape == (4096, 4096)
+        assert dark_object.data_cube.num_resultants == 3
+        assert dark_object.data_cube.num_i_pixels == 4096
+        assert dark_object.data_cube.num_j_pixels == 4096

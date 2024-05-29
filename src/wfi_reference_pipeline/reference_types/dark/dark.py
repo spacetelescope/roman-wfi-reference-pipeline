@@ -124,13 +124,7 @@ class Dark(ReferenceType):
         self.num_resultants = None
         self.resampled_model = None
 
-        #TODO data cube class
-        #self.data_cube = None  # Data cube processed by methods to make dark rate image.
-        self.ni = None  # Number of pixels.
-        self.n_reads = None  # Number of reads in data.
-        self.ramp_model = None  # Ramp model of data cube.
-        self.frame_time = None  # Mode dependent exposure frame time per read.
-        self.time_arr = None  # Time array of data cube.
+
 
     def _get_superdark_from_file_list(self):
         """
@@ -155,22 +149,20 @@ class Dark(ReferenceType):
         ----------
         num_resultants: integer; Default=None
             The number of resultants
-        ni: integer; Default=None
-            Number of square pixels of array ni. Cubes are num_resultants x ni x ni.
         """
 
 
         #TODO discuss parallelizatino strategy and cube class
-        self.n_reads, self.ni, _ = np.shape(self.data_cube)
+        self.num_reads, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels = np.shape(self.data_cube)
 
         #TODO not to be in cube class
-        self.resampled_data_cube = np.zeros((self.num_resultants, self.ni, self.ni), dtype=np.float32)
-        self.dark_rate_image = np.zeros((self.ni, self.ni), dtype=np.float32)
-        self.dark_rate_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        self.resampled_data_cube = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
+        self.dark_rate_image = np.zeros((self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
+        self.dark_rate_var = np.zeros((self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
 
-        self.resampled_data_cube_err = np.zeros((self.num_resultants, self.ni, self.ni), dtype=np.float32)
-        self.dark_intercept_image = np.zeros((self.ni, self.ni), dtype=np.float32)
-        self.dark_intercept_var = np.zeros((self.ni, self.ni), dtype=np.float32)
+        self.resampled_data_cube_err = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
+        self.dark_intercept_image = np.zeros((self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
+        self.dark_intercept_var = np.zeros((self.data_cube.num_i_pixels, self.nnum_j_pixelsi), dtype=np.float32)
 
         self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)
         #TODO all of this cube class below
@@ -181,9 +173,9 @@ class Dark(ReferenceType):
         else:
             self.frame_time = WFI_FRAME_TIME[WFI_MODE_WSM]  # frame time in spectral mode in seconds
         # Generate the time array depending on WFI mode.
-        logging.info(f'Creating exposure time array {self.n_reads} reads long with a frame '
+        logging.info(f'Creating exposure time array {self.num_reads} reads long with a frame '
                      f'time of {self.frame_time} seconds.')
-        self.time_arr = np.array([self.frame_time * i for i in range(1, self.n_reads + 1)])
+        self.time_arr = np.array([self.frame_time * i for i in range(1, self.num_reads + 1)])
 
     def make_ma_table_resampled_cube(self,
                                      num_resultants=None,
@@ -231,13 +223,13 @@ class Dark(ReferenceType):
             logging.info('Averaging over reads with evenly spaced resultants.')
             self.num_resultants = num_resultants
             self._initialize_arrays()
-            if num_rds_per_res > self.n_reads:
+            if num_rds_per_res > self.num_reads:
                 raise ValueError('Cannot average over more reads than supplied in the dark cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
             for res_i in range(self.num_resultants):
                 i1 = res_i * num_rds_per_res
                 i2 = i1 + num_rds_per_res
-                if i2 > self.n_reads:
+                if i2 > self.num_reads:
                     logging.info('Warning: The number of reads per resultant was not evenly divisible into the number'
                                  ' of available reads to average and remainder reads were skipped.')
                     logging.info(f'Resultants after resultant {res_i+1} contain zeros.')
@@ -261,8 +253,8 @@ class Dark(ReferenceType):
                           self.resampled_data_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True)
 
         # Reshape results back to 2D arrays.
-        self.dark_rate_image = p[0].reshape(self.ni, self.ni).astype(np.float32)  # the fitted ramp slope image
-        self.dark_rate_var = c[0, 0, :].reshape(self.ni, self.ni).astype(np.float32)  # covariance matrix slope variance
+        self.dark_rate_image = p[0].reshape(self.data_cube.num_i_pixels, self.data_cube.num_j_pixels).astype(np.float32)  # the fitted ramp slope image
+        self.dark_rate_var = c[0, 0, :].reshape(self.data_cube.num_i_pixels, self.data_cube.num_j_pixels).astype(np.float32)  # covariance matrix slope variance
         # If needed the dark intercept image and variance are p[1] and c[1,1,:]
 
     def calculate_dark_error(self):
@@ -272,7 +264,7 @@ class Dark(ReferenceType):
         """
 
         # Generate a dark ramp cube model per the resampled ma table specs.
-        self.resampled_model = np.zeros((len(self.resampled_data_cube), self.ni, self.ni), dtype=np.float32
+        self.resampled_model = np.zeros((len(self.resampled_data_cube), self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
         for tt in range(0, len(self.resultant_tau_arr)):
             self.resampled_model[tt, :, :] = (
@@ -314,7 +306,7 @@ class Dark(ReferenceType):
         self.dead_pixel_rate = dead_pixel_rate
 
         logging.info('Flagging dead, hot, and warm pixels and updating DQ array.')
-        # Locate hot and warm pixel ni,nj positions in 2D array
+        # Locate hot and warm pixel num_i_pixels, num_j_pixels positions in 2D array
         self.mask[self.dark_rate_image > self.hot_pixel_rate] += self.dqflag_defs['HOT']
         self.mask[(self.warm_pixel_rate <= self.dark_rate_image) & (self.dark_rate_image < self.hot_pixel_rate)] \
             += self.dqflag_defs['WARM']

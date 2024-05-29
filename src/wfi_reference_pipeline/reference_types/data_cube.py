@@ -60,6 +60,28 @@ class DataCube(ABC):
 
 # TODO - We can divide these into ref type specific files depending on shared routines.
 # Lets keep it in one place till we have a better idea of what we are working with with the other reference types
+class DarkDataCube(DataCube):
+    """
+    DarkDataCube class derived from DataCube.
+    Handles Dark specific cube calculations
+    Provide common fitting methods to calculate cube properties.
+
+    Parameters
+    -------
+    self.ref_type_data: input data array in cube shape
+    self.wfi_type: constant string WFI_TYPE_IMAGE, WFI_TYPE_GRISM, or WFI_TYPE_PRISM
+    """
+    def __init__(self, ref_type_data, wfi_type):
+        self.ramp_model = None  # Ramp model of data cube.
+        self.rate_image = None  # the slope of the fitted data_cube
+        self.intercept_image = None  # the y intercept of a line fit to the data_cube
+
+        degree = 1  # TODO how do we know what degree we should be using?
+        # Inherit reference_type.
+        super().__init__(
+            data=ref_type_data,
+            wfi_type=wfi_type,
+        )
 
 
 class ReadnoiseDataCube(DataCube):
