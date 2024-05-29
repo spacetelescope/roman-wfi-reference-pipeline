@@ -11,7 +11,7 @@ from wfi_reference_pipeline.reference_types.data_cube import ReadnoiseDataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
 from ..reference_type import ReferenceType
-
+# TODO - comment why if something should NOT be part of init
 
 class ReadNoise(ReferenceType):
     """
@@ -106,6 +106,8 @@ class ReadNoise(ReferenceType):
             ):  # Only access data from quantity object.
                 ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
+
+            # TODO - the below code block can be integrated with make_readnoise_image
             dim = ref_type_data.shape
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.readnoise_image.")

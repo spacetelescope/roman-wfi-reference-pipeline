@@ -40,6 +40,7 @@ class TestReadNoise:
     def test_make_readnoise_image_pass(self, readnoise_object):
         readnoise_object.make_readnoise_image()
         assert readnoise_object.readnoise_image.shape == (4096, 4096)
-        assert readnoise_object.n_reads == 3
-        assert readnoise_object.ni == 4096
+        assert readnoise_object.data_cube.num_reads == 3
+        assert readnoise_object.data_cube.num_i_pixels == 4096
+        assert readnoise_object.data_cube.num_j_pixels == 4096
 
