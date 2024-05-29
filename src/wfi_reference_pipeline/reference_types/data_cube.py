@@ -82,7 +82,7 @@ class ReadnoiseDataCube(DataCube):
         degree = 1  # TODO how do we know what degree we should be using?
         # Inherit reference_type.
         super().__init__(
-            ref_type_data=ref_type_data,
+            data=ref_type_data,
             wfi_type=wfi_type,
         )
         try:
