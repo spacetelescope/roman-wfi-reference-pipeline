@@ -10,6 +10,7 @@ from wfi_reference_pipeline.constants import (
     WFI_MODE_WSM,
     WFI_TYPE_IMAGE,
 )
+from wfi_reference_pipeline.reference_types.data_cube import DarkDataCube
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 
 from ..reference_type import ReferenceType
@@ -31,7 +32,7 @@ class Dark(ReferenceType):
         self,
         meta_data,
         file_list=None,
-        data_array=None,
+        ref_type_data=None,
         bit_mask=None,
         outfile="roman_dark.asdf",
         clobber=False
@@ -67,7 +68,7 @@ class Dark(ReferenceType):
         super().__init__(
             meta_data=meta_data,
             file_list=file_list,
-            data_array=data_array,
+            ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
             clobber=clobber,
@@ -92,15 +93,15 @@ class Dark(ReferenceType):
                 self.data_cube = self._get_superdark_from_file_list()
             # Must make_ma_table_resampled_cube and then make_dark_rate_image()
         else:
-            if not isinstance(self.data_array, (np.ndarray, u.Quantity)):
+            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
                 raise TypeError("Input data is neither a numpy array nor a Quantity object.")
-            if isinstance(self.data_array, u.Quantity):  # Only access data from quantity object.
-                self.data_array = self.data_array.value
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+                ref_type_data = ref_type_data.value
                 logging.info('Quantity object detected. Extracted data values.')
-            dim = self.data_array.shape
+            dim = ref_type_data.shape
             if len(dim) == 3:
                 logging.info('User supplied 3D data cube to make dark reference file.')
-                self.data_cube = self.data_array
+                self.data_cube = DarkDataCube(ref_type_data, self.meta_data.type)
                 # Must make_ma_table_resampled_cube and then make_dark_rate_image()
                 logging.info('Must call  make_ma_table_resampled_cube and then make_dark_rate_image() to '
                              'finish creating reference file.')
