@@ -72,16 +72,39 @@ class DarkDataCube(DataCube):
     self.wfi_type: constant string WFI_TYPE_IMAGE, WFI_TYPE_GRISM, or WFI_TYPE_PRISM
     """
     def __init__(self, ref_type_data, wfi_type):
-        self.ramp_model = None  # Ramp model of data cube.
-        self.rate_image = None  # the slope of the fitted data_cube
-        self.intercept_image = None  # the y intercept of a line fit to the data_cube
-
-        degree = 1  # TODO how do we know what degree we should be using?
         # Inherit reference_type.
         super().__init__(
             data=ref_type_data,
             wfi_type=wfi_type,
         )
+
+        self.ramp_model = None  # Ramp model of data cube.
+        self.rate_image = None  # the slope of the fitted data_cube
+        self.intercept_image = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Intercept image from ramp fit.
+        self.intercept_var = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Variance in fitted intercept image.
+        self.resampled_data_cube = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32) # TODO rename this to not use the word data_cube
+        self.resampled_data_cube_err = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32) # TODO rename this to not use the word data_cube
+        self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)
+
+        degree = 1  # TODO how do we know what degree we should be using?
+
+
+        logging.info('Computing dark rate image.')
+        # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
+
+        coeffs_array, covars_array =  np.polyfit(
+            self.resultant_tau_arr, self.resampled_data_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True
+        )
+
+        # Reshape results back to 2D arrays.
+        self.rate_image = coeffs_array[0].reshape(self.num_i_pixels, self.num_j_pixels).astype(np.float32)  # the fitted ramp slope image
+        self.rate_var = covars_array[0, 0, :].reshape(self.num_i_pixels, self.num_j_pixels).astype(np.float32)  # covariance matrix slope variance
+
+        # If needed the intercept image and variance are p[1] and c[1,1,:]
+        # TODO - Rick verify I implemented your comment properly (is reshape needed)
+        self.intercept_image = coeffs_array[1].reshape(self.num_i_pixels, self.num_j_pixels)
+        self.intercept_var = covars_array[1, 1, :].reshape(self.num_i_pixels, self.num_j_pixels)
+
 
 
 class ReadnoiseDataCube(DataCube):
@@ -97,16 +120,19 @@ class ReadnoiseDataCube(DataCube):
     """
 
     def __init__(self, ref_type_data, wfi_type):
-        self.ramp_model = None  # Ramp model of data cube.
-        self.rate_image = None  # the slope of the fitted data_cube
-        self.intercept_image = None  # the y intercept of a line fit to the data_cube
-
-        degree = 1  # TODO how do we know what degree we should be using?
         # Inherit reference_type.
         super().__init__(
             data=ref_type_data,
             wfi_type=wfi_type,
         )
+        self.ramp_model = None  # Ramp model of data cube.
+        self.rate_image = None  # the slope of the fitted data_cube
+        self.intercept_image = None  # the y intercept of a line fit to the data_cube
+
+        degree = 1  # TODO how do we know what degree we should be using?
+        
+
+
         try:
             coeffs_array, covars_array = np.polyfit(
                 self.time_array,
