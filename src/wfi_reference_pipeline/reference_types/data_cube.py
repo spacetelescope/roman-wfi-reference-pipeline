@@ -78,36 +78,49 @@ class DarkDataCube(DataCube):
             wfi_type=wfi_type,
         )
 
-        self.ramp_model = None  # Ramp model of data cube.
         self.rate_image = None  # the slope of the fitted data_cube
-        self.intercept_image = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Intercept image from ramp fit.
-        self.intercept_var = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Variance in fitted intercept image.
-        self.resampled_data_cube = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32) # TODO rename this to not use the word data_cube
-        self.resampled_data_cube_err = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32) # TODO rename this to not use the word data_cube
-        self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)
+        self.rate_image_err = None # uncertainty in rate image
+        self.intercept_image = None
+        self.intercept_image_err = None # uncertainty in intercept image (could be variance?)
+        self.ramp_model = None  # Ramp model of data cube.
 
         degree = 1  # TODO how do we know what degree we should be using?
 
 
+
+        # TODO - this should be a sub routine either existing here or in dark.py (if we move each ref_type_specific datacube to their reference type)
         logging.info('Computing dark rate image.')
         # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
 
-        coeffs_array, covars_array =  np.polyfit(
-            self.resultant_tau_arr, self.resampled_data_cube.reshape(len(self.resultant_tau_arr), -1), 1, full=False, cov=True
-        )
+        try:
+            coeffs_array, covars_array = np.polyfit(
+                self.time_array,
+                ref_type_data.reshape(len(self.time_array), -1),
+                degree,
+                full=False,
+                cov=True,
+            )
+            # Reshape the parameter slope array into a 2D rate image.
+            self.rate_image = coeffs_array[0].reshape(
+                self.num_i_pixels, self.num_j_pixels
+            )
+            self.rate_image_err = covars_array[0, 0, :].reshape(
+                self.num_i_pixels, self.num_j_pixels
+            ).astype(np.float32)  # covariance matrix slope variance
 
-        # Reshape results back to 2D arrays.
-        self.rate_image = coeffs_array[0].reshape(self.num_i_pixels, self.num_j_pixels).astype(np.float32)  # the fitted ramp slope image
-        self.rate_var = covars_array[0, 0, :].reshape(self.num_i_pixels, self.num_j_pixels).astype(np.float32)  # covariance matrix slope variance
+            # Reshape the parameter y-intercept array into a 2D image.
+            self.intercept_image = coeffs_array[1].reshape(
+                self.num_i_pixels, self.num_j_pixels
+            )
+            self.intercept_image_err = covars_array[1, 1, :].reshape(
+                self.num_i_pixels, self.num_j_pixels
+            )
+        except (TypeError, ValueError) as e:
+            logging.error(f"Unable to initialize ReadnoiseDataCube with error {e}")
+            # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
-        # If needed the intercept image and variance are p[1] and c[1,1,:]
-        # TODO - Rick verify I implemented your comment properly (is reshape needed)
-        self.intercept_image = coeffs_array[1].reshape(self.num_i_pixels, self.num_j_pixels)
-        self.intercept_var = covars_array[1, 1, :].reshape(self.num_i_pixels, self.num_j_pixels)
 
-
-
-class ReadnoiseDataCube(DataCube):
+class ReadNoiseDataCube(DataCube):
     """
     ReadnoiseDataCube class derived from DataCube.
     Handles Readnoise specific cube calculations
@@ -125,14 +138,11 @@ class ReadnoiseDataCube(DataCube):
             data=ref_type_data,
             wfi_type=wfi_type,
         )
-        self.ramp_model = None  # Ramp model of data cube.
         self.rate_image = None  # the slope of the fitted data_cube
         self.intercept_image = None  # the y intercept of a line fit to the data_cube
+        self.ramp_model = None  # Ramp model of data cube.
 
         degree = 1  # TODO how do we know what degree we should be using?
-        
-
-
         try:
             coeffs_array, covars_array = np.polyfit(
                 self.time_array,
@@ -153,12 +163,12 @@ class ReadnoiseDataCube(DataCube):
             logging.error(f"Unable to initialize ReadnoiseDataCube with error {e}")
             # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
-        _fit_data_cube_ramp_model(self, coeffs_array, order=degree)
 
 
-def _fit_data_cube_ramp_model(data_cube, coeffs_array, order=1):
+# TODO -> MOVE THIS TO REFERENCE TYPE FILES, AND CALL WHEN YOU WANT IT
+def make_data_cube_model(data_cube, coeffs_array, order=1):
     """
-    fit_ramp_model performs a linear or quadratic fit to the input read cube for each pixel. The slope
+    make_data_cube_model performs a linear or quadratic fit to the input read cube for each pixel. The slope
     and intercept are calculated along with the covariance matrix which has the corresponding diagonal error
     estimates for variances in the model fitted parameters.
 

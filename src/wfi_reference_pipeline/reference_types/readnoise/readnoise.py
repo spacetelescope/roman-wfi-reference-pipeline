@@ -7,7 +7,7 @@ import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
-from wfi_reference_pipeline.reference_types.data_cube import ReadnoiseDataCube
+from wfi_reference_pipeline.reference_types.data_cube import ReadNoiseDataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
 from ..reference_type import ReferenceType
@@ -27,6 +27,12 @@ class ReadNoise(ReferenceType):
     Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise, etc. are
     to be determined. The method get_cds_noise() is available for diagnostics purposes and comparison when developing
     more mature functionality of the reference file pipeline.
+
+    Sample ReadNoise Run:
+    readnoise = ReadNoise(...many params...)
+    readnoise.make_readnoise_image()
+    readnoise.comp_ramp_res_var() OR readnoise.comp_cds_noise()
+    readnoise.generate_outfile()
     """
 
     def __init__(
@@ -87,13 +93,14 @@ class ReadNoise(ReferenceType):
         self.readnoise_image = None  # The attribute 'data' in data model.
         self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
+        self.num_files = 0
 
 
 
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
-            self.n_files = len(self.file_list)
+            self.num_files = len(self.file_list)
             self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
@@ -117,12 +124,13 @@ class ReadNoise(ReferenceType):
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = ReadnoiseDataCube(ref_type_data, self.meta_data.type)
+                self.data_cube = ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.debug(
                     "Must call make_readnoise_image() to finish creating reference file."
                 )
+
             else:
                 raise ValueError(
                     "Input data is not a valid numpy array of dimension 2 or 3."
@@ -142,6 +150,7 @@ class ReadNoise(ReferenceType):
         Looks through the file list provided to ReadNoise() and finds the file with
         the most number of reads. It sorts the files in descending order by the number of reads such that the
         first index will be the file with the most number of reads and the last will have the fewest.
+        Return the datacube with the longest number of reads.
         """
 
         logging.info(
@@ -150,7 +159,7 @@ class ReadNoise(ReferenceType):
         )
         # Go through all files to sort them from the longest to shortest number of reads available.
         fl_reads_ordered_list = []
-        for fl in range(0, len(self.file_list)):
+        for fl in range(0, self.num_files):
             # TODO update using rdm.open() method
             with asdf.open(self.file_list[fl]) as tmp:
                 n_rds, _, _ = np.shape(tmp.tree["roman"]["data"])
@@ -171,7 +180,7 @@ class ReadNoise(ReferenceType):
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
-        self.data_cube = ReadnoiseDataCube(ref_type_data, self.meta_data.type)
+        self.data_cube = ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
     # TODO default parameter values for accessible methods
     # What about inaccessible methods?

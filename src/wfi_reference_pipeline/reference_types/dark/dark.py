@@ -21,6 +21,22 @@ class Dark(ReferenceType):
     flag hot and warm pixels. Statistics on these or additional quantities can be written to the RTB database for
     detector performance monitoring with time and comparison across WFI. The dark reference file created is then
     written to disk.
+
+    Sample Dark Run From Superdark:
+    dark = Dark(meta_data, file_list=superdark.asdf, ...)
+    dark.make_ma_table_resampled_data()
+    dark.calculate_error() # TODO - make abstract method
+    dark.update_dq_mask()  # TODO - make abstract method
+    -> QC call here
+    dark.generate_outfile()
+
+    Sample Dark Run From 3D Cube:
+    dark = Dark(meta_data, ref_type_data=user_cube, ...)
+    dark.make_ma_table_resampled_data(None, None, user_readpattern) OR dark.make_ma_table_resampled_data(None, num_resultants, num_reads_per_resultant)
+    dark.calculate_error() # TODO - make abstract method
+    dark.update_dq_mask()  # TODO - make abstract method
+    dark.generate_outfile()
+
     """
 
     def __init__(
@@ -76,15 +92,16 @@ class Dark(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = 'Roman WFI dark reference file.'
 
-        logging.info(f"Default dark reference file object: {outfile} ")
+        logging.debug(f"Default dark reference file object: {outfile} ")
 
         # Module flow creating reference file
-        if self.file_list: # TODO -> File list is superdark only??
+        # This SHOULD only be one file in the file list, and it is the SuperDark file
+        if self.file_list:
             # Get file list properties and select data cube.
             if len(self.file_list) > 1:
                 raise ValueError('A single super dark was expected in file_list..')
             else:
-                self.data_cube = self._get_superdark_from_file_list() # TODO data_cube is meant to be DarkDataCube...will superdark fall into same class? use self.superdark
+                self.data_cube = self._get_superdark_from_file_list()
             # Must make_ma_table_resampled_cube and then make_dark_rate_image()
         else:
             if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
@@ -97,47 +114,49 @@ class Dark(ReferenceType):
                 logging.info('User supplied 3D data cube to make dark reference file.')
                 self.data_cube = DarkDataCube(ref_type_data, self.meta_data.type)
                 # Must make_ma_table_resampled_cube and then make_dark_rate_image()
-                logging.info('Must call  make_ma_table_resampled_cube and then make_dark_rate_image() to '
+                logging.info('Must call make_ma_table_resampled_cube and then make_dark_rate_image() to '
                              'finish creating reference file.')
             else:
                 raise ValueError('Input data is not a valid numpy array of dimension 3.')
 
-        self.superdark = None
-        # Attributes to make reference file with valid data model.
-        self.resampled_data_cube = None  # The attribute 'data' in data model.
-        # Others populated but not incorporated into data model.
-        self.resampled_dark_cube_err = None  # MA table averaged resultant error cube.
-
-
         # MA Table attributes
-        self.read_pattern = None  # read pattern from ma table meta data - nested list of lists reads in resultants
-        self.ma_table_sequence = []  # For general treatment of unevenly spaced resultant averaging.
-        self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14
-        self.num_resultants = None
+        # TODO populate from database or MA Table Config file?
+        self.ma_table_read_pattern = 0  # read pattern from ma table meta data - nested list of lists reads in resultants will be replacing (ngroups, nframes, groupgap)
+        self.num_resultants = 0 # length of self.ma_table_read_pattern
+        self.resampled_data = None
+        self.resampled_data_err = None
         self.resampled_model = None
+        self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14
+        self.hot_pixel_rate = 0
+        self.warm_pixel_rate = 0
+        self.dead_pixel_rate = 0
+
+
+        # self.resampled_data = np.zeros((self.num_resultants, self.num_i_pixels, self.num_j_pixels), dtype=np.float32)
+        # self.resampled_data_err = np.zeros((self.num_resultants, self.num_i_pixels, self.num_j_pixels), dtype=np.float32)
+        # self.intercept_image = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Intercept image from ramp fit.
+        # self.intercept_var = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Variance in fitted intercept image.
+        # self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)
 
 
 
     def _get_superdark_from_file_list(self):
         """
-        Method to open superdark asdf file from first positional location
+        Method to open superdark asdf file from file_list
         inside of file list send into Dark()
 
-        return: self.superdark
         """
 
-        logging.info("OPENING - " + self.file_list[0])
-        superdark = rdm.open(self.file_list[0])
-        if isinstance(superdark, u.Quantity):  # Only access data from quantity object.
-            self.superdark = superdark.value
-        return self.superdark
+        logging.info("OPENING - " + self.file_list) # file_list is already checked to be single value
+        data = rdm.open(self.file_list)
+        if isinstance(data, u.Quantity):  # Only access data from quantity object.
+            data = data.value
+        return DarkDataCube(data, self.meta_data.type)
 
 
-
-
-    def make_ma_table_resampled_cube(self,
+    def make_ma_table_resampled_data(self,
                                      num_resultants=None,
-                                     num_rds_per_res=None,
+                                     num_reads_per_resultant=None,
                                      read_pattern=None
                                      ):
         """
@@ -151,7 +170,7 @@ class Dark(ReferenceType):
             Nested list of lists with integers for averaging reads into resultants.
         num_resultants: integer; Default=None
             The number of resultants.
-        num_rds_per_res: integer; Default=None
+        num_reads_per_resultant: integer; Default=None
             The user supplied number of reads per resultant in evenly spaced resultants.
         """
 
@@ -160,40 +179,40 @@ class Dark(ReferenceType):
             # get mean time of resultant for tau array
             self.num_resultants = len(read_pattern)
             # Iterate over each nested list in the read pattern
-            logging.info('Averaging over reads following read pattern supplied.')
-            for res_i, read_pattern_frames in enumerate(read_pattern):
+            logging.debug('Averaging over reads following read pattern supplied.')
+            for resultant_i, read_pattern_frames in enumerate(read_pattern):
                 # Get the average time for the list of frames in the read pattern
                 read_pattern_zero_indices = [i - 1 for i in read_pattern_frames]  # zero index for time array
-                self.resultant_tau_arr[res_i] = np.mean(self.time_arr[read_pattern_zero_indices])
+                self.resultant_tau_arr[resultant_i] = np.mean(self.time_arr[read_pattern_zero_indices]) # TODO - do we need this? DMS calculates this for us
                 # Average the data by summing read by read and dividing by number of raeds
                 for read_i in read_pattern_frames:
-                    self.data_cube.resampled_data_cube[res_i] += self.data_cube[read_i - 1]  # Adjusted for 0 indexing
-                self.data_cube.resampled_data_cube[res_i] /= len(read_pattern_frames)
-            logging.info('Finished re-sampling with read pattern.')
+                    self.resampled_data[resultant_i] += self.data_cube.data[read_i - 1]  # Adjusted for 0 indexing
+                self.resampled_data[resultant_i] /= len(read_pattern_frames)
+            logging.debug('Finished re-sampling with read pattern.')
         else:
             # Use even spacing resultant and reads per resultant provided to the method and
             # get mean time of resultant for tau array
-            if not isinstance(num_resultants, int) or not isinstance(num_rds_per_res, int):
+            if not isinstance(num_resultants, int) or not isinstance(num_reads_per_resultant, int):
                 raise ValueError("Both num_resultants and num_rds_per_res must be integers.")
-            if num_resultants is None or num_rds_per_res is None:
+            if num_resultants is None or num_reads_per_resultant is None:
                 raise ValueError("Both num_resultants and num_rds_per_res are required inputs.")
-            logging.info('Averaging over reads with evenly spaced resultants.')
+            logging.debug('Averaging over reads with evenly spaced resultants.')
             self.num_resultants = num_resultants
-            if num_rds_per_res > self.data_cube.num_reads:
+            if num_reads_per_resultant > self.data_cube.num_reads:
                 raise ValueError('Cannot average over more reads than supplied in the dark cube.')
             # Averaging over reads per ma table specs or user defined even spacing.
-            for res_i in range(self.num_resultants):
-                i1 = res_i * num_rds_per_res
-                i2 = i1 + num_rds_per_res
+            for resultant_i in range(self.num_resultants):
+                i1 = resultant_i * num_reads_per_resultant
+                i2 = i1 + num_reads_per_resultant
                 if i2 > self.data_cube.num_reads:
-                    logging.info('Warning: The number of reads per resultant was not evenly divisible into the number'
+                    logging.warning('Warning: The number of reads per resultant was not evenly divisible into the number'
                                  ' of available reads to average and remainder reads were skipped.')
-                    logging.info(f'Resultants after resultant {res_i+1} contain zeros.')
+                    logging.warning(f'Resultants after resultant {resultant_i+1} contain zeros.')
                     break  # Remaining reads cannot be evenly divided
-                self.data_cube.resampled_data_cube[res_i, :, :] = np.mean(self.data_cube[i1:i2, :, :], axis=0)
-                self.data_cube.resultant_tau_arr[res_i] = np.mean(self.time_arr[i1:i2])
+                self.resampled_data[resultant_i, :, :] = np.mean(self.data_cube.data[i1:i2, :, :], axis=0)
+                self.resultant_tau_arr[resultant_i] = np.mean(self.data_cube.time_arr[i1:i2])
 
-            logging.info(f'MA table resampling with {self.num_resultants} resultants averaging {num_rds_per_res}'
+            logging.info(f'MA table resampling with {self.num_resultants} resultants averaging {num_reads_per_resultant}'
                          f' reads per resultant complete.')
 
 
@@ -204,7 +223,7 @@ class Dark(ReferenceType):
         """
 
         # Generate a dark ramp cube model per the resampled ma table specs.
-        self.resampled_model = np.zeros((len(self.data_cube.resampled_data_cube), self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
+        self.resampled_model = np.zeros((len(self.resampled_data), self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
         for tt in range(0, len(self.resultant_tau_arr)):
             self.resampled_model[tt, :, :] = (
@@ -212,7 +231,7 @@ class Dark(ReferenceType):
                 + self.data_cube.intercept_image
             )  # y = m*x + b
         # Calculate the residuals of the dark ramp model and the data
-        residual_cube = self.resampled_model - self.data_cube.resampled_data_cube
+        residual_cube = self.resampled_model - self.resampled_data
         std = np.std(
             residual_cube, axis=0
         )
@@ -220,7 +239,7 @@ class Dark(ReferenceType):
         # model and the resampled cube data. Therefore std^2 is the resampled read noise variance.
         # The dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
         # and the variance of the resampled residuals are added in quadrature.
-        self.resampled_dark_cube_err[0, :, :] = (std * std + self.data_cube.rate_var) ** 0.5
+        self.resampled_data_err[0, :, :] = (std * std + self.data_cube.rate_image_err) ** 0.5
 
     def update_dq_mask(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, dead_pixel_rate=0.0001):
         #TODO evaluate options for variabiles like this and sigma clipping with a parameter file?
@@ -336,9 +355,9 @@ class Dark(ReferenceType):
         # Construct the dark object from the data model.
         dark_datamodel_tree = rds.DarkRef()
         dark_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
-        dark_datamodel_tree['data'] = self.data_cube.resampled_data_cube * u.DN
+        dark_datamodel_tree['data'] = self.resampled_data * u.DN
         dark_datamodel_tree['dark_slope'] = self.data_cube.rate_image * u.DN / u.s
-        dark_datamodel_tree['dark_slope_error'] = (self.data_cube.rate_var ** 0.5) * u.DN / u.s
+        dark_datamodel_tree['dark_slope_error'] = (self.data_cube.rate_image_err ** 0.5) * u.DN / u.s
         dark_datamodel_tree['dq'] = self.mask
 
         return dark_datamodel_tree
