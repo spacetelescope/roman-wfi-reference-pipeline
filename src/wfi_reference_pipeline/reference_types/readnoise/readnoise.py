@@ -7,11 +7,13 @@ import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
-from wfi_reference_pipeline.reference_types.data_cube import ReadNoiseDataCube
+from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
 from ..reference_type import ReferenceType
+
 # TODO - comment why if something should NOT be part of init
+
 
 class ReadNoise(ReferenceType):
     """
@@ -34,6 +36,51 @@ class ReadNoise(ReferenceType):
     readnoise.comp_ramp_res_var() OR readnoise.comp_cds_noise()
     readnoise.generate_outfile()
     """
+
+    class ReadNoiseDataCube(DataCube):
+        """
+        ReadnoiseDataCube class derived from DataCube.
+        Handles Readnoise specific cube calculations
+        Provide common fitting methods to calculate cube properties, such as rate and intercept images, for reference types.
+
+        Parameters
+        -------
+        self.ref_type_data: input data array in cube shape
+        self.wfi_type: constant string WFI_TYPE_IMAGE, WFI_TYPE_GRISM, or WFI_TYPE_PRISM
+        """
+
+        def __init__(self, ref_type_data, wfi_type):
+            # Inherit reference_type.
+            super().__init__(
+                data=ref_type_data,
+                wfi_type=wfi_type,
+            )
+            self.rate_image = None  # the slope of the fitted data_cube
+            self.intercept_image = (
+                None  # the y intercept of a line fit to the data_cube
+            )
+            self.ramp_model = None  # Ramp model of data cube.
+
+            degree = 1  # TODO how do we know what degree we should be using?
+            try:
+                coeffs_array, covars_array = np.polyfit(
+                    self.time_array,
+                    ref_type_data.reshape(len(self.time_array), -1),
+                    degree,
+                    full=False,
+                    cov=True,
+                )
+                # Reshape the parameter slope array into a 2D rate image.
+                self.rate_image = coeffs_array[0].reshape(
+                    self.num_i_pixels, self.num_j_pixels
+                )
+                # Reshape the parameter y-intercept array into a 2D image.
+                self.intercept_image = coeffs_array[1].reshape(
+                    self.num_i_pixels, self.num_j_pixels
+                )
+            except (TypeError, ValueError) as e:
+                logging.error(f"Unable to initialize ReadnoiseDataCube with error {e}")
+                # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
     def __init__(
         self,
@@ -95,8 +142,6 @@ class ReadNoise(ReferenceType):
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
         self.num_files = 0
 
-
-
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
@@ -114,7 +159,6 @@ class ReadNoise(ReferenceType):
                 ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
 
-            # TODO - the below code block can be integrated with make_readnoise_image
             dim = ref_type_data.shape
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.readnoise_image.")
@@ -124,7 +168,9 @@ class ReadNoise(ReferenceType):
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = ReadNoiseDataCube(ref_type_data, self.meta_data.type)
+                self.data_cube = self.ReadNoiseDataCube(
+                    ref_type_data, self.meta_data.type
+                )
 
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.debug(
@@ -135,15 +181,6 @@ class ReadNoise(ReferenceType):
                 raise ValueError(
                     "Input data is not a valid numpy array of dimension 2 or 3."
                 )
-
-
-    def make_readnoise_image(self):
-        """
-        This method is used to generate the reference file image type from the file list or a data cube.
-        """
-
-        logging.info("Making read noise image.")
-        self.readnoise_image = self.comp_ramp_res_var()
 
     def _select_data_cube_from_file_list(self):
         """
@@ -180,51 +217,7 @@ class ReadNoise(ReferenceType):
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
-        self.data_cube = ReadNoiseDataCube(ref_type_data, self.meta_data.type)
-
-    # TODO default parameter values for accessible methods
-    # What about inaccessible methods?
-    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
-        """
-        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
-        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
-        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
-
-        Parameters
-        ----------
-        sig_clip_res_low: float; default = 5.0
-            Lower bound limit to filter residuals of ramp fit to data read cube.
-        sig_clip_res_high: float; default = 5.0
-            Upper bound limit to filter residuals of ramp fit to data read cube.
-        """
-
-        # TODO this wants to be a method accessible to a user to produce the readnoise reference files
-        # If this is selected, comp_cds_noise should not be available
-
-        logging.info(
-            "Computing residuals of ramp model from data to estimate variance component of read noise."
-        )
-
-        # self._initialize_arrays() # TODO - remove, handled in cube class init
-        # self._fit_ramp_model() # TODO - will handle automatically in cube class?
-
-        # Initialize ramp residual variance array.
-        self.ramp_res_var = np.zeros(
-            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
-        )
-        residual_cube = self.data_cube.ramp_model - self.data_cube.data
-        clipped_res_cube = sigma_clip(
-            residual_cube,
-            sigma_lower=sig_clip_res_low,
-            sigma_upper=sig_clip_res_high,
-            cenfunc=np.mean,
-            axis=0,
-            masked=False,
-            copy=False,
-        )
-        std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std * std)
-        return self.ramp_res_var
+        self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
@@ -280,6 +273,119 @@ class ReadNoise(ReferenceType):
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
 
         return self.cds_noise
+
+    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
+        """
+        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
+        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
+        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
+
+        Parameters
+        ----------
+        sig_clip_res_low: float; default = 5.0
+            Lower bound limit to filter residuals of ramp fit to data read cube.
+        sig_clip_res_high: float; default = 5.0
+            Upper bound limit to filter residuals of ramp fit to data read cube.
+        """
+
+        # TODO this wants to be a method accessible to a user to produce the readnoise reference files
+        # If this is selected, comp_cds_noise should not be available
+
+        logging.info(
+            "Computing residuals of ramp model from data to estimate variance component of read noise."
+        )
+
+        # self._initialize_arrays() # TODO - remove, handled in cube class init
+        # self._fit_ramp_model() # TODO - will handle automatically in cube class?
+
+        # Initialize ramp residual variance array.
+        self.ramp_res_var = np.zeros(
+            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
+        )
+        residual_cube = self.data_cube.ramp_model - self.data_cube.data
+        clipped_res_cube = sigma_clip(
+            residual_cube,
+            sigma_lower=sig_clip_res_low,
+            sigma_upper=sig_clip_res_high,
+            cenfunc=np.mean,
+            axis=0,
+            masked=False,
+            copy=False,
+        )
+        std = np.std(clipped_res_cube, axis=0)
+        self.ramp_res_var = np.float32(std * std)
+        return self.ramp_res_var
+
+    def make_data_cube_model(self, coeffs_array, order=1):
+        """
+        make_data_cube_model performs a linear or quadratic fit to the input read cube for each pixel. The slope
+        and intercept are calculated along with the covariance matrix which has the corresponding diagonal error
+        estimates for variances in the model fitted parameters.
+
+        Save to attribute rate_image, intercept_image, and ramp_model.
+
+        Currently used for ReadnoiseDataCube
+
+        NOTE: Keep covariance matrices in code for future use determination.
+        TODO - Algorithm on how to incorporate "order"?
+
+        """
+        logging.info("Making ramp model for the input read cube.")
+        # Reshape the 2D array into a 1D array for input into np.polyfit().
+        # The model fit parameters p and covariance matrix v are returned.
+        try:
+            # Reshape the returned covariance matrix slope fit error.
+            # rate_var = v[0, 0, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO -VERIFY USE
+            # returned covariance matrix intercept error.
+            # intercept_var = v[1, 1, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO - VERIFY USE
+
+            self.data_cube.ramp_model = np.zeros(
+                (
+                    self.data_cube.num_reads,
+                    self.data_cube.num_i_pixels,
+                    self.data_cube.num_j_pixels,
+                ),
+                dtype=np.float32,
+            )
+
+            if order == 1:
+                # y = m * x + b
+                # where y is the pixel value for every read,
+                # m is the slope at that pixel or the rate image,
+                # x is time (this is the same value for every pixel in a read)
+                # b is the intercept value or intercept image.
+                for tt in range(0, len(self.data_cube.time_array)):
+                    self.data_cube.ramp_model[tt, :, :] = (
+                        self.data_cube.rate_image * self.data_cube.time_array[tt]
+                        + self.data_cube.intercept_image
+                    )
+            elif order == 2:
+                # y = ax^2 + bx + c
+                # where we dont have a single rate image anymore, we have coefficients
+                for tt in range(0, len(self.data_cube.time_array)):
+                    a, b, c = coeffs_array
+                    self.data_cube.ramp_model[tt, :, :] = (
+                        a * self.data_cube.time_array[tt] ** 2
+                        + b * self.data_cube.time_array[tt]
+                        + c
+                    )
+
+            else:
+                raise ValueError(
+                    "This function only supports polynomials of order 1 or 2."
+                )
+
+        except (ValueError, TypeError) as e:
+            logging.error(f"Unable to make_ramp_cube_model with error {e}")
+            # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
+
+    def make_readnoise_image(self):
+        """
+        This method is used to generate the reference file image type from the file list or a data cube.
+        """
+
+        logging.info("Making read noise image.")
+        self.readnoise_image = self.comp_ramp_res_var()
 
     def populate_datamodel_tree(self):
         """
