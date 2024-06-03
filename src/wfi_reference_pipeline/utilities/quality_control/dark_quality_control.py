@@ -1,8 +1,12 @@
 import yaml
-# TODO - test
+import logging
+import numpy as np
+from wfi_reference_pipeline.utilities.config_handler import get_quality_control_config
+from wfi_reference_pipeline.constants import REF_TYPE_DARK
+
 
 class DarkQualityControl:
-    def __init__(self, rfp_dark, config_path='quality_control_config.yml'):
+    def __init__(self, rfp_dark):
         """
         Dark Quality Control (QC) class will take in a Reference File Pipeline (RFP) dark created object
         and import QC Reference Values from a QC yaml file. Various statistics or metrics on
@@ -17,57 +21,21 @@ class DarkQualityControl:
         check_all: boolean; default = True
             Flag to perform all quality control checks.
         """
-        self.rfp_dark_meta = rfp_dark.meta
-        self.rfp_dark_data = rfp_dark.data
-        self.dark_qc_reference_dict = {}  # Dictionary of reference keys and values
-        self.check_flags = {}  # Dictionary of check flags (names of checks for Boolean)
+        self.rfp_dark = rfp_dark
         self.checks_results_dict = {}  # Empty dictionary of quality control functions performed
+        self.dark_controls = get_quality_control_config(REF_TYPE_DARK)
 
-        # Load configuration
-        self.load_configuration(config_path)
-
-    def load_configuration(self, config_path):
-        """
-        Get the dark quality control flags and reference values from the yaml file.
-        """
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-
-        dark_quality_controls = config.get('dark_quality_controls', {})
-
-        # Extract flags
-        self.check_flags = {
-            'check_mean_dark_rate_flag': dark_quality_controls.get('check_mean_dark_rate_flag', False),
-            'check_med_dark_rate_flag': dark_quality_controls.get('check_med_dark_rate_flag', False),
-            'check_std_dark_rate_flag': dark_quality_controls.get('check_std_dark_rate_flag', False),
-            'check_num_hot_pix_flag': dark_quality_controls.get('check_num_hot_pix_flag', False),
-            'check_num_dead_pix_flag': dark_quality_controls.get('check_num_dead_pix_flag', False),
-            'check_num_unreliable_pix_flag': dark_quality_controls.get('check_num_unreliable_pix_flag', False),
-            'check_num_warm_pix_flag': dark_quality_controls.get('check_num_warm_pix_flag', False)
-        }
-
-        # Extract reference values
-        self.dark_qc_reference_dict = {
-            'max_mean_dark_rate_reference_value': dark_quality_controls.get('max_mean_dark_rate_reference_value'),
-            'max_med_dark_rate_reference_value': dark_quality_controls.get('max_med_dark_rate_reference_value'),
-            'max_std_dark_rate_reference_value': dark_quality_controls.get('max_std_dark_rate_reference_value'),
-            'max_num_hot_pix_reference_value': dark_quality_controls.get('max_num_hot_pix_reference_value'),
-            'max_num_dead_pix_reference_value': dark_quality_controls.get('max_num_dead_pix_reference_value'),
-            'max_num_unreliable_pix_reference_value': dark_quality_controls.get('max_num_unreliable_pix_reference_value'),
-            'max_num_warm_pix_reference_value': dark_quality_controls.get('max_num_warm_pix_reference_value')
-        }
 
     def do_checks(self):
         """
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        for check_name, flag in self.check_flags.items():
-            if flag:
+        for qc_method, do_check in self.dark_controls.items():
+            if do_check:
                 # Construct the method name from the check name
-                method_name = check_name.replace('flag', '').strip().lower()
                 # Get the method and call it if it exists
-                method = getattr(self, method_name, None)
+                method = getattr(self, qc_method, None)
                 if callable(method):
                     method()
 
@@ -78,9 +46,11 @@ class DarkQualityControl:
         Get the statistic or property from the RFP ref_type object and compare to the reference value for that check.
         Update the empty dictionary that has each
         """
-        rfp_dark_mean_rate = np.mean(self.rfp_dark_data)  # Assuming rfp_dark_data is a numpy array
+        print("Executing check_mean_dark_rate")
+        return
+        rfp_dark_mean_rate = np.mean(self.rfp_dark.data_array)  # Assuming rfp_dark_data is a numpy array
         logging.info(
-            f"Mean dark rate for detector {self.rfp_dark_meta['detector']} mode {self.rfp_dark_meta['mode']} is {rfp_dark_mean_rate:.3f} dn/s")
+            f"Mean dark rate for detector {self.rfp_dark.meta_data['detector']} mode {self.rfp_dark.meta_data['mode']} is {rfp_dark_mean_rate:.3f} dn/s")
 
         ref_value = self.dark_qc_reference_dict['max_mean_dark_rate_reference_value']
         logging.info(f"Compared to reference value {ref_value} for detector {self.rfp_dark_meta['detector']}")
@@ -90,7 +60,7 @@ class DarkQualityControl:
         else:
             self.checks_results_dict['check_mean_dark_rate'] = False
 
-        logging.info(f"Quality Control logging statement result for check performed]}")
+        logging.info("Quality Control logging statement result for check performed]")
 
     def check_med_dark_rate(self):
         print("Executing check_med_dark_rate")
@@ -109,6 +79,11 @@ class DarkQualityControl:
 
     def check_num_warm_pix(self):
         print("Executing check_num_warm_pix")
+
+
+
+
+
 
     def qc_checks_notifications(self):
         """

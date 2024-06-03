@@ -4,13 +4,13 @@
 #
 
 dark_controls:
-  check_mean_dark_rate_flag: true
-  check_med_dark_rate_flag: true
-  check_std_dark_rate_flag: true
-  check_num_hot_pix_flag: true
-  check_num_dead_pix_flag: true
-  check_num_unreliable_pix_flag: true
-  check_num_warm_pix_flag: true
+  check_mean_dark_rate: true
+  check_med_dark_rate: true
+  check_std_dark_rate: true
+  check_num_hot_pix: true
+  check_num_dead_pix: true
+  check_num_unreliable_pix: true
+  check_num_warm_pix: true
 
   # These are the values from this page but supplied here
   # https://innerspace.stsci.edu/display/RI/RFP+Database+Tables
@@ -26,9 +26,9 @@ dark_controls:
   max_num_warm_pix_reference_value: 1e6
 
 readnoise_controls:
-  check_mean_readnoise_flag: true
-  check_med_readnoise_flag: true
-  check_std_readnoise_flag: true
+  check_mean_readnoise: true
+  check_med_readnoise: true
+  check_std_readnoise: true
 
   # These are the values from this page but supplied here
   max_mean_dark_rate_reference_value: 5.0
