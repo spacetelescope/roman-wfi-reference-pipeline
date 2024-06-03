@@ -194,20 +194,18 @@ class Dark(ReferenceType):
         # TODO populate from database or MA Table Config file?
         self.ma_table_read_pattern = 0  # read pattern from ma table meta data - nested list of lists reads in resultants will be replacing (ngroups, nframes, groupgap)
         self.num_resultants = 0  # length of self.ma_table_read_pattern
-        self.resampled_data = None
-        self.resampled_data_err = None
+        self.resampled_data = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
+        self.resampled_data_err = np.zeros((self.num_resultants, self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32)
         self.resampled_model = None
-        self.resultant_tau_arr = None  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14
+        self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)  # Variance-based resultant time tau_i from Casterano et al. 2022 equation 14
         self.hot_pixel_rate = 0
         self.warm_pixel_rate = 0
         self.dead_pixel_rate = 0
 
         # NOTE: keeping the below just for reference when setting up, can delete if Rick doesnt need these
-        # self.resampled_data = np.zeros((self.num_resultants, self.num_i_pixels, self.num_j_pixels), dtype=np.float32)
-        # self.resampled_data_err = np.zeros((self.num_resultants, self.num_i_pixels, self.num_j_pixels), dtype=np.float32)
         # self.intercept_image = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Intercept image from ramp fit.
         # self.intercept_var = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Variance in fitted intercept image.
-        # self.resultant_tau_arr = np.zeros(self.num_resultants, dtype=np.float32)
+
 
     def calculate_dark_error(self):
         """
@@ -311,12 +309,12 @@ class Dark(ReferenceType):
 
         Parameters
         ----------
-        read_pattern: list of lists; Default=None
-            Nested list of lists with integers for averaging reads into resultants.
         num_resultants: integer; Default=None
             The number of resultants.
         num_reads_per_resultant: integer; Default=None
             The user supplied number of reads per resultant in evenly spaced resultants.
+        read_pattern: list of lists; Default=None
+            Nested list of lists with integers for averaging reads into resultants.
         """
 
         if read_pattern:
@@ -343,9 +341,7 @@ class Dark(ReferenceType):
         else:
             # Use even spacing resultant and reads per resultant provided to the method and
             # get mean time of resultant for tau array
-            if not isinstance(num_resultants, int) or not isinstance(
-                num_reads_per_resultant, int
-            ):
+            if not isinstance(num_resultants, int) or not isinstance(num_reads_per_resultant, int):
                 raise ValueError(
                     "Both num_resultants and num_rds_per_res must be integers."
                 )
@@ -372,6 +368,7 @@ class Dark(ReferenceType):
                         f"Resultants after resultant {resultant_i+1} contain zeros."
                     )
                     break  # Remaining reads cannot be evenly divided
+                # TODO Rick - this breaks in test_rfp_dark_schema
                 self.resampled_data[resultant_i, :, :] = np.mean(
                     self.data_cube.data[i1:i2, :, :], axis=0
                 )
