@@ -36,9 +36,10 @@ class ReferenceType(ABC):
 
         # Check to make sure ReferenceType is instantiated with one valid input.
         if file_list is None and ref_type_data is None:
-            raise ValueError("No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
+            raise ValueError(
+                "No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
         if file_list is not None and len(file_list) > 0 and \
-           ref_type_data is not None and len(ref_type_data) > 0:
+                ref_type_data is not None and len(ref_type_data) > 0:
             raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'ref_type_data'")
 
         # Allow for input string use_after to be converted to astropy time object.
@@ -70,8 +71,8 @@ class ReferenceType(ABC):
             if self.clobber:
                 os.remove(self.outfile)
             else:
-                raise FileExistsError(f'''{self.outfile} already exists,
-                                          and clobber={self.clobber}!''')
+                raise FileExistsError(f'''{self.outfile} already exists, 
+                                        and clobber={self.clobber}!''')
 
     def generate_outfile(self, datamodel_tree=None):
         """
@@ -89,6 +90,14 @@ class ReferenceType(ABC):
         logging.info(f"Saved {self.outfile}")
 
     # Enforce method for all reference file reftype modules used in schema testing.
+    @abstractmethod
+    def calculate_error(self):
+        pass
+
+    @abstractmethod
+    def update_data_quality_array(self):
+        pass
+
     @abstractmethod
     def populate_datamodel_tree(self):
         pass
