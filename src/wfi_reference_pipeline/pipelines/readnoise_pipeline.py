@@ -119,6 +119,7 @@ class ReadnoisePipeline(Pipeline):
                                   clobber=True
         )
         rfp_readnoise.make_readnoise_image()
+        # TODO - QC GOES HERE
         rfp_readnoise.generate_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")

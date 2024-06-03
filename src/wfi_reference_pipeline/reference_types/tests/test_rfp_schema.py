@@ -34,10 +34,10 @@ class TestSchema(unittest.TestCase):
 
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=None,
-                        data_array=test_data)
-        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
-        rfp_dark.make_ma_table_resampled_cube(num_resultants=3, num_rds_per_res=1)
-        print(rfp_dark.data_cube, rfp_dark.ni, rfp_dark.n_reads)
+                        ref_type_data=test_data)
+        print(rfp_dark.data_cube.data, rfp_dark.data_cube.num_i_pixels, rfp_dark.data_cube.num_reads)
+        rfp_dark.make_ma_table_resampled_data(num_resultants=3, num_reads_per_resultant=1)
+        print(rfp_dark.data_cube.data, rfp_dark.data_cube.num_i_pixels, rfp_dark.data_cube.num_reads)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -198,7 +198,7 @@ class TestSchema(unittest.TestCase):
                             dtype=np.float32)
 
         rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
-                                  data_array=test_data)
+                                  ref_type_data=test_data)
         # Make test asdf tree
         tf = asdf.AsdfFile()
         tf.tree = {'roman': rfp_readnoise.populate_datamodel_tree()}

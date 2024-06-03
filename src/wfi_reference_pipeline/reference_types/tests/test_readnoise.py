@@ -15,7 +15,7 @@ def read_cube():
 def readnoise_object():
     test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
     test_read_cube, _ = simulate_dark_reads(3)
-    obj = ReadNoise(test_meta.meta_readnoise, data_array=test_read_cube)
+    obj = ReadNoise(test_meta.meta_readnoise, ref_type_data=test_read_cube)
     yield obj
 
 
@@ -27,12 +27,12 @@ class TestReadNoise:
 
         bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
         with pytest.raises(TypeError):
-            ReadNoise(bad_test_meta.meta_dark, data_array=read_cube)
+            ReadNoise(bad_test_meta.meta_dark, ref_type_data=read_cube)
 
         with pytest.raises(TypeError):
-            ReadNoise(readnoise_object.meta_data, data_array='not_data.txt')
+            ReadNoise(readnoise_object.meta_data, ref_type_data='not_data.txt')
 
-    def test_readnoise_with_valid_data_array_pass(self, readnoise_object):
+    def test_readnoise_with_valid_ref_type_data_pass(self, readnoise_object):
         assert isinstance(readnoise_object, ReadNoise)
         assert readnoise_object.outfile == "roman_readnoise.asdf"
         assert readnoise_object.meta_data.description == "For RFP testing."
@@ -40,5 +40,7 @@ class TestReadNoise:
     def test_make_readnoise_image_pass(self, readnoise_object):
         readnoise_object.make_readnoise_image()
         assert readnoise_object.readnoise_image.shape == (4096, 4096)
-        assert readnoise_object.n_reads == 3
-        assert readnoise_object.ni == 4096
+        assert readnoise_object.data_cube.num_reads == 3
+        assert readnoise_object.data_cube.num_i_pixels == 4096
+        assert readnoise_object.data_cube.num_j_pixels == 4096
+

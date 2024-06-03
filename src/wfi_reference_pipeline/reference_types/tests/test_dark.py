@@ -15,7 +15,7 @@ def read_cube():
 def dark_object():
     test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
     test_read_cube, _ = simulate_dark_reads(3)
-    obj = Dark(test_meta.meta_dark, data_array=test_read_cube)
+    obj = Dark(test_meta.meta_dark, ref_type_data=test_read_cube)
     obj.make_ma_table_resampled_cube(num_resultants=3, num_rds_per_res=1)
     yield obj
 
@@ -28,10 +28,10 @@ class TestDark:
 
         bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
         with pytest.raises(TypeError):
-            Dark(bad_test_meta.meta_readnoise, data_array=read_cube)
+            Dark(bad_test_meta.meta_readnoise, ref_type_data=read_cube)
 
         with pytest.raises(TypeError):
-            Dark(dark_object.meta_data, data_array='not_data.txt')
+            Dark(dark_object.meta_data, ref_type_data='not_data.txt')
 
     def test_dark_with_valid_data_array_pass(self, dark_object):
         assert isinstance(dark_object, Dark)
@@ -40,7 +40,8 @@ class TestDark:
 
     def test_make_dark_rate_image_pass(self, dark_object):
         dark_object.make_dark_rate_image()
-        assert dark_object.dark_rate_image.shape == (4096, 4096)
-        assert dark_object.dark_rate_var.shape == (4096, 4096)
-        assert dark_object.num_resultants == 3
-        assert dark_object.ni == 4096
+        assert dark_object.data_cube.dark_rate_image.shape == (4096, 4096)
+        assert dark_object.data_cube.dark_rate_var.shape == (4096, 4096)
+        assert dark_object.data_cube.num_resultants == 3
+        assert dark_object.data_cube.num_i_pixels == 4096
+        assert dark_object.data_cube.num_j_pixels == 4096
