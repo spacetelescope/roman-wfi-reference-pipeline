@@ -104,27 +104,22 @@ class DarkQualityControl:
 
     def qc_checks_notifications(self):
         """
-        If all check_results_dict passed True, then return True, then ok to deliver in automated pipeline
-            We should get a logging statement confirming everything and a slack notification all good, green, passed
-        If any check is False, then return False, halt or pause delivery
-            We should get error statements and logging statements saying that something failed - specifically knowing
-            additional information like which detector and what test exactly and by how much it failed.
-            For a failure we need email to RFP  points of contact and a real noticeable slack notification with maybe
-            even tagging stakeholders or pinging the whole channel
+        There are four potential results for each test.
+        QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_WARNING, QC_CHECK_SKIP
 
-        #TODO In the future or to brainstorm, let's consider making this smarter. We will have tolerances away from the
-        reference values and if say, one detector fails, we dont halt the delivery, but deliver the rest, we get emails
-        and slack but it is not a total failure of delivery
+        Any Checks resulting with QC_CHECK_SKIP not not affect the delivery status in any way and can be interpreted as
+        QC_CHECK_SUCCEED for the below description.
 
-        #TODO additionally we we make it smarter by checking against the tolerance too. If a detector fails but within
-        some margin or tolerance then that is ok to deliver and notify to go back and update.
+        If all checks in passed with QC_CHECK_SUCCEED, then ok to deliver in automated pipeline
+        We should get a logging statement confirming everything and a slack notification that all is good
 
-        #TODO WHAT WE DONT WANT WITH THESE TODOS
-        We dont want to impede a delivery that wont break romancal and be enough that one person could do a manual submission
-        to CRDS the next day or someone could. So we want to know as much as possible. Set the limitations on this though
-        Scenario for yellow delivery - 1 detector fails, delivery 17, not all, notify and replace
-        Scenario to avoid - ALL DETECTORs fail within tolerance, something would be up with data, dont deliver
-        Sencario to consider yellow ok - 2 detectors fail within tolerance but not more than 2
+        If any check fails with QC_CHECK_FAIL, then halt or pause delivery
+        We should get error statements and logging statements saying that something failed with specific details on failure.
+        Failure should include additional information like which test, detector, and values failed.
+        In addition, an email to RFP points of contact and a slack notification
+
+        # TODO - We Want to implement QC_CHECK_WARNING standards.  Where will will only halt a delivery if a certain amount of
+        QC_WARNINGS are found.  Warnings will be made if values are with in a certain tolerance of a limit.
 
         """
 
