@@ -125,13 +125,18 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
     """Get configuration settings from quality_control_config.yml for any reference type
     Validate that the settings are in the correct format before returning
     """
-    if ref_type == REF_TYPE_DARK:
-        settings = _get_config(config_file)["dark_control"]
-    elif ref_type == REF_TYPE_READNOISE:
-        settings = _get_config(config_file)["readnoise_control"]
-    else:
-        raise ValueError(
-            f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
-        )
+    try:
+        if ref_type == REF_TYPE_DARK:
+            settings = _get_config(config_file)["dark_control"]
+        elif ref_type == REF_TYPE_READNOISE:
+            settings = _get_config(config_file)["readnoise_control"]
+        else:
+            raise ValueError(
+                f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
+            )
+    except KeyError as e:
+        raise KeyError (f"Invalid schema index for ref_type: {ref_type} -- {e}")
+
+
     _validate_config(settings, QC_CONFIG_SCHEMA)
     return settings
