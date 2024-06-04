@@ -1,8 +1,13 @@
-import yaml
 import logging
+
 import numpy as np
+from wfi_reference_pipeline.constants import (
+    QC_CHECK_FAIL,
+    QC_CHECK_SUCCEED,
+    QC_CHECK_SKIP,
+    REF_TYPE_DARK,
+)
 from wfi_reference_pipeline.utilities.config_handler import get_quality_control_config
-from wfi_reference_pipeline.constants import REF_TYPE_DARK
 
 
 class DarkQualityControl:
@@ -22,8 +27,10 @@ class DarkQualityControl:
             Flag to perform all quality control checks.
         """
         self.rfp_dark = rfp_dark
+        quality_controls = get_quality_control_config(REF_TYPE_DARK)
+        self.quality_checks = quality_controls["checks"]
+        self.quality_values = quality_controls["values"]
         self.checks_results_dict = {}  # Empty dictionary of quality control functions performed
-        self.dark_controls = get_quality_control_config(REF_TYPE_DARK)
 
 
     def do_checks(self):
@@ -31,13 +38,17 @@ class DarkQualityControl:
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        for qc_method, do_check in self.dark_controls.items():
-            if do_check:
-                # Construct the method name from the check name
-                # Get the method and call it if it exists
-                method = getattr(self, qc_method, None)
-                if callable(method):
-                    method()
+        for qc_method, do_check in self.quality_checks.items():
+            method = getattr(self, qc_method, None)
+            if callable(method):
+                if do_check:
+                    self.checks_results_dict[qc_method] = method()
+                else:
+                    self.checks_results_dict[qc_method] = QC_CHECK_SKIP
+            else:
+                # This should never be hit as we imlpement a scheme check
+                raise ValueError(f"{qc_method} is not valid check.  Assess validity of quality control config file")
+
 
     def check_mean_dark_rate(self):
         """
@@ -56,29 +67,35 @@ class DarkQualityControl:
         logging.info(f"Compared to reference value {ref_value} for detector {self.rfp_dark_meta['detector']}")
 
         if rfp_dark_mean_rate < ref_value:
-            self.checks_results_dict['check_mean_dark_rate'] = True
+            return QC_CHECK_SUCCEED
         else:
-            self.checks_results_dict['check_mean_dark_rate'] = False
+            return QC_CHECK_FAIL
 
-        logging.info("Quality Control logging statement result for check performed]")
+
 
     def check_med_dark_rate(self):
         print("Executing check_med_dark_rate")
+        return QC_CHECK_SUCCEED
 
     def check_std_dark_rate(self):
         print("Executing check_std_dark_rate")
+        return QC_CHECK_SUCCEED
 
     def check_num_hot_pix(self):
         print("Executing check_num_hot_pix")
+        return QC_CHECK_SUCCEED
 
     def check_num_dead_pix(self):
         print("Executing check_num_dead_pix")
+        return QC_CHECK_SUCCEED
 
     def check_num_unreliable_pix(self):
         print("Executing check_num_unreliable_pix")
+        return QC_CHECK_SUCCEED
 
     def check_num_warm_pix(self):
         print("Executing check_num_warm_pix")
+        return QC_CHECK_SUCCEED
 
 
 

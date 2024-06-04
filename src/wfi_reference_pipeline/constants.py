@@ -1,5 +1,9 @@
 CONFIG_PATH = "src/wfi_reference_pipeline/config/"
 
+QC_CHECK_FAIL = 0
+QC_CHECK_SUCCEED = 1
+QC_CHECK_SKIP = 2
+
 WFI_MODE_WIM = "WIM"
 WFI_MODE_WSM = "WSM"
 

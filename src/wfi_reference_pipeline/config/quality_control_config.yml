@@ -1,36 +1,35 @@
 #
 # This configuration file determines which quality control checks are executed after a reference file object
-# with a complete and valid data model tree is populated.
+# with a complete and valid data model tree is populated.  The check names DIRECTLY reflect the names in our
+# quality control files (ie. dark_quality_control.py, readnoise_quality_control.py etc)
+# The values for each check can be locally changed for personal preference, however the source controled values
+# should always reflect what displayed here: https://innerspace.stsci.edu/display/RI/RFP+Database+Tables
 #
 
-dark_controls:
-  check_mean_dark_rate: true
-  check_med_dark_rate: true
-  check_std_dark_rate: true
-  check_num_hot_pix: true
-  check_num_dead_pix: true
-  check_num_unreliable_pix: true
-  check_num_warm_pix: true
+dark_control:
+  checks:
+    check_mean_dark_rate: true
+    check_med_dark_rate: true
+    check_std_dark_rate: true
+    check_num_hot_pix: true
+    check_num_dead_pix: true
+    check_num_unreliable_pix: true
+    check_num_warm_pix: true
+  values:
+    max_mean_dark_rate_reference_value: 0.01
+    max_med_dark_rate_reference_value: 0.01
+    max_std_dark_rate_reference_value: 0.01
+    max_num_hot_pix_reference_value: 1e6
+    max_num_dead_pix_reference_value: 1e6
+    max_num_unreliable_pix_reference_value: 1e6
+    max_num_warm_pix_reference_value: 1e6
 
-  # These are the values from this page but supplied here
-  # https://innerspace.stsci.edu/display/RI/RFP+Database+Tables
-  # We should have this config file be version controlled but question now is
-  # do have separate files for each ref_type to version control this reference values separately
-  # or keep all reference values in one file? What do you think is better?
-  max_mean_dark_rate_reference_value: 0.01
-  max_med_dark_rate_reference_value: 0.01
-  max_std_dark_rate_reference_value: 0.01
-  max_num_hot_pix_reference_value: 1e6
-  max_num_dead_pix_reference_value: 1e6
-  max_num_unreliable_pix_reference_value: 1e6
-  max_num_warm_pix_reference_value: 1e6
-
-readnoise_controls:
-  check_mean_readnoise: true
-  check_med_readnoise: true
-  check_std_readnoise: true
-
-  # These are the values from this page but supplied here
-  max_mean_dark_rate_reference_value: 5.0
-  max_med_dark_rate_reference_value: 5.0
-  max_std_dark_rate_reference_value: 5.0
+readnoise_control:
+  checks:
+    check_mean_readnoise: true
+    check_med_readnoise: true
+    check_std_readnoise: true
+  values:
+    max_mean_dark_rate_reference_value: 5.0
+    max_med_dark_rate_reference_value: 5.0
+    max_std_dark_rate_reference_value: 5.0

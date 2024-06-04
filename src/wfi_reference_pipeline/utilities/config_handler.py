@@ -126,9 +126,9 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
     Validate that the settings are in the correct format before returning
     """
     if ref_type == REF_TYPE_DARK:
-        settings = _get_config(config_file)["dark_controls"]
+        settings = _get_config(config_file)["dark_control"]
     elif ref_type == REF_TYPE_READNOISE:
-        settings = _get_config(config_file)["readnoise_controls"]
+        settings = _get_config(config_file)["readnoise_control"]
     else:
         raise ValueError(
             f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
