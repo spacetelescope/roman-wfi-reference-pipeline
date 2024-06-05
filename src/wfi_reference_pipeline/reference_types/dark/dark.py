@@ -22,22 +22,25 @@ class Dark(ReferenceType):
     detector performance monitoring with time and comparison across WFI. The dark reference file created is then
     written to disk.
 
-    Sample Dark Run From Superdark:
-    dark = Dark(meta_data, file_list=superdark.asdf, ...)
-    dark.get_dark_rate_image_from_data_cube(self)
+    NOTE: RFP Development Strategy is for explicit method calls to run code to populate reference type data models
+
+    #TODO Example method calls using a superdark.asdf file
+    dark = Dark(meta_data, file_list=superdark.asdf, ma_table_id=3)
+    dark.get_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data()
-    dark.calculate_error() # TODO - make abstract method
-    dark.update_data_quality_array()  # TODO - make abstract method
-    -> QC call here
+    dark.calculate_error()
+    dark.update_data_quality_array()
     dark.generate_outfile()
 
-    Sample Dark Run From 3D Cube:
+    #TODO Example method calls with a user supplied data cube:
     dark = Dark(meta_data, ref_type_data=user_cube, ...)
-    dark.make_ma_table_resampled_data(None, None, user_readpattern) OR dark.make_ma_table_resampled_data(None, num_resultants, num_reads_per_resultant)
-    dark.calculate_error() # TODO - make abstract method
-    dark.update_data_quality_array()  # TODO - make abstract method
+    dark.get_dark_rate_image_from_data_cube()
+    dark.make_ma_table_resampled_data(None, None, user_read_pattern) for uneven spacing using list of lists
+        OR
+        dark.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant) for even spacing
+    dark.calculate_error()
+    dark.update_data_quality_array()
     dark.generate_outfile()
-
     """
 
     def __init__(
@@ -136,10 +139,10 @@ class Dark(ReferenceType):
         # nested list of lists reads in resultants will be replacing (ngroups, nframes, groupgap)
         self.num_resultants = None
 
+        # Attributes for initialized arrays for resampling.
         self.resampled_data = None
         self.resampled_data_err = None
         self.resampled_model = None
-
         self.resultant_tau_array = None
 
         # TODO get from Dark config yml
@@ -165,12 +168,18 @@ class Dark(ReferenceType):
             data = data.value
         self.data_cube = self.DarkDataCube(data, self.meta_data.type)
 
-    def get_dark_rate_image_from_data_cube(self, fit_order=1):
+    def get_rate_image_from_data_cube(self, fit_order=1):
         """
-        Method to fit the data cube and get the dark slope image assuming linear fit.
+        Method to fit the data cube. Intentional method call to specific fitting order to data.
+
+        Parameters
+        ----------
+        fit_order: integer; Default=None
+            The polynomial degree sent to data_cube.fit_cube.
         """
 
-        coeffs = self.data_cube.fit_cube(degree=fit_order)
+        logging.info(f"Fitting data cube with fit order={fit_order}.")
+        self.data_cube.fit_cube(degree=fit_order)
 
     def make_ma_table_resampled_data(self,
                                      num_resultants=None,
@@ -451,7 +460,6 @@ class Dark(ReferenceType):
                 data=ref_type_data,
                 wfi_type=wfi_type,
             )
-
             self.rate_image = None  # the slope of the fitted data_cube
             self.rate_image_err = None  # uncertainty in rate image
             self.intercept_image = None
@@ -459,8 +467,10 @@ class Dark(ReferenceType):
                 None  # uncertainty in intercept image (could be variance?)
             )
             self.ramp_model = None  # Ramp model of data cube.
+            self.coeffs_array = None  # Fitted coefficients to data cube.
+            self.covars_array = None  # Fitted covariance array to data cube.
 
-        def fit_cube(self, degree):
+        def fit_cube(self, degree=1):
             """
             fit_cube will perform a linear least squares regression using np.polyfit of a certain
             pre-determined degree order polynomial. This method needs to be intentionally called to
@@ -468,15 +478,15 @@ class Dark(ReferenceType):
 
             Parameters
             -------
-            degree: int, required
+            degree: int, default=1
                 Input order of polynomial to fit data cube. Degree = 1 is linear. Degree = 2 is quadratic.
             """
 
-            logging.info("Computing dark rate image.")
+            logging.info("Fitting data cube.")
             # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
 
             try:
-                coeffs_array, covars_array = np.polyfit(
+                self.coeffs_array, self.covars_array = np.polyfit(
                     self.time_array,
                     self.data.reshape(len(self.time_array), -1),
                     degree,
@@ -484,42 +494,40 @@ class Dark(ReferenceType):
                     cov=True,
                 )
                 # Reshape the parameter slope array into a 2D rate image.
-                self.rate_image = coeffs_array[0].reshape(
+                self.rate_image = self.coeffs_array[0].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
                 self.rate_image_err = (
-                    covars_array[0, 0, :]
+                    self.covars_array[0, 0, :]
                     .reshape(self.num_i_pixels, self.num_j_pixels)
                     .astype(np.float32)
                 )  # covariance matrix slope variance
 
                 # Reshape the parameter y-intercept array into a 2D image.
-                self.intercept_image = coeffs_array[1].reshape(
+                self.intercept_image = self.coeffs_array[1].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
-                self.intercept_image_err = covars_array[1, 1, :].reshape(
+                self.intercept_image_err = self.covars_array[1, 1, :].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
             except (TypeError, ValueError) as e:
                 logging.error(f"Unable to initialize DarkDataCube with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
-            return coeffs_array
-
-        def make_cube_model(self, coeffs_array, order=1):
+        def make_model(self, order=1):
             """
-            make_cube_model performs a linear or quadratic fit to the input read cube for each pixel. The slope
-            and intercept are calculated along with the covariance matrix which has the corresponding diagonal error
-            estimates for variances in the model fitted parameters.
+            make_data_cube_model uses the calculated fitted coefficients from fit_cube() to create
+            a linear (order=1) or quadratic (order=2) model to the input data cube.
 
-            Save to attribute rate_image, intercept_image, and ramp_model.
+            NOTE: The default behavior for fit_cube() and make_model() utilizes a linear fit to the input
+            data cube of which a linear ramp model is created.
 
-            Currently used for ReadnoiseDataCube
-
-            NOTE: Keep covariance matrices in code for future use determination.
-            TODO - Algorithm on how to incorporate "order"?
-
+            Parameters
+            -------
+            order: int, default=1
+               Order of model to the data cube. Degree = 1 is linear. Degree = 2 is quadratic.
             """
+
             logging.info("Making ramp model for the input read cube.")
             # Reshape the 2D array into a 1D array for input into np.polyfit().
             # The model fit parameters p and covariance matrix v are returned.
@@ -528,43 +536,39 @@ class Dark(ReferenceType):
                 # rate_var = v[0, 0, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO -VERIFY USE
                 # returned covariance matrix intercept error.
                 # intercept_var = v[1, 1, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO - VERIFY USE
-
-                self.data_cube.ramp_model = np.zeros(
+                self.ramp_model = np.zeros(
                     (
-                        self.data_cube.num_reads,
-                        self.data_cube.num_i_pixels,
-                        self.data_cube.num_j_pixels,
+                        self.num_reads,
+                        self.num_i_pixels,
+                        self.num_j_pixels,
                     ),
                     dtype=np.float32,
                 )
-
                 if order == 1:
                     # y = m * x + b
                     # where y is the pixel value for every read,
                     # m is the slope at that pixel or the rate image,
                     # x is time (this is the same value for every pixel in a read)
                     # b is the intercept value or intercept image.
-                    for tt in range(0, len(self.data_cube.time_array)):
-                        self.data_cube.ramp_model[tt, :, :] = (
-                            self.data_cube.rate_image * self.data_cube.time_array[tt]
-                            + self.data_cube.intercept_image
+                    for tt in range(0, len(self.time_array)):
+                        self.ramp_model[tt, :, :] = (
+                            self.rate_image * self.time_array[tt]
+                            + self.intercept_image
                         )
                 elif order == 2:
                     # y = ax^2 + bx + c
                     # where we dont have a single rate image anymore, we have coefficients
-                    for tt in range(0, len(self.data_cube.time_array)):
+                    for tt in range(0, len(self.time_array)):
                         a, b, c = coeffs_array
-                        self.data_cube.ramp_model[tt, :, :] = (
-                            a * self.data_cube.time_array[tt] ** 2
-                            + b * self.data_cube.time_array[tt]
+                        self.ramp_model[tt, :, :] = (
+                            a * self.time_array[tt] ** 2
+                            + b * self.time_array[tt]
                             + c
                         )
-
                 else:
                     raise ValueError(
                         "This function only supports polynomials of order 1 or 2."
                     )
-
             except (ValueError, TypeError) as e:
                 logging.error(f"Unable to make_ramp_cube_model with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error

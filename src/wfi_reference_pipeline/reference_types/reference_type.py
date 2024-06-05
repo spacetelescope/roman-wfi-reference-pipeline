@@ -48,6 +48,12 @@ class ReferenceType(ABC):
 
         self.meta_data = meta_data
         self.file_list = file_list
+        self.outfile = outfile
+        self.clobber = clobber
+
+        #TODO fix importing dq flags from romancal
+        # Load DQ flag definitions from romancal
+        self.dqflag_defs = dqflags.pixel
 
         # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
         if np.shape(bit_mask):
@@ -59,14 +65,11 @@ class ReferenceType(ABC):
             else:
                 self.mask = None
 
-        self.outfile = outfile
-        self.clobber = clobber
-
-        # Load DQ flag definitions from romancal
-        self.dqflag_defs = dqflags.pixel
-
     def check_outfile(self):
-        # Check if the output file exists, and take appropriate action.
+        """
+        Check if the output file exists, and take appropriate action.
+        """
+
         if os.path.exists(self.outfile):
             if self.clobber:
                 os.remove(self.outfile)
@@ -89,15 +92,24 @@ class ReferenceType(ABC):
         os.chmod(self.outfile, 0o777)
         logging.info(f"Saved {self.outfile}")
 
-    # Enforce method for all reference file reftype modules used in schema testing.
+    # Enforce methods for all reference file reftype modules.
     @abstractmethod
     def calculate_error(self):
+        """
+        If applicable, calculate error associated with reference file creation.
+        """
         pass
 
     @abstractmethod
     def update_data_quality_array(self):
+        """
+        If applicable, update the reference file data quality array.
+        """
         pass
 
     @abstractmethod
     def populate_datamodel_tree(self):
+        """
+        Enforcing data model validation before writing file and used in schema testing.
+        """
         pass
