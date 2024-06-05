@@ -131,8 +131,6 @@ class Dark(ReferenceType):
                     "Input data is not a valid numpy array of dimension 3."
                 )
 
-        self.dark_rate_image = None  # Assigned to dark slope in data model.
-
         # MA Table attributes
         # TODO populate from MA Table Config file
         self.ma_table_read_pattern = None  # read pattern from ma table meta data -
@@ -180,6 +178,7 @@ class Dark(ReferenceType):
 
         logging.info(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
+        self.dark_rate_image = self.data_cube.rate_image
 
     def make_ma_table_resampled_data(self,
                                      num_resultants=None,
