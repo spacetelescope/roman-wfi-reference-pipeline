@@ -26,7 +26,7 @@ class Dark(ReferenceType):
 
     #TODO Example method calls using a superdark.asdf file
     dark = Dark(meta_data, file_list=superdark.asdf, ma_table_id=3)
-    dark.get_dark_rate_image_from_data_cube()
+    dark.make_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data()
     dark.calculate_error()
     dark.update_data_quality_array()
@@ -34,7 +34,7 @@ class Dark(ReferenceType):
 
     #TODO Example method calls with a user supplied data cube:
     dark = Dark(meta_data, ref_type_data=user_cube, ...)
-    dark.get_dark_rate_image_from_data_cube()
+    dark.make_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data(None, None, user_read_pattern) for uneven spacing using list of lists
         OR
         dark.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant) for even spacing
@@ -166,7 +166,7 @@ class Dark(ReferenceType):
             data = data.value
         self.data_cube = self.DarkDataCube(data, self.meta_data.type)
 
-    def get_rate_image_from_data_cube(self, fit_order=1):
+    def make_rate_image_from_data_cube(self, fit_order=1):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
 
@@ -174,11 +174,14 @@ class Dark(ReferenceType):
         ----------
         fit_order: integer; Default=None
             The polynomial degree sent to data_cube.fit_cube.
+
+        Returns
+        -------
+        self.data_cube.rate_image: object;
         """
 
-        logging.info(f"Fitting data cube with fit order={fit_order}.")
+        logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
-        self.dark_rate_image = self.data_cube.rate_image
 
     def make_ma_table_resampled_data(self,
                                      num_resultants=None,
@@ -459,7 +462,7 @@ class Dark(ReferenceType):
                 data=ref_type_data,
                 wfi_type=wfi_type,
             )
-            self.rate_image = None  # the slope of the fitted data_cube
+            self.rate_image = None  # The linear slope coefficient of the fitted data cube.
             self.rate_image_err = None  # uncertainty in rate image
             self.intercept_image = None
             self.intercept_image_err = (
@@ -481,7 +484,7 @@ class Dark(ReferenceType):
                 Input order of polynomial to fit data cube. Degree = 1 is linear. Degree = 2 is quadratic.
             """
 
-            logging.info("Fitting data cube.")
+            logging.debug("Fitting data cube.")
             # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
 
             try:
@@ -493,6 +496,7 @@ class Dark(ReferenceType):
                     cov=True,
                 )
                 # Reshape the parameter slope array into a 2D rate image.
+                #TODO the reshape and indices here are for linear degree fit = 1 only; update to handle quadratic also
                 self.rate_image = self.coeffs_array[0].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
@@ -513,10 +517,10 @@ class Dark(ReferenceType):
                 logging.error(f"Unable to initialize DarkDataCube with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
-        def make_model(self, order=1):
+        def make_ramp_model(self, order=1):
             """
-            make_data_cube_model uses the calculated fitted coefficients from fit_cube() to create
-            a linear (order=1) or quadratic (order=2) model to the input data cube.
+            make_ramp_model uses the calculated fitted coefficients from fit_cube() to create
+            a linear (order=1) or quadratic (order=2) model of the input data cube.
 
             NOTE: The default behavior for fit_cube() and make_model() utilizes a linear fit to the input
             data cube of which a linear ramp model is created.
@@ -558,7 +562,7 @@ class Dark(ReferenceType):
                     # y = ax^2 + bx + c
                     # where we dont have a single rate image anymore, we have coefficients
                     for tt in range(0, len(self.time_array)):
-                        a, b, c = coeffs_array
+                        a, b, c = self.coeffs_array
                         self.ramp_model[tt, :, :] = (
                             a * self.time_array[tt] ** 2
                             + b * self.time_array[tt]

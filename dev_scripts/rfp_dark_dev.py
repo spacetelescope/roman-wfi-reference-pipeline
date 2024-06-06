@@ -16,7 +16,7 @@ rfp_dark = Dark(meta_data=tmp.meta_dark,
                 outfile=outfile,
                 clobber=True)
 # Get rate image from data cube.
-rfp_dark.get_rate_image_from_data_cube()
+rfp_dark.make_rate_image_from_data_cube()
 # Average with even spacing.
 rfp_dark.make_ma_table_resampled_data(num_resultants=8, num_reads_per_resultant=6)
 # Save file.
@@ -36,7 +36,7 @@ rfp_dark = Dark(meta_data=tmp.meta_dark,
                 ref_type_data=sim_dev_cube2,
                 outfile=outfile)
 # Get rate image from data cube.
-rfp_dark.get_rate_image_from_data_cube()
+rfp_dark.make_rate_image_from_data_cube()
 # Average with even spacing.
 read_pattern = [
     [1],

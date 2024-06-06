@@ -35,7 +35,7 @@ class TestSchema(unittest.TestCase):
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=None,
                         ref_type_data=test_data)
-        rfp_dark.get_rate_image_from_data_cube()
+        rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.make_ma_table_resampled_data(num_resultants=3, num_reads_per_resultant=1)
 
         # Make test asdf tree

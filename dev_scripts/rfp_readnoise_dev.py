@@ -28,14 +28,14 @@ tmp = MakeDevMeta(ref_type='READNOISE')
 # Set simulated cube readnoise variance for testing of ReadNoise.
 sim_readnoise_var = 5
 # Create simulated data cube.
-sim_dev_cube, dev_rate_image = simulate_dark_reads(20, dark_rate=1, noise_mean=15, noise_var=np.sqrt(sim_readnoise_var))
+sim_dev_cube, dev_rate_image = simulate_dark_reads(40, dark_rate=1, noise_mean=15, noise_var=np.sqrt(sim_readnoise_var))
 # Instantiate rfp readnoise object.
 rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                           ref_type_data=sim_dev_cube,
                           outfile=outfile,
                           clobber=True)
 # Get rate image from data cube.
-rfp_readnoise.get_rate_image_from_data_cube()
+rfp_readnoise.make_rate_image_from_data_cube()
 # Make readnoise image from data cube.
 rfp_readnoise.make_readnoise_image()
 # Save file.

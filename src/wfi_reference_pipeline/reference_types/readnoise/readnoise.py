@@ -30,7 +30,7 @@ class ReadNoise(ReferenceType):
 
     Sample ReadNoise Run:
     readnoise = ReadNoise(...many params...)
-    readnoise.get_rate_image_from_data_cube()
+    readnoise.make_rate_image_from_data_cube()
     readnoise.make_readnoise_image()
     readnoise.comp_ramp_res_var() OR readnoise.comp_cds_noise()
     readnoise.generate_outfile()
@@ -165,14 +165,14 @@ class ReadNoise(ReferenceType):
             if isinstance(
                 ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
-                ref_type_data = self.ref_type_data.value
+                ref_type_data = ref_type_data.value
 
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
         self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
-    def get_rate_image_from_data_cube(self, fit_order=1):
+    def make_rate_image_from_data_cube(self, fit_order=1):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
 
@@ -180,9 +180,13 @@ class ReadNoise(ReferenceType):
         ----------
         fit_order: integer; Default=None
             The polynomial degree sent to data_cube.fit_cube.
+
+        Returns
+        -------
+        self.data_cube.rate_image: object;
         """
 
-        logging.info(f"Fitting data cube with fit order={fit_order}.")
+        logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
     def make_readnoise_image(self):
@@ -191,8 +195,8 @@ class ReadNoise(ReferenceType):
         """
 
         logging.info("Making read noise image.")
-        self.get_rate_image_from_data_cube()
-        self.data_cube.make_model()
+        self.make_rate_image_from_data_cube()
+        self.data_cube.make_ramp_model()
         self.readnoise_image = self.comp_ramp_res_var()
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
@@ -335,7 +339,7 @@ class ReadNoise(ReferenceType):
                 data=ref_type_data,
                 wfi_type=wfi_type,
             )
-            self.rate_image = None  # the slope of the fitted data_cube
+            self.rate_image = None  # The linear slope coefficient of the fitted data cube.
             self.intercept_image = (
                 None  # the y intercept of a line fit to the data_cube
             )
@@ -355,7 +359,7 @@ class ReadNoise(ReferenceType):
                 Input order of polynomial to fit data cube. Degree = 1 is linear. Degree = 2 is quadratic.
             """
 
-            logging.info("Fitting data cube.")
+            logging.debug("Fitting data cube.")
             # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
 
             try:
@@ -367,6 +371,7 @@ class ReadNoise(ReferenceType):
                     cov=True,
                 )
                 # Reshape the parameter slope array into a 2D rate image.
+                #TODO the reshape and indices here are for linear degree fit = 1 only; update to handle quadratic also
                 self.rate_image = self.coeffs_array[0].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
@@ -378,7 +383,7 @@ class ReadNoise(ReferenceType):
                 logging.error(f"Unable to initialize DarkDataCube with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
-        def make_model(self, order=1):
+        def make_ramp_model(self, order=1):
             """
             make_data_cube_model uses the calculated fitted coefficients from fit_cube() to create
             a linear (order=1) or quadratic (order=2) model to the input data cube.
