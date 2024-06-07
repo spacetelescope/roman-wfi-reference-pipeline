@@ -1,5 +1,5 @@
-wfi\_reference\_pipeline.linearity package
-==============================================
+wfi\_reference\_pipeline.reference\_types.linearity package
+===========================================================
 
 Submodules
 ----------
@@ -7,7 +7,7 @@ Submodules
 wfi\_reference\_pipeline.reference\_types.linearity.linearity module
 --------------------------------------------------------------------
 
-.. automodule:: src.wfi_reference_pipeline.reference_types.linearity.linearity
+.. automodule:: wfi_reference_pipeline.reference_types.linearity.linearity
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ wfi\_reference\_pipeline.reference\_types.linearity.linearity module
 Module contents
 ---------------
 
-.. automodule:: src.wfi_reference_pipeline.reference_types.linearity
+.. automodule:: wfi_reference_pipeline.reference_types.linearity
    :members:
    :undoc-members:
    :show-inheritance:

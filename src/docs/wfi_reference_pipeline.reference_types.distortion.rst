@@ -1,5 +1,5 @@
-wfi\_reference\_pipeline.distortion package
-===============================================
+wfi\_reference\_pipeline.reference\_types.distortion package
+============================================================
 
 Submodules
 ----------
@@ -7,7 +7,7 @@ Submodules
 wfi\_reference\_pipeline.reference\_types.distortion.distortion module
 ----------------------------------------------------------------------
 
-.. automodule:: src.wfi_reference_pipeline.reference_types.distortion.distortion
+.. automodule:: wfi_reference_pipeline.reference_types.distortion.distortion
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ wfi\_reference\_pipeline.reference\_types.distortion.distortion module
 Module contents
 ---------------
 
-.. automodule:: src.wfi_reference_pipeline.reference_types.distortion
+.. automodule:: wfi_reference_pipeline.reference_types.distortion
    :members:
    :undoc-members:
    :show-inheritance:

@@ -10,7 +10,7 @@ Welcome to wfi_reference_pipeline's documentation!
    :maxdepth: 3
    :caption: Contents:
 
-   src.wfi_reference_pipeline
+   wfi_reference_pipeline
 
 
 Indices and tables
