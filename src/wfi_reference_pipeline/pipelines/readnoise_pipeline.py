@@ -45,10 +45,11 @@ class ReadnoisePipeline(Pipeline):
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
-        # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
-        files = list(
-            self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf")
-        )
+        files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
+        # files = [str(file) for file in self.ingest_path.glob("*_WFI01_uncal.asdf")]
+        # files = list(
+        #     self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf")
+        # )
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
@@ -65,7 +66,7 @@ class ReadnoisePipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = self.uncal_files
+            file_list = list(map(Path,self.uncal_files))
 
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -114,7 +115,7 @@ class ReadnoisePipeline(Pipeline):
 
         rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                                   file_list=file_list,
-                                  data_array=None,
+                                  ref_type_data=None,
                                   outfile=out_file_path,
                                   clobber=True
         )

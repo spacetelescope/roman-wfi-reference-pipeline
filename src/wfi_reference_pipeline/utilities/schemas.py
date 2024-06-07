@@ -22,7 +22,7 @@ CONFIG_SCHEMA = {
         },
     },
     # List which entries are needed (all of them)
-    "required": ["Logging", "DataFiles"],
+    "required": ["logging", "data_files"],
 }
 
 # Define the schema for quality_control_config.json
@@ -113,4 +113,8 @@ QC_CONFIG_SCHEMA = {
             },
         },
     },
+    "required": [
+        "dark_control",
+        "readnoise_control",
+    ],
 }

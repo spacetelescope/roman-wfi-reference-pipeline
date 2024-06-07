@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
+from wfi_reference_pipeline.utilities.config_handler import get_data_files_config
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 
@@ -25,7 +25,7 @@ class Pipeline(ABC):
         try:
             # Initialize logging named for the derived class
             configure_logging(f"{self.__class__.__name__}")
-            self._datafiles_config = get_datafiles_config()
+            self._datafiles_config = get_data_files_config()
             self.ingest_path = Path(self._datafiles_config["ingest_dir"])
             self.prep_path = Path(self._datafiles_config["prep_dir"])
             self.pipeline_out_path = Path(self._datafiles_config["crds_ready_dir"])
