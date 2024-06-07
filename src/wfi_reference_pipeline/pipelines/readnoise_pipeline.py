@@ -16,21 +16,22 @@ class ReadnoisePipeline(Pipeline):
     """
     Derived from Pipeline Base Class
     This is the entry point for all Readnoise Pipeline functionality
+
     Gives user access to:
-        select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
-        prep_pipeline : Preparing the pipeline using romancal routines and save output
-        run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
-        restart_pipeline: (derived from Pipeline) Run all steps from scratch
+    select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
+    prep_pipeline : Preparing the pipeline using romancal routines and save output
+    run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
+    restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-        readnoise_pipeline = ReadnoisePipeline()
-        readnoise_pipeline.select_uncal_files()
-        readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
-        readnoise_pipeline.run_pipeline(readnoise_pipeline.prepped_files)
+    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline.select_uncal_files()
+    readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
+    readnoise_pipeline.run_pipeline(readnoise_pipeline.prepped_files)
 
-        or
+    or
 
-        readnoise_pipeline.restart_pipeline()
+    readnoise_pipeline.restart_pipeline()
 
     """
 

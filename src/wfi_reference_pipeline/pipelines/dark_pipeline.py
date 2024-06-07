@@ -17,21 +17,22 @@ class DarkPipeline(Pipeline):
     """
     Derived from Pipeline Base Class
     This is the entry point for all Dark Pipeline functionality
+
     Gives user access to:
-        select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
-        prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
-        run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
-        restart_pipeline: (derived from Pipeline) Run all steps from scratch
+    select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
+    prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
+    run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
+    restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-        dark_pipeline = DarkPipeline()
-        dark_pipeline.select_uncal_files()
-        dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
-        dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
+    dark_pipeline = DarkPipeline()
+    dark_pipeline.select_uncal_files()
+    dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
+    dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
 
-        or
+    or
 
-        dark_pipeline.restart_pipeline()
+    dark_pipeline.restart_pipeline()
 
     """
 

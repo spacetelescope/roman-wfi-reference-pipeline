@@ -9,13 +9,15 @@ from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 class Pipeline(ABC):
     """
     Base Class to be used with all reference type pipeline derived classes:
+
     Enforces template of:
-        Standard reftype agnostic initialization
-        Automatic logging configuration for derived class
-        abstractmethod - Selecting level 1 uncalibrated asdf files
-        abstractmethod - Preparing the pipeline using romancal routines
-        abstractmethod - Running the pipeline to calibrate the data in the reference type specific pipeline
-        Restart_pipeline general functionality (run from scratch)
+    Standard reftype agnostic initialization
+    Automatic logging configuration for derived class
+    abstractmethod - Selecting level 1 uncalibrated asdf files
+    abstractmethod - Preparing the pipeline using romancal routines
+    abstractmethod - Running the pipeline to calibrate the data in the reference type specific pipeline
+    Restart_pipeline general functionality (run from scratch)
+
     """
 
     def __init__(self, ref_type):

@@ -211,16 +211,20 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     -----------
     datacube: numpy.ndarray; Datacube with shape (Nreads, Npix, Npix)
               containing all reads of a given image.
+
     time: numpy.ndarray; time at which the frames were taken.
+
     frac_thr: float; Maximum fraction of flagged pixels to consider a read
               as ``good`` to obtain a baseline standard deviation within a read.
               Default 0.5.
+
     nsigma: int; Threshold to consider a pixel in the fit. If the difference
-        between reads is larger than nsigma * sigma, the pixel is considered good.
+            between reads is larger than nsigma * sigma, the pixel is considered good.
 
     Outputs:
     --------
     nframes: int; Number of frames to consider for the fit.
+    
     """
     if len(datacube.shape) != 3:
         raise ValueError('A 3-dimensional datacube is expected')

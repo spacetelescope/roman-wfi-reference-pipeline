@@ -36,11 +36,12 @@ class Dark(ReferenceType):
     dark = Dark(meta_data, ref_type_data=user_cube, ...)
     dark.make_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data(None, None, user_read_pattern) for uneven spacing using list of lists
-        OR
-        dark.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant) for even spacing
+    OR
+    dark.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant) for even spacing
     dark.calculate_error()
     dark.update_data_quality_array()
     dark.generate_outfile()
+
     """
 
     def __init__(
