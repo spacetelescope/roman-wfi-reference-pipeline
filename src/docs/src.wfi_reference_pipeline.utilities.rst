@@ -5,7 +5,7 @@ Submodules
 ----------
 
 wfi\_reference\_pipeline.utilities.basic\_calibration module
-----------------------------------------------------------------
+------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.basic_calibration
    :members:
@@ -13,7 +13,7 @@ wfi\_reference\_pipeline.utilities.basic\_calibration module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.dcl module
--------------------------------------------------
+---------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.dcl
    :members:
@@ -21,7 +21,7 @@ wfi\_reference\_pipeline.utilities.dcl module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.logging\_functions module
-----------------------------------------------------------------
+------------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.logging_functions
    :members:
@@ -29,7 +29,7 @@ wfi\_reference\_pipeline.utilities.logging\_functions module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.manifest module
-------------------------------------------------------
+--------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.manifest
    :members:
@@ -37,7 +37,7 @@ wfi\_reference\_pipeline.utilities.manifest module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.mask module
---------------------------------------------------
+----------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.mask
    :members:
@@ -45,7 +45,7 @@ wfi\_reference\_pipeline.utilities.mask module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.notifications module
------------------------------------------------------------
+-------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.notifications
    :members:
@@ -53,7 +53,7 @@ wfi\_reference\_pipeline.utilities.notifications module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.reference\_file module
--------------------------------------------------------------
+---------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.reference_type
    :members:
@@ -61,7 +61,7 @@ wfi\_reference\_pipeline.utilities.reference\_file module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.simulate\_reads module
--------------------------------------------------------------
+---------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.simulate_reads
    :members:
@@ -69,7 +69,7 @@ wfi\_reference\_pipeline.utilities.simulate\_reads module
    :show-inheritance:
 
 wfi\_reference\_pipeline.utilities.submit\_files module
------------------------------------------------------------
+-------------------------------------------------------
 
 .. automodule:: src.wfi_reference_pipeline.utilities.submit_files
    :members:

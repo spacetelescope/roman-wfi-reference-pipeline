@@ -4,10 +4,10 @@ wfi\_reference\_pipeline.read\_noise package
 Submodules
 ----------
 
-wfi\_reference\_pipeline.read\_noise.read\_noise module
------------------------------------------------------------
+wfi\_reference\_pipeline.reference\_types.read\_noise.read\_noise module
+------------------------------------------------------------------------
 
-.. automodule:: src.wfi_reference_pipeline.read_noise.read_noise
+.. automodule:: src.wfi_reference_pipeline.reference_types.read_noise.read_noise
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ wfi\_reference\_pipeline.read\_noise.read\_noise module
 Module contents
 ---------------
 
-.. automodule:: src.wfi_reference_pipeline.read_noise
+.. automodule:: src.wfi_reference_pipeline.reference_types.read_noise
    :members:
    :undoc-members:
    :show-inheritance:

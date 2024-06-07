@@ -4,10 +4,10 @@ wfi\_reference\_pipeline.saturation package
 Submodules
 ----------
 
-wfi\_reference\_pipeline.saturation.saturation module
----------------------------------------------------------
+wfi\_reference\_pipeline.reference\_types.saturation.saturation module
+----------------------------------------------------------------------
 
-.. automodule:: src.wfi_reference_pipeline.saturation.saturation
+.. automodule:: src.wfi_reference_pipeline.reference_types.saturation.saturation
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ wfi\_reference\_pipeline.saturation.saturation module
 Module contents
 ---------------
 
-.. automodule:: src.wfi_reference_pipeline.saturation
+.. automodule:: src.wfi_reference_pipeline.reference_types.saturation
    :members:
    :undoc-members:
    :show-inheritance:
