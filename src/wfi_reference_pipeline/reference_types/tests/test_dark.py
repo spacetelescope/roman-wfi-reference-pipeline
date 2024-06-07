@@ -34,7 +34,7 @@ class TestDark:
         with pytest.raises(TypeError):
             Dark(dark_object.meta_data, ref_type_data='not_data.txt')
 
-    def test_dark_with_valid_data_array_pass(self, dark_object):
+    def test_dark_with_valid_ref_type_data_pass(self, dark_object):
         assert isinstance(dark_object, Dark)
         assert dark_object.outfile == "roman_dark.asdf"
         assert dark_object.meta_data.description == "For RFP testing."

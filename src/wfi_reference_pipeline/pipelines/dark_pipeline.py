@@ -118,7 +118,7 @@ class DarkPipeline(Pipeline):
 
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=file_list,
-                        data_array=None,
+                        ref_type_data=None,
                         outfile=out_file_path,
                         clobber=True
         )

@@ -59,7 +59,7 @@ class DarkQualityControl:
         """
         print("Executing check_mean_dark_rate")
         return
-        rfp_dark_mean_rate = np.mean(self.rfp_dark.data_array)  # Assuming rfp_dark_data is a numpy array
+        rfp_dark_mean_rate = np.mean(self.rfp_dark.ref_type_data)  # Assuming rfp_dark_data is a numpy array
         logging.info(
             f"Mean dark rate for detector {self.rfp_dark.meta_data['detector']} mode {self.rfp_dark.meta_data['mode']} is {rfp_dark_mean_rate:.3f} dn/s")
 
