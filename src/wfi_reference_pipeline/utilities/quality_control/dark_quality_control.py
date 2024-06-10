@@ -124,7 +124,7 @@ class DarkQualityControl:
         """
 
 
-        qc_checks_all = True
+        # qc_checks_all = True  # TODO not used
         return True
 
     def send_results_to_rtdb(self):
@@ -133,7 +133,7 @@ class DarkQualityControl:
 
         """
 
-    def Update_reference_table_in_rtbdb(self):
+    def update_reference_table_in_rtbdb(self):
         """
         Need method to update reference values in rtbdb at some point if desired
         :return:
