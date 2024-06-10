@@ -6,22 +6,7 @@ from wfi_reference_pipeline.constants import (
     CONFIG_PATH,
     WFI_REF_TYPES,
     REF_TYPE_DARK,
-    REF_TYPE_DISTORTION,
-    REF_TYPE_FLAT,
-    REF_TYPE_GAIN,
-    REF_TYPE_INVERSELINEARITY,
-    REF_TYPE_IPC,
-    REF_TYPE_LINEARITY,
-    REF_TYPE_MASK,
-    REF_TYPE_PIXELAREA,
     REF_TYPE_READNOISE,
-    REF_TYPE_REF_COMMON,
-    REF_TYPE_REF_EXPOSURE_TYPE,
-    REF_TYPE_REF_OPTICAL_ELEMENT,
-    REF_TYPE_REFPIX,
-    REF_TYPE_SATURATION,
-    REF_TYPE_SUPERBIAS,
-    REF_TYPE_WFI_IMG_PHOTOM
 )
 from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA
 
@@ -110,26 +95,29 @@ def _get_config(config_filename):
 
 def get_logging_config(config_file="config.yml"):
     # Ensure the file has all the needed entries with expected data types
-    settings = _get_config(config_file)["logging"]
+    settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
-    return settings
+    return settings["logging"]
 
 
-def get_datafiles_config(config_file="config.yml"):
-    settings = _get_config(config_file)["data_files"]
+def get_data_files_config(config_file="config.yml"):
+    settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
-    return settings
+    return settings["data_files"]
 
 
 def get_quality_control_config(ref_type, config_file="quality_control_config.yml"):
     """Get configuration settings from quality_control_config.yml for any reference type
     Validate that the settings are in the correct format before returning
     """
+    setting_type = ""
     try:
         if ref_type == REF_TYPE_DARK:
-            settings = _get_config(config_file)["dark_control"]
+            settings = _get_config(config_file)
+            setting_type = "dark_control"
         elif ref_type == REF_TYPE_READNOISE:
             settings = _get_config(config_file)["readnoise_control"]
+            setting_type = "readnoise_control"
         else:
             raise ValueError(
                 f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
@@ -139,4 +127,4 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
 
 
     _validate_config(settings, QC_CONFIG_SCHEMA)
-    return settings
+    return settings[setting_type]

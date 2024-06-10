@@ -4,7 +4,7 @@
 # TODO - DELETE WHEN NOT NEEDED OR UPDATE INFORMATION AND INCLUDE IN TEST SUITE
 
 import asdf, sys, os, glob, logging, time
-from wfi_reference_pipeline.utilities.config_handler import get_datafiles_config
+from wfi_reference_pipeline.utilities.config_handler import get_data_files_config
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
@@ -54,7 +54,7 @@ rfp_readnoise_pipe_only = 0
 if rfp_readnoise_pipe_only == 1:
 
     #ingest prepped data
-    prep_dir = get_datafiles_config()["prep_dir"]
+    prep_dir = get_data_files_config()["prep_dir"]
     prep_path = Path(prep_dir)
 
     # Get all readnoise files in the directory

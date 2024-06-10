@@ -19,10 +19,10 @@ dark_control:
     max_mean_dark_rate_reference_value: 0.01
     max_med_dark_rate_reference_value: 0.01
     max_std_dark_rate_reference_value: 0.01
-    max_num_hot_pix_reference_value: 1e6
-    max_num_dead_pix_reference_value: 1e6
-    max_num_unreliable_pix_reference_value: 1e6
-    max_num_warm_pix_reference_value: 1e6
+    max_num_hot_pix_reference_value: 1.0e+6
+    max_num_dead_pix_reference_value: 1.0e+6
+    max_num_unreliable_pix_reference_value: 1.0e+6
+    max_num_warm_pix_reference_value: 1.0e+6
 
 readnoise_control:
   checks:

@@ -10,28 +10,29 @@ from wfi_reference_pipeline.reference_types.dark.dark import Dark
 #from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
-from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb
+# from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb # TODO not used
 
 
 class DarkPipeline(Pipeline):
     """
     Derived from Pipeline Base Class
     This is the entry point for all Dark Pipeline functionality
+
     Gives user access to:
-        select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
-        prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
-        run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
-        restart_pipeline: (derived from Pipeline) Run all steps from scratch
+    select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
+    prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
+    run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
+    restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-        dark_pipeline = DarkPipeline()
-        dark_pipeline.select_uncal_files()
-        dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
-        dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
+    dark_pipeline = DarkPipeline()
+    dark_pipeline.select_uncal_files()
+    dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
+    dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
 
-        or
+    or
 
-        dark_pipeline.restart_pipeline()
+    dark_pipeline.restart_pipeline()
 
     """
 
@@ -118,11 +119,11 @@ class DarkPipeline(Pipeline):
 
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=file_list,
-                        data_array=None,
+                        ref_type_data=None,
                         outfile=out_file_path,
                         clobber=True
         )
-        ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)
+        # ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)  # TODO currently not used
         read_pattern = [[1], [2,3], [5,6,7], [10]]
         rfp_dark.make_ma_table_resampled_cube(read_pattern=read_pattern)
         rfp_dark.make_dark_rate_image()

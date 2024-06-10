@@ -142,26 +142,33 @@ class Distortion(ReferenceType):
         https://github.com/spacetelescope/pystortion/blob/2366d010564a8cea49534eb0af605d6374576d71/pystortion/crossmatch.py
         Docs:
         https://www.stsci.edu/files/live/sites/www/files/home/jwst/documentation/technical-documents/_documents/JWST-STScI-001550.pdf
+
         Inputs
         ------
         detector (string):
-            Name of the detector for which the distortion model is constructed.
-            For example: WFI01.
+        Name of the detector for which the distortion model is constructed.
+        For example: WFI01.
+
         img (np.array):
-            Array containing the calibration image used to estimate the distortion coefficients.
+        Array containing the calibration image used to estimate the distortion coefficients.
+
         refcat_path (string):
-            Path to reference catalog.
+        Path to reference catalog.
+
         degree (int):
-            Degree of the 2D polynomial to use.
+        Degree of the 2D polynomial to use.
+
         init_as_siaf (bool):
-            If `True` initialize the fit with the SIAF values. If `False` initialize
-            at zero.
+        If `True` initialize the fit with the SIAF values. If `False` initialize
+        at zero.
+
         niter (int):
-            Number of iterations to pass to FittingWithOutlierRemoval.
+        Number of iterations to pass to FittingWithOutlierRemoval.
 
         Returns
         -------
         None
+
         """
 
         # TODO - NOTE!  MANY LINES OF CODE HERE ARE COMMENTED OUT BECAUSE THEY DEPEND UPON A MISSING METHOD ReferenceCatalog
