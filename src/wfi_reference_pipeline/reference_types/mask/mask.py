@@ -1,7 +1,13 @@
-import roman_datamodels.stnode as rds
-from ..reference_type import ReferenceType
-import asdf
+import datetime
+import logging
+
 import numpy as np
+import roman_datamodels as rdm
+import roman_datamodels.stnode as rds
+from astropy import units as u
+from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
+
+from ..reference_type import ReferenceType
 
 
 class Mask(ReferenceType):
@@ -9,17 +15,16 @@ class Mask(ReferenceType):
     Class Mask() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method make_mask() creates the asdf mask file.
-
-    Mask() inhereits reference file base class self.input_data from mask_image
     """
 
     def __init__(
         self,
-        mask_image,
         meta_data,
+        file_list=None,
+        ref_type_data=None,
         bit_mask=None,
         outfile="roman_mask.asdf",
-        clobber=False
+        clobber=False,
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -27,38 +32,53 @@ class Mask(ReferenceType):
 
         Parameters
         ----------
-        mask_image: numpy array; unit32
-            User input mask
-        meta_data: dictionary;
-            Dictionary of information for reference file as required by romandatamodels.
-        bit_mask: 2D integer numpy array, default=None
-            A 2D data quality integer array for supplying a mask.
-        outfile: string; default=roman_mask.asdf
-            Filename with path for saved mask reference file.
-        clobber: Boolean; default=False
-            True to overwrite the file name outfile if file already exists. False will not overwrite and exception
-            will be raised if duplicate file is found.
-        -------
-        self.input_data: variable;
-            The first positional variable in the Mask class instance assigned in base class ReferenceType().
-            For Mask() self.input_data is a user input uint32 array.
-            #TODO look at bit_mask vs mask_image possibly redundant
+        meta_data: Object; default = None
+            Object of meta information converted to dictionary when writing reference file.
+        file_list: List of strings; default = None
+            List of file names with absolute paths. Intended for primary use during automated operations.
+        ref_type_data: numpy array; default = None
+            Input data cube. Intended for development support file creation or as input
+            for reference file types not generated from a file list.
+        bit_mask: 2D integer numpy array, default = None
+            A 2D data quality integer mask array to be applied to reference file.
+        outfile: string; default = roman_mask.asdf
+            File path and name for saved reference file.
+        clobber: Boolean; default = False
+            True to overwrite outfile if outfile already exists. False will not overwrite and exception
+            will be raised if duplicate file found.
+        ---------
+        NOTE - For parallelization only square arrays allowed.
+
+        See reference_type.py base class for additional attributes and methods.
         """
 
         # Access methods of base class ReferenceType
         super().__init__(
-            mask_image,
-            meta_data,
+            meta_data=meta_data,
+            file_list=file_list,
+            ref_type_data=ref_type_data,
             bit_mask=bit_mask,
+            outfile=outfile,
             clobber=clobber,
-            make_mask=True,
+            make_mask=False,
         )
 
-        # Update metadata with file type info if not included.
-        if "description" not in self.meta.keys():
-            self.meta["description"] = "Roman WFI mask reference file."
-        if "reftype" not in self.meta.keys():
-            self.meta["reftype"] = "MASK"
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaMask):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaMask"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI mask reference file."
+
+        if not (isinstance(ref_type_data, np.ndarray) and
+                ref_type_data.dtype == np.uint32 and
+                ref_type_data.shape == (4096, 4096)):
+            raise ValueError("ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096")
+        else:
+            self.mask = ref_type_data
+
+        logging.debug(f"Default mask reference file object: {outfile} ")
 
         # Initialize attributes
         self.outfile = outfile
@@ -76,47 +96,39 @@ class Mask(ReferenceType):
         refpix_mask[:, -4:] = 2**31
         self.mask += refpix_mask
 
-    def make_mask_image(self):
+    def _add_random_bad_pixels(self):
         """
-        Add some randomly bad pixels and
+        Method to add some randomly located bad pixels.
         """
 
-        self._update_mask_ref_pixels()
-        # randomly assigning 750-850 pixels as bad pixels that dont interfere with reference pixels
+        # Randomly assigning 750-850 pixels as bad pixels that dont interfere with reference pixels
         rand_num_badpixels = np.random.randint(750, 850)
         coords_x = np.random.randint(4, 4091, rand_num_badpixels)
         coords_y = np.random.randint(4, 4091, rand_num_badpixels)
         self.mask[coords_x, coords_y] += 2**0
 
-        # Use supplied mask image if it was provided.
-        if self.input_data is not None:
-            if isinstance(self.input_data, np.ndarray) and self.input_data.dtype == np.uint32 \
-                    and self.input_data.shape == (4096, 4096):
-                self.mask += self.input_data
-            else:
-                raise ValueError("Input mask is not type unit32 or size 4096x4096.")
+    def calculate_error(self):
+        """
+        Abstract method not applicable to Mask.
+        """
+
+        pass
+
+    def update_data_quality_array(self):
+        """
+        Update mask array by always ensuring the reference pixels are flagged.
+        """
+
+        self._update_mask_ref_pixels()
 
     def populate_datamodel_tree(self):
         """
         Create data model from DMS and populate tree.
         """
 
-        # Construct the dark object from the data model.
+        # Construct the mask object from the data model.
         mask_datamodel_tree = rds.MaskRef()
-        mask_datamodel_tree['meta'] = self.meta
+        mask_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         mask_datamodel_tree['dq'] = self.mask
 
         return mask_datamodel_tree
-
-    def save_mask(self, datamodel_tree=None):
-        """
-        The method save_mask writes the reference file object to the specified asdf outfile.
-        """
-
-        # Use data model tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)

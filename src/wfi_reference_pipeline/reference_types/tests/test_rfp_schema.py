@@ -162,7 +162,7 @@ class TestSchema(unittest.TestCase):
         # If none, then datamodel tree is valid.
         assert tf.validate() is None
 
-    @pytest.mark.skip(reason="Temporarily disabled test")
+    #@pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_mask_schema(self):
         """
         Use the WFI reference file pipeline Mask() module to build
@@ -171,11 +171,11 @@ class TestSchema(unittest.TestCase):
 
         # Make reftype specific data class object and export meta data as dict.
         tmp = MakeTestMeta(ref_type='MASK')
-        mask_test_meta = tmp.meta_mask.export_asdf_meta()
-
-        # Make RFP Mask reference file object for testing.
-        rfp_mask = Mask(None, meta_data=mask_test_meta)
-
+        test_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        # Instantiate rfp mask object.
+        rfp_mask = Mask(meta_data=tmp.meta_mask,
+                        file_list=None,
+                        ref_type_data=test_mask)
         # Make test asdf tree
         tf = asdf.AsdfFile()
         tf.tree = {'roman': rfp_mask.populate_datamodel_tree()}
