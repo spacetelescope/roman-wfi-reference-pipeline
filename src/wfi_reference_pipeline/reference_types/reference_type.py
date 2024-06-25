@@ -77,9 +77,17 @@ class ReferenceType(ABC):
                 raise FileExistsError(f'''{self.outfile} already exists, 
                                         and clobber={self.clobber}!''')
 
-    def generate_outfile(self, datamodel_tree=None):
+    def generate_outfile(self, datamodel_tree=None, file_permission=0o666):
         """
         Writes the reference file object to the specified asdf outfile.
+
+        Parameters
+        ----------
+        datamodel_tree: dict, default = None
+            A reftype specific dictionary built from roman data models
+        file_permission: octal string, default = 0o666
+            Default file permission is rw-rw-rw- in symbolic notation meaning:
+            owner, group and others have read and write permissions.
         """
 
         # Use datamodel tree if supplied. Else write tree from module.
@@ -89,7 +97,7 @@ class ReferenceType(ABC):
         else:
             af.tree = {'roman': self.populate_datamodel_tree()}
         af.write_to(self.outfile)
-        os.chmod(self.outfile, 0o777)
+        os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
 
     # Enforce methods for all reference file reftype modules.

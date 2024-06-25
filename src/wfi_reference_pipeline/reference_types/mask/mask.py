@@ -70,7 +70,7 @@ class Mask(ReferenceType):
         if not (isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
                 ref_type_data.shape == (4096, 4096)):
-            raise ValueError("ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096")
+            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096")
         else:
             self.mask = ref_type_data
 
