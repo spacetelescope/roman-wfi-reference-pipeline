@@ -1,4 +1,3 @@
-import os
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
@@ -17,8 +16,6 @@ rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                           clobber=True)
 # Save file.
 rfp_readnoise.generate_outfile()
-# Set file permissions to read+write for owner, group and global.
-os.chmod(outfile, 0o666)
 
 
 print('Dev to make ReadNoise with a simulated dark cube.')
@@ -40,8 +37,6 @@ rfp_readnoise.make_rate_image_from_data_cube()
 rfp_readnoise.make_readnoise_image()
 # Save file.
 rfp_readnoise.generate_outfile()
-# Set file permissions to read+write for owner, group and global.
-os.chmod(outfile, 0o666)
 
 #TODO for readnoise testing
 print(np.mean(rfp_readnoise.readnoise_image),np.median(rfp_readnoise.readnoise_image), sim_readnoise_var)

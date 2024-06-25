@@ -1,4 +1,3 @@
-import os
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities import simulate_reads
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
@@ -21,8 +20,6 @@ rfp_dark.make_rate_image_from_data_cube()
 rfp_dark.make_ma_table_resampled_data(num_resultants=8, num_reads_per_resultant=6)
 # Save file.
 rfp_dark.generate_outfile()
-# Set file permissions to read+write for owner, group and global.
-os.chmod(outfile, 0o666)
 
 
 print('Dev to make Dark with from read pattern uneven spacing.')
@@ -53,8 +50,6 @@ read_pattern = [
 rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
 # Save file.
 rfp_dark.generate_outfile()
-# Set file permissions to read+write for owner, group and global.
-os.chmod(outfile, 0o666)
 
 #TODO for tests
 # use simulate_reads.simulate_dark_reads with a specific rate and no noise, and generate a cube of reads, then use rfp Dark to fit cube and get rate image to compare
