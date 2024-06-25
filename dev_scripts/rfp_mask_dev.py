@@ -23,5 +23,3 @@ rfp_mask = Mask(meta_data=tmp.meta_mask,
 rfp_mask.update_data_quality_array()
 # Save file.
 rfp_mask.generate_outfile()
-# Set file permissions to read+write for owner, group and global.
-os.chmod(outfile, 0o666)
