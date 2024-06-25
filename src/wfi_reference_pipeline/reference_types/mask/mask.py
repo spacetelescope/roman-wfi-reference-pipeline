@@ -1,10 +1,6 @@
-import datetime
 import logging
-
 import numpy as np
-import roman_datamodels as rdm
 import roman_datamodels.stnode as rds
-from astropy import units as u
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 
 from ..reference_type import ReferenceType

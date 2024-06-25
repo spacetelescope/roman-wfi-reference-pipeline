@@ -162,7 +162,6 @@ class TestSchema(unittest.TestCase):
         # If none, then datamodel tree is valid.
         assert tf.validate() is None
 
-    #@pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_mask_schema(self):
         """
         Use the WFI reference file pipeline Mask() module to build
