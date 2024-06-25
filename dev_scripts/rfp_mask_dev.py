@@ -1,4 +1,3 @@
-import os
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 import numpy as np
