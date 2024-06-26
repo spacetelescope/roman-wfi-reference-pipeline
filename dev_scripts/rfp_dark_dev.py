@@ -18,11 +18,13 @@ rfp_dark = Dark(meta_data=tmp.meta_dark,
 rfp_dark.make_rate_image_from_data_cube()
 # Average with even spacing.
 rfp_dark.make_ma_table_resampled_data(num_resultants=8, num_reads_per_resultant=6)
+# Update the data quality array.
+rfp_dark.update_data_quality_array()
 # Save file.
 rfp_dark.generate_outfile()
 
 
-print('Dev to make Dark with from read pattern uneven spacing.')
+print('Dev to make Dark from read pattern uneven spacing.')
 outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp = MakeDevMeta(ref_type='DARK')
@@ -34,7 +36,7 @@ rfp_dark = Dark(meta_data=tmp.meta_dark,
                 outfile=outfile)
 # Get rate image from data cube.
 rfp_dark.make_rate_image_from_data_cube()
-# Average with even spacing.
+# Resample and average according to read pattern.
 read_pattern = [
     [1],
     [2, 3],
@@ -48,6 +50,8 @@ read_pattern = [
     [48]
 ]
 rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
+# Update the data quality array.
+rfp_dark.update_data_quality_array()
 # Save file.
 rfp_dark.generate_outfile()
 
@@ -55,3 +59,26 @@ rfp_dark.generate_outfile()
 # use simulate_reads.simulate_dark_reads with a specific rate and no noise, and generate a cube of reads, then use rfp Dark to fit cube and get rate image to compare
 print(np.amax(rfp_dark.data_cube.rate_image - sim_dev_rate_image))
 print(np.amin(rfp_dark.data_cube.rate_image - sim_dev_rate_image))
+
+
+print('Dev to make Dark from read pattern with uneven spacing for RDMT-local Hack Day.')
+outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
+# Use dev meta to instantiate rfp dark object.
+tmp = MakeDevMeta(ref_type='DARK')
+# Simulate a cube of dark reads.
+sim_dev_cube3, sim_dev_rate_image3 = simulate_reads.simulate_dark_reads(18)
+# Instantiate rfp dark object.
+rfp_dark = Dark(meta_data=tmp.meta_dark,
+                ref_type_data=sim_dev_cube3,
+                outfile=outfile)
+# Get rate image from data cube.
+rfp_dark.make_rate_image_from_data_cube()
+# Resample and average according to read pattern.
+read_pattern = [[1],
+                [2, 3],
+                [4, 5, 6, 7, 8, 9, 10]]
+rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
+# Update the data quality array.
+rfp_dark.update_data_quality_array()
+# Save file.
+rfp_dark.generate_outfile()
