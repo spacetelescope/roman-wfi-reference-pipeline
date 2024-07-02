@@ -10,6 +10,7 @@ from pathlib import Path
 import roman_datamodels as rdm
 import psutil
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 
 def get_mem_usage():
@@ -60,6 +61,7 @@ class SuperDark:
         self.superdark_a = None
         self.superdark_b = None
         self.superdark_c = None
+        self.superdark_d = None
         self.meta_data = None
         self.max_reads = None
         self.n_reads_list = None
@@ -70,14 +72,18 @@ class SuperDark:
         """
         This method uses rdm.open() to get all of the meta relevant in generating the super dark.
 
-        NOTE: Future Consideration - This method may be deemed unnecessary given information from DAAPI
-        during RFP queries to get data.
-
         NOTE: Processing Time and Memory - This method takes around 500 seconds on average to process
         opening and extracting meta from the 50 files for WFI01 according to the in-flight calibration
         program from Casertano et al. 2022. Since each file is opened here on;y for meta data, time is
         saved when generating the super dark since not every file needs to be opened and on the fly
         checked for the number of reads and if its data should be included.
+
+        UPDATE JUNE 2024 - Future Considerations - After reviewing the RFP with Megan Sosey on 6-11-24
+        we have determined that prior knowledge of file contents is possible from DAAPI and that this
+        method is unnecessary.  This code will remain until the methodology exploration is complete
+        for completeness but for now, we will start adapting methods to assume that we know the shape
+        of file data and other meta and pass it along with the file lists for short and long darks, being
+        flexible but more efficient.
 
         """
 
@@ -268,6 +274,9 @@ class SuperDark:
         file_list_sorted: list, default = None
             A list of the sorted by filenames and shortest to longest number of reads in each
             in-flight calibration plan dark exposure.
+
+        *** THIS IS NOT A VALID APPROACH AS IT DOES NOT ALLOW FOR PROPER COSMIC RAY REJECTION***
+
         """
 
         self.n_reads_list = n_reads_list_sorted
@@ -324,89 +333,94 @@ class SuperDark:
         logging.info(f"Total time taken for method B: {elapsed_time:.2f} seconds")
 
     def make_superdark_method_c(self,
+                                short_dark_file_list=None,
+                                short_dark_num_reads=46,
+                                long_dark_file_list=None,
+                                long_dark_num_reads=98,
                                 sig_clip_sd_low=3.0,
-                                sig_clip_sd_high=3.0,
-                                max_reads=98,
-                                n_reads_list_sorted=None,
-                                file_list_sorted=None):
-
+                                sig_clip_sd_high=3.0
+                                ):
         """
-        This method does a file I/O open, read, append to a temporary read cube, sigma clip, and then average
-        approach for every read available in each exposure/file used in creating the super dark cube. Starting
-        with the first read index 0, checks the file to be opened has a read frame matching the rd index. If it
-        does not, representing a file with fewer reads than the maximum number of reads from the file list,
-        the file is not opened. If the file does contain a read frame for the read index rd, then it is opened,
-        the data extracted for that read only and appended to a temporary cube representing that read for all
-        of the files in the file list. That cube is then sigma clipped to remove outliers - aka cosmic rays -
-        and averaged to produce mean pixel dark value for that read up the ramp.
+        This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
+        approach for every read in both short and long darks in creating the super dark cube. Starting with
+        read index 0 all files that have the read index in the allowed range will be opened and the frame from
+        each exposure extracted and inserted into a temporary cube representing the number of files available
+        for that read.
 
         Parameters
         ----------
-        sig_clip_sd_low: float; default = 3.0
+        short_dark_file_list : list, default = None
+            List of short dark exposure files.
+        long_dark_file_list : list, default = None
+            List of long dark exposure files.
+        short_dark_num_reads : int, default = 46
+            Number of reads in short dark exposures.
+        long_dark_num_reads : int, default = 98
+            Number of reads in long dark exposures.
+        sig_clip_sd_low : float, default = 3.0
             Lower bound limit to filter data.
-        sig_clip_sd_high: float; default = 3.0
-            Upper bound limit to filter data
-        max_reads: int; default = 98
-            The number of reads in the long dark exposures from the in-flight calibration plan.
-        n_reads_list_sorted: list, default = None
-            A list of integers representing the ordered number of reads of each dark exposure from
-            the in-flight calibration plan. Short darks have 46 reads. Long darks have 98 reads.
-        file_list_sorted: list, default = None
-            A list of the sorted by filenames and shortest to longest number of reads in each
-            in-flight calibration plan dark exposure.
+        sig_clip_sd_high : float, default = 3.0
+            Upper bound limit to filter data.
         """
         current_datetime = datetime.now()
         print("Current date and time:", current_datetime)
-
-        # Uncomment these or figure out a way to have inputs
-        # self.n_reads_list = n_reads_list_sorted
-        # self.file_list = file_list_sorted
-        # self.max_reads = max_reads
-        self.superdark_c = np.zeros((self.max_reads, 4096, 4096), dtype=np.float32)
 
         timing_start_method_c = time.time()
         print("Testing super dark method c.")
         print(f"Memory used at start of method c: {get_mem_usage():.2f} GB")
         logging.info("Testing super dark method c.")
         logging.info(f"Memory used at start of method c: {get_mem_usage():.2f} GB")
-        for read_i in range(0, self.max_reads):
+
+        num_short_dark_files = len(short_dark_file_list)
+        num_long_dark_files = len(long_dark_file_list)
+        self.superdark_c = np.zeros((long_dark_num_reads, 4096, 4096), dtype=np.float32)
+
+        for read_i in range(long_dark_num_reads):
             timing_start_method_c_rd_loop = time.time()
-            logging.info(f"On read {read_i} of {self.max_reads}")
-            print(f"On read {read_i} of {self.max_reads}")
-            self.read_i_from_all_files = np.zeros((len(self.file_list), 4096, 4096), dtype=np.float32)
-            for file_f in range(0, len(self.file_list)):
-                file_name = self.file_list[file_f]
-                file_path = self.input_path.joinpath(file_name)
-                if read_i <= self.n_reads_list[file_f]:
-                    # If the file to be opened has a valid read index then open the file and
-                    # get its data and increase the file counter. Separating short
-                    # darks with only 46 reads from long darks with 98 reads.
+            logging.info(f"On read {read_i} of {long_dark_num_reads}")
+            print(f"On read {read_i} of {long_dark_num_reads}")
+
+            self.read_i_from_all_files = np.zeros((num_short_dark_files + num_long_dark_files, 4096, 4096), dtype=np.float32)
+
+            for file_f in range(max(num_short_dark_files, num_long_dark_files)):
+
+                # Process short dark files
+                if file_f < num_short_dark_files:
+                    short_dark_file_name = short_dark_file_list[file_f]
+                    short_dark_file_path = self.input_path.joinpath(short_dark_file_name)
                     try:
-                        with rdm.open(file_path) as af:
-                            logging.info(f"Opening file {file_path}")
-                            #print(f"Opening file {file_path}")
+                        with rdm.open(short_dark_file_path) as af:
+                            logging.info(f"Opening file {short_dark_file_path}")
                             data = af.data
-                            if isinstance(data, u.Quantity):  # Only access data from quantity object.
+                            if isinstance(data, u.Quantity):
                                 data = data.value
                             self.read_i_from_all_files[file_f, :, :] = data[read_i, :, :]
                             print(f"Memory in file loop method C: {get_mem_usage():.2f} GB")
                     except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
-                        logging.warning(f"Could not open {file_path} - {e}")
-                else:
-                    # Skip this file if it has less reads than the read index.
-                    print('skipping file', file_path)
-                    continue
+                        logging.warning(f"Unable to open short dark file {short_dark_file_path} - {e}")
+                        continue
+
+                # Process long dark files
+                if file_f < num_long_dark_files:
+                    long_dark_file_name = long_dark_file_list[file_f]
+                    long_dark_file_path = self.input_path.joinpath(long_dark_file_name)
+                    try:
+                        with rdm.open(long_dark_file_path) as af:
+                            logging.info(f"Opening file {long_dark_file_path}")
+                            data = af.data
+                            if isinstance(data, u.Quantity):
+                                data = data.value
+                            self.read_i_from_all_files[file_f + num_short_dark_files, :, :] = data[read_i, :, :]
+                            print(f"Memory in file loop method C: {get_mem_usage():.2f} GB")
+                    except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
+                        logging.warning(f"Unable to open long dark file {long_dark_file_path} - {e}")
+                        continue
 
                 print(f"Memory at end of file loop in method C: {get_mem_usage():.2f} GB")
-                del af, data
                 gc.collect()
 
-            nonzero_reads = np.where(~np.all(self.read_i_from_all_files == 0, axis=(1, 2)))[0]
-            read_i_reduced_cube = self.read_i_from_all_files[nonzero_reads]
-            # Remove NaNs from the array using boolean indexing
-            read_i_reduced_cube_no_nans = read_i_reduced_cube[~np.isnan(read_i_reduced_cube)]
             print('Sigma clipping reads from all files for read')
-            clipped_reads = sigma_clip(read_i_reduced_cube_no_nans,
+            clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
                                        sigma_upper=sig_clip_sd_high,
                                        cenfunc=np.mean,
@@ -416,12 +430,11 @@ class SuperDark:
             self.superdark_c[read_i, :, :] = np.mean(clipped_reads, axis=0)
 
             print(f"Memory used at end of read index loop method C: {get_mem_usage():.2f} GB")
-            del read_i_reduced_cube, read_i_reduced_cube_no_nans, clipped_reads, self.read_i_from_all_files
+            del clipped_reads, self.read_i_from_all_files
             gc.collect()
             timing_end_method_c_rd_loop = time.time()
             elapsed_time = timing_end_method_c_rd_loop - timing_start_method_c_rd_loop
             print(f"Read loop c time: {elapsed_time:.2f} seconds")
-            #break
 
             current_datetime = datetime.now()
             print("Current date and time:", current_datetime)
@@ -432,6 +445,162 @@ class SuperDark:
         logging.info(f"Total time taken for method c: {elapsed_time:.2f} seconds")
 
         self.superdark = self.superdark_c
+
+    def make_superdark_method_d(self,
+                                sig_clip_sd_low=3.0,
+                                sig_clip_sd_high=3.0,
+                                max_reads=98,
+                                n_reads_list_sorted=None,
+                                file_list_sorted=None):
+        """
+        Create a super dark cube by processing reads from multiple files and sigma clipping outliers.
+
+        Parameters
+        ----------
+        sig_clip_sd_low : float, default = 3.0
+            Lower bound limit to filter data.
+        sig_clip_sd_high : float, default = 3.0
+            Upper bound limit to filter data.
+        max_reads : int, default = 98
+            The number of reads in the long dark exposures.
+        n_reads_list_sorted : list, default = None
+            A list of integers representing the ordered number of reads of each dark exposure.
+        file_list_sorted : list, default = None
+            A list of filenames sorted by the shortest to longest number of reads in each dark exposure.
+        """
+        current_datetime = datetime.now()
+        print("Current date and time:", current_datetime)
+
+        self.superdark_d = np.zeros((self.max_reads, 4096, 4096), dtype=np.float32)
+        timing_start_method_d = time.time()
+        print("Testing super dark method d.")
+        print(f"Memory used at start of method d: {get_mem_usage():.2f} GB")
+        logging.info("Testing super dark method d.")
+        logging.info(f"Memory used at start of method d: {get_mem_usage():.2f} GB")
+
+        for read_i in range(0, self.max_reads):
+            timing_start_method_d_rd_loop = time.time()
+            logging.info(f"On read {read_i} of {self.max_reads}")
+            print(f"On read {read_i} of {self.max_reads}")
+
+            with ThreadPoolExecutor() as executor:
+                futures = {
+                    executor.submit(self.process_quadrant, read_i, self.file_list, self.n_reads_list, self.input_path,
+                                    quad, sig_clip_sd_low, sig_clip_sd_high): quad
+                    for quad in ['quad1', 'quad2', 'quad3', 'quad4']
+                }
+
+                results = {}
+                for future in futures:
+                    quad = futures[future]
+                    results[quad] = future.result()
+
+            self.superdark_d[read_i, :, :] = self.assemble_quadrants(
+                results['quad1'], results['quad2'], results['quad3'], results['quad4']
+            )
+
+            print(f"Memory used at end of read index loop method d: {get_mem_usage():.2f} GB")
+            gc.collect()
+            timing_end_method_d_rd_loop = time.time()
+            elapsed_time = timing_end_method_d_rd_loop - timing_start_method_d_rd_loop
+            print(f"Read loop c time: {elapsed_time:.2f} seconds")
+
+            current_datetime = datetime.now()
+            print("Current date and time:", current_datetime)
+
+        timing_end_method_d = time.time()
+        elapsed_time = timing_end_method_d - timing_start_method_d
+        print(f"Total time taken for method d: {elapsed_time:.2f} seconds")
+        logging.info(f"Total time taken for method d: {elapsed_time:.2f} seconds")
+
+        self.superdark = self.superdark_d
+
+    def process_quadrant(self, read_i, file_list, n_reads_list, input_path, quadrant):
+        """
+        Process a specific quadrant of the image array for a given read index.
+
+        Parameters
+        ----------
+        read_i: int
+            The current read index.
+        file_list: list
+            List of files to process.
+        n_reads_list: list
+            List of the number of reads for each file.
+        input_path: pathlib.Path
+            Path to the input files.
+        quadrant: str
+            The quadrant to process ('quad1', 'quad2', 'quad3', 'quad4').
+
+        Returns
+        -------
+        np.ndarray
+            Processed 1024x1024 quadrant.
+        """
+        quad_map = {
+            'quad1': (0, 2048, 0, 2048),
+            'quad2': (0, 2048, 2048, 4096),
+            'quad3': (2048, 4096, 0, 2048),
+            'quad4': (2048, 4096, 2048, 4096)
+        }
+
+        start_row, end_row, start_col, end_col = quad_map[quadrant]
+        read_i_from_all_files = np.zeros((len(file_list), 2048, 2048), dtype=np.float32)
+
+        for file_f in range(len(file_list)):
+            file_name = file_list[file_f]
+            file_path = input_path.joinpath(file_name)
+            if read_i <= n_reads_list[file_f]:
+                try:
+                    with rdm.open(file_path) as af:
+                        logging.info(f"Opening file {file_path}")
+                        data = af.data
+                        if isinstance(data, u.Quantity):
+                            data = data.value
+                        read_i_from_all_files[file_f, :, :] = data[read_i, start_row:end_row, start_col:end_col]
+                except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
+                    logging.warning(f"Could not open {file_path} - {e}")
+            else:
+                continue
+
+        nonzero_reads = np.where(~np.all(read_i_from_all_files == 0, axis=(1, 2)))[0]
+        read_i_reduced_cube = read_i_from_all_files[nonzero_reads]
+        read_i_reduced_cube_no_nans = read_i_reduced_cube[~np.isnan(read_i_reduced_cube)]
+
+        clipped_reads = sigma_clip(read_i_reduced_cube_no_nans,
+                                   sigma_lower=sig_clip_sd_low,
+                                   sigma_upper=sig_clip_sd_high,
+                                   cenfunc=np.mean,
+                                   axis=0,
+                                   masked=False,
+                                   copy=False)
+
+        return np.mean(clipped_reads, axis=0)
+
+    def assemble_quadrants(self, quad1, quad2, quad3, quad4):
+        """
+        Assemble the four 2048x2048 quadrants into a single 4096x4096 array.
+
+        Parameters
+        ----------
+        quad1 : np.ndarray
+            Upper left quadrant.
+        quad2 : np.ndarray
+            Upper right quadrant.
+        quad3 : np.ndarray
+            Lower left quadrant.
+        quad4 : np.ndarray
+            Lower right quadrant.
+
+        Returns
+        -------
+        np.ndarray
+            Combined 4096x4096 array.
+        """
+        upper_half = np.concatenate((quad1, quad2), axis=1)
+        lower_half = np.concatenate((quad3, quad4), axis=1)
+        full_array = np.concatenate((upper_half, lower_half), axis=0)
+        return full_array
 
     def write_superdark(self, outfile=None):
         """
