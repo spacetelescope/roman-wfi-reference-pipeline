@@ -14,6 +14,10 @@ file_list_WFI01 = [file for file in files if "WFI01" in file]
 # for f in file_list_WFI01:
 #     print(f)
 
+# Assuming short dark files contain '00444' and long dark files contain '00445'
+short_dark_file_list = [file for file in file_list_WFI01 if '00444' in file]
+long_dark_file_list = [file for file in file_list_WFI01 if '00445' in file]
+
 sd = SuperDark(input_path=input_directory,
                file_list=file_list_WFI01,
                outfile="roman_superdark.asdf")
@@ -105,6 +109,8 @@ if test_specific_methods_no_meta == 1:
 
     #TODO for Brad to review for testing
     # This is the benchmark method to look at for now
+
+    sd.make_superdark_method_c(short_dark_file_list=short_dark_file_list, long_dark_file_list=long_dark_file_list)
 
     sd.make_superdark_method_c(n_reads_list_sorted=n_reads_list_sorted, file_list_sorted=file_list_sorted)
     sd.write_superdark(outfile='test_spuerdark.asdf')
