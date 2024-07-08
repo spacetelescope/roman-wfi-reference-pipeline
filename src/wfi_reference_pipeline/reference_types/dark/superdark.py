@@ -400,9 +400,9 @@ class SuperDark:
         print("Current date and time:", current_datetime)
 
         # Uncomment these or figure out a way to have inputs
-        # self.n_reads_list = n_reads_list_sorted
-        # self.file_list = file_list_sorted
-        # self.max_reads = max_reads
+        self.n_reads_list = n_reads_list_sorted
+        self.file_list = file_list_sorted
+        self.max_reads = max_reads
         self.superdark_c = np.zeros((self.max_reads, 4096, 4096), dtype=np.float32)
 
         timing_start_method_c = time.time()
@@ -639,7 +639,7 @@ class SuperDark:
             self.read_i_from_all_files = np.zeros((num_short_dark_files + num_long_dark_files,
                                                    4096, 4096), dtype=np.float32)
 
-            # Try running the opening of the files in parallel - this should be faster than method d on its own.
+            # Try running the opening of the files in parallel - this should be gaster
             with ThreadPoolExecutor() as executor:
                 futures = []
                 for file_f in range(num_short_dark_files):
@@ -657,7 +657,7 @@ class SuperDark:
                     result = future.result()
                     if result is not None:
                         self.read_i_from_all_files[i, :, :] = result
-                    print(f"Memory in file loop method d1: {get_mem_usage():.2f} GB")
+                    print(f"Memory in file loop method d: {get_mem_usage():.2f} GB")
 
             print('Sigma clipping reads from all files for read')
             clipped_reads = sigma_clip(self.read_i_from_all_files,
