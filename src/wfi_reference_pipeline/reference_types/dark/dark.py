@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 import numpy as np
@@ -150,10 +149,6 @@ class Dark(ReferenceType):
         self.warm_pixel_rate = 0
         self.dead_pixel_rate = 0
 
-        # NOTE: keeping the below just for reference when setting up, can delete if Rick doesnt need these
-        # self.intercept_image = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Intercept image from ramp fit.
-        # self.intercept_var = np.zeros((self.num_i_pixels, self.num_j_pixels), dtype=np.float32) # Variance in fitted intercept image.
-
     def get_data_cube_from_superdark_file(self):
         """
         Method to open superdark asdf file and get data.
@@ -275,88 +270,6 @@ class Dark(ReferenceType):
                 f" reads per resultant complete."
             )
 
-    def make_metrics_dicts(self):
-        """
-        The method make_metrics_dicts is used to create reference file type specific
-        metrics for tracking by the data monitoring tool from entries into the
-        the RTB Database.
-        """
-
-        # Create the dark file dictionary
-        db_dark_fl_dict = {
-            "detector": self.meta_data["instrument"]["detector"],
-            "exposure_type": self.meta_data["exposure"]["type"],
-            "created_date": datetime.datetime.utcnow(),
-            "use_after": datetime.datetime.utcnow(),
-            "crds_filename": "test_crds_filename.asdf",
-            "crds_delivery_id": 1,
-        }
-
-        hot_pixel_mask = self.data_cube.rate_image > self.hot_pixel_rate
-        num_hot_pixels = np.sum(hot_pixel_mask)
-        warm_pixel_mask = (self.warm_pixel_rate <= self.data_cube.rate_image) & (
-            self.data_cube.rate_image < self.hot_pixel_rate
-        )
-        num_warm_pixels = np.sum(warm_pixel_mask)
-        dead_pixel_mask = self.data_cube.rate_image < self.dead_pixel_rate
-        num_dead_pixels = np.sum(dead_pixel_mask)
-
-        logging.info(
-            f"Found {num_hot_pixels} hot pixels,  {num_warm_pixels} warm pixels, and {num_dead_pixels} were"
-            f"found in the dark rate ramp image."
-        )
-        print(
-            "hot, warm, dead pixels", num_hot_pixels, num_warm_pixels, num_dead_pixels
-        )
-
-        # Create the dark dq dictionary
-        db_dark_dq_dict = {
-            "num_dead_pix": num_dead_pixels,
-            "num_hot_pix": num_hot_pixels,
-            "num_warm_pix": num_warm_pixels,
-            "hot_pix_rate": 0.015,
-            "warm_pix_rate": 0.010,
-        }
-
-        # Number of SCA amplifiers (4096 pixels / 128 pixels)
-        amp_pixel_width = 128
-        num_amps = 32
-        # Initialize empty lists to store median and mean values for each amplifier
-        median_values = []
-        mean_values = []
-
-        # Loop through amplifiers and find stats by amplifier
-        for i in range(num_amps):
-            start_index = i * amp_pixel_width
-            end_index = (i + 1) * amp_pixel_width
-            amp_i = self.data_cube.rate_image[:, start_index:end_index]
-            median = np.nanmedian(amp_i)
-            mean = np.nanmean(amp_i)
-
-            # Append the results to the lists
-            median_values.append(median)
-            mean_values.append(mean)
-
-        # Create the dark amp dictionary
-        db_dark_amp_dict = {
-            "amp_id": list(range(1, num_amps + 1)),
-            "median_dark_current": median_values,
-            "mean_dark_current": mean_values,
-        }
-
-        # Create the dark structure dictionary
-        db_dark_struc_dict = {"coefficient": 42.0}
-
-        # TODO - Verify Use of metric_dict
-        # metric_dict = {
-        #     'db_dark_fl_dict': db_dark_fl_dict,
-        #     'db_dark_dq_dict': db_dark_dq_dict,
-        #     'db_dark_struc_dict': db_dark_struc_dict,
-        #     'db_dark_amp_dict': db_dark_amp_dict
-        # }
-
-        return db_dark_fl_dict, db_dark_dq_dict, db_dark_struc_dict, db_dark_amp_dict
-
     def calculate_error(self):
         """
         #TODO re-evaluate the error propagation for dark and how fit_dark_ramp() and this method operate and computational performance
@@ -393,7 +306,7 @@ class Dark(ReferenceType):
         ) ** 0.5
 
     def update_data_quality_array(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, dead_pixel_rate=0.0001):
-        # TODO evaluate options for variabiles like this and sigma clipping with a parameter file?
+        # TODO evaluate options for variables like this and sigma clipping with a parameter file?
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
         DQ bit flag.
