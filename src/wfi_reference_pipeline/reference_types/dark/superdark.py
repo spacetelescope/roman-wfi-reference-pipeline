@@ -29,14 +29,12 @@ def get_mem_usage():
     return memory_usage
 
 
-def process_file(file_name, file_path, read_i):
+def process_file(file_path, read_i):
     """
     Helper function to process a single file.
 
     Parameters
     ----------
-    file_name : str
-        Name of the file to be processed.
     file_path : Path
         Path to the file to be processed.
     read_i : int
@@ -47,16 +45,55 @@ def process_file(file_name, file_path, read_i):
     np.ndarray
         Array of data for the given read index.
     """
+
     try:
-        with rdm.open(file_path) as af:
+        with asdf.open(file_path) as af:
+            #print(f"Processing file {file_path}")
             logging.info(f"Opening file {file_path}")
-            data = af.data
-            if isinstance(data, u.Quantity):
-                data = data.value
-            return data[read_i, :, :]
+            if isinstance(af.tree['roman']['data'], u.Quantity):  # Only access data from quantity object.
+                return af.tree['roman']['data'][read_i, :, :].value
+            else:
+                return af.tree['roman']['data'][read_i, :, :]
     except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
-        logging.warning(f"Unable to open file {file_path} - {e}")
-        return None
+        logging.warning(f"Could not open {file_path} - {e}")
+
+
+def process_files_in_batches(file_path, file_list, batch_size, read_i):
+    """
+    Processes a list of files in batches to read data for a specific read index.
+
+    This function divides the list of files into batches, processes each batch in parallel using a
+    ThreadPoolExecutor, and reads data from each file for the given read index. Results from all
+    files are aggregated into a single list.
+
+    Parameters
+    ----------
+    file_path : Path
+        Path to the file to be processed.
+    file_list : list of str
+        List of file names to be processed. Each file should be accessible from the input path.
+    batch_size : int
+        Number of files to process in parallel at a time. This controls the size of each batch.
+    read_i : int
+        The index of the read to extract from each file. This specifies which slice of the data to process.
+
+    Returns
+    -------
+    list of np.ndarray
+        List of numpy arrays containing data for the specified read index from each file. Each array
+        has the shape (height, width) where height and width are the dimensions of the data in the file.
+    """
+
+    all_results = []
+    for i in range(0, len(file_list), batch_size):
+        batch = file_list[i:i + batch_size]
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(process_file, file_path.joinpath(file), read_i) for file in batch]
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    all_results.append(result)
+    return all_results
 
 
 class SuperDark:
@@ -76,6 +113,7 @@ class SuperDark:
         long_dark_file_list=None,
         outfile="roman_superdark.asdf",
     ):
+
         """
         The __init__ method initializes the class.
 
@@ -93,21 +131,30 @@ class SuperDark:
             File name written to disk.
         """
 
+        if file_list is None and (short_dark_file_list is None or long_dark_file_list is None):
+            raise ValueError("Either 'file_list' must be provided, or both "
+                             "'short_dark_file_list' and 'long_dark_file_list' must be provided.")
+
         self.input_path = Path(input_path)
         self.file_list = None
         self.n_reads_list = n_reads_list
 
-        if file_list:  # Specific for method c
+        # Initialize with file_list
+        if file_list:
             self.file_list = sorted(file_list)
             if n_reads_list:
                 self.max_reads = np.amax(n_reads_list)
-
-        if short_dark_file_list and long_dark_file_list:
+        # Initialize with short_dark_file_list and long_dark_file_list
+        elif short_dark_file_list and long_dark_file_list:
             self.short_dark_file_list = sorted(short_dark_file_list)
             self.short_dark_num_reads = 46
             self.long_dark_file_list = sorted(long_dark_file_list)
             self.long_dark_num_reads = 98
             self.file_list = sorted(short_dark_file_list + long_dark_file_list)
+        else:
+            raise ValueError(
+                "Invalid input combination: both 'short_dark_file_list' and "
+                "'long_dark_file_list' must be provided together.")
 
         # Get WFIXX string
         wfixx_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
@@ -126,9 +173,9 @@ class SuperDark:
         self.superdark_b = None
         self.superdark_c = None
         self.superdark_d = None
-        self.superdark_d1 = None
-        self.superdark_d2 = None
         self.superdark_e = None
+        self.superdark_f = None
+        self.superdark_g = None
 
         self.meta_data = {'pedigree': "DUMMY",
                           'description': "Super dark file calibration product "
@@ -137,118 +184,10 @@ class SuperDark:
                           'detector': self.wfixx_string,
                           'filelist': self.file_list}
 
-    def make_superdark_method_a(self,
-                                sig_clip_sd_low=3.0,
-                                sig_clip_sd_high=3.0,
-                                max_reads=98,
-                                n_reads_list_sorted=None,
-                                file_list_sorted=None):
-
-        """
-        This method does a file I/O open, read, append to a temporary read cube, sigma clip, and then average
-        approach for every read available in each exposure/file used in creating the super dark cube. Starting
-        with the first read index 0, checks the file to be opened has a read frame matching the rd index. If it
-        does not, representing a file with fewer reads than the maximum number of reads from the file list,
-        the file is not opened. If the file does contain a read frame for the read index rd, then it is opened,
-        the data extracted for that read only and appended to a temporary cube representing that read for all
-        of the files in the file list. That cube is then sigma clipped to remove outliers - aka cosmic rays -
-        and averaged to produce mean pixel dark value for that read up the ramp.
-
-        Parameters
-        ----------
-        sig_clip_sd_low: float; default = 3.0
-            Lower bound limit to filter data.
-        sig_clip_sd_high: float; default = 3.0
-            Upper bound limit to filter data
-        max_reads: int; default = 98
-            The number of reads in the long dark exposures from the in-flight calibration plan.
-        n_reads_list_sorted: list, default = None
-            A list of integers representing the ordered number of reads of each dark exposure from
-            the in-flight calibration plan. Short darks have 46 reads. Long darks have 98 reads.
-        file_list_sorted: list, default = None
-            A list of the sorted by filenames and shortest to longest number of reads in each
-            in-flight calibration plan dark exposure.
-
-        """
-
-        self.n_reads_list = n_reads_list_sorted
-        self.file_list = file_list_sorted
-        self.max_reads = max_reads
-        self.superdark_a = np.zeros((self.max_reads, 4096, 4096), dtype=np.float32)
-
-        timing_start_method_a = time.time()
-        print("Testing super dark method a.")
-        print(f"Memory used at start of method a: {get_mem_usage():.2f} GB")
-        logging.info("Testing super dark method a.")
-        logging.info(f"Memory used at start of method a: {get_mem_usage():.2f} GB")
-        for read_i in range(0, self.max_reads, 50):
-            logging.info(f"On read {read_i} of {self.max_reads}")
-            print(f"On read {read_i} of {self.max_reads}")
-            read_i_cube_from_all_files = []
-            for file_f in range(0, len(self.file_list)):
-                file_name = self.file_list[file_f]
-                file_path = self.input_path.joinpath(file_name)
-                if read_i <= self.n_reads_list[file_f]:
-                    # If the file to be opened has a valid read index then open the file and
-                    # get its data and append read_i. Separating short
-                    # darks with only 46 reads from long darks with 98 reads.
-                    try:
-                        #TODO figure out why appending a frame is doubling memory every file
-                        # This is different from testing a year ago
-                        with rdm.open(file_path) as af:
-                            logging.info(f"Opening file {file_path}")
-                            #print(f"Opening file {file_path}")
-                            tmp = af.data.value
-                            print(tmp)
-                            # if isinstance(data, u.Quantity):  # Only access data from quantity object.
-                            #     reads_from_all_files.append(data[rd, :, :].value)
-                            # else:
-                        read_i_cube_from_all_files.append(tmp[file_f, :, :])
-
-                            #print(data[rd, :, :], np.shape(data[rd, :, :]))
-
-                        print(np.shape(read_i_cube_from_all_files))
-                        del af, tmp
-                        gc.collect()
-                        print(f"Memory in file loop method A: {get_mem_usage():.2f} GB")
-                        #print(reads_from_all_files)
-
-                        # with asdf.open(file_path) as tmp:
-                        #     tmp_rd = tmp.tree["roman"]["data"].value
-                        # reads_from_all_files.append(tmp_rd[fn, :, :])
-                        # del tmp, data
-                        # gc.collect()
-
-                    except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
-                        logging.warning(f"Could not open {file_path} - {e}")
-                else:
-                    # Skip this file if it has less reads than the read index.
-                    # print('skipping file', file_path)
-                    continue
-
-                print(f"Memory at end of file loop in method A: {get_mem_usage():.2f} GB")
-
-            clipped_reads = sigma_clip(read_i_cube_from_all_files,
-                                       sigma_lower=sig_clip_sd_low,
-                                       sigma_upper=sig_clip_sd_high,
-                                       cenfunc=np.mean,
-                                       axis=0,
-                                       masked=False,
-                                       copy=False)
-            self.superdark_a[read_i, :, :] = np.mean(clipped_reads, axis=0)
-            print(f"Memory used at end of read index loop method A: {get_mem_usage():.2f} GB")
-            del clipped_reads
-            gc.collect()
-
-        timing_end_method_a = time.time()
-        elapsed_time = timing_end_method_a - timing_start_method_a
-        print(f"Total time taken for method a: {elapsed_time:.2f} seconds")
-        logging.info(f"Total time taken for method a: {elapsed_time:.2f} seconds")
-
     def make_superdark_method_c(self,
                                 sig_clip_sd_low=3.0,
                                 sig_clip_sd_high=3.0,
-                                open_type='rdm'):
+                                open_type='asdf'):
 
         """
         This method does a file I/O open, read, append to a temporary read cube, sigma clip, and then average
@@ -391,8 +330,6 @@ class SuperDark:
             Lower bound limit to filter data.
         sig_clip_sd_high : float, default = 3.0
             Upper bound limit to filter data.
-        open_type: string, default = 'rdm'
-            Default string for file i/o is romandatamodels or rdm. Also allowed is 'asdf'
         """
         current_datetime = datetime.now()
         print("Current date and time:", current_datetime)
@@ -406,7 +343,6 @@ class SuperDark:
         self.superdark_d = np.zeros((self.long_dark_num_reads, 4096, 4096), dtype=np.float32)
 
         for read_i in range(0, self.long_dark_num_reads):
-        #for read_i in range(0, 80, 20):
             timing_start_method_d_rd_loop = time.time()
             logging.info(f"On read {read_i} of {self.long_dark_num_reads}")
             print(f"On read {read_i} of {self.long_dark_num_reads}")
@@ -450,7 +386,7 @@ class SuperDark:
 
                 print(f"Memory at end of file loop in method d: {get_mem_usage():.2f} GB")
 
-            print('Sigma clipping reads from all files for read')
+            print(f'Sigma clipping reads from all files for read_i: {read_i}')
             clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
                                        sigma_upper=sig_clip_sd_high,
@@ -477,14 +413,11 @@ class SuperDark:
 
         self.superdark = self.superdark_d
 
-    def make_superdark_method_d1(self,
-                                short_dark_file_list=None,
-                                short_dark_num_reads=46,
-                                long_dark_file_list=None,
-                                long_dark_num_reads=98,
+    def make_superdark_method_e(self,
                                 sig_clip_sd_low=3.0,
-                                sig_clip_sd_high=3.0
-                                ):
+                                sig_clip_sd_high=3.0,
+                                short_batch_size=4,
+                                long_batch_size=4):
         """
         This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
         approach for every read in both short and long darks in creating the super dark cube. Starting with
@@ -498,49 +431,66 @@ class SuperDark:
             Lower bound limit to filter data.
         sig_clip_sd_high : float, default = 3.0
             Upper bound limit to filter data.
+        short_batch_size : int, default = 4
+            Number of short dark files to process in parallel at a time.
+        long_batch_size : int, default = 4
+            Number of long dark files to process in parallel at a time.
         """
         current_datetime = datetime.now()
         print("Current date and time:", current_datetime)
 
-        timing_start_method_d1 = time.time()
-        print("Testing super dark method d1.")
-        print(f"Memory used at start of method d1: {get_mem_usage():.2f} GB")
-        logging.info("Testing super dark method d1.")
-        logging.info(f"Memory used at start of method d1: {get_mem_usage():.2f} GB")
+        timing_start_method_e = time.time()
+        print(f"Testing super dark method e with short batch size of {short_batch_size} and long batch"
+              f" size of {long_batch_size}.")
+        print(f"Memory used at start of method e: {get_mem_usage():.2f} GB")
+        logging.info("Testing super dark method e.")
+        logging.info(f"Memory used at start of method e: {get_mem_usage():.2f} GB")
 
-        num_short_dark_files = len(short_dark_file_list)
-        num_long_dark_files = len(long_dark_file_list)
-        self.superdark_d1 = np.zeros((long_dark_num_reads, 4096, 4096), dtype=np.float32)
+        self.superdark_e = np.zeros((self.long_dark_num_reads, 4096, 4096), dtype=np.float32)
 
-        for read_i in range(long_dark_num_reads):
-            timing_start_method_d_rd_loop = time.time()
-            logging.info(f"On read {read_i} of {long_dark_num_reads}")
-            print(f"On read {read_i} of {long_dark_num_reads}")
+        for read_i in range(0, self.long_dark_num_reads):
+        #for read_i in range(0, self.long_dark_num_reads, 40):
+            timing_start_method_e_rd_loop = time.time()
+            logging.info(f"On read {read_i} of {self.long_dark_num_reads}")
+            print(f"On read {read_i} of {self.long_dark_num_reads}")
 
-            self.read_i_from_all_files = np.zeros((num_short_dark_files + num_long_dark_files,
-                                                   4096, 4096), dtype=np.float32)
+            # Determine the number of files to process for the current read index
+            if read_i < self.short_dark_num_reads:
+                num_files = len(self.short_dark_file_list) + len(self.long_dark_file_list)
+            else:
+                num_files = len(self.long_dark_file_list)
+            self.read_i_from_all_files = np.zeros((num_files, 4096, 4096), dtype=np.float32)
 
-            # Try running the opening of the files in parallel - this should be gaster
-            with ThreadPoolExecutor() as executor:
-                futures = []
-                for file_f in range(num_short_dark_files):
-                    short_dark_file_name = short_dark_file_list[file_f]
-                    short_dark_file_path = self.input_path.joinpath(short_dark_file_name)
-                    futures.append(
-                        executor.submit(process_file, short_dark_file_name, short_dark_file_path, read_i))
-
-                for file_f in range(num_long_dark_files):
-                    long_dark_file_name = long_dark_file_list[file_f]
-                    long_dark_file_path = self.input_path.joinpath(long_dark_file_name)
-                    futures.append(executor.submit(process_file, long_dark_file_name, long_dark_file_path, read_i))
-
-                for i, future in enumerate(as_completed(futures)):
-                    result = future.result()
+            short_dark_results = []
+            # Process short dark files in batches if the read index is within the range of short dark reads
+            if read_i < self.short_dark_num_reads:
+                short_dark_results = process_files_in_batches(self.input_path,
+                                                              self.short_dark_file_list,
+                                                              short_batch_size,
+                                                              read_i)
+                for i, result in enumerate(short_dark_results):
                     if result is not None:
+                        #print(f"Assigning result from short dark file {i} for read {read_i}")
+                        logging.info(f"Assigning result from short dark file to index {i} in supderdark "
+                                     f"for read {read_i}")
                         self.read_i_from_all_files[i, :, :] = result
-                    print(f"Memory in file loop method d1: {get_mem_usage():.2f} GB")
 
-            print('Sigma clipping reads from all files for read')
+            # Need start at the short dark results to ensure correct placement and not overwrite short dark results
+            # when doing long dark parallel processing.
+            long_dark_results = process_files_in_batches(self.input_path,
+                                                         self.long_dark_file_list,
+                                                         long_batch_size,
+                                                         read_i)
+            for i, result in enumerate(long_dark_results, start=len(short_dark_results)):
+                if result is not None:
+                    #print(f"Assigning result from long dark file {i} for read {read_i}")
+                    logging.info(f"Assigning result from long dark file to index {i} in superdark"
+                                 f"for read {read_i}")
+                    self.read_i_from_all_files[i, :, :] = result
+
+            if np.isnan(self.read_i_from_all_files[i, :, :]).any():
+                print('NaNs found in read_i_from_all_files')
+            print(f'Sigma clipping reads from all files for read_i: {read_i}')
             clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
                                        sigma_upper=sig_clip_sd_high,
@@ -548,132 +498,31 @@ class SuperDark:
                                        axis=0,
                                        masked=False,
                                        copy=False)
-            self.superdark_d1[read_i, :, :] = np.mean(clipped_reads, axis=0)
+            if np.isnan(clipped_reads).any():
+                print('NaNs found in clipped reads')
+            self.superdark_e[read_i, :, :] = np.mean(clipped_reads, axis=0)
 
-            print(f"Memory used at end of read index loop method d1: {get_mem_usage():.2f} GB")
+            print(f"Memory used at end of read index loop method e: {get_mem_usage():.2f} GB")
             del clipped_reads, self.read_i_from_all_files
             gc.collect()
-            timing_end_method_d_rd_loop = time.time()
-            elapsed_time = timing_end_method_d_rd_loop - timing_start_method_d_rd_loop
-            print(f"Read loop d1 time: {elapsed_time:.2f} seconds")
+            timing_end_method_e_rd_loop = time.time()
+            elapsed_time = timing_end_method_e_rd_loop - timing_start_method_e_rd_loop
+            print(f"Read loop e time: {elapsed_time:.2f} seconds")
 
             current_datetime = datetime.now()
             print("Current date and time:", current_datetime)
 
-        timing_end_method_d1 = time.time()
-        elapsed_time = timing_end_method_d1 - timing_start_method_d1
-        print(f"Total time taken for method d1: {elapsed_time:.2f} seconds")
-        logging.info(f"Total time taken for method d1: {elapsed_time:.2f} seconds")
+            #if read_i > 30:
+                #break
 
-        self.superdark = self.superdark_d
+        timing_end_method_e = time.time()
+        elapsed_time = timing_end_method_e - timing_start_method_e
+        print(f"Total time taken for method e: {elapsed_time:.2f} seconds")
+        logging.info(f"Total time taken for method e: {elapsed_time:.2f} seconds")
 
-    def make_superdark_method_d2(self,
-                                 short_dark_file_list=None,
-                                 short_dark_num_reads=46,
-                                 long_dark_file_list=None,
-                                 long_dark_num_reads=98,
-                                 sig_clip_sd_low=3.0,
-                                 sig_clip_sd_high=3.0,
-                                 batch_size=6):
-        """
-        This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
-        approach for every read in both short and long darks in creating the super dark cube. Starting with
-        read index 0 all files that have the read index in the allowed range will be opened and the frame from
-        each exposure extracted and inserted into a temporary cube representing the number of files available
-        for that read.
+        self.superdark = self.superdark_e
 
-        Parameters
-        ----------
-        short_dark_file_list : list, default = None
-            List of short dark exposure files.
-        long_dark_file_list : list, default = None
-            List of long dark exposure files.
-        short_dark_num_reads : int, default = 46
-            Number of reads in short dark exposures.
-        long_dark_num_reads : int, default = 98
-            Number of reads in long dark exposures.
-        sig_clip_sd_low : float, default = 3.0
-            Lower bound limit to filter data.
-        sig_clip_sd_high : float, default = 3.0
-            Upper bound limit to filter data.
-        """
-        current_datetime = datetime.now()
-        print("Current date and time:", current_datetime)
-
-        timing_start_method_d2 = time.time()
-        print("Testing super dark method d2.")
-        print(f"Memory used at start of method d2: {get_mem_usage():.2f} GB")
-        logging.info("Testing super dark method d2.")
-        logging.info(f"Memory used at start of method d2: {get_mem_usage():.2f} GB")
-
-        num_short_dark_files = len(short_dark_file_list)
-        num_long_dark_files = len(long_dark_file_list)
-        self.superdark_d2 = np.zeros((long_dark_num_reads, 4096, 4096), dtype=np.float32)
-
-        for read_i in range(long_dark_num_reads):
-            timing_start_method_d_rd_loop = time.time()
-            logging.info(f"On read {read_i} of {long_dark_num_reads}")
-            print(f"On read {read_i} of {long_dark_num_reads}")
-
-            self.read_i_from_all_files = []
-
-            # Process short dark files in batches
-            for batch_start in range(0, num_short_dark_files, batch_size):
-                batch_end = min(batch_start + batch_size, num_short_dark_files)
-                batch_files = short_dark_file_list[batch_start:batch_end]
-                with ThreadPoolExecutor() as executor:
-                    futures = [executor.submit(process_file, file_name, self.input_path.joinpath(file_name), read_i)
-                               for file_name in batch_files]
-                    for future in as_completed(futures):
-                        result = future.result()
-                        if result is not None:
-                            self.read_i_from_all_files.append(result)
-                        print(f"Memory in file loop method d2: {get_mem_usage():.2f} GB")
-
-            # Process long dark files in batches
-            for batch_start in range(0, num_long_dark_files, batch_size):
-                batch_end = min(batch_start + batch_size, num_long_dark_files)
-                batch_files = long_dark_file_list[batch_start:batch_end]
-                with ThreadPoolExecutor() as executor:
-                    futures = [executor.submit(process_file, file_name, self.input_path.joinpath(file_name), read_i)
-                               for file_name in batch_files]
-                    for future in as_completed(futures):
-                        result = future.result()
-                        if result is not None:
-                            self.read_i_from_all_files.append(result)
-                        print(f"Memory in file loop method d2: {get_mem_usage():.2f} GB")
-
-            if self.read_i_from_all_files:
-                self.read_i_from_all_files = np.stack(self.read_i_from_all_files)
-
-                print('Sigma clipping reads from all files for read')
-                clipped_reads = sigma_clip(self.read_i_from_all_files,
-                                           sigma_lower=sig_clip_sd_low,
-                                           sigma_upper=sig_clip_sd_high,
-                                           cenfunc=np.mean,
-                                           axis=0,
-                                           masked=False,
-                                           copy=False)
-                self.superdark_d2[read_i, :, :] = np.mean(clipped_reads, axis=0)
-
-            print(f"Memory used at end of read index loop method d1: {get_mem_usage():.2f} GB")
-            del clipped_reads, self.read_i_from_all_files
-            gc.collect()
-            timing_end_method_d_rd_loop = time.time()
-            elapsed_time = timing_end_method_d_rd_loop - timing_start_method_d_rd_loop
-            print(f"Read loop d2 time: {elapsed_time:.2f} seconds")
-
-            current_datetime = datetime.now()
-            print("Current date and time:", current_datetime)
-
-        timing_end_method_d2 = time.time()
-        elapsed_time = timing_end_method_d2 - timing_start_method_d2
-        print(f"Total time taken for method d2: {elapsed_time:.2f} seconds")
-        logging.info(f"Total time taken for method d2: {elapsed_time:.2f} seconds")
-
-        self.superdark = self.superdark_d2
-
-    def make_superdark_method_e(self,
+    def make_superdark_method_f(self,
                                 sig_clip_sd_low=3.0,
                                 sig_clip_sd_high=3.0,
                                 max_reads=98,

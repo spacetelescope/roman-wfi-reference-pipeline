@@ -7,20 +7,6 @@ input_directory = "/grp/roman/RFP/DEV/sim_inflight_calplan/WFIsim_darks/asdf_fil
 # Get all files in the directory
 files = os.listdir(input_directory)
 
-# # To do both the meta loop and the make superdark loops, set to 1
-# test_time_all = 0
-# if test_time_all == 1:
-#     sd = SuperDark(input_path=input_directory,
-#                    file_list=file_list_WFI01
-#                    )
-#
-#     sd.get_file_list_meta_rdmopen()
-#     # This above takes about 8 min and uses 5.93 GB maximum
-#     # Memory used in file_name loop aftering opening file: 4.49 GB
-#     # Total time taken to get all files meta: 501.59 seconds
-#
-#     sd.make_superdark_method_c()
-
 # To do both only the make superdark loop, set to 1 but need to provide sorted file list and number of reads list.
 test_method_c = 0
 if test_method_c == 1:
@@ -30,7 +16,7 @@ if test_method_c == 1:
     n_reads_list = (46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
                     46, 46, 46, 46, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,
                     98, 98, 98, 98, 98, 98)
-    file_list = [file for file in files if "WFI05" in file]
+    file_list = [file for file in files if "WFI03" in file]
     print("Files ingested.")
     for f in file_list:
         print(f)
@@ -38,12 +24,12 @@ if test_method_c == 1:
     sd = SuperDark(input_path=input_directory,
                    file_list=file_list,
                    n_reads_list=n_reads_list,
-                   outfile="roman_superdark_method_c_rdm_VMRTB1.asdf")
-    sd.make_superdark_method_c(open_type='rdm')
-    sd.write_superdark()
+                   outfile="roman_superdark_method_c_asdf_VMrtb2.asdf")
+    sd.make_superdark_method_c(open_type='asdf')
+    sd.generate_outfile()
 
 # To do both only the make superdark loop, set to 1 but need to provide sorted file list and number of reads list.
-test_specific_method_d = 1
+test_specific_method_d = 0
 if test_specific_method_d == 1:
     # Assuming short dark files contain '00444' and long dark files contain '00445'
     file_list = [file for file in files if "WFI03" in file]
@@ -60,32 +46,29 @@ if test_specific_method_d == 1:
     sd = SuperDark(input_path=input_directory,
                    short_dark_file_list=short_dark_file_list,
                    long_dark_file_list=long_dark_file_list,
-                   outfile="roman_superdark_method_d_VMRTB3.asdf")
+                   outfile="roman_superdark_method_d_VMrtb3.asdf")
     sd.make_superdark_method_d()
-    sd.write_superdark()
-
-
+    sd.generate_outfile()
 
 # To do both only the make superdark loop, set to 1 but need to provide sorted file list and number of reads list.
-test_specific_method_d1 = 0
-if test_specific_method_d1 == 1:
+test_specific_method_e = 1
+if test_specific_method_e == 1:
     # Assuming short dark files contain '00444' and long dark files contain '00445'
-    file_list_WFI03 = [file for file in files if "WFI03" in file]
-    short_dark_file_list = [file for file in file_list_WFI03 if '00444' in file]
-    long_dark_file_list = [file for file in file_list_WFI03 if '00445' in file]
-    print('Testing method d1')
+    file_list = [file for file in files if "WFI01" in file]
+    print("Files ingested.")
+    for f in file_list:
+        print(f)
+    short_dark_file_list = [file for file in file_list if '00444' in file]
+    for f in short_dark_file_list:
+        print(f)
+    long_dark_file_list = [file for file in file_list if '00445' in file]
+    for f in long_dark_file_list:
+        print(f)
+    print('Testing method e')
     sd = SuperDark(input_path=input_directory,
-                   file_list=file_list_WFI02,
-                   )
-    sd.make_superdark_method_d1(short_dark_file_list=short_dark_file_list, long_dark_file_list=long_dark_file_list)
-    sd.write_superdark(outfile='test_spuerdark_method_d1.asdf')
+                   short_dark_file_list=short_dark_file_list,
+                   long_dark_file_list=long_dark_file_list)
+    sd.make_superdark_method_e(short_batch_size=3,
+                               long_batch_size=3)
+    #sd.generate_outfile()
 
-
-
-# To do both only the make superdark loop, set to 1 but need to provide sorted file list and number of reads list.
-test_specific_method_d2 = 0
-if test_specific_method_d2 == 1:
-    print('Testing method d2')
-
-    sd.make_superdark_method_d2(short_dark_file_list=short_dark_file_list, long_dark_file_list=long_dark_file_list)
-    sd.write_superdark(outfile='test_spuerdark_method_d2.asdf')
