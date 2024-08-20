@@ -1,5 +1,5 @@
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities import simulate_reads
+from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 import numpy as np
 
@@ -8,7 +8,7 @@ outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.
-sim_dev_cube, sim_dev_rate_image = simulate_reads.simulate_dark_reads(48)
+sim_dev_cube, sim_dev_rate_image = simulate_dark_reads(48)
 # Instantiate rfp dark object.
 rfp_dark = Dark(meta_data=tmp.meta_dark,
                 ref_type_data=sim_dev_cube,
@@ -29,7 +29,7 @@ outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.
-sim_dev_cube2, sim_dev_rate_image2 = simulate_reads.simulate_dark_reads(48)
+sim_dev_cube2, sim_dev_rate_image2 = simulate_dark_reads(48)
 # Instantiate rfp dark object.
 rfp_dark = Dark(meta_data=tmp.meta_dark,
                 ref_type_data=sim_dev_cube2,
@@ -66,7 +66,7 @@ outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.
-sim_dev_cube3, sim_dev_rate_image3 = simulate_reads.simulate_dark_reads(18)
+sim_dev_cube3, sim_dev_rate_image3 = simulate_dark_reads(18)
 # Instantiate rfp dark object.
 rfp_dark = Dark(meta_data=tmp.meta_dark,
                 ref_type_data=sim_dev_cube3,
