@@ -163,50 +163,6 @@ class Flat(ReferenceType):
         avg_rate_image = np.mean(rate_image_array, axis=0)
         return avg_rate_image
 
-    # def make_flat_from_cube(self, n_reads, ni=None):
-    #     """
-    #     Method finds the fitted rate and variance by first initialize arrays
-    #     by the number of reads and the number of pixels. The fitted ramp or slope
-    #     along the time axis for the number of reads in the cube using a 1st order
-    #     polyfit. The best fit solutions and variance are returned.
-    #
-    #     Parameters
-    #     ----------
-    #     n_reads: integer; Positional required.
-    #         Number of reads to initialize fitted arrays.
-    #     ni: integer; Default: None.
-    #         Number of reads to initialize.
-    #
-    #     Returns
-    #     -------
-    #     rate_image: 2D array;
-    #         The fitted rate image from the cube.
-    #     rate_image_var: 2D array;
-    #         The variance of the fitted rate image from the cube.
-    #     """
-    #
-    #     # If ni is supplied, overwrite attribute.
-    #     if ni is not None:
-    #         self.ni = ni
-    #
-    #     # Make the time array for the length of the dark read cube exposure.
-    #     if self.meta['instrument']['optical_element']:
-    #         self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-    #     else:
-    #         raise ValueError('Optical element not found; this might not be a flat file.')
-    #     time_array = np.array(
-    #         [self.frame_time * i for i in range(1, n_reads + 1)]
-    #     )
-    #
-    #     p, c = np.polyfit(time_array,
-    #                       self.input_read_cube.reshape(len(time_array), -1), 1, full=False, cov=True)
-    #
-    #     # Reshape results back to 2D arrays.
-    #     rate_image = p[0].reshape(self.ni, self.ni).astype(np.float32)  # the fitted ramp slope image
-    #     rate_image_var = c[0, 0, :].reshape(self.ni, self.ni).astype(np.float32)  # covariance matrix slope variance
-    #
-    #     return rate_image, rate_image_var
-
     def calculate_error(self, error_array=None):
         """
         Calculate the uncertainty in the flat rate image.
