@@ -85,8 +85,7 @@ class Dark(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber,
-            make_mask=True,
+            clobber=clobber
         )
 
         # Default meta creation for module specific ref type.
@@ -139,7 +138,7 @@ class Dark(ReferenceType):
 
         # Attributes for initialized arrays for resampling.
         self.resampled_data = None
-        self.resampled_data_err = None
+        self.resampled_data_error = None
         self.resampled_model = None
         self.resultant_tau_array = None
 
@@ -206,6 +205,9 @@ class Dark(ReferenceType):
         self.resampled_data = np.zeros((self.num_resultants,
                                         self.data_cube.num_i_pixels,
                                         self.data_cube.num_j_pixels), dtype=np.float32)
+        self.resampled_data_error = np.zeros((self.num_resultants,
+                                              self.data_cube.num_i_pixels,
+                                              self.data_cube.num_j_pixels), dtype=np.float32)
         self.resultant_tau_array = np.zeros(self.num_resultants, dtype=np.float32)
 
         if read_pattern:
@@ -276,10 +278,6 @@ class Dark(ReferenceType):
         Old method of computing dark error
         """
 
-        self.resampled_data_err = np.zeros((self.num_resultants,
-                                            self.data_cube.num_i_pixels,
-                                            self.data_cube.num_j_pixels), dtype=np.float32)
-
         # Generate a dark ramp cube model per the resampled ma table specs.
         self.resampled_model = np.zeros(
             (
@@ -301,7 +299,7 @@ class Dark(ReferenceType):
         # model and the resampled cube data. Therefore std^2 is the resampled read noise variance.
         # The dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
         # and the variance of the resampled residuals are added in quadrature.
-        self.resampled_data_err[0, :, :] = (
+        self.resampled_data_error[0, :, :] = (
             std * std + self.data_cube.rate_image_err
         ) ** 0.5
 

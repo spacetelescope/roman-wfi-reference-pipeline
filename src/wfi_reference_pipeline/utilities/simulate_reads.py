@@ -130,7 +130,7 @@ def simulate_dark_reads(n_reads,
 
 
 def simulate_flat_reads(n_reads,
-                        ni=4096,
+                        ni=4088,
                         exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],  # Assuming default exposure time as 3.04 seconds
                         flat_rate=200,
                         flat_rate_var=1,

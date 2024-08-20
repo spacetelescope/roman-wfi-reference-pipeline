@@ -11,17 +11,20 @@ class ReferenceType(ABC):
     """
     Base class ReferenceType() for all reference file types.
 
-    Returns
-    -------
-    self.meta_data: object;
+    Parameters
+    ----------
+    meta_data : object
         Reference type specific meta data object.
-    self.file_list: attribute;
-
-    self.ref_type_data: attribute;
-        Class dependent variable assigned as attribute. Intended to be list of files or numpy array.
-    self.ancillary: attribute;
-        Other data for WFI such as filter names, frame times, WFI mode.
-    self.dqflag_defs:
+    file_list : list or None, optional
+        List of files to be used for creating the reference file.
+    ref_type_data : numpy.ndarray or None, optional
+        Data array for the reference type.
+    bit_mask : numpy.ndarray or None, optional
+        Bit mask array corresponding to the data. If provided, it should match the shape of `ref_type_data`.
+    outfile : str or None, optional
+        Path to the output file where the reference data will be saved.
+    clobber : bool, optional
+        If True, overwrites the existing outfile without warning.
     """
 
     def __init__(self,
@@ -31,8 +34,8 @@ class ReferenceType(ABC):
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
-                 make_mask=False,
-                 mask_size=(4096, 4096)):
+                 mask_size=(4096, 4096)
+                 ):
 
         # Check to make sure ReferenceType is instantiated with one valid input.
         if file_list is None and ref_type_data is None:
@@ -50,32 +53,55 @@ class ReferenceType(ABC):
         self.file_list = file_list
         self.outfile = outfile
         self.clobber = clobber
+        self.mask_size = mask_size
 
         #TODO fix importing dq flags from romancal
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 
-        # TODO is this needed here or will this be reference type specific?, perhaps this hsould become an @abstractMethod ?
-        if np.shape(bit_mask):
-            print("Mask provided. Skipping internal mask generation.")
-            self.mask = bit_mask.astype(np.uint32)
+        # Handle bit_mask initialization
+        self.mask = self._initialize_mask(bit_mask)
+
+    def _initialize_mask(self, bit_mask):
+        """
+        Initialize the bit mask based on provided parameters.
+
+        Parameters
+        ----------
+        bit_mask : numpy.ndarray or None
+            Provided 2D bit mask array.
+
+        Returns
+        -------
+        numpy.ndarray
+            Initialized mask array with shape (mask_size[0], mask_size[1]).
+        """
+        if bit_mask is not None:
+            if not isinstance(bit_mask, np.ndarray):
+                raise TypeError(f"'bit_mask' should be a numpy.ndarray, got {type(bit_mask)}.")
+            if bit_mask.dtype != np.uint32:
+                raise ValueError(f"'bit_mask' must be of dtype 'uint32', got {bit_mask.dtype}.")
+            if bit_mask.ndim != 2:
+                raise ValueError(f"'bit_mask' must be 2D, but got {bit_mask.ndim} dimensions.")
+            return bit_mask
         else:
-            if make_mask:
-                self.mask = np.zeros(mask_size, dtype=np.uint32)
-            else:
-                self.mask = None
+            return np.zeros(self.mask_size, dtype=np.uint32)
 
     def check_outfile(self):
         """
         Check if the output file exists, and take appropriate action.
         """
+        if self.outfile is None:
+            raise ValueError("Output file path 'outfile' is not specified.")
 
         if os.path.exists(self.outfile):
             if self.clobber:
                 os.remove(self.outfile)
+                logging.info(f"Existing file '{self.outfile}' removed due to clobber=True.")
             else:
-                raise FileExistsError(f'''{self.outfile} already exists, 
-                                        and clobber={self.clobber}!''')
+                raise FileExistsError(
+                    f"Output file '{self.outfile}' already exists and clobber=False."
+                )
 
     def generate_outfile(self, datamodel_tree=None, file_permission=0o666):
         """
@@ -89,6 +115,8 @@ class ReferenceType(ABC):
             Default file permission is rw-rw-rw- in symbolic notation meaning:
             owner, group and others have read and write permissions.
         """
+        if self.outfile is None:
+            raise ValueError("Output file path 'outfile' is not specified.")
 
         # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()

@@ -25,13 +25,11 @@ class TestSchema(unittest.TestCase):
         which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta.
         tmp = MakeTestMeta(ref_type='DARK')
-
-        # Make RFP Read Noise reference file object for testing.
         test_data = np.ones((3, 3, 3),
                             dtype=np.float32)
-
+        # Make RFP Dark reference file object for testing.
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=None,
                         ref_type_data=test_data)
@@ -45,21 +43,20 @@ class TestSchema(unittest.TestCase):
         # If none, then datamodel tree is valid.
         assert tf.validate() is None
 
-    @pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_flat_schema(self):
         """
         Use the WFI reference file pipeline Flat() module to build a testable object
         which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta.
         tmp = MakeTestMeta(ref_type='FLAT')
-        flat_test_meta = tmp.meta_flat.export_asdf_meta()
-
-        # Make RFP Flat reference file object for testing.
         test_data = np.ones((3, 3), dtype=np.float32)
-        rfp_flat = Flat(None, meta_data=flat_test_meta, input_flat_cube=test_data)
-        rfp_flat.make_flat_rate_image()
+        # Make RFP Flat reference file object for testing.
+        rfp_flat = Flat(meta_data=tmp.meta_flat,
+                        file_list=None,
+                        ref_type_data=test_data)
+        rfp_flat.calculate_error(error_array=test_data)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -168,13 +165,14 @@ class TestSchema(unittest.TestCase):
         testable object which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta.
         tmp = MakeTestMeta(ref_type='MASK')
         test_mask = np.zeros((4096, 4096), dtype=np.uint32)
-        # Instantiate rfp mask object.
+        # Make RFP Mask reference file object for testing.
         rfp_mask = Mask(meta_data=tmp.meta_mask,
                         file_list=None,
                         ref_type_data=test_mask)
+
         # Make test asdf tree
         tf = asdf.AsdfFile()
         tf.tree = {'roman': rfp_mask.populate_datamodel_tree()}
@@ -188,15 +186,14 @@ class TestSchema(unittest.TestCase):
         testable object which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta.
         tmp = MakeTestMeta(ref_type='READNOISE')
-
-        # Make RFP Read Noise reference file object for testing.
-        test_data = np.ones((1,1),
+        test_data = np.ones((1, 1),
                             dtype=np.float32)
-
+        # Make RFP Read Noise reference file object for testing.
         rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                                   ref_type_data=test_data)
+
         # Make test asdf tree
         tf = asdf.AsdfFile()
         tf.tree = {'roman': rfp_readnoise.populate_datamodel_tree()}

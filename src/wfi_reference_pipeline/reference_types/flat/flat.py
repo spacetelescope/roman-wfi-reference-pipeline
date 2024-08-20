@@ -32,10 +32,10 @@ class Flat(ReferenceType):
             clobber=False,
     ):
 
-        # Input dimensions of science array for ReferenceType() to
-        # to properly generate dq array mask for Flat().
-        #if bit_mask is None:
-            #bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
+        # Default bit mask size of 4088x4088 for flat is size of science array
+        # and must be provided if not bit_mask to instantiate properly in base class.
+        if bit_mask is None:
+            bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
 
         # Access methods of base class ReferenceType
         super().__init__(
@@ -44,8 +44,7 @@ class Flat(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber,
-            make_mask=True,
+            clobber=clobber
         )
 
         # Default meta creation for module specific ref type.
@@ -62,17 +61,6 @@ class Flat(ReferenceType):
         self.flat_image = None  # The attribute 'data' in data model.
         self.flat_error = None  # The attribute assigned to the flat['err'].
         self.num_files = 0
-
-        # # Inputs
-        # self.input_read_cube = input_flat_cube  # Supplied input read cube.
-        # # Internal
-        # self.rate_array = None  # 2D rate array of the science pixels.
-        # self.rate_var_array = None  # 3D cute of rate arrays.
-        # # Flattened attributes
-        # self.flat_rate_image = None  # The attribute assigned to the flat['data'].
-        # self.flat_rate_image_var = None  # Variance in fitted rate image.
-        # self.flat_intercept = None  # Intercept image from ramp fit.
-        # self.flat_intercept_var = None  # Variance in fitted intercept image.
 
         # Module flow creating reference file
         if self.file_list:
@@ -93,7 +81,7 @@ class Flat(ReferenceType):
             dim = ref_type_data.shape
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.flat_image.")
-                self.flat_image = ref_type_data
+                self.flat_image = ref_type_data.astype(np.float32)
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
@@ -220,7 +208,7 @@ class Flat(ReferenceType):
     #
     #     return rate_image, rate_image_var
 
-    def calculate_error(self):
+    def calculate_error(self, error_array=None):
         """
         Calculate the uncertainty in the flat rate image.
         """
@@ -228,8 +216,10 @@ class Flat(ReferenceType):
         # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
         # (n_reads * (n_reads * 2 - 1) * self.frame_time)
         #
-
-        self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        if error_array is None:
+            self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        else:
+            self.flat_error = error_array
 
     def update_data_quality_array(self, low_qe_threshold=0.2):
         """
@@ -262,7 +252,7 @@ class Flat(ReferenceType):
 
         # Construct the flat field object from the data model.
         flat_datamodel_tree = rds.FlatRef()
-        flat_datamodel_tree['meta'] = self.meta_data
+        flat_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         flat_datamodel_tree['data'] = self.flat_image
         flat_datamodel_tree['dq'] = self.mask
         flat_datamodel_tree['err'] = self.flat_error
