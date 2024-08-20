@@ -2,7 +2,6 @@ import logging
 
 import asdf
 import numpy as np
-import roman_datamodels as rdm
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
