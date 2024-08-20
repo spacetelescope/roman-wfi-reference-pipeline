@@ -49,7 +49,7 @@ run-ruff:
   stage: test
   script:
     - pip install ruff
-    - ruff check .
+    - ruff check . --exclude /grp/roman/rcosenti/RFP_git_clone/wfi_reference_pipeline/examples
 
 # Dependabot is scheduled to run weekly, will not be run on every CI invoke (see rules at bottom of this section)
 # Starting with '.' means not run by GitLab CI/CD. Our package ecosystems will extend this (currently pip).
