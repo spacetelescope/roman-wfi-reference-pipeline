@@ -6,9 +6,6 @@ from astropy import units as u
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.constants import (
-    WFI_FRAME_TIME,
-    WFI_MODE_WIM,
-    WFI_MODE_WSM,
     WFI_TYPE_IMAGE,
 )
 
