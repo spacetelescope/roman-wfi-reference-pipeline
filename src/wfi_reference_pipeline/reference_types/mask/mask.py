@@ -9,8 +9,12 @@ from ..reference_type import ReferenceType
 class Mask(ReferenceType):
     """
     Class Mask() inherits the ReferenceType() base class methods
-    where static meta data for all reference file types are written. The
-    method make_mask() creates the asdf mask file.
+    where static meta data for all reference file types are written.
+
+    mask = Mask(meta_data, ref_type_data=user_mask)
+    masl.make_mask_image()
+    mask.update_data_quality_array()
+    mask.generate_outfile()
     """
 
     def __init__(
@@ -43,7 +47,6 @@ class Mask(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         ---------
-        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
@@ -66,6 +69,11 @@ class Mask(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI mask reference file."
 
+        logging.debug(f"Default mask reference file object: {outfile} ")
+
+        # Initialize attributes
+        self.mask_image = None
+
         if not (isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
                 ref_type_data.shape == (4096, 4096)):
@@ -73,10 +81,14 @@ class Mask(ReferenceType):
         else:
             self.mask = ref_type_data
 
-        logging.debug(f"Default mask reference file object: {outfile} ")
+    def make_mask_image(self):
+        """
+        Method to make mask image
+        """
 
-        # Initialize attributes
-        self.outfile = outfile
+        self._update_mask_ref_pixels()
+        self._add_random_bad_pixels()
+        self.mask_image = self.mask
 
     def _update_mask_ref_pixels(self):
         """
@@ -124,6 +136,6 @@ class Mask(ReferenceType):
         # Construct the mask object from the data model.
         mask_datamodel_tree = rds.MaskRef()
         mask_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
-        mask_datamodel_tree['dq'] = self.mask
+        mask_datamodel_tree['dq'] = self.mask_image
 
         return mask_datamodel_tree

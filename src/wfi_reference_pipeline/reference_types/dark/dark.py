@@ -1,7 +1,6 @@
 import logging
-
 import numpy as np
-import roman_datamodels as rdm
+import roman_datamodels as rdm  # Used to open superdark vs asdf?
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
@@ -35,7 +34,14 @@ class Dark(ReferenceType):
     dark = Dark(meta_data, ref_type_data=user_cube, ...)
     dark.make_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data(None, None, user_read_pattern) for uneven spacing using list of lists
+    dark.calculate_error()
+    dark.update_data_quality_array()
+    dark.generate_outfile()
+
     OR
+
+    dark = Dark(meta_data, ref_type_data=user_cube, ...)
+    dark.make_dark_rate_image_from_data_cube()
     dark.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant) for even spacing
     dark.calculate_error()
     dark.update_data_quality_array()
@@ -73,7 +79,6 @@ class Dark(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         ---------
-        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
@@ -98,38 +103,6 @@ class Dark(ReferenceType):
 
         logging.debug(f"Default dark reference file object: {outfile} ")
 
-        # This SHOULD only be one file in the file list, and it is the SuperDark file
-        if self.file_list:
-            # Get file list properties and select data cube.
-            if len(self.file_list) > 1:
-                raise ValueError("A single super dark was expected in file_list..")
-            else:
-                self.get_data_cube_from_superdark_file()
-            # Must make_ma_table_resampled_cube and then make_dark_rate_image()
-        else:
-            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
-                raise TypeError(
-                    "Input data is neither a numpy array nor a Quantity object."
-                )
-            if isinstance(
-                ref_type_data, u.Quantity
-            ):  # Only access data from quantity object.
-                ref_type_data = ref_type_data.value
-                logging.info("Quantity object detected. Extracted data values.")
-            dim = ref_type_data.shape
-            if len(dim) == 3:
-                logging.info("User supplied 3D data cube to make dark reference file.")
-                self.data_cube = self.DarkDataCube(ref_type_data, self.meta_data.type)
-                # Must make_ma_table_resampled_cube and then make_dark_rate_image()
-                logging.info(
-                    "Must call make_ma_table_resampled_cube and then make_dark_rate_image() to "
-                    "finish creating reference file."
-                )
-            else:
-                raise ValueError(
-                    "Input data is not a valid numpy array of dimension 3."
-                )
-
         # MA Table attributes
         # TODO populate from MA Table Config file
         self.ma_table_read_pattern = None  # read pattern from ma table meta data -
@@ -148,6 +121,38 @@ class Dark(ReferenceType):
         self.warm_pixel_rate = 0
         self.dead_pixel_rate = 0
 
+        # This SHOULD only be one file in the file list, and it is the SuperDark file
+        if self.file_list:
+            # Get file list properties and select data cube.
+            if len(self.file_list) > 1:
+                raise ValueError("A single super dark was expected in file_list..")
+            else:
+                self.get_data_cube_from_superdark_file()
+            # Must make_ma_table_resampled_cube and then make_dark_rate_image()
+        else:
+            if not isinstance(ref_type_data,
+                              (np.ndarray, u.Quantity)):
+                raise TypeError(
+                    "Input data is neither a numpy array nor a Quantity object."
+                )
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+                ref_type_data = ref_type_data.value
+                logging.info("Quantity object detected. Extracted data values.")
+
+            dim = ref_type_data.shape
+            if len(dim) == 3:
+                logging.info("User supplied 3D data cube to make dark reference file.")
+                self.data_cube = self.DarkDataCube(ref_type_data, self.meta_data.type)
+                # Must make_ma_table_resampled_cube and then make_dark_rate_image()
+                logging.info(
+                    "Must call make_ma_table_resampled_cube and then make_dark_rate_image() to "
+                    "finish creating reference file."
+                )
+            else:
+                raise ValueError(
+                    "Input data is not a valid numpy array of dimension 3."
+                )
+
     def get_data_cube_from_superdark_file(self):
         """
         Method to open superdark asdf file and get data.
@@ -156,6 +161,7 @@ class Dark(ReferenceType):
         logging.info(
             "OPENING - " + self.file_list
         )  # Already checked that file_list is of length one.
+        #TODO consider using asdf.open instead or create a datamodel for superdark
         data = rdm.open(self.file_list)
         if isinstance(data, u.Quantity):  # Only access data from quantity object.
             data = data.value
@@ -328,16 +334,10 @@ class Dark(ReferenceType):
 
         logging.info("Flagging dead, hot, and warm pixels and updating DQ array.")
         # Locate hot and warm pixel num_i_pixels, num_j_pixels positions in 2D array
-        self.mask[self.data_cube.rate_image > self.hot_pixel_rate] += self.dqflag_defs[
-            "HOT"
-        ]
-        self.mask[
-            (self.warm_pixel_rate <= self.data_cube.rate_image)
-            & (self.data_cube.rate_image < self.hot_pixel_rate)
-        ] += self.dqflag_defs["WARM"]
-        self.mask[self.data_cube.rate_image < self.dead_pixel_rate] += self.dqflag_defs[
-            "DEAD"
-        ]
+        self.mask[self.data_cube.rate_image > self.hot_pixel_rate] += self.dqflag_defs["HOT"]
+        self.mask[(self.warm_pixel_rate <= self.data_cube.rate_image)
+            & (self.data_cube.rate_image < self.hot_pixel_rate)] += self.dqflag_defs["WARM"]
+        self.mask[self.data_cube.rate_image < self.dead_pixel_rate] += self.dqflag_defs["DEAD"]
 
     def populate_datamodel_tree(self):
         """

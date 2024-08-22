@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
@@ -89,6 +88,8 @@ class ReadNoise(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI read noise reference file."
 
+        logging.debug(f"Default read noise reference file object: {outfile} ")
+
         # Attributes to make reference file with valid data model.
         self.readnoise_image = None  # The attribute 'data' in data model.
         self.ramp_res_var = None  # The variance of residuals from the difference of the ramp model and a data cube.
@@ -106,9 +107,7 @@ class ReadNoise(ReferenceType):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(
-                ref_type_data, u.Quantity
-            ):  # Only access data from quantity object.
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
                 ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
 
@@ -121,10 +120,7 @@ class ReadNoise(ReferenceType):
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = self.ReadNoiseDataCube(
-                    ref_type_data, self.meta_data.type
-                )
-
+                self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
                 # Must call make_readnoise_image() to finish creating reference file.
                 logging.debug(
                     "Must call make_readnoise_image() to finish creating reference file."
@@ -339,8 +335,10 @@ class ReadNoise(ReferenceType):
                 wfi_type=wfi_type,
             )
             self.rate_image = None  # The linear slope coefficient of the fitted data cube.
-            self.intercept_image = (
-                None  # the y intercept of a line fit to the data_cube
+            self.rate_image_err = None  # uncertainty in rate image
+            self.intercept_image = None
+            self.intercept_image_err = (
+                None  # uncertainty in intercept image (could be variance?)
             )
             self.ramp_model = None  # Ramp model of data cube.
             self.coeffs_array = None  # Fitted coefficients to data cube.

@@ -16,10 +16,10 @@ rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                           clobber=True)
 # Save file.
 rfp_readnoise.generate_outfile()
-
+print('Made reference file', rfp_readnoise.outfile)
 
 print('Dev to make ReadNoise with a simulated dark cube.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_readnoise_dev_file.asdf'
+outfile = '/grp/roman/RFP/DEV/scratch/rfp_readnoise_dev_file2.asdf'
 # Use dev meta to instantiate rfp readnoise object.
 tmp = MakeDevMeta(ref_type='READNOISE')
 # Set simulated cube readnoise variance for testing of ReadNoise.
@@ -27,16 +27,17 @@ sim_readnoise_var = 5
 # Create simulated data cube.
 sim_dev_cube, dev_rate_image = simulate_dark_reads(40, dark_rate=1, noise_mean=15, noise_var=np.sqrt(sim_readnoise_var))
 # Instantiate rfp readnoise object.
-rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
+rfp_readnoise2 = ReadNoise(meta_data=tmp.meta_readnoise,
                           ref_type_data=sim_dev_cube,
                           outfile=outfile,
                           clobber=True)
 # Get rate image from data cube.
-rfp_readnoise.make_rate_image_from_data_cube()
+rfp_readnoise2.make_rate_image_from_data_cube()
 # Make readnoise image from data cube.
-rfp_readnoise.make_readnoise_image()
+rfp_readnoise2.make_readnoise_image()
 # Save file.
-rfp_readnoise.generate_outfile()
+rfp_readnoise2.generate_outfile()
+print('Made reference file', rfp_readnoise2.outfile)
 
 #TODO for readnoise testing
 print(np.mean(rfp_readnoise.readnoise_image),np.median(rfp_readnoise.readnoise_image), sim_readnoise_var)

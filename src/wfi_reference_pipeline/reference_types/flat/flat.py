@@ -1,17 +1,21 @@
 import logging
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.constants import (
+    WFI_FRAME_TIME,
+    WFI_MODE_WIM,
+    WFI_MODE_WSM,
+    WFI_TYPE_IMAGE,
+)
 
 from ..reference_type import ReferenceType
 
 
 class Flat(ReferenceType):
-
     """
     Class Flat() inherits the ReferenceType() base class methods where
     static meta data for all reference file types are written. The class
@@ -19,6 +23,12 @@ class Flat(ReferenceType):
     within some maximum date range. Fit ramps to all available filter
     cubes ro generate flat rate images and average together and normalize
     to produce the filter dependent flat rate image.
+
+    flat = Flat(meta_data, ref_type_data=user_mask)
+    flat.make_flat_image()
+    flat.calculate_error()
+    flat.update_data_quality_array()
+    flat.generate_outfile()
     """
 
     def __init__(
@@ -71,9 +81,7 @@ class Flat(ReferenceType):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(
-                ref_type_data, u.Quantity
-            ):  # Only access data from quantity object.
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
                 ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
 
@@ -87,9 +95,8 @@ class Flat(ReferenceType):
                     "User supplied 3D data cube to make flat reference file."
                 )
                 self.data_cube = self.FlatDataCube(
-                    ref_type_data, self.meta_data.type
+                    ref_type_data, WFI_TYPE_IMAGE
                 )
-
                 # Must call make_flat_rate_image() to finish creating reference file.
                 logging.debug(
                     "Must call make_flat_rate_image() to finish creating reference file."
@@ -149,12 +156,11 @@ class Flat(ReferenceType):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(
-                tmp_cube, u.Quantity
-            ):  # Only access data from quantity object.
+            if isinstance(tmp_cube, u.Quantity):  # Only access data from quantity object.
                 tmp_cube = tmp_cube.value
                 logging.debug("Quantity object detected. Extracted data values.")
-            self.data_cube = self.FlatDataCube(tmp_cube, self.meta_data.type)
+            print('testing meta data type')
+            self.data_cube = self.FlatDataCube(tmp_cube, WFI_TYPE_IMAGE)
             self.data_cube.fit_cube(degree=1)
             rate_image_array[fl, :, :] = self.data_cube.rate_image
             rate_image_var_array[fl, :, :] = self.data_cube.covars_array
@@ -166,8 +172,10 @@ class Flat(ReferenceType):
     def calculate_error(self, error_array=None):
         """
         Calculate the uncertainty in the flat rate image.
+
+        If error array is None, generate random flat error array.
         """
-        # TODO for future implementation
+        # TODO for future implementation from A. Petric
         # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
         # (n_reads * (n_reads * 2 - 1) * self.frame_time)
         #
@@ -176,29 +184,30 @@ class Flat(ReferenceType):
         else:
             self.flat_error = error_array
 
-    def update_data_quality_array(self, low_qe_threshold=0.2):
+    def update_data_quality_array(self, low_qe_threshold=None):
         """
         Update data quality array bit mask with flag integer value.
 
         Parameters
         ----------
-        low_qe_threshold: float; default = 0.2,
+        low_qe_threshold: float; default = None,
            Limit below which to flag pixels as low quantum efficiency.
         """
 
-        # TODO remove random loq qe pixels from flat_rate_image
-        # Generate between 200-300 pixels with low qe for DMS builds
-        rand_num_lowqe = np.random.randint(200, 300)
-        coords_x = np.random.randint(0, 4088, rand_num_lowqe)
-        coords_y = np.random.randint(0, 4088, rand_num_lowqe)
-        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
-        self.flat_image[coords_x, coords_y] = rand_low_qe_values
+        if low_qe_threshold is None:
+            # TODO remove random loq qe pixels from flat_rate_image
+            # Generate between 200-300 pixels with low qe for DMS builds
+            rand_num_lowqe = np.random.randint(200, 300)
+            coords_x = np.random.randint(0, 4088, rand_num_lowqe)
+            coords_y = np.random.randint(0, 4088, rand_num_lowqe)
+            rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
+            self.flat_image[coords_x, coords_y] = rand_low_qe_values
 
-        self.low_qe_threshold = low_qe_threshold
+            low_qe_threshold = 0.2
 
         logging.info('Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
-        self.mask[self.flat_image < self.low_qe_threshold] += self.dqflag_defs['LOW_QE']
+        self.mask[self.flat_image < low_qe_threshold] += self.dqflag_defs['LOW_QE']
 
     def populate_datamodel_tree(self):
         """
@@ -233,8 +242,10 @@ class Flat(ReferenceType):
                 wfi_type=wfi_type,
             )
             self.rate_image = None  # The linear slope coefficient of the fitted data cube.
-            self.intercept_image = (
-                None  # the y intercept of a line fit to the data_cube
+            self.rate_image_err = None  # uncertainty in rate image
+            self.intercept_image = None
+            self.intercept_image_err = (
+                None  # uncertainty in intercept image (could be variance?)
             )
             self.ramp_model = None  # Ramp model of data cube.
             self.coeffs_array = None  # Fitted coefficients to data cube.
