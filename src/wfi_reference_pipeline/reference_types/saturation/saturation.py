@@ -11,7 +11,14 @@ class Saturation(ReferenceType):
     """
     Class Saturation() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
-    The method create_saturation() creates the ASDF saturation reference file.
+    Saturation() creates the mask reference file using roman data models
+    and has all necessary meta and matching criteria for delivery to CRDS.
+
+    Example file creation commands:
+    saturation_obj = Saturation(meta_data, ref_type_data=test_data_array)
+    saturation_obj.make_saturation_image()
+    saturation_obj.generate_outfile()
+
     """
 
     def __init__(
@@ -47,7 +54,7 @@ class Saturation(ReferenceType):
         See reference_type.py base class for additional attributes and methods.
         """
 
-        # Access methods of base class ReferenceType
+        # Access methods of base class ReferenceType.
         super().__init__(
             meta_data=meta_data,
             file_list=file_list,
@@ -60,34 +67,26 @@ class Saturation(ReferenceType):
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaSaturation):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaSaturation"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaSaturation."
             )
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI saturation reference file."
 
-        logging.debug(f"Default saturation reference file object: {outfile}")
+        logging.debug(f"Default saturation reference file object: {outfile}.")
 
-        # Initialize attributes
+        # Initialize attributes.
         self.saturation_image = None
 
-        # Module flow creating reference file
-        if self.file_list:
-            # Get file list properties and select data cube.
-            self.num_files = len(self.file_list)
-            #TODO determine how to make saturatin reference file from file list
-            raise ValueError(
-                "RFP under development to make saturation reference file from file list."
+        # Module flow creating reference file.
+        if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
+            raise TypeError(
+                "Input data is neither a numpy array nor a Quantity object."
             )
-        else:
-            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
-                raise TypeError(
-                    "Input data is neither a numpy array nor a Quantity object."
-                )
-            if isinstance(
-                ref_type_data, u.Quantity
-            ):  # Only access data from quantity object.
-                ref_type_data = ref_type_data.value
-                logging.debug("Quantity object detected. Extracted data values.")
+        if isinstance(
+            ref_type_data, u.Quantity
+        ):  # Only access data from quantity object.
+            ref_type_data = ref_type_data.value
+            logging.debug("Quantity object detected. Extracted data values.")
 
         dim = ref_type_data.shape
         if len(dim) == 2:
@@ -99,9 +98,9 @@ class Saturation(ReferenceType):
                 "Input data is not a valid numpy array of dimension 2."
             )
 
-    def make_synthetic_saturation_image(self, saturation_threshold=55000):
+    def make_saturation_image(self, saturation_threshold=55000):
         """
-        Generate the development saturation reference file for CRDS.
+        Make the saturation image a uniform array of a certain threshold value.
 
         Parameters
         ----------
@@ -141,7 +140,7 @@ class Saturation(ReferenceType):
 
         # Construct the saturation object from the data model.
         saturation_datamodel_tree = rds.SaturationRef()
-        saturation_datamodel_tree["meta"] = self.meta_data
+        saturation_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
         saturation_datamodel_tree["data"] = self.saturation_image * u.DN
         saturation_datamodel_tree["dq"] = self.mask
 
