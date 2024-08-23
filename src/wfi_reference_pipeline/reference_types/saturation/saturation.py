@@ -11,14 +11,13 @@ class Saturation(ReferenceType):
     """
     Class Saturation() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
-    Saturation() creates the mask reference file using roman data models
+    Saturation() creates the saturation reference file using roman data models
     and has all necessary meta and matching criteria for delivery to CRDS.
 
     Example file creation commands:
     saturation_obj = Saturation(meta_data, ref_type_data=test_data_array)
     saturation_obj.make_saturation_image()
     saturation_obj.generate_outfile()
-
     """
 
     def __init__(

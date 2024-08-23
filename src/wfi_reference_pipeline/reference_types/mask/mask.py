@@ -88,7 +88,11 @@ class Mask(ReferenceType):
 
     def make_mask_image(self):
         """
-        Method to make mask image
+        This method is used to generate the reference file image.
+
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
         """
 
         self._update_mask_ref_pixels()
@@ -97,8 +101,7 @@ class Mask(ReferenceType):
 
     def _update_mask_ref_pixels(self):
         """
-        Create array to flag the 4 pixel
-        reference poxel border around the detector.
+        Create array to flag the 4 pixel reference poxel border around the detector.
         """
 
         refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
@@ -130,8 +133,8 @@ class Mask(ReferenceType):
         """
         Abstract method not utilized by Mask().
 
-        NOTE - would be redundant since the mask_image is the attribute mask used
-        for setting the data quality arrays of other reference file types.
+        NOTE - Would be redundant to make_mask_image(). The attribute mask is reserved
+        specifically setting the data quality arrays of other reference file types.
         """
 
         pass

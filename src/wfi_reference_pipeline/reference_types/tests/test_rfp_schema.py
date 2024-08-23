@@ -29,7 +29,7 @@ class TestSchema(unittest.TestCase):
         tmp = MakeTestMeta(ref_type='DARK')
         test_data = np.ones((3, 3, 3),
                             dtype=np.float32)
-        
+
         # Make RFP Dark reference file object for testing.
         rfp_dark = Dark(meta_data=tmp.meta_dark,
                         file_list=None,

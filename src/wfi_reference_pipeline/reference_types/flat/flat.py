@@ -72,7 +72,7 @@ class Flat(ReferenceType):
         if self.file_list:
             # Get file list properties and select data cube.
             self.num_files = len(self.file_list)
-            # Must make_flat_rate_image() to finish creating reference file.
+            # Must make_flat_image() to finish creating reference file.
         else:
             if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
                 raise TypeError(
@@ -86,6 +86,10 @@ class Flat(ReferenceType):
             if len(dim) == 2:
                 logging.debug("The input 2D data array is now self.flat_image.")
                 self.flat_image = ref_type_data.astype(np.float32)
+                logging.debug(
+                    "Initializing flat error array with all zeros."
+                )
+                self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
@@ -94,14 +98,50 @@ class Flat(ReferenceType):
                 self.data_cube = self.FlatDataCube(
                     ref_type_data, WFI_TYPE_IMAGE
                 )
-                # Must call make_flat_rate_image() to finish creating reference file.
+                # Must call make_flat_image() to finish creating reference file.
                 logging.debug(
-                    "Must call make_flat_rate_image() to finish creating reference file."
+                    "Must call make_flat_image() to finish creating reference file."
                 )
             else:
                 raise ValueError(
                     "Input data is not a valid numpy array of dimension 2 or 3."
                 )
+
+    def make_flat_image(self):
+        """
+        This method is used to generate the reference file image from the file list or a data cube.
+
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
+
+        The flat reference file data model has:
+            data = self.flat_image
+            err = self.flat_error
+            dq = self.mask
+        Additional method calls must be run to populate initialized arrays:
+            self.calculate_error()
+            self.update_data_quality_array()
+        """
+
+        if self.file_list:
+            logging.debug(
+                "Making flat_image from average of rate images from file list."
+            )
+            avg_rate_image = self.make_flat_from_files()
+            self.flat_image = avg_rate_image / np.mean(avg_rate_image)
+        else:
+            logging.debug(
+                "Making flat_image from data cube."
+            )
+            self.make_rate_image_from_data_cube()
+            self.flat_image = self.data_cube.rate_image / np.mean(self.data_cube.rate_image)
+
+        logging.debug(
+            "Initializing flat error array with all zeros. Run calculate_error()."
+        )
+        self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
+        logging.debug("Ready to generate reference file.")
 
     def make_rate_image_from_data_cube(self, fit_order=1):
         """
@@ -123,11 +163,8 @@ class Flat(ReferenceType):
     def make_flat_from_files(self):
         """
         Go through the files supplied to the module and generate a
-        cube of rate images into an array. This method uses the
-        make_flat_from_cube method also so that the number of reads
-        can vary over multiple input read cubes. The average of all
-        rate arrays in the cube are averaged and returned.
-        return:
+        cube of rate images into an array. This method uses FlatDataCube
+        class and its methods to generate flat rate images.
 
         Returns
         -------
@@ -135,7 +172,7 @@ class Flat(ReferenceType):
             The average of the rate_image_array in the z axis.
         """
 
-        print("Inside make_flat_from_files() method.")
+        logging.debug(f"Making flat from the average flat rate of file list data cubes.")
         n_reads_per_fl_arr = np.zeros(self.num_files)
         rate_image_array = np.zeros((self.num_files,
                                      self.data_cube.num_i_pixels,
@@ -149,6 +186,7 @@ class Flat(ReferenceType):
             tmp = asdf.open(self.file_list[fl])
             n_reads_per_fl_arr[fl], _, _ = np.shape(tmp.tree["roman"]["data"])
             tmp_cube = tmp.tree["roman"]["data"]
+            tmp.close()
             if not isinstance(tmp_cube, (np.ndarray, u.Quantity)):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
@@ -156,22 +194,26 @@ class Flat(ReferenceType):
             if isinstance(tmp_cube, u.Quantity):  # Only access data from quantity object.
                 tmp_cube = tmp_cube.value
                 logging.debug("Quantity object detected. Extracted data values.")
-            print('testing meta data type')
-            self.data_cube = self.FlatDataCube(tmp_cube, WFI_TYPE_IMAGE)
+            self.data_cube = self.FlatDataCube(tmp_cube, WFI_TYPE_IMAGE)  # WIM mode only for flats.
             self.data_cube.fit_cube(degree=1)
             rate_image_array[fl, :, :] = self.data_cube.rate_image
             rate_image_var_array[fl, :, :] = self.data_cube.covars_array
-            tmp.close()
 
         avg_rate_image = np.mean(rate_image_array, axis=0)
         return avg_rate_image
 
     def calculate_error(self, error_array=None):
         """
-        Calculate the uncertainty in the flat rate image.
+        Calculate the uncertainty in the flat rate image. If error array is None,
+        generate random flat error array.
 
-        If error array is None, generate random flat error array.
+        Parameters
+        ----------
+        error_array: ndarray; default = None,
+           Variable to provide a precalculated error array. If None, random error is
+           calculated for flat error array.
         """
+
         # TODO for future implementation from A. Petric
         # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
         # (n_reads * (n_reads * 2 - 1) * self.frame_time)
@@ -181,17 +223,21 @@ class Flat(ReferenceType):
         else:
             self.flat_error = error_array
 
-    def update_data_quality_array(self, low_qe_threshold=None):
+    def update_data_quality_array(self, low_qe_threshold=0.2, add_low_qe_pixels=False):
         """
         Update data quality array bit mask with flag integer value.
 
+        If add_low_qr_pixels is True, a random number of loq quantum efficiency pixels
+        will be inserted into self.flat_image.
+
         Parameters
         ----------
-        low_qe_threshold: float; default = None,
+        low_qe_threshold: float; default = 0.2,
            Limit below which to flag pixels as low quantum efficiency.
+        add_low_qe_pixels: bool; default = False,
         """
 
-        if low_qe_threshold is None:
+        if add_low_qe_pixels:
             # TODO remove random loq qe pixels from flat_rate_image
             # Generate between 200-300 pixels with low qe for DMS builds
             rand_num_lowqe = np.random.randint(200, 300)
@@ -199,8 +245,6 @@ class Flat(ReferenceType):
             coords_y = np.random.randint(0, 4088, rand_num_lowqe)
             rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
             self.flat_image[coords_x, coords_y] = rand_low_qe_values
-
-            low_qe_threshold = 0.2
 
         logging.info('Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
@@ -214,9 +258,9 @@ class Flat(ReferenceType):
         # Construct the flat field object from the data model.
         flat_datamodel_tree = rds.FlatRef()
         flat_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
-        flat_datamodel_tree['data'] = self.flat_image
+        flat_datamodel_tree['data'] = self.flat_image.astype(np.float32)
+        flat_datamodel_tree['err'] = self.flat_error.astype(np.float32)
         flat_datamodel_tree['dq'] = self.mask
-        flat_datamodel_tree['err'] = self.flat_error
 
         return flat_datamodel_tree
 

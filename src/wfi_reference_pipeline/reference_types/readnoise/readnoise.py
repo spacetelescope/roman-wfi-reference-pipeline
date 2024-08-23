@@ -14,25 +14,34 @@ from ..reference_type import ReferenceType
 
 class ReadNoise(ReferenceType):
     """
-    Class ReadNoise() inherits the ReferenceType() base class methods where static meta data for all reference
-    file types are written. Under automated operational conditions, a dark calibration file with the most number
-    of reads for each detector will be selected from a list of dark calibration input files from the input data variable
-    in ReferenceType() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
-    best available data to measure the variance of the detector read by read. A ramp model for all available reads
-    will be subtracted from the input data cube that is constructed from the input file list provided and the variance
-    in the residuals is determined to be the best measurement of the read noise (Casterano and Cosentino email
+    Class ReadNoise() inherits the ReferenceType() base class methods
+    where static meta data for all reference file types are written.
+    ReadNoise() creates the read noise reference file using roman data models
+    and has all necessary meta and matching criteria for delivery to CRDS.
+
+    Under automated operational conditions, a dark calibration file with the most number
+    of reads for each detector will be selected from a file list of inputs. Dark calibration
+    files where every read is available and not averaged are the best available data to
+    measure the variance of the detector read by read. A ramp model for all available reads
+    will be subtracted from the input data cube provided and the variance in the residuals
+    is determined to be the best measurement of the read noise (Casertano and Cosentino email
     discussions Dec 2022).
 
-    Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise, etc. are
-    to be determined. The method get_cds_noise() is available for diagnostics purposes and comparison when developing
-    more mature functionality of the reference file pipeline.
+    Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise,
+    etc. are to be determined. The method get_cds_noise() is available for diagnostics purposes
+    and comparison when developing more mature functionality of the reference file pipeline.
 
-    Sample ReadNoise Run:
-    readnoise = ReadNoise(...many params...)
-    readnoise.make_rate_image_from_data_cube()
-    readnoise.make_readnoise_image()
-    readnoise.comp_ramp_res_var() OR readnoise.comp_cds_noise()
-    readnoise.generate_outfile()
+    Example file creation commands:
+    With user cube input.
+    readnoise_obj = ReadNoise(meta_data, ref_type_data=input_data)
+    readnoise_obj.make_readnoise_image()
+    readnoise_obj.generate_outfile()
+
+    From a file list with many cubes.
+    readnoise_obj = ReadNoise(meta_data, file_list=input_file_list.txt)
+    readnoise_obj._select_data_cube_from_file_list()
+    readnoise_obj.make_readnoise_image()
+    readnoise_obj.generate_outfile()
     """
 
     def __init__(
@@ -122,6 +131,7 @@ class ReadNoise(ReferenceType):
                 )
                 self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
                 # Must call make_readnoise_image() to finish creating reference file.
+                #TODO evaluate self.meta_data.type and exposure.type and exposure.p_exptype
                 logging.debug(
                     "Must call make_readnoise_image() to finish creating reference file."
                 )
@@ -167,6 +177,22 @@ class ReadNoise(ReferenceType):
         )
         self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
+    def make_readnoise_image(self):
+        """
+        This method is used to generate the reference file image from the file list or a data cube.
+
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
+        """
+
+        logging.info("Making read noise image.")
+        if self.file_list:
+            self._select_data_cube_from_file_list()
+        self.make_rate_image_from_data_cube(fit_order=1)
+        self.data_cube.make_ramp_model()
+        self.readnoise_image = self.comp_ramp_res_var()
+
     def make_rate_image_from_data_cube(self, fit_order=1):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
@@ -183,16 +209,6 @@ class ReadNoise(ReferenceType):
 
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
-
-    def make_readnoise_image(self):
-        """
-        This method is used to generate the reference file image type from the file list or a data cube.
-        """
-
-        logging.info("Making read noise image.")
-        self.make_rate_image_from_data_cube()
-        self.data_cube.make_ramp_model()
-        self.readnoise_image = self.comp_ramp_res_var()
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
