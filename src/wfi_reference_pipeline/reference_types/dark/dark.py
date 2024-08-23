@@ -280,7 +280,7 @@ class Dark(ReferenceType):
 
     def calculate_error(self):
         """
-        #TODO re-evaluate the error propagation for dark and how fit_dark_ramp() and this method operate and computational performance
+        # TODO re-evaluate the error propagation for dark and how fit_dark_ramp() and this method operate and computational performance
         Old method of computing dark error
         """
 

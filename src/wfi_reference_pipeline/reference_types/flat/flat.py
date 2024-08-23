@@ -172,7 +172,7 @@ class Flat(ReferenceType):
             The average of the rate_image_array in the z axis.
         """
 
-        logging.debug(f"Making flat from the average flat rate of file list data cubes.")
+        logging.debug("Making flat from the average flat rate of file list data cubes.")
         n_reads_per_fl_arr = np.zeros(self.num_files)
         rate_image_array = np.zeros((self.num_files,
                                      self.data_cube.num_i_pixels,
