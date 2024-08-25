@@ -1,8 +1,11 @@
-import roman_datamodels.stnode as rds
+import logging
+import fits
 import numpy as np
+import roman_datamodels.stnode as rds
+from astropy import units as u
+from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
+
 from ..reference_type import ReferenceType
-from astropy.io import fits
-import asdf
 
 
 class InverseLinearity(ReferenceType):
@@ -16,13 +19,15 @@ class InverseLinearity(ReferenceType):
     in romancal standard processing.
     """
 
-    def __init__(self,
-                 inverselinearity_file_list,
-                 meta_data,
-                 bit_mask=None,
-                 outfile='roman_inverse_linearity.asdf',
-                 clobber=False,
-                 input_coefficients=None):
+    def __init__(
+            self,
+            meta_data,
+            file_list=None,
+            ref_type_data=None,
+            bit_mask=None,
+            outfile="roman_inverselinearity.asdf",
+            clobber=False,
+    ):
 
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -30,40 +35,71 @@ class InverseLinearity(ReferenceType):
 
         Parameters
         ----------
-        inverselinearity_file_list:
-            Input list of files to make inverse linearity coefficients. It populates self.input_data.
-        meta_data: dictionary; default = None
-            Dictionary of information for reference file as required by romandatamodels.
+        meta_data: Object; default = None
+            Object of meta information converted to dictionary when writing reference file.
+        file_list: List of strings; default = None
+            List of file names with absolute paths. Intended for primary use during automated operations.
+        ref_type_data: numpy array; default = None
+            Input which can be image array or data cube. Intended for development support file creation or as input
+            for reference file types not generated from a file list.
         bit_mask: 2D integer numpy array, default = None
-            A 2D data quality integer array for supplying a mask for the creation of the dark reference file.
-        outfile: string; default = roman_inverse_linearity.asdf
-            Filename with path for saved dark reference file.
+            A 2D data quality integer mask array to be applied to reference file.
+        outfile: string; default = roman_flat.asdf
+            File path and name for saved reference file.
         clobber: Boolean; default = False
-            True to overwrite the file name outfile if file already exists. False will not overwrite and exception
-            will be raised if duplicate file is found.
-        input_coefficients: numpy.ndarray; default=None,
-            User input inverse linearity coefficients.
+            True to overwrite outfile if outfile already exists. False will not overwrite and exception
+            will be raised if duplicate file found.
+        ---------
+
+        See reference_type.py base class for additional attributes and methods.
         """
 
         # Access methods of base class ReferenceType
         super().__init__(
-            inverselinearity_file_list,
-            meta_data,
+            meta_data=meta_data,
+            file_list=file_list,
+            ref_type_data=ref_type_data,
             bit_mask=bit_mask,
-            clobber=clobber,
-            make_mask=True,
+            outfile=outfile,
+            clobber=clobber
         )
 
-        # Update metadata with file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI inverse linearity reference file.'
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'INVERSELINEARITY'  # RTB coordinated with DMS and CRDS on reftype name of all caps
-            # June 2023 - R. Cosentino, R. Klein, W. Jamieson
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaInverseLinearity):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaInverseLinearity"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI inverse linearity reference file."
 
-        # Initialize attributes
-        self.outfile = outfile
-        self.inverselinearity_coefficients = input_coefficients
+        logging.debug(f"Default flat reference file object: {outfile} ")
+
+        # Attributes to make reference file with valid data model.
+        self.inverselinearity_coefficients = None  # The attribute 'data' in data model.
+
+        # Module flow creating reference file
+        if self.file_list:
+            raise TypeError(
+                f"The algorithm generate inverse linearity coefficients i snot implemented yet."
+            )
+        else:
+            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
+                raise TypeError(
+                    "Input data is neither a numpy array nor a Quantity object."
+                )
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+                ref_type_data = ref_type_data.value
+                logging.debug("Quantity object detected. Extracted data values.")
+
+            dim = ref_type_data.shape
+            if len(dim) == 3:
+                logging.debug("The input 3D data array is now self.inverselinearity_coefficients.")
+                self.inverselinearity_coefficients = ref_type_data
+                logging.debug("Ready to generate reference file.")
+            else:
+                raise ValueError(
+                    "Input data is not a valid numpy array of dimension 3."
+                )
 
     def get_coeffs_from_dcl(self, wfi_det='WFI01'):
         """
@@ -80,7 +116,7 @@ class InverseLinearity(ReferenceType):
         """
 
         # Update meta data based on input to getting DCL inverse linearity coefficients
-        self.meta['instrument'].update({'detector': wfi_det})
+        self.meta_data['instrument'].update({'detector': wfi_det})
 
         wfi_arr = ["WFI01", "WFI02", "WFI03", "WFI04", "WFI05", "WFI06", "WFI07", "WFI08", "WFI09", "WFI10", "WFI11",
                    "WFI12", "WFI13", "WFI14", "WFI15", "WFI16", "WFI17", "WFI18"]
@@ -103,10 +139,17 @@ class InverseLinearity(ReferenceType):
             self.inverselinearity_coefficients = hdul[0].data.astype(np.float32)
 
         # Update meta data and add sca id number.
-        self.meta.update({'pedigree': 'GROUND'})
-        self.meta['instrument'].update({'SCA': sca_id})
+        #self.meta_data.update({'pedigree': 'GROUND'})
+        #self.meta_data['instrument'].update({'SCA': sca_id})
 
-    def update_dq_mask(self, tolerance=1):
+    def calculate_error(self):
+        """
+        Abstract method not applicable to Gain.
+        """
+
+        pass
+
+    def update_data_quality_array(self, tolerance=1):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -148,21 +191,8 @@ class InverseLinearity(ReferenceType):
 
         # Construct the dark object from the data model.
         inverselinearity_datamodel_tree = rds.InverselinearityRef()
-        inverselinearity_datamodel_tree['meta'] = self.meta
+        inverselinearity_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         inverselinearity_datamodel_tree['coeffs'] = self.inverselinearity_coefficients
         inverselinearity_datamodel_tree['dq'] = self.mask
 
         return inverselinearity_datamodel_tree
-
-    def save_inverselinearity(self, datamodel_tree=None):
-        """
-        The method save_inverselinearity writes the reference file object to the specified asdf outfile.
-        """
-
-        # Use data model tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)
