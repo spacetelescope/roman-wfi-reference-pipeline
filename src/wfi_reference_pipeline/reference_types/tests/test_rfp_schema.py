@@ -25,7 +25,7 @@ class TestSchema(unittest.TestCase):
         which is then validated against the DMS reference file schema.
         """
 
-        # Make test meta.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='DARK')
         test_data = np.ones((3, 3, 3),
                             dtype=np.float32)
@@ -50,7 +50,7 @@ class TestSchema(unittest.TestCase):
         which is then validated against the DMS reference file schema.
         """
 
-        # Make test meta.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='FLAT')
         test_data = np.ones((3, 3), dtype=np.float32)
 
@@ -67,20 +67,20 @@ class TestSchema(unittest.TestCase):
         # If none, then datamodel tree is valid.
         assert tf.validate() is None
 
-    @pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_gain_schema(self):
         """
         Use the WFI reference file pipeline Gain() module to build a testable object
         which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='GAIN')
-        gain_test_meta = tmp.meta_gain.export_asdf_meta()
+        test_data = 2*np.ones((3, 3), dtype=np.float32)
 
         # Make RFP Gain reference file object for testing.
-        test_data = np.ones((3, 3), dtype=np.float32)
-        rfp_gain = Gain(test_data, meta_data=gain_test_meta)
+        rfp_gain = Gain(meta_data=tmp.meta_gain,
+                        file_list=None,
+                        ref_type_data=test_data)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -96,13 +96,14 @@ class TestSchema(unittest.TestCase):
         which is then validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='IPC')
-        ipc_test_meta = tmp.meta_ipc.export_asdf_meta()
+        test_data = np.ones((3, 3), dtype=np.float32)
 
         # Make RFP IPC reference file object for testing.
-        test_data = np.ones((3, 3), dtype=np.float32)
-        rfp_ipc = InterPixelCapacitance(ipc_test_meta, user_ipc=test_data)
+        rfp_ipc = InterPixelCapacitance(meta_data=tmp.meta_ipc,
+                                        file_list=None,
+                                        ref_type_data=test_data)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -118,14 +119,12 @@ class TestSchema(unittest.TestCase):
         a testable object which is the validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='INVERSELINEARITY')
-        inverselinearity_test_meta = tmp.meta_inverselinearity.export_asdf_meta()
-
-        # Make RFP Inverse Linearity reference file object for testing.
         test_data = np.ones((11, 1, 1),
                             dtype=np.float32)  # Dimensions of inverse coefficients are 11x4096x4096.
-        rfp_inverselinearity = InverseLinearity(None, meta_data=inverselinearity_test_meta,
+
+        rfp_inverselinearity = InverseLinearity(meta_data=tmp.meta_inverselinearity,
                                                 input_coefficients=test_data)
 
         # Make test asdf tree
@@ -142,7 +141,7 @@ class TestSchema(unittest.TestCase):
         object which is the validated against the DMS reference file schema.
         """
 
-        # Make reftype specific data class object and export meta data as dict.
+        # Make test meta and data.
         tmp = MakeTestMeta(ref_type='LINEARITY')
         linearity_test_meta = tmp.meta_linearity.export_asdf_meta()
 

@@ -2,10 +2,11 @@ import logging
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
-from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaGain
+from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
+
+from ..reference_type import ReferenceType
 
 
-# @log_info
 class Gain(ReferenceType):
     """
     Class Gain() inherits the ReferenceType() base class methods
@@ -72,21 +73,40 @@ class Gain(ReferenceType):
         self.gain_image = None  # The attribute 'data' in data model.
         self.num_files = 0
 
+        # Module flow creating reference file
+        if self.file_list:
+            # Get file list properties and select data cube.
+            self.num_files = len(self.file_list)
+            # Implement how to derive gain from file list.
+        else:
+            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
+                raise TypeError(
+                    "Input data is neither a numpy array nor a Quantity object."
+                )
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+                ref_type_data = ref_type_data.value
+                logging.debug("Quantity object detected. Extracted data values.")
+
+            dim = ref_type_data.shape
+            if len(dim) == 2:
+                logging.debug("The input 2D data array is now self.gain_image.")
+                self.gain_image = ref_type_data
+                logging.debug("Ready to generate reference file.")
+            else:
+                raise ValueError(
+                    "Input data is not a valid numpy array of dimension 2."
+                )
+
     def make_gain_image(self):
 
-        self.gain_image =
+        self.gain_image, _ = self.calculate_mean_variance()
 
     def calculate_mean_variance(self):
         """
         The method make_gain() uses the photon transfer curve to estimate
         the gain in units of electrons/DN.
 
-        Parameters
-        ----------
-
-        Outputs
-        -------
-        None
+        # TODO update method using file list for list of data cubes per TVAC analysis
         """
 
         data_shape = self.data[0].shape
@@ -122,6 +142,20 @@ class Gain(ReferenceType):
 
         return signal_arr, var_arr
 
+    def calculate_error(self):
+        """
+        Abstract method not applicable to Gain.
+        """
+
+        pass
+
+    def update_data_quality_array(self):
+        """
+        Abstract method not utilized by Gain().
+        """
+
+        pass
+
     def populate_datamodel_tree(self):
         """
         Create data model from DMS and populate tree.
@@ -129,7 +163,8 @@ class Gain(ReferenceType):
 
         # Construct the dark object from the data model.
         gain_datamodel_tree = rds.GainRef()
-        gain_datamodel_tree['meta'] = self.meta
+        gain_datamodel_tree['meta'] = self.meta_data
         gain_datamodel_tree['data'] = self.gain_image * u.electron / u.DN
 
         return gain_datamodel_tree
+
