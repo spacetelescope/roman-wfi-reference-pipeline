@@ -1,118 +1,202 @@
 import logging
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
+from astropy import units as u
+from wfi_reference_pipeline.reference_types.data_cube import DataCube
+from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.constants import (
+    WFI_TYPE_IMAGE,
+)
+
 from ..reference_type import ReferenceType
-from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
-from astropy.stats import sigma_clipped_stats
 
 
 class Flat(ReferenceType):
-
     """
     Class Flat() inherits the ReferenceType() base class methods where
-    static meta data for all reference file types are written. The class
-    ingests a list of files and finds all exposures with the same filter
+    static meta data for all reference file types are written.
+
+    The class Flat() ingests a list of files and finds all exposures with the same filter
     within some maximum date range. Fit ramps to all available filter
-    cubes ro generate flat rate images and average together and normalize
+    cubes are used to generate flat rate images and average together and normalize
     to produce the filter dependent flat rate image.
+
+    Example file creation commands:
+    With user array.
+    flat_obj = Flat(meta_data, ref_type_data=flattened_array)
+    flat_obj.generate_outfile()
+
+    With user cube input.
+    flat = Flat(meta_data, ref_type_data=data_cube)
+    flat.make_flat_image()
+    flat.calculate_error()
+    flat.update_data_quality_array()
+    flat.generate_outfile()
     """
 
     def __init__(
-        self,
-        flat_file_list,
-        meta_data,
-        bit_mask=None,
-        outfile="roman_flat.asdf",
-        clobber=False,
-        input_flat_cube=None
+            self,
+            meta_data,
+            file_list=None,
+            ref_type_data=None,
+            bit_mask=None,
+            outfile="roman_flat.asdf",
+            clobber=False,
     ):
 
-        # Input dimensions of science array for ReferenceType() to
-        # to properly generate dq array mask for Flat().
+        """
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
+        file base class.
+
+        Parameters
+        ----------
+        meta_data: Object; default = None
+            Object of meta information converted to dictionary when writing reference file.
+        file_list: List of strings; default = None
+            List of file names with absolute paths. Intended for primary use during automated operations.
+        ref_type_data: numpy array; default = None
+            Input which can be image array or data cube. Intended for development support file creation or as input
+            for reference file types not generated from a file list.
+        bit_mask: 2D integer numpy array, default = None
+            A 2D data quality integer mask array to be applied to reference file.
+        outfile: string; default = roman_flat.asdf
+            File path and name for saved reference file.
+        clobber: Boolean; default = False
+            True to overwrite outfile if outfile already exists. False will not overwrite and exception
+            will be raised if duplicate file found.
+        ---------
+
+        See reference_type.py base class for additional attributes and methods.
+        """
+
+        # Default bit mask size of 4088x4088 for flat is size of science array
+        # and must be provided if not bit_mask to instantiate properly in base class.
         if bit_mask is None:
             bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
 
         # Access methods of base class ReferenceType
         super().__init__(
-            flat_file_list,
-            meta_data,
+            meta_data=meta_data,
+            file_list=file_list,
+            ref_type_data=ref_type_data,
             bit_mask=bit_mask,
-            clobber=clobber,
-            make_mask=True,
+            outfile=outfile,
+            clobber=clobber
         )
 
-        # Update metadata with file type info if not included.
-        if "description" not in self.meta.keys():
-            self.meta["description"] = "Roman WFI flat reference file."
-        if "reftype" not in self.meta.keys():
-            self.meta["reftype"] = "FLAT"
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaFlat):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaFlat"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI flat reference file."
 
-        # Initialize attributes
-        self.outfile = outfile
-        # Additional object attributes
-        # Inputs
-        self.input_read_cube = input_flat_cube  # Supplied input read cube.
-        # Internal
-        self.rate_array = None  # 2D rate array of the science pixels.
-        self.rate_var_array = None  # 3D cute of rate arrays.
-        # Flattened attributes
-        self.flat_rate_image = None  # The attribute assigned to the flat['data'].
-        self.flat_rate_image_var = None  # Variance in fitted rate image.
-        self.flat_intercept = None  # Intercept image from ramp fit.
-        self.flat_intercept_var = None  # Variance in fitted intercept image.
+        logging.debug(f"Default flat reference file object: {outfile} ")
+
+        # Attributes to make reference file with valid data model.
+        self.flat_image = None  # The attribute 'data' in data model.
         self.flat_error = None  # The attribute assigned to the flat['err'].
+        self.num_files = 0
 
-        # Input data property attributes: must be a square cube of dimensions n_reads x ni x ni.
-        self.ni = 4088
-        self.frame_time = None  # Frame time from ancillary data.
-        self.time_arr = None  # Time array of an exposure.
+        # Module flow creating reference file
+        if self.file_list:
+            # Get file list properties and select data cube.
+            self.num_files = len(self.file_list)
+            # Must make_flat_image() to finish creating reference file.
+        else:
+            if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
+                raise TypeError(
+                    "Input data is neither a numpy array nor a Quantity object."
+                )
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+                ref_type_data = ref_type_data.value
+                logging.debug("Quantity object detected. Extracted data values.")
 
-        # Check input data to instantiated Flat().
-        if self.input_data is None and self.input_read_cube is None:
-            raise ValueError('No data supplied to make flat reference file!')
-        if self.input_data is not None and len(self.input_data) > 0 and \
-                self.input_read_cube is not None and len(self.input_read_cube) > 0:
-            raise ValueError('Two inputs provided. Not sure how to proceed. Provide files or a data cube; not both.')
+            dim = ref_type_data.shape
+            if len(dim) == 2:
+                logging.debug("The input 2D data array is now self.flat_image.")
+                self.flat_image = ref_type_data.astype(np.float32)
+                logging.debug(
+                    "Initializing flat error array with all zeros."
+                )
+                self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
+                logging.debug("Ready to generate reference file.")
+            elif len(dim) == 3:
+                logging.debug(
+                    "User supplied 3D data cube to make flat reference file."
+                )
+                self.data_cube = self.FlatDataCube(
+                    ref_type_data, WFI_TYPE_IMAGE
+                )
+                # Must call make_flat_image() to finish creating reference file.
+                logging.debug(
+                    "Must call make_flat_image() to finish creating reference file."
+                )
+            else:
+                raise ValueError(
+                    "Input data is not a valid numpy array of dimension 2 or 3."
+                )
 
-    def make_flat_rate_image(self):
+    def make_flat_image(self):
         """
-        This method determines the flow of the module based on the input data
-        when the class is instantiated. The flat rate image is created at the
-        end of the method to be the data in the datamodel.
+        This method is used to generate the reference file image from the file list or a data cube.
+
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
+
+        The flat reference file data model has:
+            data = self.flat_image
+            err = self.flat_error
+            dq = self.mask
+        Additional method calls must be run to populate initialized arrays:
+            self.calculate_error()
+            self.update_data_quality_array()
         """
 
-        # Use input files if they exist.
-        if self.input_data is not None:
-            print("Got files so making flat rate image from filelist")
-            rate_image = self.make_flat_from_files()
-        # Attempt to use input data cube.
-        try:
-            shape = self.input_read_cube.shape
-            if len(shape) == 2:
-                print("Input data is a 2D array to flatten")
-                rate_image = self.input_read_cube
-            if len(shape) == 3:
-                n_reads = shape[0]
-                rate_image, rate_image_var = self.make_flat_from_cube(n_reads)
-                print("Flat image created from cube with", n_reads, "reads")
-        except AttributeError:
-            print("Input cube does not have a shape attribute or is not a numpy array.")
+        if self.file_list:
+            logging.debug(
+                "Making flat_image from average of rate images from file list."
+            )
+            avg_rate_image = self.make_flat_from_files()
+            self.flat_image = avg_rate_image / np.mean(avg_rate_image)
+        else:
+            logging.debug(
+                "Making flat_image from data cube."
+            )
+            self.make_rate_image_from_data_cube()
+            self.flat_image = self.data_cube.rate_image / np.mean(self.data_cube.rate_image)
 
-        # Normalize the flat_image by the sigma-clipped mean.
-        mean, _, _ = sigma_clipped_stats(rate_image)
-        self.flat_rate_image = rate_image / mean
-        self.calc_flat_error()
+        logging.debug(
+            "Initializing flat error array with all zeros. Run calculate_error()."
+        )
+        self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
+        logging.debug("Ready to generate reference file.")
+
+    def make_rate_image_from_data_cube(self, fit_order=1):
+        """
+        Method to fit the data cube. Intentional method call to specific fitting order to data.
+
+        Parameters
+        ----------
+        fit_order: integer; Default=None
+            The polynomial degree sent to data_cube.fit_cube.
+
+        Returns
+        -------
+        self.data_cube.rate_image: object;
+        """
+
+        logging.debug(f"Fitting data cube with fit order={fit_order}.")
+        self.data_cube.fit_cube(degree=fit_order)
 
     def make_flat_from_files(self):
         """
         Go through the files supplied to the module and generate a
-        cube of rate images into an array. This method uses the
-        make_flat_from_cube method also so that the number of reads
-        can vary over multiple input read cubes. The average of all
-        rate arrays in the cube are averaged and returned.
-        return:
+        cube of rate images into an array. This method uses FlatDataCube
+        class and its methods to generate flat rate images.
 
         Returns
         -------
@@ -120,99 +204,83 @@ class Flat(ReferenceType):
             The average of the rate_image_array in the z axis.
         """
 
-        print("Inside make_flat_from_files() method.")
-        n_files = len(self.input_data)
-        n_reads_per_fl_arr = np.zeros(n_files)
-        rate_image_array = np.zeros((n_files, self.ni, self.ni), dtype=np.float32)
-        rate_image_var_array = np.zeros((n_files, self.ni, self.ni), dtype=np.float32)
-        for fl in range(0, n_files):
-            tmp = asdf.open(self.input_data[fl], validate_on_read=False)
+        logging.debug("Making flat from the average flat rate of file list data cubes.")
+        n_reads_per_fl_arr = np.zeros(self.num_files)
+        rate_image_array = np.zeros((self.num_files,
+                                     self.data_cube.num_i_pixels,
+                                     self.data_cube.num_j_pixels),
+                                    dtype=np.float32)
+        rate_image_var_array = np.zeros((self.num_files,
+                                         self.data_cube.num_i_pixels,
+                                         self.data_cube.num_j_pixels),
+                                        dtype=np.float32)
+        for fl in range(0, self.num_files):
+            tmp = asdf.open(self.file_list[fl])
             n_reads_per_fl_arr[fl], _, _ = np.shape(tmp.tree["roman"]["data"])
-            self.input_read_cube = tmp.tree["roman"]["data"]
-            rate_image, rate_image_var = self.make_flat_from_cube(n_reads=n_reads_per_fl_arr[fl])
-            rate_image_array[fl, :, :] = rate_image
-            rate_image_var_array[fl, :, :] = rate_image_var
+            tmp_cube = tmp.tree["roman"]["data"]
             tmp.close()
+            if not isinstance(tmp_cube, (np.ndarray, u.Quantity)):
+                raise TypeError(
+                    "Input data is neither a numpy array nor a Quantity object."
+                )
+            if isinstance(tmp_cube, u.Quantity):  # Only access data from quantity object.
+                tmp_cube = tmp_cube.value
+                logging.debug("Quantity object detected. Extracted data values.")
+            self.data_cube = self.FlatDataCube(tmp_cube, WFI_TYPE_IMAGE)  # WIM mode only for flats.
+            self.data_cube.fit_cube(degree=1)
+            rate_image_array[fl, :, :] = self.data_cube.rate_image
+            rate_image_var_array[fl, :, :] = self.data_cube.covars_array
 
         avg_rate_image = np.mean(rate_image_array, axis=0)
         return avg_rate_image
 
-    def make_flat_from_cube(self, n_reads, ni=None):
+    def calculate_error(self, error_array=None):
         """
-        Method finds the fitted rate and variance by first initialize arrays
-        by the number of reads and the number of pixels. The fitted ramp or slope
-        along the time axis for the number of reads in the cube using a 1st order
-        polyfit. The best fit solutions and variance are returned.
+        Calculate the uncertainty in the flat rate image. If error array is None,
+        generate random flat error array.
 
         Parameters
         ----------
-        n_reads: integer; Positional required.
-            Number of reads to initialize fitted arrays.
-        ni: integer; Default: None.
-            Number of reads to initialize.
-
-        Returns
-        -------
-        rate_image: 2D array;
-            The fitted rate image from the cube.
-        rate_image_var: 2D array;
-            The variance of the fitted rate image from the cube.
+        error_array: ndarray; default = None,
+           Variable to provide a precalculated error array. If None, random error is
+           calculated for flat error array.
         """
 
-        # If ni is supplied, overwrite attribute.
-        if ni is not None:
-            self.ni = ni
-
-        # Make the time array for the length of the dark read cube exposure.
-        if self.meta['instrument']['optical_element']:
-            self.frame_time = WFI_FRAME_TIME[WFI_MODE_WIM]  # frame time in imaging mode in seconds
-        else:
-            raise ValueError('Optical element not found; this might not be a flat file.')
-        time_array = np.array(
-            [self.frame_time * i for i in range(1, n_reads + 1)]
-        )
-
-        p, c = np.polyfit(time_array,
-                          self.input_read_cube.reshape(len(time_array), -1), 1, full=False, cov=True)
-
-        # Reshape results back to 2D arrays.
-        rate_image = p[0].reshape(self.ni, self.ni).astype(np.float32)  # the fitted ramp slope image
-        rate_image_var = c[0, 0, :].reshape(self.ni, self.ni).astype(np.float32)  # covariance matrix slope variance
-
-        return rate_image, rate_image_var
-
-    def calc_flat_error(self):
-
-        # TODO for future implementation
+        # TODO for future implementation from A. Petric
         # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
         # (n_reads * (n_reads * 2 - 1) * self.frame_time)
-
         #
-        self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        if error_array is None:
+            self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        else:
+            self.flat_error = error_array
 
-    def update_dq_mask(self, low_qe_threshold=0.2):
+    def update_data_quality_array(self, low_qe_threshold=0.2, add_low_qe_pixels=False):
         """
         Update data quality array bit mask with flag integer value.
+
+        If add_low_qr_pixels is True, a random number of loq quantum efficiency pixels
+        will be inserted into self.flat_image.
 
         Parameters
         ----------
         low_qe_threshold: float; default = 0.2,
            Limit below which to flag pixels as low quantum efficiency.
+        add_low_qe_pixels: bool; default = False,
         """
 
-        # TODO remove random loq qe pixels from flat_rate_image
-        # Generate between 200-300 pixels with low qe for DMS builds
-        rand_num_lowqe = np.random.randint(200, 300)
-        coords_x = np.random.randint(0, 4088, rand_num_lowqe)
-        coords_y = np.random.randint(0, 4088, rand_num_lowqe)
-        rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
-        self.flat_rate_image[coords_x, coords_y] = rand_low_qe_values
-
-        self.low_qe_threshold = low_qe_threshold
+        if add_low_qe_pixels:
+            # TODO remove random loq qe pixels from flat_rate_image
+            # Generate between 200-300 pixels with low qe for DMS builds
+            rand_num_lowqe = np.random.randint(200, 300)
+            coords_x = np.random.randint(0, 4088, rand_num_lowqe)
+            coords_y = np.random.randint(0, 4088, rand_num_lowqe)
+            rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
+            self.flat_image[coords_x, coords_y] = rand_low_qe_values
 
         logging.info('Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
-        self.mask[self.flat_rate_image < self.low_qe_threshold] += self.dqflag_defs['LOW_QE']
+        self.mask[self.flat_image < low_qe_threshold] += self.dqflag_defs['LOW_QE']
 
     def populate_datamodel_tree(self):
         """
@@ -221,22 +289,132 @@ class Flat(ReferenceType):
 
         # Construct the flat field object from the data model.
         flat_datamodel_tree = rds.FlatRef()
-        flat_datamodel_tree['meta'] = self.meta
-        flat_datamodel_tree['data'] = self.flat_rate_image
+        flat_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
+        flat_datamodel_tree['data'] = self.flat_image.astype(np.float32)
+        flat_datamodel_tree['err'] = self.flat_error.astype(np.float32)
         flat_datamodel_tree['dq'] = self.mask
-        flat_datamodel_tree['err'] = self.flat_error
 
         return flat_datamodel_tree
 
-    def save_flat(self, datamodel_tree=None):
+    class FlatDataCube(DataCube):
         """
-        The method save_flat writes the reference file object to the specified asdf outfile.
+        FlatNoiseDataCube class derived from DataCube.
+        Handles Flat specific cube calculations
+        Provide common fitting methods to calculate cube properties, such as rate and intercept images, for reference types.
+
+        Parameters
+        -------
+        self.ref_type_data: input data array in cube shape
+        self.wfi_type: constant string WFI_TYPE_IMAGE, WFI_TYPE_GRISM, or WFI_TYPE_PRISM
         """
 
-        # Use data model tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)
+        def __init__(self, ref_type_data, wfi_type):
+            # Inherit reference_type.
+            super().__init__(
+                data=ref_type_data,
+                wfi_type=wfi_type,
+            )
+            self.rate_image = None  # The linear slope coefficient of the fitted data cube.
+            self.rate_image_err = None  # uncertainty in rate image
+            self.intercept_image = None
+            self.intercept_image_err = (
+                None  # uncertainty in intercept image (could be variance?)
+            )
+            self.ramp_model = None  # Ramp model of data cube.
+            self.coeffs_array = None  # Fitted coefficients to data cube.
+            self.covars_array = None  # Fitted covariance array to data cube.
+
+        def fit_cube(self, degree=1):
+            """
+            fit_cube will perform a linear least squares regression using np.polyfit of a certain
+            pre-determined degree order polynomial. This method needs to be intentionally called to
+            allow for pipeline inputs to easily be modified.
+
+            Parameters
+            -------
+            degree: int, default=1
+                Input order of polynomial to fit data cube. Degree = 1 is linear. Degree = 2 is quadratic.
+            """
+
+            logging.debug("Fitting data cube.")
+            # Perform linear regression to fit ma table resultants in time; reshape cube for vectorized efficiency.
+
+            try:
+                self.coeffs_array, self.covars_array = np.polyfit(
+                    self.time_array,
+                    self.data.reshape(len(self.time_array), -1),
+                    degree,
+                    full=False,
+                    cov=True,
+                )
+                # Reshape the parameter slope array into a 2D rate image.
+                #TODO the reshape and indices here are for linear degree fit = 1 only; update to handle quadratic also
+                self.rate_image = self.coeffs_array[0].reshape(
+                    self.num_i_pixels, self.num_j_pixels
+                )
+                # Reshape the parameter y-intercept array into a 2D image.
+                self.intercept_image = self.coeffs_array[1].reshape(
+                    self.num_i_pixels, self.num_j_pixels
+                )
+            except (TypeError, ValueError) as e:
+                logging.error(f"Unable to initialize DarkDataCube with error {e}")
+                # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
+
+        def make_ramp_model(self, order=1):
+            """
+            make_data_cube_model uses the calculated fitted coefficients from fit_cube() to create
+            a linear (order=1) or quadratic (order=2) model to the input data cube.
+
+            NOTE: The default behavior for fit_cube() and make_model() utilizes a linear fit to the input
+            data cube of which a linear ramp model is created.
+
+            Parameters
+            -------
+            order: int, default=1
+               Order of model to the data cube. Degree = 1 is linear. Degree = 2 is quadratic.
+            """
+
+            logging.info("Making ramp model for the input read cube.")
+            # Reshape the 2D array into a 1D array for input into np.polyfit().
+            # The model fit parameters p and covariance matrix v are returned.
+            try:
+                # Reshape the returned covariance matrix slope fit error.
+                # rate_var = v[0, 0, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO -VERIFY USE
+                # returned covariance matrix intercept error.
+                # intercept_var = v[1, 1, :].reshape(data_cube.num_i_pixels, data_cube.num_j_pixels) TODO - VERIFY USE
+                self.ramp_model = np.zeros(
+                    (
+                        self.num_reads,
+                        self.num_i_pixels,
+                        self.num_j_pixels,
+                    ),
+                    dtype=np.float32,
+                )
+                if order == 1:
+                    # y = m * x + b
+                    # where y is the pixel value for every read,
+                    # m is the slope at that pixel or the rate image,
+                    # x is time (this is the same value for every pixel in a read)
+                    # b is the intercept value or intercept image.
+                    for tt in range(0, len(self.time_array)):
+                        self.ramp_model[tt, :, :] = (
+                            self.rate_image * self.time_array[tt]
+                            + self.intercept_image
+                        )
+                elif order == 2:
+                    # y = ax^2 + bx + c
+                    # where we dont have a single rate image anymore, we have coefficients
+                    for tt in range(0, len(self.time_array)):
+                        a, b, c = self.coeffs_array
+                        self.ramp_model[tt, :, :] = (
+                            a * self.time_array[tt] ** 2
+                            + b * self.time_array[tt]
+                            + c
+                        )
+                else:
+                    raise ValueError(
+                        "This function only supports polynomials of order 1 or 2."
+                    )
+            except (ValueError, TypeError) as e:
+                logging.error(f"Unable to make_ramp_cube_model with error {e}")
+                # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error

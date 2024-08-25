@@ -127,3 +127,85 @@ def simulate_dark_reads(n_reads,
         rn = np.random.normal(noise_mean, noise_var, size=(ni, ni))  # Random noise term to add; simulate a read noise.
         read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
     return read_cube, rate_image
+
+
+def simulate_flat_reads(n_reads,
+                        ni=4088,
+                        exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],  # Assuming default exposure time as 3.04 seconds
+                        flat_rate=200,
+                        flat_rate_var=1,
+                        num_low_qe_pix=1000,
+                        num_low_qe_pix_var=0,
+                        low_qe_rate=0.8,
+                        low_qe_rate_var=0.05,
+                        noise_mean=0.001,
+                        noise_var=0.0005):
+    """
+    Function to create a flat read cube with a random number of low QE (quantum efficiency) pixels.
+
+    Parameters
+    ----------
+    n_reads: int
+        The number of reads to be simulated into a cube of n_reads x ni x ni.
+    ni: int: default = 4096
+        The number of x=y pixels to be simulated in the square array.
+    exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
+        WIM exposure time is set to default from constants.py in seconds.
+        WIM exp_time = 3.04 seconds, NO WSM flats
+    flat_rate: float; default = 200
+        The simulated detector flat field rate in e/p/s (electrons per pixel per second).
+    flat_rate_var: float; default = 1
+        The variance in the simulated flat rate.
+    num_low_qe_pix: int; default = 1000
+        Average random number of low QE pixels injected into the flat rate image.
+    num_low_qe_pix_var: int; default = 0
+        The variance in the random number of low QE pixels.
+    low_qe_rate: float; default = 0.8
+        The simulated low QE pixel rate as a fraction of the flat rate.
+    low_qe_rate_var: float; default = 0.05
+        The variance in the simulated low QE pixel rate.
+    noise_mean: float; default = 0.001
+        The average noise value in the flat rate image.
+    noise_var: float; default = 0.0005
+        The variance in the noise.
+
+    Returns
+    ----------
+    read_cube: numpy array
+        3D numpy array with shape (n_reads, ni, ni) representing the simulated flat read cube.
+    rate_image: numpy array
+        2D numpy array with shape (ni, ni) representing the rate image with low QE pixels.
+    """
+
+    logging.info('Making flat read cube.')
+    if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
+        print("Making WFI Imaging Mode (WIM) flat read cube with exposure time", exp_time, "seconds.")
+    else:
+        raise ValueError('Invalid WFI exposure time for flats.')
+
+    logging.info('Making flat read cube.')
+    print("Making flat read cube with exposure time", exp_time, "seconds.")
+
+    # Initialize rate image.
+    rate_image = np.random.normal(flat_rate, scale=flat_rate_var, size=(ni, ni))
+
+    # Determine the number of low QE pixels.
+    if num_low_qe_pix_var == 0:
+        low_qe_pix_count = num_low_qe_pix
+    else:
+        low_qe_pix_count = round(random.gauss(num_low_qe_pix, num_low_qe_pix_var))
+
+    # Get locations and apply low QE pixels to rate image.
+    coords_x = np.random.randint(0, ni, low_qe_pix_count)
+    coords_y = np.random.randint(0, ni, low_qe_pix_count)
+    low_qe_pixels = np.random.normal(low_qe_rate * flat_rate, scale=low_qe_rate_var * flat_rate, size=low_qe_pix_count)
+    rate_image[coords_x, coords_y] = low_qe_pixels
+
+    # Create the read cube using the rate image and noise per read.
+    read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
+    for read_r in range(n_reads):
+        # Create read cube by simulating data in reads and add noise.
+        rn = np.random.normal(noise_mean, noise_var, size=(ni, ni))  # Random noise term to add; simulate a read noise.
+        read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
+
+    return read_cube, rate_image

@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
@@ -15,25 +14,34 @@ from ..reference_type import ReferenceType
 
 class ReadNoise(ReferenceType):
     """
-    Class ReadNoise() inherits the ReferenceType() base class methods where static meta data for all reference
-    file types are written. Under automated operational conditions, a dark calibration file with the most number
-    of reads for each detector will be selected from a list of dark calibration input files from the input data variable
-    in ReferenceType() and ReadNoise(). Dark calibration files where every read is available and not averaged are the
-    best available data to measure the variance of the detector read by read. A ramp model for all available reads
-    will be subtracted from the input data cube that is constructed from the input file list provided and the variance
-    in the residuals is determined to be the best measurement of the read noise (Casterano and Cosentino email
+    Class ReadNoise() inherits the ReferenceType() base class methods
+    where static meta data for all reference file types are written.
+    ReadNoise() creates the read noise reference file using roman data models
+    and has all necessary meta and matching criteria for delivery to CRDS.
+
+    Under automated operational conditions, a dark calibration file with the most number
+    of reads for each detector will be selected from a file list of inputs. Dark calibration
+    files where every read is available and not averaged are the best available data to
+    measure the variance of the detector read by read. A ramp model for all available reads
+    will be subtracted from the input data cube provided and the variance in the residuals
+    is determined to be the best measurement of the read noise (Casertano and Cosentino email
     discussions Dec 2022).
 
-    Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise, etc. are
-    to be determined. The method get_cds_noise() is available for diagnostics purposes and comparison when developing
-    more mature functionality of the reference file pipeline.
+    Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise,
+    etc. are to be determined. The method get_cds_noise() is available for diagnostics purposes
+    and comparison when developing more mature functionality of the reference file pipeline.
 
-    Sample ReadNoise Run:
-    readnoise = ReadNoise(...many params...)
-    readnoise.make_rate_image_from_data_cube()
-    readnoise.make_readnoise_image()
-    readnoise.comp_ramp_res_var() OR readnoise.comp_cds_noise()
-    readnoise.generate_outfile()
+    Example file creation commands:
+    With user cube input.
+    readnoise_obj = ReadNoise(meta_data, ref_type_data=input_data)
+    readnoise_obj.make_readnoise_image()
+    readnoise_obj.generate_outfile()
+
+    From a file list with many cubes.
+    readnoise_obj = ReadNoise(meta_data, file_list=input_file_list.txt)
+    readnoise_obj._select_data_cube_from_file_list()
+    readnoise_obj.make_readnoise_image()
+    readnoise_obj.generate_outfile()
     """
 
     def __init__(
@@ -66,7 +74,6 @@ class ReadNoise(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         ---------
-        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
@@ -78,8 +85,7 @@ class ReadNoise(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber,
-            make_mask=True,
+            clobber=clobber
         )
 
         # Default meta creation for module specific ref type.
@@ -89,6 +95,8 @@ class ReadNoise(ReferenceType):
             )
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI read noise reference file."
+
+        logging.debug(f"Default read noise reference file object: {outfile} ")
 
         # Attributes to make reference file with valid data model.
         self.readnoise_image = None  # The attribute 'data' in data model.
@@ -107,9 +115,7 @@ class ReadNoise(ReferenceType):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(
-                ref_type_data, u.Quantity
-            ):  # Only access data from quantity object.
+            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
                 ref_type_data = ref_type_data.value
                 logging.debug("Quantity object detected. Extracted data values.")
 
@@ -122,11 +128,9 @@ class ReadNoise(ReferenceType):
                 logging.debug(
                     "User supplied 3D data cube to make read noise reference file."
                 )
-                self.data_cube = self.ReadNoiseDataCube(
-                    ref_type_data, self.meta_data.type
-                )
-
+                self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
                 # Must call make_readnoise_image() to finish creating reference file.
+                #TODO evaluate self.meta_data.type and exposure.type and exposure.p_exptype
                 logging.debug(
                     "Must call make_readnoise_image() to finish creating reference file."
                 )
@@ -172,6 +176,25 @@ class ReadNoise(ReferenceType):
         )
         self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
+    def make_readnoise_image(self):
+        """
+        This method is used to generate the reference file image from the file list or a data cube.
+
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
+
+        To use CDS noise, modify code as follows:
+        self.readnoise_image = self.comp_cds_noise()
+        """
+
+        logging.info("Making read noise image.")
+        if self.file_list:
+            self._select_data_cube_from_file_list()
+        self.make_rate_image_from_data_cube(fit_order=1)
+        self.data_cube.make_ramp_model()
+        self.readnoise_image = self.comp_ramp_res_var()
+
     def make_rate_image_from_data_cube(self, fit_order=1):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
@@ -189,15 +212,41 @@ class ReadNoise(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
-    def make_readnoise_image(self):
+    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
         """
-        This method is used to generate the reference file image type from the file list or a data cube.
+        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
+        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
+        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
+
+        Parameters
+        ----------
+        sig_clip_res_low: float; default = 5.0
+            Lower bound limit to filter residuals of ramp fit to data read cube.
+        sig_clip_res_high: float; default = 5.0
+            Upper bound limit to filter residuals of ramp fit to data read cube.
         """
 
-        logging.info("Making read noise image.")
-        self.make_rate_image_from_data_cube()
-        self.data_cube.make_ramp_model()
-        self.readnoise_image = self.comp_ramp_res_var()
+        logging.info(
+            "Computing residuals of ramp model from data to estimate variance component of read noise."
+        )
+
+        # Initialize ramp residual variance array.
+        self.ramp_res_var = np.zeros(
+            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
+        )
+        residual_cube = self.data_cube.ramp_model - self.data_cube.data
+        clipped_res_cube = sigma_clip(
+            residual_cube,
+            sigma_lower=sig_clip_res_low,
+            sigma_upper=sig_clip_res_high,
+            cenfunc=np.mean,
+            axis=0,
+            masked=False,
+            copy=False,
+        )
+        std = np.std(clipped_res_cube, axis=0)
+        self.ramp_res_var = np.float32(std * std)
+        return self.ramp_res_var
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
@@ -214,9 +263,7 @@ class ReadNoise(ReferenceType):
         sig_clip_cds_high: float; default = 5.0
             Upper bound limit to filter difference cube
         """
-
-        # If this is selected, comp_ramp_res_var should not be available
-
+        # TODO Optional method accessible to a user to produce the readnoise reference files
         logging.info("Calculating CDS noise.")
 
         read_diff_cube = np.zeros(
@@ -252,48 +299,6 @@ class ReadNoise(ReferenceType):
         )
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
         return self.cds_noise
-
-    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
-        """
-        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
-        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
-        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
-
-        Parameters
-        ----------
-        sig_clip_res_low: float; default = 5.0
-            Lower bound limit to filter residuals of ramp fit to data read cube.
-        sig_clip_res_high: float; default = 5.0
-            Upper bound limit to filter residuals of ramp fit to data read cube.
-        """
-
-        # TODO this wants to be a method accessible to a user to produce the readnoise reference files
-        # If this is selected, comp_cds_noise should not be available
-
-        logging.info(
-            "Computing residuals of ramp model from data to estimate variance component of read noise."
-        )
-
-        # self._initialize_arrays() # TODO - remove, handled in cube class init
-        # self._fit_ramp_model() # TODO - will handle automatically in cube class?
-
-        # Initialize ramp residual variance array.
-        self.ramp_res_var = np.zeros(
-            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
-        )
-        residual_cube = self.data_cube.ramp_model - self.data_cube.data
-        clipped_res_cube = sigma_clip(
-            residual_cube,
-            sigma_lower=sig_clip_res_low,
-            sigma_upper=sig_clip_res_high,
-            cenfunc=np.mean,
-            axis=0,
-            masked=False,
-            copy=False,
-        )
-        std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std * std)
-        return self.ramp_res_var
 
     def calculate_error(self):
         """
@@ -340,8 +345,10 @@ class ReadNoise(ReferenceType):
                 wfi_type=wfi_type,
             )
             self.rate_image = None  # The linear slope coefficient of the fitted data cube.
-            self.intercept_image = (
-                None  # the y intercept of a line fit to the data_cube
+            self.rate_image_err = None  # uncertainty in rate image
+            self.intercept_image = None
+            self.intercept_image_err = (
+                None  # uncertainty in intercept image (could be variance?)
             )
             self.ramp_model = None  # Ramp model of data cube.
             self.coeffs_array = None  # Fitted coefficients to data cube.

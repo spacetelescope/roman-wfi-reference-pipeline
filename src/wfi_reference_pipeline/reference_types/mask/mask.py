@@ -9,8 +9,14 @@ from ..reference_type import ReferenceType
 class Mask(ReferenceType):
     """
     Class Mask() inherits the ReferenceType() base class methods
-    where static meta data for all reference file types are written. The
-    method make_mask() creates the asdf mask file.
+    where static meta data for all reference file types are written.
+    Mask() creates the mask reference file using roman data models and
+    has all necessary meta and matching criteria for delivery to CRDS.
+
+    Example file creation commands:
+    mask_obj = Mask(meta_data, ref_type_data=user_mask)
+    mask_obj.make_mask_image()
+    mask_obj.generate_outfile()
     """
 
     def __init__(
@@ -43,46 +49,59 @@ class Mask(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         ---------
-        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
 
-        # Access methods of base class ReferenceType
+        # Access methods of base class ReferenceType.
         super().__init__(
             meta_data=meta_data,
             file_list=file_list,
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber,
-            make_mask=False,
+            clobber=clobber
         )
 
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaMask):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaMask"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaMask."
             )
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI mask reference file."
 
+        logging.debug(f"Default mask reference file object: {outfile}.")
+
+        # Initialize attributes.
+        self.mask_image = None
+
+        # Module flow creating reference file.
         if not (isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
                 ref_type_data.shape == (4096, 4096)):
-            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096")
+            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
         else:
-            self.mask = ref_type_data
+            logging.debug("The input 2D data array is now self.mask_image.")
+            self.mask_image = ref_type_data
+            logging.debug("Ready to generate reference file.")
 
-        logging.debug(f"Default mask reference file object: {outfile} ")
+    def make_mask_image(self):
+        """
+        This method is used to generate the reference file image.
 
-        # Initialize attributes
-        self.outfile = outfile
+        NOTE: This method is intended to be the module's internal pipeline where each method's internal
+        variables and parameters are set and this is the single call to populate all attributes needed
+        for the reference file data model.
+        """
+
+        self._update_mask_ref_pixels()
+        self._add_random_bad_pixels()
+        self.mask_image = self.mask
 
     def _update_mask_ref_pixels(self):
         """
-        Create array to flag the 4 pixel
-        reference poxel border around the detector.
+        Create array to flag the 4 pixel reference poxel border around the detector.
         """
 
         refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
@@ -112,10 +131,13 @@ class Mask(ReferenceType):
 
     def update_data_quality_array(self):
         """
-        Update mask array by always ensuring the reference pixels are flagged.
+        Abstract method not utilized by Mask().
+
+        NOTE - Would be redundant to make_mask_image(). The attribute mask is reserved
+        specifically setting the data quality arrays of other reference file types.
         """
 
-        self._update_mask_ref_pixels()
+        pass
 
     def populate_datamodel_tree(self):
         """
@@ -125,6 +147,6 @@ class Mask(ReferenceType):
         # Construct the mask object from the data model.
         mask_datamodel_tree = rds.MaskRef()
         mask_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
-        mask_datamodel_tree['dq'] = self.mask
+        mask_datamodel_tree['dq'] = self.mask_image
 
         return mask_datamodel_tree
