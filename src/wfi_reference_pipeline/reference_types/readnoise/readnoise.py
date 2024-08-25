@@ -74,7 +74,6 @@ class ReadNoise(ReferenceType):
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
         ---------
-        NOTE - For parallelization only square arrays allowed.
 
         See reference_type.py base class for additional attributes and methods.
         """
@@ -184,6 +183,9 @@ class ReadNoise(ReferenceType):
         NOTE: This method is intended to be the module's internal pipeline where each method's internal
         variables and parameters are set and this is the single call to populate all attributes needed
         for the reference file data model.
+
+        To use CDS noise, modify code as follows:
+        self.readnoise_image = self.comp_cds_noise()
         """
 
         logging.info("Making read noise image.")
@@ -210,6 +212,42 @@ class ReadNoise(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
+    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
+        """
+        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
+        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
+        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
+
+        Parameters
+        ----------
+        sig_clip_res_low: float; default = 5.0
+            Lower bound limit to filter residuals of ramp fit to data read cube.
+        sig_clip_res_high: float; default = 5.0
+            Upper bound limit to filter residuals of ramp fit to data read cube.
+        """
+
+        logging.info(
+            "Computing residuals of ramp model from data to estimate variance component of read noise."
+        )
+
+        # Initialize ramp residual variance array.
+        self.ramp_res_var = np.zeros(
+            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
+        )
+        residual_cube = self.data_cube.ramp_model - self.data_cube.data
+        clipped_res_cube = sigma_clip(
+            residual_cube,
+            sigma_lower=sig_clip_res_low,
+            sigma_upper=sig_clip_res_high,
+            cenfunc=np.mean,
+            axis=0,
+            masked=False,
+            copy=False,
+        )
+        std = np.std(clipped_res_cube, axis=0)
+        self.ramp_res_var = np.float32(std * std)
+        return self.ramp_res_var
+
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
         """
         Compute the correlated double sampling as a noise estimate. The method get_cds_noise() calculates the
@@ -225,9 +263,7 @@ class ReadNoise(ReferenceType):
         sig_clip_cds_high: float; default = 5.0
             Upper bound limit to filter difference cube
         """
-
-        # If this is selected, comp_ramp_res_var should not be available
-
+        # TODO Optional method accessible to a user to produce the readnoise reference files
         logging.info("Calculating CDS noise.")
 
         read_diff_cube = np.zeros(
@@ -263,48 +299,6 @@ class ReadNoise(ReferenceType):
         )
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
         return self.cds_noise
-
-    def comp_ramp_res_var(self, sig_clip_res_low=5.0, sig_clip_res_high=5.0):
-        """
-        Compute the variance of the residuals to a ramp fit. The method get_ramp_res_var() finds the difference between
-        the fitted ramp model and the input read cube  provided and calculates the variance of the residuals. This is
-        the most appropriate estimation for the read noise for WFI (Casterano and Cosentino email discussions Dec 2022).
-
-        Parameters
-        ----------
-        sig_clip_res_low: float; default = 5.0
-            Lower bound limit to filter residuals of ramp fit to data read cube.
-        sig_clip_res_high: float; default = 5.0
-            Upper bound limit to filter residuals of ramp fit to data read cube.
-        """
-
-        # TODO this wants to be a method accessible to a user to produce the readnoise reference files
-        # If this is selected, comp_cds_noise should not be available
-
-        logging.info(
-            "Computing residuals of ramp model from data to estimate variance component of read noise."
-        )
-
-        # self._initialize_arrays() # TODO - remove, handled in cube class init
-        # self._fit_ramp_model() # TODO - will handle automatically in cube class?
-
-        # Initialize ramp residual variance array.
-        self.ramp_res_var = np.zeros(
-            (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
-        )
-        residual_cube = self.data_cube.ramp_model - self.data_cube.data
-        clipped_res_cube = sigma_clip(
-            residual_cube,
-            sigma_lower=sig_clip_res_low,
-            sigma_upper=sig_clip_res_high,
-            cenfunc=np.mean,
-            axis=0,
-            masked=False,
-            copy=False,
-        )
-        std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std * std)
-        return self.ramp_res_var
 
     def calculate_error(self):
         """

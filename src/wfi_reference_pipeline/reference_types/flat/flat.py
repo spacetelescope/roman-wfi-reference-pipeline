@@ -21,7 +21,13 @@ class Flat(ReferenceType):
     cubes ro generate flat rate images and average together and normalize
     to produce the filter dependent flat rate image.
 
-    flat = Flat(meta_data, ref_type_data=user_mask)
+    Example file creation commands:
+    With user array.
+    flat_obj = Flat(meta_data, ref_type_data=flattened_array)
+    flat_obj.generate_outfile()
+
+    With user cube input.
+    flat = Flat(meta_data, ref_type_data=data_cube)
     flat.make_flat_image()
     flat.calculate_error()
     flat.update_data_quality_array()
@@ -37,6 +43,31 @@ class Flat(ReferenceType):
             outfile="roman_flat.asdf",
             clobber=False,
     ):
+
+        """
+        The __init__ method initializes the class with proper input variables needed by the ReferenceType()
+        file base class.
+
+        Parameters
+        ----------
+        meta_data: Object; default = None
+            Object of meta information converted to dictionary when writing reference file.
+        file_list: List of strings; default = None
+            List of file names with absolute paths. Intended for primary use during automated operations.
+        ref_type_data: numpy array; default = None
+            Input which can be image array or data cube. Intended for development support file creation or as input
+            for reference file types not generated from a file list.
+        bit_mask: 2D integer numpy array, default = None
+            A 2D data quality integer mask array to be applied to reference file.
+        outfile: string; default = roman_flat.asdf
+            File path and name for saved reference file.
+        clobber: Boolean; default = False
+            True to overwrite outfile if outfile already exists. False will not overwrite and exception
+            will be raised if duplicate file found.
+        ---------
+
+        See reference_type.py base class for additional attributes and methods.
+        """
 
         # Default bit mask size of 4088x4088 for flat is size of science array
         # and must be provided if not bit_mask to instantiate properly in base class.
