@@ -32,7 +32,6 @@ bad_optical_elements = [WFI_REF_OPTICAL_ELEMENT_DARK, WFI_REF_OPTICAL_ELEMENT_GR
 
 
 class Linearity(ReferenceType):
-
     """
     Class Linearity() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
@@ -73,6 +72,9 @@ class Linearity(ReferenceType):
             self.meta['reftype'] = 'LINEARITY'
         else:
             pass
+
+
+
         self.times = None
         # Get whether we are in spectroscopic or imaging mode
         im_mode = None
