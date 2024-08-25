@@ -163,7 +163,7 @@ class Gain(ReferenceType):
 
         # Construct the dark object from the data model.
         gain_datamodel_tree = rds.GainRef()
-        gain_datamodel_tree['meta'] = self.meta_data
+        gain_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         gain_datamodel_tree['data'] = self.gain_image * u.electron / u.DN
 
         return gain_datamodel_tree
