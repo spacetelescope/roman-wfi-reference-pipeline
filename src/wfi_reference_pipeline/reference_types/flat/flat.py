@@ -15,10 +15,11 @@ from ..reference_type import ReferenceType
 class Flat(ReferenceType):
     """
     Class Flat() inherits the ReferenceType() base class methods where
-    static meta data for all reference file types are written. The class
-    ingests a list of files and finds all exposures with the same filter
+    static meta data for all reference file types are written.
+
+    The class Flat() ingests a list of files and finds all exposures with the same filter
     within some maximum date range. Fit ramps to all available filter
-    cubes ro generate flat rate images and average together and normalize
+    cubes are used to generate flat rate images and average together and normalize
     to produce the filter dependent flat rate image.
 
     Example file creation commands:
@@ -90,7 +91,7 @@ class Flat(ReferenceType):
                 f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaFlat"
             )
         if len(self.meta_data.description) == 0:
-            self.meta_data.description = "Roman WFI dark reference file."
+            self.meta_data.description = "Roman WFI flat reference file."
 
         logging.debug(f"Default flat reference file object: {outfile} ")
 
