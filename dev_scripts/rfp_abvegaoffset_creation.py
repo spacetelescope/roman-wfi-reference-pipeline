@@ -5,7 +5,7 @@ from astropy.time import Time
 from pathlib import Path
 
 # configure a logging file
-logging_functions.configure_logging(f"wfi_ABVega_mag_offset_creation")
+logging_functions.configure_logging("wfi_ABVega_mag_offset_creation")
 
 write_path = Path('/grp/roman/wschultz/')#'/grp/roman/RFP/DEV/scratch/'  # Set the write path to be in the RFP scratch directory. I don't seem to have permissions to write here....
 

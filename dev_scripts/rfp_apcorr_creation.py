@@ -5,7 +5,7 @@ from astropy.time import Time
 
 
 # configure a logging file
-logging_functions.configure_logging(f"wfi_aperture_correction_creation")
+logging_functions.configure_logging("wfi_aperture_correction_creation")
 
 write_path = '/grp/roman/wschultz/'#'/grp/roman/RFP/DEV/scratch/'  # Set the write path to be in the RFP scratch directory.
 
