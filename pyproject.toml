@@ -27,6 +27,7 @@ dependencies = [
     "roman-datamodels>=0.17.1",
     "scipy>=1.11.3",
     "soc_roman_tools>=0.1.0",
+    "webbpsf>=1.3.0", # for aperture correction reference file
 ]
 dynamic = [
     "version",

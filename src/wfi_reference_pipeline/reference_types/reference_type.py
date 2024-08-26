@@ -6,6 +6,7 @@ from astropy.time import Time
 from romancal.lib import dqflags
 from abc import ABC, abstractmethod
 
+from wfi_reference_pipeline.constants import WFI_REF_TYPES_WITHOUT_INPUT_DATA
 
 class ReferenceType(ABC):
     """
@@ -38,7 +39,9 @@ class ReferenceType(ABC):
                  ):
 
         # Check to make sure ReferenceType is instantiated with one valid input.
-        if file_list is None and ref_type_data is None:
+        # some ref types require no input data. see constants.WFI_REF_TYPES_WITHOUT_DATA for list of those reference types
+        if (file_list is None and ref_type_data is None) and \
+                (meta_data.reference_type not in WFI_REF_TYPES_WITHOUT_INPUT_DATA):
             raise ValueError(
                 "No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
         if file_list is not None and len(file_list) > 0 and \
@@ -124,6 +127,10 @@ class ReferenceType(ABC):
             af.tree = {'roman': datamodel_tree}
         else:
             af.tree = {'roman': self.populate_datamodel_tree()}
+
+        # check to see if file currently exists
+        self.check_outfile()
+        
         af.write_to(self.outfile)
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
