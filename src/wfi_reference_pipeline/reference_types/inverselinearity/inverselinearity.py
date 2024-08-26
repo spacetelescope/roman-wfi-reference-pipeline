@@ -1,5 +1,5 @@
 import logging
-import fits
+from astropy.io import fits
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
