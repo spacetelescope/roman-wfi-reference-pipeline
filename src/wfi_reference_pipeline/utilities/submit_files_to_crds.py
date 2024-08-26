@@ -12,14 +12,16 @@ from crds.certify import certify_files
 from crds.core import heavy_client
 
 from .notifications import send_slack_message
+from .config_handler import get_data_files_config
+from wfi_reference_pipeline.constants import WFI_REF_TYPES
 
 
 @dataclass(init=True, repr=True)
 class SubmissionForm:
-    deliverer: str = 'WFI Reference File Pipeline'
-    other_email: str = ''
+    deliverer: str = 'WFI Reference File Pipeline'  # Or specific user
+    other_email: str = 'rcosenti@stsci.edu'
     instrument: str = 'WFI'
-    file_type: str = 'Blank'
+    file_type: str = 'REF_TYPE'  # Needs to be a valid reference file
     history_updated: bool = True
     pedigree_updated: bool = True
     keywords_checked: bool = True
@@ -30,16 +32,16 @@ class SubmissionForm:
     etc_delivery: bool = False
     calpipe_version: str = 'No'
     replacement_files: bool = False
-    old_reference_files: Union[str, list] = ''
+    old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
     replacing_badfiles: str = 'No'
     jira_issue: Union[str, list] = ''
     table_rows_changed: str = 'N/A'
     reprocess_affected: bool = False
-    modes_affected: str = 'All WFI modes'
+    modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
     change_level: str = 'MODERATE'
     correctness_testing: str = 'None'
     additional_considerations: str = 'None'
-    description: str = "You didn't update this, did you?"
+    description: str = "Intentionally left blank?"  # Needs to be updated by user.
 
     def __post_init__(self):
 
@@ -47,11 +49,20 @@ class SubmissionForm:
             if isinstance(list_meta, list):
                 list_meta = ' '.join(list_meta)
 
-        if self.description == "You didn't update this, did you?":
-            raise ValueError('You did not update the reason for delivery. Try again and set the description keyword to something useful!')
+        # Check if description has been updated by user
+        if self.description == "Intentionally left blank?":
+            raise ValueError('You did not update the reason for delivery. '
+                             'Try again and set the description keyword!')
 
-        if self.file_type == 'Blank':
-            raise ValueError('You did not update the reference file type. Try again and set the file_type keyword to the correct values!')
+        # Check if file_type matches one of the WFI_REF_TYPES
+        if self.file_type not in WFI_REF_TYPES:
+            raise ValueError(f'The file_type "{self.file_type}" is not a valid WFI reference file type. '
+                             f'Please select one of the following valid types: {", ".join(WFI_REF_TYPES)}')
+
+        # Check if old_reference_files has been updated by user
+        if self.old_reference_files == 'List old files.':
+            raise ValueError('You did not update the list of old reference files. '
+                             'Please provide the list of files being replaced.')
 
     def as_dict(self) -> dict:
         return self.__dict__
@@ -59,8 +70,10 @@ class SubmissionForm:
 
 class WFISubmit:
 
-    def __init__(self, files, submission_info, server='test'):
-
+    def __init__(self, files, submission_info=None, server='test'):
+        """
+        Initialize the submission process with file checks and configuration.
+        """
         if isinstance(files, list) or isinstance(files, tuple):
             if len(files) > 0:
                 self.files = files
@@ -74,8 +87,12 @@ class WFISubmit:
                 raise FileNotFoundError(f'Input file {f} does not exist!')
 
         self.server = server.lower()
-        if self.server not in ('dev', 'test'):
-            raise ValueError(f'server should be either "test" or "dev". Got {self.server} instead.')
+        if self.server not in ('dev', 'test', 'tvac'):
+            raise ValueError(f'Server should be either "test" or "dev" or "tvac". Got {self.server} instead.')
+
+        if submission_info is None:
+            # Load submission information from config file if not provided
+            submission_info = get_data_files_config()['submission_form']
 
         if isinstance(submission_info, str):
             with open(submission_info, 'r') as subfile:
@@ -83,25 +100,32 @@ class WFISubmit:
         elif isinstance(submission_info, dict):
             self.submission_dict = submission_info
         else:
-            raise TypeError(f'submission_info should be either a dictionary or the string name of a YAML file. Got {type(submission_info)} instead.')
+            raise TypeError(f'submission_info should be either a dictionary or '
+                            f'the string name of a YAML file. Got {type(submission_info)} instead.')
 
         self.submission_form = Submission('roman', self.server)
         self.submission_results = None
 
     def get_form_keys(self):
-
+        """
+        Print available keys for the submission form.
+        """
         print(self.submission_form.help())
 
     def certify_reffiles(self):
-
+        """
+        Certify the reference files before submission.
+        """
         cert_files = [f if '/' in f else f'./{f}' for f in self.files]
         server_info = heavy_client.get_config_info('roman')
         context = server_info['operational_context']
 
         certify_files(cert_files, context)
 
-    def update_form(self):
-
+    def update_form_with_config(self):
+        """
+        Update the submission form with the provided configuration.
+        """
         for key in self.submission_form.keys():
             try:
                 self.submission_form[key] = self.submission_dict[key]
@@ -113,18 +137,22 @@ class WFISubmit:
             self.submission_form.add_file(f)
 
     def submit_to_crds(self, summary=None):
+        """
+        Submit the files to CRDS. This is the actual submission to CRDS method.
 
-        # not sure if we want this flag, but it was in the old submit_files.py
-        #self.submission_form._auto_confirm = True
+        Parameters
+        ----------
+        summary: str; default = None
+            Message to send to the slack channel.
+        """
         self.submission_results = self.submission_form.submit()
         try:
             if summary:
-                summary = summary
                 summary += f' Result URL is {self.submission_results.ready_url}'
             else:
                 summary = 'Files have been submitted. No summary provided.'
-                send_slack_message(summary, os.environ['WFI_REFFILE_SLACK_TOKEN'],
-                                   config_file=None)
-
+            send_slack_message(summary, os.environ['WFI_REFFILE_SLACK_TOKEN'],
+                               config_file=None)
         except KeyError:
-            raise Exception('No token found in environment variable "WFI_REFFILE_SLACK_TOKEN". No Slack message was sent.')
+            raise Exception('No token found in environment variable "WFI_REFFILE_SLACK_TOKEN". '
+                            'No Slack message was sent.')

@@ -1,0 +1,32 @@
+logging:
+  log_dir: "/grp/roman/RFP/DEV/scratch/"
+  log_level: DEBUG
+  log_tag: "DEV_"
+
+data_files:
+  crds_ready_dir: "/grp/roman/RFP_REFERENCE_FILES/TVAC1"
+
+submission_form:
+  deliverer: "Richard Cosentino"
+  other_email: "rcosenti@stsci.edu"
+  file_type: "DARK"
+  history_updated: true
+  pedigree_updated: true
+  keywords_checked: true
+  descrip_updated: true
+  useafter_updated: true
+  useafter_matches: "yes"
+  compliance_verified: "N/A"
+  etc_delivery: false
+  calpipe_version: "No"
+  replacement_files: true
+  old_reference_files: "Roman WFI imaging dark reference files."
+  replacing_badfiles: "No"
+  jira_issue: ""
+  table_rows_changed: "N/A"
+  reprocess_affected: false
+  modes_affected: "WFI Imaging WIM and WFI Spectral WSM Modes"
+  change_level: "MODERATE"
+  correctness_testing: "None"
+  additional_considerations: "None"
+  description: "Replacing dark reference files to handle schema changes."
