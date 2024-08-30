@@ -18,32 +18,35 @@ from wfi_reference_pipeline.constants import WFI_REF_TYPES
 
 @dataclass(init=True, repr=True)
 class SubmissionForm:
-    deliverer: str = 'WFI Reference File Pipeline'  # Or specific user
-    other_email: str = 'rcosenti@stsci.edu'
-    instrument: str = 'WFI'
-    file_type: str = 'REF_TYPE'  # Needs to be a valid reference file
-    history_updated: bool = True
-    pedigree_updated: bool = True
-    keywords_checked: bool = True
-    descrip_updated: bool = True
-    useafter_updated: bool = True
-    useafter_matches: str = 'N/A'
-    compliance_verified: str = 'N/A'
-    etc_delivery: bool = False
-    calpipe_version: str = 'No'
-    replacement_files: bool = False
-    old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
-    replacing_badfiles: str = 'No'
-    jira_issue: Union[str, list] = ''
-    table_rows_changed: str = 'N/A'
-    reprocess_affected: bool = False
-    modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
-    change_level: str = 'MODERATE'
-    correctness_testing: str = 'None'
-    additional_considerations: str = 'None'
-    description: str = "Intentionally left blank?"  # Needs to be updated by user.
+    # deliverer: str = 'WFI Reference File Pipeline'  # Or specific user
+    # other_email: str = 'rcosenti@stsci.edu'
+    # instrument: str = 'WFI'
+    # file_type: str = 'REF_TYPE'  # Needs to be a valid reference file
+    # history_updated: bool = True
+    # pedigree_updated: bool = True
+    # keywords_checked: bool = True
+    # descrip_updated: bool = True
+    # useafter_updated: bool = True
+    # useafter_matches: str = 'N/A'
+    # compliance_verified: str = 'N/A'
+    # etc_delivery: bool = False
+    # calpipe_version: str = 'No'
+    # replacement_files: bool = False
+    # old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
+    # replacing_badfiles: str = 'No'
+    # jira_issue: Union[str, list] = ''
+    # table_rows_changed: str = 'N/A'
+    # reprocess_affected: bool = False
+    # modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
+    # change_level: str = 'MODERATE'
+    # correctness_testing: str = 'None'
+    # additional_considerations: str = 'None'
+    # description: str = "Intentionally left blank?"  # Needs to be updated by user.
 
     def __post_init__(self):
+
+        self.fill_form_from_config()
+
 
         for list_meta in [self.old_reference_files, self.jira_issue]:
             if isinstance(list_meta, list):
@@ -63,6 +66,34 @@ class SubmissionForm:
         if self.old_reference_files == 'List old files.':
             raise ValueError('You did not update the list of old reference files. '
                              'Please provide the list of files being replaced.')
+
+    def fill_submission_form_from_config(self):
+        crds_submission_config = get_crds_submission_config()["submission_form"]
+        self.deliverer = crds_submission_config["deliver"]
+        self.other_email
+        self.instrument
+        self.file_type
+        self.history_updated
+        self.pedigree_updated: bool = True
+        self.keywords_checked: bool = True
+        self.descrip_updated: bool = True
+        self.useafter_updated: bool = True
+        self.useafter_matches: str = 'N/A'
+        self.compliance_verified: str = 'N/A'
+        self.etc_delivery: bool = False
+        self.calpipe_version: str = 'No'
+        self.replacement_files: bool = False
+        self.old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
+        self.replacing_badfiles: str = 'No'
+        self.jira_issue: Union[str, list] = ''
+        self.table_rows_changed: str = 'N/A'
+        self.reprocess_affected: bool = False
+        self.modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
+        self.change_level: str = 'MODERATE'
+        self.correctness_testing: str = 'None'
+        self.additional_considerations: str = 'None'
+        self.description: str = "Intentionally left blank?"  # Needs to be updated by user.
+
 
     def as_dict(self) -> dict:
         return self.__dict__
@@ -105,6 +136,7 @@ class WFISubmit:
 
         self.submission_form = Submission('roman', self.server)
         self.submission_results = None
+
 
     def get_form_keys(self):
         """

@@ -8,7 +8,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
     REF_TYPE_READNOISE,
 )
-from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA
+from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA, CRDS_CONFIG_SCHEMA
 
 
 def _find_config_file(config_filename):
@@ -131,8 +131,27 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
 
 def get_crds_submission_config(config_file="crds_submission_config.yml"):
     """
-    Get configuration settings from crds_submission_config.yml
+    Get configuration settings from crds_submission_config.yml.
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the configuration file is not found.
+    ValueError
+        If the YAML file is incorrectly formatted.
+    ValidationError
+        If the configuration does not match the CRDS_CONFIG_SCHEMA.
     """
     settings = _get_config(config_file)
-    _validate_config(settings, CONFIG_SCHEMA)
-    return settings["data_files"]
+    _validate_config(settings, CRDS_CONFIG_SCHEMA)
+    return settings
