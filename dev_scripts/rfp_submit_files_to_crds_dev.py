@@ -1,6 +1,6 @@
 import glob
 import time
-from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit, SubmissionForm
+from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 from wfi_reference_pipeline.utilities.config_handler import get_crds_submission_config
 
 update_dict = False

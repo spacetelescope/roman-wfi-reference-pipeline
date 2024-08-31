@@ -80,7 +80,7 @@ class InverseLinearity(ReferenceType):
         # Module flow creating reference file
         if self.file_list:
             raise TypeError(
-                f"The algorithm generate inverse linearity coefficients i snot implemented yet."
+                "The algorithm generate inverse linearity coefficients i snot implemented yet."
             )
         else:
             if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
@@ -139,8 +139,8 @@ class InverseLinearity(ReferenceType):
             self.inverselinearity_coefficients = hdul[0].data.astype(np.float32)
 
         # Update meta data and add sca id number.
-        #self.meta_data.update({'pedigree': 'GROUND'})
-        #self.meta_data['instrument'].update({'SCA': sca_id})
+        self.meta_data.update({'pedigree': 'GROUND'})
+        self.meta_data['instrument'].update({'SCA': sca_id})
 
     def calculate_error(self):
         """

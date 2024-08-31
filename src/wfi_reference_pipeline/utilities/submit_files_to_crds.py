@@ -4,7 +4,6 @@ the information for the reference file submission.
 """
 
 import os
-import yaml
 from typing import Union
 from dataclasses import dataclass, field
 from crds.submit import Submission
@@ -129,7 +128,8 @@ class WFISubmit:
 
     def update_crds_submission_form(self):
         """
-        Update the submission form with the provided configuration.
+        Update the crds submission form with the provided configuration
+        and files.
         """
 
         self._check_for_default_strings()
