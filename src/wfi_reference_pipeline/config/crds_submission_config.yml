@@ -1,4 +1,4 @@
-crds_files:
+files_to_submit:
   crds_ready_dir: "/grp/roman/RFP_REFERENCE_FILES/TVAC1"
 
 submission_form:
@@ -14,8 +14,8 @@ submission_form:
   compliance_verified: "User updated information."
   etc_delivery: false
   calpipe_version: "User updated information."
-  replacement_files: true
-  old_reference_files: "User updated information."
+  replacement_files: false
+  old_reference_files: ""
   replacing_badfiles: "User updated information."
   jira_issue: "User updated information."
   table_rows_changed: "User updated information."

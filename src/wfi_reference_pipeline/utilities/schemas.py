@@ -123,7 +123,7 @@ QC_CONFIG_SCHEMA = {
 CRDS_CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
-        "crds_files": {
+        "files_to_submit": {
             "type": "object",
             "properties": {
                 "crds_ready_dir": {"type": "string"},
@@ -184,5 +184,5 @@ CRDS_CONFIG_SCHEMA = {
             ],
         },
     },
-    "required": ["crds_files", "submission_form"],
+    "required": ["files_to_submit", "submission_form"],
 }

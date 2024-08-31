@@ -6,94 +6,73 @@ the information for the reference file submission.
 import os
 import yaml
 from typing import Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from crds.submit import Submission
 from crds.certify import certify_files
 from crds.core import heavy_client
 
 from .notifications import send_slack_message
-from .config_handler import get_data_files_config
+from .config_handler import get_crds_submission_config
 from wfi_reference_pipeline.constants import WFI_REF_TYPES
 
 
 @dataclass(init=True, repr=True)
 class SubmissionForm:
-    # deliverer: str = 'WFI Reference File Pipeline'  # Or specific user
-    # other_email: str = 'rcosenti@stsci.edu'
-    # instrument: str = 'WFI'
-    # file_type: str = 'REF_TYPE'  # Needs to be a valid reference file
-    # history_updated: bool = True
-    # pedigree_updated: bool = True
-    # keywords_checked: bool = True
-    # descrip_updated: bool = True
-    # useafter_updated: bool = True
-    # useafter_matches: str = 'N/A'
-    # compliance_verified: str = 'N/A'
-    # etc_delivery: bool = False
-    # calpipe_version: str = 'No'
-    # replacement_files: bool = False
-    # old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
-    # replacing_badfiles: str = 'No'
-    # jira_issue: Union[str, list] = ''
-    # table_rows_changed: str = 'N/A'
-    # reprocess_affected: bool = False
-    # modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
-    # change_level: str = 'MODERATE'
-    # correctness_testing: str = 'None'
-    # additional_considerations: str = 'None'
-    # description: str = "Intentionally left blank?"  # Needs to be updated by user.
+    deliverer: str = field(default='WFI Reference File Pipeline')
+    other_email: str = field(default='')
+    instrument: str = field(default='WFI')
+    file_type: str = field(default='REF_TYPE')
+    history_updated: bool = field(default=True)
+    pedigree_updated: bool = field(default=True)
+    keywords_checked: bool = field(default=True)
+    descrip_updated: bool = field(default=True)
+    useafter_updated: bool = field(default=True)
+    useafter_matches: str = field(default='N/A')
+    compliance_verified: str = field(default='N/A')
+    etc_delivery: bool = field(default=False)
+    calpipe_version: str = field(default='No')
+    replacement_files: bool = field(default=False)
+    old_reference_files: Union[str, list] = field(default='')
+    replacing_badfiles: str = field(default='No')
+    jira_issue: Union[str, list] = field(default='')
+    table_rows_changed: str = field(default='N/A')
+    reprocess_affected: bool = field(default=False)
+    modes_affected: str = field(default='')
+    change_level: str = field(default='MODERATE')
+    correctness_testing: str = field(default='None')
+    additional_considerations: str = field(default='None')
+    description: str = field(default="")
 
     def __post_init__(self):
 
-        self.fill_form_from_config()
+        self.fill_submission_form_with_crds_config()
 
-
-        for list_meta in [self.old_reference_files, self.jira_issue]:
-            if isinstance(list_meta, list):
-                list_meta = ' '.join(list_meta)
-
-        # Check if description has been updated by user
-        if self.description == "Intentionally left blank?":
-            raise ValueError('You did not update the reason for delivery. '
-                             'Try again and set the description keyword!')
-
-        # Check if file_type matches one of the WFI_REF_TYPES
-        if self.file_type not in WFI_REF_TYPES:
-            raise ValueError(f'The file_type "{self.file_type}" is not a valid WFI reference file type. '
-                             f'Please select one of the following valid types: {", ".join(WFI_REF_TYPES)}')
-
-        # Check if old_reference_files has been updated by user
-        if self.old_reference_files == 'List old files.':
-            raise ValueError('You did not update the list of old reference files. '
-                             'Please provide the list of files being replaced.')
-
-    def fill_submission_form_from_config(self):
+    def fill_submission_form_with_crds_config(self):
         crds_submission_config = get_crds_submission_config()["submission_form"]
-        self.deliverer = crds_submission_config["deliver"]
-        self.other_email
-        self.instrument
-        self.file_type
-        self.history_updated
-        self.pedigree_updated: bool = True
-        self.keywords_checked: bool = True
-        self.descrip_updated: bool = True
-        self.useafter_updated: bool = True
-        self.useafter_matches: str = 'N/A'
-        self.compliance_verified: str = 'N/A'
-        self.etc_delivery: bool = False
-        self.calpipe_version: str = 'No'
-        self.replacement_files: bool = False
-        self.old_reference_files: Union[str, list] = 'List old files.'  # Needs to be updated by user
-        self.replacing_badfiles: str = 'No'
-        self.jira_issue: Union[str, list] = ''
-        self.table_rows_changed: str = 'N/A'
-        self.reprocess_affected: bool = False
-        self.modes_affected: str = 'WFI Imaging WIM and WFI Spectral WSM Modes'  # Should be checked by user
-        self.change_level: str = 'MODERATE'
-        self.correctness_testing: str = 'None'
-        self.additional_considerations: str = 'None'
-        self.description: str = "Intentionally left blank?"  # Needs to be updated by user.
-
+        self.deliverer = crds_submission_config.get("deliverer", self.deliverer)
+        self.other_email = crds_submission_config.get("other_email", self.other_email)
+        self.file_type = crds_submission_config.get("file_type", self.file_type)
+        self.history_updated = crds_submission_config.get("history_updated", self.history_updated)
+        self.pedigree_updated = crds_submission_config.get("pedigree_updated", self.pedigree_updated)
+        self.keywords_checked = crds_submission_config.get("keywords_checked", self.keywords_checked)
+        self.descrip_updated = crds_submission_config.get("descrip_updated", self.descrip_updated)
+        self.useafter_updated = crds_submission_config.get("useafter_updated", self.useafter_updated)
+        self.useafter_matches = crds_submission_config.get("useafter_matches", self.useafter_matches)
+        self.compliance_verified = crds_submission_config.get("compliance_verified", self.compliance_verified)
+        self.etc_delivery = crds_submission_config.get("etc_delivery", self.etc_delivery)
+        self.calpipe_version = crds_submission_config.get("calpipe_version", self.calpipe_version)
+        self.replacement_files = crds_submission_config.get("replacement_files", self.replacement_files)
+        self.old_reference_files = crds_submission_config.get("old_reference_files", self.old_reference_files)
+        self.replacing_badfiles = crds_submission_config.get("replacing_badfiles", self.replacing_badfiles)
+        self.jira_issue = crds_submission_config.get("jira_issue", self.jira_issue)
+        self.table_rows_changed = crds_submission_config.get("table_rows_changed", self.table_rows_changed)
+        self.reprocess_affected = crds_submission_config.get("reprocess_affected", self.reprocess_affected)
+        self.modes_affected = crds_submission_config.get("modes_affected", self.modes_affected)
+        self.change_level = crds_submission_config.get("change_level", self.change_level)
+        self.correctness_testing = crds_submission_config.get("correctness_testing", self.correctness_testing)
+        self.additional_considerations = crds_submission_config.get("additional_considerations",
+                                                                    self.additional_considerations)
+        self.description = crds_submission_config.get("description", self.description)
 
     def as_dict(self) -> dict:
         return self.__dict__
@@ -118,31 +97,25 @@ class WFISubmit:
                 raise FileNotFoundError(f'Input file {f} does not exist!')
 
         self.server = server.lower()
-        if self.server not in ('dev', 'test', 'tvac'):
-            raise ValueError(f'Server should be either "test" or "dev" or "tvac". Got {self.server} instead.')
+        if self.server not in ('test', 'tvac', 'ops'):
+            raise ValueError(f'Server should be either "test" or "tvac" or "ops". Got {self.server} instead.')
 
         if submission_info is None:
-            # Load submission information from config file if not provided
-            submission_info = get_data_files_config()['submission_form']
-
-        if isinstance(submission_info, str):
-            with open(submission_info, 'r') as subfile:
-                self.submission_dict = yaml.safe_load(subfile)
-        elif isinstance(submission_info, dict):
-            self.submission_dict = submission_info
+            # Load submission information from the config file if not provided
+            self.submission_dict = get_crds_submission_config()['submission_form']
         else:
-            raise TypeError(f'submission_info should be either a dictionary or '
-                            f'the string name of a YAML file. Got {type(submission_info)} instead.')
+            self.submission_dict = submission_info
 
-        self.submission_form = Submission('roman', self.server)
+        # Use CRDS Submission to create submission_form
+        self.submission_file_ref_type = None
+        self.crds_submission_form = Submission('roman', self.server)
         self.submission_results = None
-
 
     def get_form_keys(self):
         """
         Print available keys for the submission form.
         """
-        print(self.submission_form.help())
+        print(self.crds_submission_form.help())
 
     def certify_reffiles(self):
         """
@@ -154,19 +127,59 @@ class WFISubmit:
 
         certify_files(cert_files, context)
 
-    def update_form_with_config(self):
+    def update_crds_submission_form(self):
         """
         Update the submission form with the provided configuration.
         """
-        for key in self.submission_form.keys():
+
+        self._check_for_default_strings()
+        self._confirm_submission_file_type_is_rfp_ref_type()
+        for key in self.crds_submission_form.keys():
             try:
-                self.submission_form[key] = self.submission_dict[key]
+                self.crds_submission_form[key] = self.submission_dict[key]
             except KeyError:
                 pass
 
         # Attach the reference files being delivered.
         for f in self.files:
-            self.submission_form.add_file(f)
+            self.crds_submission_form.add_file(f)
+            self._confirm_ref_type_files_match_submission()
+
+    def _confirm_submission_file_type_is_rfp_ref_type(self):
+        """
+        Check that the submitted file type is one
+        of the rfp ref types.
+        """
+
+        if self.submission_dict['file_type'] not in WFI_REF_TYPES:
+            raise ValueError(
+                f"The file type '{self.submission_dict['file_type']}' is not one of the following: "
+                f"{', '.join(WFI_REF_TYPES)}"
+            )
+        self.submission_file_ref_type = self.submission_dict['file_type']
+
+    def _check_for_default_strings(self):
+        """
+        Check if any string fields have the placeholder value 'User updated information.'
+        """
+        placeholders = []
+        for key, value in self.submission_dict.items():
+            if isinstance(value, str) and value == 'User updated information.':
+                placeholders.append(key)
+        if placeholders:
+            raise ValueError(
+                f"The following have not been updated from their default value: {', '.join(placeholders)}")
+        else:
+            print("All fields are correctly updated.")
+
+    def _confirm_ref_type_files_match_submission(self):
+        """
+        # TODO
+        Write code to open each file that is being add and check the ref_type matches
+        the reference file type in the submission form.
+        """
+
+        pass
 
     def submit_to_crds(self, summary=None):
         """
@@ -177,7 +190,7 @@ class WFISubmit:
         summary: str; default = None
             Message to send to the slack channel.
         """
-        self.submission_results = self.submission_form.submit()
+        self.submission_results = self.crds_submission_form.submit()
         try:
             if summary:
                 summary += f' Result URL is {self.submission_results.ready_url}'
