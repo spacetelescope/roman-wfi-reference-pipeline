@@ -1,7 +1,7 @@
 import logging
-import fits
 import numpy as np
 import roman_datamodels.stnode as rds
+from astropy.io import fits
 from astropy import units as u
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 
@@ -115,9 +115,6 @@ class InverseLinearity(ReferenceType):
             Variable to identify which detector maps to what sca file id.
         """
 
-        # Update meta data based on input to getting DCL inverse linearity coefficients
-        self.meta_data['instrument'].update({'detector': wfi_det})
-
         wfi_arr = ["WFI01", "WFI02", "WFI03", "WFI04", "WFI05", "WFI06", "WFI07", "WFI08", "WFI09", "WFI10", "WFI11",
                    "WFI12", "WFI13", "WFI14", "WFI15", "WFI16", "WFI17", "WFI18"]
 
@@ -138,9 +135,11 @@ class InverseLinearity(ReferenceType):
         with fits.open(inv_file) as hdul:
             self.inverselinearity_coefficients = hdul[0].data.astype(np.float32)
 
-        # Update meta data and add sca id number.
-        self.meta_data.update({'pedigree': 'GROUND'})
-        self.meta_data['instrument'].update({'SCA': sca_id})
+        # Update meta data based on input to getting DCL inverse linearity coefficients and add sci id
+        self.meta_data.instrument_detector = wfi_det
+        self.meta_data.pedigree = 'GROUND'
+        # TODO evaluate adding new meta to ref type meta not required
+        self.meta_data['instrument_sca_id'] = {'SCA': sca_id}
 
     def calculate_error(self):
         """
