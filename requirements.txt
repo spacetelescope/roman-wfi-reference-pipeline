@@ -1,7 +1,7 @@
 astropy==6.0.1
 crds==11.17.19
 matplotlib==3.8.3
-numpy==1.26.4
+numpy==2.1.0
 pandas==2.2.1
 photutils==1.11.0
 pysiaf==0.22.0
