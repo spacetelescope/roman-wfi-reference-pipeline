@@ -123,11 +123,11 @@ class InverseLinearity(ReferenceType):
 
         # Create a dictionary to map all wfi detectors to sca id numbers.
         wfi_to_sca = dict(zip(wfi_arr, sca_id_arr))
-        det_number = int(wfi_det[3:])
-        sca_id = wfi_to_sca[wfi_det]
+        sca_id = wfi_to_sca[wfi_det] # noqa F841
 
         # Make inverse linearity file string with absolute path to central storage from the detector input and the
         # mapping to WFI tags.
+        det_number = int(wfi_det[3:])
         inv_file_dir = '/grp/roman/bellini/WFIsim/CNL/new/'
         inv_file = inv_file_dir + 'LNC_SCA' + str(det_number).zfill(2) + '.fits'
 

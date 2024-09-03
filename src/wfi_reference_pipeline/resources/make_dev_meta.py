@@ -1,3 +1,5 @@
+from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import WFIMetaApertureCorrection
+from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import WFIMetaABVegaMagnitudeOffset
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
@@ -23,6 +25,12 @@ class MakeDevMeta:
     dark_meta_data = dev_meta_maker.meta_dark
 
     """
+
+    def _create_dev_meta_abvegaoffset(self, meta_data):
+        self.meta_abvegaoffset = WFIMetaABVegaMagnitudeOffset(*meta_data)
+
+    def _create_dev_meta_aperturecorrection(self, meta_data):
+        self.meta_aperturecorrection = WFIMetaApertureCorrection(*meta_data)
 
     def _create_dev_meta_dark(self, meta_data):
         ngroups = 6
@@ -121,6 +129,12 @@ class MakeDevMeta:
 
         meta_data_params = [ref_type, self.pedigree, self.description, self.author,
                             self.use_after, self.telescope, self.origin, self.instrument, self.detector]
+
+        if ref_type == "ABVEGAOFFSET":
+            self._create_dev_meta_abvegaoffset(meta_data_params)
+
+        if ref_type == "APCORR":
+            self._create_dev_meta_aperturecorrection(meta_data_params)
 
         if ref_type == "DARK":
             self._create_dev_meta_dark(meta_data_params)
