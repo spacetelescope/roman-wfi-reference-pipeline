@@ -23,6 +23,7 @@ submission = WFISubmit(new_files, submission_info, server='ops')
 # User has to modify the following entries in the submission dictionary.
 # Rick Cosentino example
 if update_dict:
+    submission.submission_dict['instrument'] = 'WFI'
     submission.submission_dict['deliverer'] = 'Richard Cosentino'
     submission.submission_dict['other_email'] = 'rcosenti@stsci.edu'
     submission.submission_dict['file_type'] = 'MASk'

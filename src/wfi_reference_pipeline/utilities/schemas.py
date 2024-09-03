@@ -133,6 +133,7 @@ CRDS_CONFIG_SCHEMA = {
         "submission_form": {
             "type": "object",
             "properties": {
+                "instrument": {"type": "string"},
                 "deliverer": {"type": "string"},
                 "other_email": {"type": "string"},
                 "file_type": {"type": "string"},
@@ -158,6 +159,7 @@ CRDS_CONFIG_SCHEMA = {
                 "description": {"type": "string"},
             },
             "required": [
+                "instrument",
                 "deliverer",
                 "other_email",
                 "file_type",
