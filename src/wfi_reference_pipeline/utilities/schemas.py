@@ -130,7 +130,7 @@ CRDS_CONFIG_SCHEMA = {
             },
             "required": ["crds_ready_dir"],
         },
-        "submission_form": {
+        "form_info": {
             "type": "object",
             "properties": {
                 "instrument": {"type": "string"},
@@ -186,5 +186,5 @@ CRDS_CONFIG_SCHEMA = {
             ],
         },
     },
-    "required": ["files_to_submit", "submission_form"],
+    "required": ["files_to_submit", "form_info"],
 }

@@ -1,7 +1,7 @@
 files_to_submit:
   crds_ready_dir: "/grp/roman/RFP_REFERENCE_FILES/TVAC1"
 
-submission_form:
+form_info:
   instrument: 'WFI'
   deliverer: "User updated information."
   other_email: "User updated information."

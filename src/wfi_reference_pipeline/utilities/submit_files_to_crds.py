@@ -44,9 +44,9 @@ class SubmissionForm:
 
     def __post_init__(self):
 
-        self.fill_submission_form_with_crds_config()
+        self._fill_submission_form_with_crds_config()
 
-    def fill_submission_form_with_crds_config(self):
+    def _fill_submission_form_with_crds_config(self):
         crds_submission_config = get_crds_submission_config()["submission_form"]
         self.deliverer = crds_submission_config.get("deliverer", self.deliverer)
         self.other_email = crds_submission_config.get("other_email", self.other_email)
@@ -79,7 +79,7 @@ class SubmissionForm:
 
 class WFISubmit:
 
-    def __init__(self, files, submission_info=None, server='test'):
+    def __init__(self, files, form_info=None, server='test'):
         """
         Initialize the submission process with file checks and configuration.
         """
@@ -99,11 +99,11 @@ class WFISubmit:
         if self.server not in ('test', 'tvac', 'ops'):
             raise ValueError(f'Server should be either "test" or "tvac" or "ops". Got {self.server} instead.')
 
-        if submission_info is None:
+        if form_info is None:
             # Load submission information from the config file if not provided
-            self.submission_dict = get_crds_submission_config()['submission_form']
+            self.submission_dict = get_crds_submission_config()['form_info']
         else:
-            self.submission_dict = submission_info
+            self.submission_dict = form_info
 
         # Use CRDS Submission to create submission_form
         self.submission_file_ref_type = None
@@ -116,7 +116,7 @@ class WFISubmit:
         """
         print(self.crds_submission_form.help())
 
-    def certify_reffiles(self):
+    def certify_files(self):
         """
         Certify the reference files before submission.
         """
