@@ -3,6 +3,7 @@ import time
 from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 from wfi_reference_pipeline.utilities.config_handler import get_crds_submission_config
 
+# Change to True to complete submission info
 update_dict = False
 
 # Load configuration settings
@@ -46,6 +47,7 @@ submission.update_crds_submission_form()
 # Certify files - TODO check on the error message
 submission.certify_files()
 
+# Boolean switch to make sure no one delivers anything on the fly by just running this without looking at it.
 submit_on = False
 if submit_on:
     # Start timing the submission process
