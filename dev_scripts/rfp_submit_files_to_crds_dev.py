@@ -2,6 +2,8 @@ import glob
 import time
 from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 from wfi_reference_pipeline.utilities.config_handler import get_crds_submission_config
+from wfi_reference_pipeline.utilities.manifest import make_manifest, print_manifest, print_meta_fields_together
+
 
 # Change to True to complete submission info
 update_dict = True
@@ -44,11 +46,16 @@ if update_dict:
 # Update the submission form and submit to CRDS
 submission.update_crds_submission_form()
 
+# Check manifest of meta data before submitting.
+meta_manifest = make_manifest(new_files)
+print_manifest(meta_manifest)
+print_meta_fields_together(meta_manifest)
+
 # Certify files - TODO check on the error message
-submission.certify_files()
+#submission.certify_files()
 
 # Boolean switch to make sure no one delivers anything on the fly by just running this without looking at it.
-submit_on = True
+submit_on = False
 if submit_on:
     # Start timing the submission process
     start_time = time.time()
