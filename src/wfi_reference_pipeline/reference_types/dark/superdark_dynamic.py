@@ -24,12 +24,11 @@ class STOPPROCESS:
     pass
 
 
-class SuperDark:
+class SuperDarkDynamic:
     """
-    SuperDark() is a class that will ingest raw L1 dark calibration files and average every read for
-    as many exposures as there are available to create a superdark.asdf file. This file is the assumed input
-    into the Dark() module in the RFP and the input used for resampling to make dark calibration
-    reference files for any given number of MA Tables.
+    Ingest raw L1 dark calibration files and average every read for as many exposures as there are available to
+    create a superdark.asdf file. This file is the assumed input into the Dark() module in the RFP and the
+    input used for resampling to make dark calibration reference files for any given number of MA Tables.
     """
 
     def __init__(
@@ -374,7 +373,7 @@ class SuperDark:
             "description": "Super dark file calibration product "
             "generated from Reference File Pipeline.",
             "date": Time(datetime.now()),
-            "detector": "WFO01",
+            "detector": "WFI01",
             "filelist": self.file_list,
         }
 

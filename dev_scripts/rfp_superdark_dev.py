@@ -1,4 +1,5 @@
 from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
+from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import SuperDarkDynamic
 import os, logging
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 import cProfile
@@ -22,7 +23,7 @@ file_list_WFI01 = [file for file in files if "WFI01" in file]
 # for f in file_list_WFI01:
 #     print(f)
 
-sd = SuperDark(input_path=input_directory,
+sd = SuperDarkDynamic(input_path=input_directory,
                file_list=file_list_WFI01,
                outfile="roman_superdark.asdf")
 
