@@ -1,12 +1,14 @@
-import asdf
 import logging
 import os
+from abc import ABC, abstractmethod
+
+import asdf
 import numpy as np
 from astropy.time import Time
 from romancal.lib import dqflags
-from abc import ABC, abstractmethod
 
 from wfi_reference_pipeline.constants import WFI_REF_TYPES_WITHOUT_INPUT_DATA
+
 
 class ReferenceType(ABC):
     """
@@ -38,15 +40,24 @@ class ReferenceType(ABC):
                  mask_size=(4096, 4096)
                  ):
 
+        have_file_list = False
+        have_ref_type_data = False
+        have_input = False
+        if file_list is not None and len(file_list) > 0:
+            have_file_list = True
+            have_input = True
+        if ref_type_data is not None and len(ref_type_data) > 0:
+            have_ref_type_data = True
+            have_input = True
+
         # Check to make sure ReferenceType is instantiated with one valid input.
         # some ref types require no input data. see constants.WFI_REF_TYPES_WITHOUT_DATA for list of those reference types
-        if (file_list is None and ref_type_data is None) and \
-                (meta_data.reference_type not in WFI_REF_TYPES_WITHOUT_INPUT_DATA):
-            raise ValueError(
-                "No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
-        if file_list is not None and len(file_list) > 0 and \
-                ref_type_data is not None and len(ref_type_data) > 0:
+        if have_file_list and have_ref_type_data:
             raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'ref_type_data'")
+        if not have_input and meta_data.reference_type not in WFI_REF_TYPES_WITHOUT_INPUT_DATA:
+            raise ValueError(f"Reference File type {meta_data.reference_type} requires input data in the form of a file_list or ref_type_data.")
+
+
 
         # Allow for input string use_after to be converted to astropy time object.
         if isinstance(meta_data.use_after, str):
@@ -130,7 +141,7 @@ class ReferenceType(ABC):
 
         # check to see if file currently exists
         self.check_outfile()
-        
+
         af.write_to(self.outfile)
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
