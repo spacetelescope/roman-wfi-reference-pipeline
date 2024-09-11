@@ -1,12 +1,14 @@
-import asdf
 import logging
 import os
+from abc import ABC, abstractmethod
+
+import asdf
 import numpy as np
 from astropy.time import Time
 from romancal.lib import dqflags
-from abc import ABC, abstractmethod
 
 from wfi_reference_pipeline.constants import WFI_REF_TYPES_WITHOUT_INPUT_DATA
+
 
 class ReferenceType(ABC):
     """
@@ -47,7 +49,7 @@ class ReferenceType(ABC):
         if ref_type_data and len(ref_type_data) >1:
             have_ref_type_data = True
             have_input = True
-            
+
         # Check to make sure ReferenceType is instantiated with one valid input.
         # some ref types require no input data. see constants.WFI_REF_TYPES_WITHOUT_DATA for list of those reference types
         if have_file_list and have_ref_type_data:
