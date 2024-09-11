@@ -2,12 +2,12 @@ from wfi_reference_pipeline.utilities import logging_functions
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.aperturecorrection.aperturecorrection import ApertureCorrection
 from astropy.time import Time
-
+from pathlib import Path
 
 # configure a logging file
 logging_functions.configure_logging("wfi_aperture_correction_creation")
 
-write_path = '/grp/roman/wschultz/'#'/grp/roman/RFP/DEV/scratch/'  # Set the write path to be in the RFP scratch directory.
+write_path = Path('/grp/roman/wschultz/') #'/grp/roman/RFP/DEV/scratch/'  # Set the write path to be in the RFP scratch directory.
 
 # Start by making the generic Meta data for all the files
 tmp = MakeDevMeta(ref_type='APCORR') 
@@ -43,7 +43,7 @@ for detector_index in range(18):
     detector_integer = detector_index + 1
 
     tmp.meta_aperturecorrection.instrument_detector = f'WFI{detector_integer:02d}'
-    outfile = write_path + f'roman_dev_apcorr_{detector_integer:02d}.asdf' 
+    outfile = write_path / f'roman_dev_apcorr_{detector_integer:02d}.asdf' 
 
     aperture_correction = ApertureCorrection(
                                 meta_data=tmp.meta_aperturecorrection,
