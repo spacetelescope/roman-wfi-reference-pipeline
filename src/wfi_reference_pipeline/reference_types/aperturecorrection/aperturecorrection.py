@@ -3,7 +3,6 @@
 import asdf
 import webbpsf
 import numpy as np
-from astropy import units as u
 import roman_datamodels.stnode as rds
 from photutils.aperture import CircularAperture, aperture_photometry
 from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import WFIMetaApertureCorrection
@@ -132,11 +131,11 @@ class ApertureCorrection(ReferenceType):
                 enclosed_energy_radii, aperture_corrections, sky_background_inner_r, sky_background_outer_r = self.calculate_aperture_corrections(wfi, enclosed_energy_fractions)
 
                 aperture_correction_dict[optical_element] = {
-                    'ee_fractions': u.Quantity(enclosed_energy_fractions),
-                    'ee_radii': enclosed_energy_radii * u.pixel,
-                    'ap_corrections': u.Quantity(aperture_corrections),
-                    'sky_background_rin': sky_background_inner_r * u.pixel,
-                    'sky_background_rout': sky_background_outer_r * u.pixel,
+                    'ee_fractions': enclosed_energy_fractions,
+                    'ee_radii': enclosed_energy_radii,
+                    'ap_corrections': aperture_corrections,
+                    'sky_background_rin': sky_background_inner_r,
+                    'sky_background_rout': sky_background_outer_r,
                 }
 
         return aperture_correction_dict
