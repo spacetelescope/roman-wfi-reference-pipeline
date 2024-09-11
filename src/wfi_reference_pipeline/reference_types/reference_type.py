@@ -55,7 +55,9 @@ class ReferenceType(ABC):
         if have_file_list and have_ref_type_data:
             raise ValueError("Two inputs provided. Provide only one of 'file_list' or 'ref_type_data'")
         if not have_input and meta_data.reference_type not in WFI_REF_TYPES_WITHOUT_INPUT_DATA:
-            raise ValueError("No data supplied to make reference file! You MUST supply 'file_list' or 'ref_type_data' parameters")
+            raise ValueError(f"Reference File type {meta_data.reference_type} requires input data in the form of a file_list or ref_type_data.")
+
+
 
         # Allow for input string use_after to be converted to astropy time object.
         if isinstance(meta_data.use_after, str):
