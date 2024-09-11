@@ -43,10 +43,10 @@ class ReferenceType(ABC):
         have_file_list = False
         have_ref_type_data = False
         have_input = False
-        if file_list is not None and len(file_list) > 1:
+        if file_list is not None and len(file_list) > 0:
             have_file_list = True
             have_input = True
-        if ref_type_data is not None and len(ref_type_data) > 1:
+        if ref_type_data is not None and len(ref_type_data) > 0:
             have_ref_type_data = True
             have_input = True
 
