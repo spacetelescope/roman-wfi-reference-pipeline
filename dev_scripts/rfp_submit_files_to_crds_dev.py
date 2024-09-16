@@ -6,13 +6,10 @@ from wfi_reference_pipeline.utilities.manifest import make_manifest, print_manif
 
 
 # Change to True to complete submission info
-update_dict = True
+update_dict = False
 
 # Load configuration settings
 config = get_crds_submission_config()
-
-# To see the submission form information details
-# form_info = config['form_info']
 
 # Gather new files based on the pattern in the config file
 new_files = glob.glob(config['files_to_submit']['crds_ready_dir'] + '/MASK/GSFC/*.asdf')
@@ -29,7 +26,7 @@ if update_dict:
     submission.submission_dict['instrument'] = 'WFI'
     submission.submission_dict['deliverer'] = 'Richard Cosentino'
     submission.submission_dict['other_email'] = 'rcosenti@stsci.edu'
-    submission.submission_dict['file_type'] = 'MASK'
+    submission.submission_dict['file_type'] = 'MASk'
     submission.submission_dict['useafter_matches'] = 'N/A'
     submission.submission_dict['compliance_verified'] = 'N/A'
     submission.submission_dict['calpipe_version'] = 'N/A'
@@ -46,13 +43,19 @@ if update_dict:
 # Update the submission form and submit to CRDS
 submission.update_crds_submission_form()
 
-# Check manifest of meta data before submitting.
-meta_manifest = make_manifest(new_files)
-print_manifest(meta_manifest)
-print_meta_fields_together(meta_manifest)
+check_files = True
+if check_files:
+    # Check manifest of meta data before submitting.
+    meta_manifest = make_manifest(new_files)
 
-# Certify files - TODO check on the error message
-#submission.certify_files()
+    # This below will print the meta for each file.
+    print_manifest(meta_manifest)
+
+    # This will print the meta by each key in the meta for every file.
+    print_meta_fields_together(meta_manifest)
+
+    # Certify files with CRDS command.
+    submission.certify_files()
 
 # Boolean switch to make sure no one delivers anything on the fly by just running this without looking at it.
 submit_on = False

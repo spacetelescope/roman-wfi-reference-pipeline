@@ -53,11 +53,14 @@ def make_manifest(files):
                        'optical_element': element,
                        'ma_table_name': ma_name}
                       )
-
+    print(df)
     return df
 
 
 def print_manifest(df):
+    """
+    Prints each file's meta data separated by a line.
+    """
     for index, row in df.iterrows():
         print(f"File: {row['file']}")
         print(f"Reftype: {row['reftype']}")
@@ -71,6 +74,9 @@ def print_manifest(df):
 
 
 def print_meta_fields_together(df):
+    """
+    Prints the meta of every file by key in groups and separates them by a line.
+    """
     for col in df.columns:
         print(f"{col.capitalize()}:")
         for value in df[col]:

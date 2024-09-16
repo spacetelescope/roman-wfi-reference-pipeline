@@ -4,6 +4,8 @@ the information for the reference file submission.
 """
 
 import os
+import subprocess
+import logging
 from typing import Union
 from dataclasses import dataclass, field
 from crds.submit import Submission
@@ -98,6 +100,7 @@ class WFISubmit:
         self.server = server.lower()
         if self.server not in ('test', 'tvac', 'ops'):
             raise ValueError(f'Server should be either "test" or "tvac" or "ops". Got {self.server} instead.')
+        self._set_env_variables()
 
         if form_info is None:
             # Load submission information from the config file if not provided
@@ -122,6 +125,7 @@ class WFISubmit:
         """
         cert_files = [f if '/' in f else f'./{f}' for f in self.files]
         server_info = heavy_client.get_config_info('roman')
+        self._update_crds_context()
         context = server_info['operational_context']
 
         certify_files(cert_files, context)
@@ -181,6 +185,49 @@ class WFISubmit:
 
         pass
 
+    def _set_env_variables(self):
+        """
+        # TODO Investigate why attribute self.server being set to "ops" did not deliver to ops or was over-written by the environment variable.
+
+        Additionally, the user will need to refresh or regenerate a valid MAST Token that is also an environment
+        variable
+        https://auth.mast.stsci.edu/tokens
+        export MAST_API_TOKEN="12345678StringExample@#$%!"
+        """
+
+        if self.server == 'test':
+            os.environ['CRDS_SERVER_URL'] = 'https://roman-crds-test.stsci.edu'
+        elif self.server == 'ops':
+            os.environ['CRDS_SERVER_URL'] = 'https://roman-crds.stsci.edu'
+        elif self.server == 'tvac':
+            os.environ['CRDS_SERVER_URL'] = 'https://roman-crds-tvac.stsci.edu/'
+        else:
+            raise ValueError("Server not set to one of the allowed (test, ops, or tvac)")
+
+    def _update_crds_context(self):
+        """
+        Need to update the contexts that now in use. The solution in this method for now
+        is to get all mappings. If we decide to have the specific current up to date
+        context always tracked somewhere, such as the config file, we could just implement
+        an incremental increase
+
+        Current context: roman_XXXX.pmap
+        XXXX += 1
+        crds sync --contexts roman_XXXX.pmap
+        """
+
+        crds_sync_all_command = "crds sync --all"
+        try:
+            result = subprocess.run(crds_sync_all_command,
+                                    shell=True,
+                                    check=True,
+                                    text=True,
+                                    capture_output=True)
+            logging.debug(f"Opening file {result.stdout}")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error syncing crds --all: {e}")
+            print(f"Error syncing crds --all: {e}")
+
     def submit_to_crds(self, summary=None):
         """
         Submit the files to CRDS. This is the actual submission to CRDS method.
@@ -196,7 +243,9 @@ class WFISubmit:
                 summary += f' Result URL is {self.submission_results.ready_url}'
             else:
                 summary = 'Files have been submitted. No summary provided.'
-            send_slack_message(summary, os.environ['WFI_REFFILE_SLACK_TOKEN'],
+            # TODO discuss slack and email notifications and configuration file needed.
+            send_slack_message(summary,
+                               os.environ['WFI_REFFILE_SLACK_TOKEN'],
                                config_file=None)
         except KeyError:
             raise Exception('No token found in environment variable "WFI_REFFILE_SLACK_TOKEN". '
