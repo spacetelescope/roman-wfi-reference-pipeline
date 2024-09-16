@@ -1,0 +1,28 @@
+files_to_submit:
+  crds_ready_dir: "/grp/roman/RFP_REFERENCE_FILES/TVAC1"
+
+form_info:
+  instrument: 'WFI'
+  deliverer: "User updated information."
+  other_email: "User updated information."
+  file_type: "User updated information."
+  history_updated: true
+  pedigree_updated: true
+  keywords_checked: true
+  descrip_updated: true
+  useafter_updated: true
+  useafter_matches: "User updated information."
+  compliance_verified: "User updated information."
+  etc_delivery: false
+  calpipe_version: "User updated information."
+  replacement_files: false
+  old_reference_files: ""
+  replacing_badfiles: "User updated information."
+  jira_issue: "User updated information."
+  table_rows_changed: "User updated information."
+  reprocess_affected: false
+  modes_affected: "User updated information."
+  change_level: "MODERATE"
+  correctness_testing: "None"
+  additional_considerations: "None"
+  description: "User updated information."
