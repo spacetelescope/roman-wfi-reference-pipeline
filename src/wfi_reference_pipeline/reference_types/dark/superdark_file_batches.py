@@ -15,7 +15,7 @@ import re
 import os
 
 
-class SuperDark_Batches:
+class SuperDarkBatches:
     """
     SuperDark_Batches() is a class that will ingest raw L1 dark calibration files and average every read for
     all dark exposures available to create a superdark.asdf file. This file is the input into the Dark()
