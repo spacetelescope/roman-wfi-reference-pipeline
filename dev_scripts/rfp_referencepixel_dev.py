@@ -3,7 +3,7 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
 
 import glob
 import numpy as np
-import logging
+
 from wfi_reference_pipeline.utilities import logging_functions
 logging_functions.configure_logging('wfi_refpixel_example')
 
