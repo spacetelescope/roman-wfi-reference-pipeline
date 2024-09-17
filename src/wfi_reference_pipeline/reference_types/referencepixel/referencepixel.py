@@ -131,6 +131,7 @@ class ReferencePixel(ReferenceType):
         if '.asdf' not in file_name:
             raise ValueError('can only read in .asdf format')
         fil = rdm.open(file_name)
+
         # get data
         data = fil['data']
         amp33 = fil['amp33']
@@ -153,8 +154,21 @@ class ReferencePixel(ReferenceType):
         # Convert from uint16 to prepare for in-place computations
         return dset.astype(np.float64)
 
+    def _get_detector_name_from_dark_file_meta(self, file_name):
+        if not os.path.exists(file_name):
+            mesg = f'Input file {file_name} does not exist. Terminating.'
+            logging.fatal(mesg)
+            raise FileNotFoundError(mesg)
+        
+        if '.asdf' not in file_name:
+            raise ValueError('can only read in .asdf format')
+        fil = rdm.open(file_name)
+        # get detector
+        detector = fil['meta']['instrument']['detector']
+        # update detector name in meta
+        self.meta_data.instrument_detector = detector
 
-    def make_referencepixel_image(self, tmppath=None, skip_first_frame=False):
+    def make_referencepixel_image(self, tmppath=None, detector_name=None, skip_first_frame=False):
         """
         The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
         Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.
@@ -166,17 +180,28 @@ class ReferencePixel(ReferenceType):
         tmppath: str; default = None
             Path string. Absolute or relative path for temporary storage of IRRC sums for individual ramps
             By default, None is provided and the method below produces the folder in the location the script is run.
-        skip_first_frame: should the first frame of the data be skipped? (should not be skipped if the reset read is a separate frame)
+        detector_name: str; default = None
+            name of the detector in the form "WFI01"
+            if None and a file_list is provided, the detector_name will be pulled from the file meta data.  If ref_type_data is provided, a detector_name must be supplied. 
+        skip_first_frame: boolean; default = False
+            should the first frame of the data be skipped? (should not be skipped if the reset read is a separate frame)
         """
-     
-        detector = self.meta_data.instrument_detector # taken from WFIMetaReferencePixel() dictionary style
-        logging.info(f'detector {detector}')
+        if self.file_list:
+            self._get_detector_name_from_dark_file_meta(self.file_list[0])
+        else:
+            if detector_name is not None:
+                self.meta_data.instrument_detector = detector_name
+            else:
+                msg = 'detector_name must be provided when ref_type_data is used'
+                logging.fatal(msg)
+                raise ValueError(msg) 
+        logging.info(f'detector {self.meta_data.instrument_detector}')
 
         # create name of folder to save the exposure weight .h5 files
         if tmppath is None:
-            tmpdir = f'./tmp_IRRC_{detector}'
+            tmpdir = f'./tmp_IRRC_{self.meta_data.instrument_detector}'
         else:
-            tmpdir = os.path.join(tmppath, f'tmp_IRRC_{detector}')
+            tmpdir = os.path.join(tmppath, f'tmp_IRRC_{self.meta_data.instrument_detector}')
 
         # if tmpdir does not exist, create it
         if not os.path.exists(tmpdir):
