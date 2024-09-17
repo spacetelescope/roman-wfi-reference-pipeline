@@ -3,16 +3,15 @@ import logging
 import time
 import asdf
 import numpy as np
+import psutil
+import re
+import os
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from astropy import units as u
 from pathlib import Path
-import roman_datamodels as rdm
-import psutil
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import re
-import os
 
 
 class SuperDarkBatches:
@@ -25,10 +24,10 @@ class SuperDarkBatches:
     def __init__(
         self,
         input_path,
-        file_list=None,
-        n_reads_list=None,
         short_dark_file_list=None,
+        short_dark_num_reads=46,
         long_dark_file_list=None,
+        long_dark_num_reads=98,
         outfile="roman_superdark.asdf",
     ):
         """
@@ -36,36 +35,26 @@ class SuperDarkBatches:
         ----------
         input_path: str,
             Path to input directory where files are located.
-        file_list: list,
-            List of files in the input_directory
-        short_dark_file_list : list, default = None
+        short_dark_file_list: list, default = None
             List of short dark exposure files.
-        long_dark_file_list : list, default = None
+        short_dark_num_reads: int, default = 46
+            Number of reads in the short dark data cubes.
+        long_dark_file_list: list, default = None
             List of long dark exposure files.
+        long_dark_num_reads: int, default = 98
+            Number of reads in the short dark data cubes.
         outfile: str, default="roman_superdark.asdf"
             File name written to disk.
         """
 
-        # Specify file lists.
-        if file_list is None and (short_dark_file_list is None or long_dark_file_list is None):
-            raise ValueError("Either 'file_list' must be provided, or both "
-                             "'short_dark_file_list' and 'long_dark_file_list' must be provided.")
-
         self.input_path = Path(input_path)
-        self.file_list = None
-        self.n_reads_list = n_reads_list
+        self.short_dark_num_reads = short_dark_num_reads
+        self.long_dark_num_reads = long_dark_num_reads
 
-        # Initialize with file_list.
-        if file_list:
-            self.file_list = sorted(file_list)
-            if n_reads_list:
-                self.max_reads = np.amax(n_reads_list)
         # Initialize with short_dark_file_list and long_dark_file_list
-        elif short_dark_file_list and long_dark_file_list:
+        if short_dark_file_list and long_dark_file_list:
             self.short_dark_file_list = sorted(short_dark_file_list)
-            self.short_dark_num_reads = 46
             self.long_dark_file_list = sorted(long_dark_file_list)
-            self.long_dark_num_reads = 98
             self.file_list = sorted(short_dark_file_list + long_dark_file_list)
         else:
             raise ValueError(
@@ -86,10 +75,11 @@ class SuperDarkBatches:
         self.read_i_from_all_files = None
         # The array of filtered reads from all files for the i'th read of the superdark.
         self.clipped_reads = None
-
+        # This is the superdark cube generated from the make_superdark_with_batches()
         self.superdark = None
 
         # Meta data for RFP tracking and usage. Not a CRDS delivered product.
+        # TODO consider making a schema for our own use and config file for superdark creation for RTB in mind
         self.meta_data = {'pedigree': "DUMMY",
                           'description': "Super dark file calibration product "
                                          "generated from Reference File Pipeline.",
@@ -111,13 +101,13 @@ class SuperDarkBatches:
 
         Parameters
         ----------
-        sig_clip_sd_low : float, default = 3.0
+        sig_clip_sd_low: float, default = 3.0
             Lower bound limit to filter data.
-        sig_clip_sd_high : float, default = 3.0
+        sig_clip_sd_high: float, default = 3.0
             Upper bound limit to filter data.
-        short_batch_size : int, default = 4
+        short_batch_size: int, default = 4
             Number of short dark files to process in parallel at a time.
-        long_batch_size : int, default = 4
+        long_batch_size: int, default = 4
             Number of long dark files to process in parallel at a time.
         """
         current_datetime = datetime.now()
@@ -132,6 +122,7 @@ class SuperDarkBatches:
         for read_i in range(0, self.long_dark_num_reads):
             timing_method_file_loop_start = time.time()
             logging.debug(f"On read {read_i} of {self.long_dark_num_reads}")
+            print(f"On read {read_i} of {self.long_dark_num_reads}")
 
             # Determine the number of files to process for the current read index.
             if read_i < self.short_dark_num_reads:
@@ -173,7 +164,7 @@ class SuperDarkBatches:
             timing_start_sigmaclipmean = time.time()
 
             if np.isnan(self.read_i_from_all_files[i, :, :]).any():
-                logging.debug(f"NaNs found in read_i_from_all_files data cube")
+                logging.debug("NaNs found in read_i_from_all_files data cube")
             logging.debug(f"Sigma clipping reads from all files for read_i: {read_i}")
             clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
@@ -185,13 +176,13 @@ class SuperDarkBatches:
 
             timing_end_sigmaclipmean = time.time()
             time_sigmaclipmean = timing_end_sigmaclipmean - timing_start_sigmaclipmean
-            print(f"Sigma clip and average time: {time_sigmaclipmean:.2f} seconds")
+            logging.debug(f"Sigma clip and average time: {time_sigmaclipmean:.2f} seconds")
 
-            time_fileloop_and_sigmaclipmean = timing_end_sigmaclipmean - timing_start_method_e_file_loop
-            print(f"File loop and sigma clip and average time: {time_fileloop_and_sigmaclipmean:.2f} seconds")
+            time_fileloop_and_sigmaclipmean = timing_end_sigmaclipmean - timing_method_file_loop_start
+            logging.debug(f"File loop and sigma clip and average time: {time_fileloop_and_sigmaclipmean:.2f} seconds")
 
             if np.isnan(clipped_reads).any():
-                logging.debug(f"NaNs found in sigma clipped reads cube.")
+                logging.debug("NaNs found in sigma clipped reads cube.")
             self.superdark[read_i, :, :] = np.mean(clipped_reads, axis=0)
 
             logging.debug(f"Memory used at end of method: {get_mem_usage():.2f} GB")
@@ -200,7 +191,7 @@ class SuperDarkBatches:
 
         timing_end_method_e = time.time()
         elapsed_time = timing_end_method_e - timing_start_method_e
-        print(f"Total time taken for method e: {elapsed_time:.2f} seconds")
+        logging.debug(f"Total time taken for method e: {elapsed_time:.2f} seconds")
         logging.info(f"Total time taken for method e: {elapsed_time:.2f} seconds")
 
     def generate_outfile(self, file_permission=0o666):
@@ -250,9 +241,9 @@ def get_read_from_file(file_path, read_i):
 
     Parameters
     ----------
-    file_path : Path
+    file_path: Path
         Path to the file.
-    read_i : int
+    read_i: int
         Read index.
 
     Returns
@@ -281,13 +272,13 @@ def process_files_in_batches(file_path, file_list, batch_size, read_i):
 
     Parameters
     ----------
-    file_path : Path
+    file_path: Path
         Path to the files to be processed.
-    file_list : list of str
+    file_list: list of str
         List of file names to be processed at the file_path.
-    batch_size : int
+    batch_size: int
         Number of files to process in parallel at a time.
-    read_i : int
+    read_i: int
         The index of the read or data slice to extract from each file.
 
     Returns
