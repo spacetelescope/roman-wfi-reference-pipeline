@@ -111,7 +111,7 @@ def remove_linear_trends_per_frame_chan_func(chan_number:int, logger:logging.Log
         data2 = data_chans_frames_rowschancols[chan_number, frame, REFERENCE_ROWS,:]
         y_vals = data2[(data2 != 0)]
         if x_vals.size < 1 or y_vals.size < 1:
-            logger.warn(f'Skipping empty data section.  Frame={frame}, Chan={chan_number}')
+            logger.info(f'Skipping empty data section.  Frame={frame}, Chan={chan_number}')
             continue
 
         ab_3[chan_number, frame,:] = np.polyfit(x_vals, y_vals, 1)

@@ -203,7 +203,7 @@ class TestSchema(unittest.TestCase):
         # If none, then datamodel tree is valid.
         assert tf.validate() is None
 
-    @pytest.mark.skip(reason="Temporarily disabled test")
+    # @pytest.mark.skip(reason="Temporarily disabled test")
     def test_rfp_referencepixel_schema(self):
         """
         Use the WFI reference file pipeline ReferencePixel() module to build
@@ -212,13 +212,13 @@ class TestSchema(unittest.TestCase):
 
         # Make reftype specific data class object and export meta data as dict.
         tmp = MakeTestMeta(ref_type='REFPIX')
-        referencepixel_test_meta = tmp.meta_referencepixel.export_asdf_meta()
 
         # Make RFP Reference Pixel reference file object for testing.
-        shape = (3,3)
-        test_coeff = np.ones(shape, dtype=complex)
-        rfp_referencepixel = ReferencePixel(None, meta_data=referencepixel_test_meta,
-                                            alpha=test_coeff, zeta=test_coeff, gamma=test_coeff)
+        shape = (2, 4096, 4224)
+        test_data = np.ones(shape, dtype=np.float32)
+        rfp_referencepixel = ReferencePixel(meta_data=tmp.meta_referencepixel, 
+                                            ref_type_data = test_data)
+        rfp_referencepixel.make_referencepixel_image(detector_name='WFI01')
 
         # Make test asdf tree
         tf = asdf.AsdfFile()

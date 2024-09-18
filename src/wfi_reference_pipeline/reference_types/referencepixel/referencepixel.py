@@ -290,20 +290,6 @@ class ReferencePixel(ReferenceType):
 
         return referencepixel_datamodel_tree
 
-    def save_referencepixel(self, datamodel_tree=None):
-        """
-        The method save_referencepixel writes the reference file object to the specified asdf outfile. 
-        Likely deprecated?? - use rfp_referencepixel.generate_outfile()
-        """
-
-        # Use data model tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
-        af.write_to(self.outfile)
-
     def calculate_error(self):
         pass
 
