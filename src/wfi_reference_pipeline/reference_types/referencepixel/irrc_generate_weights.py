@@ -24,13 +24,28 @@ cfg_weights_dtype = np.complex128
     
 
 
-def generate(in_file_search_tag:str="*.hd5",
+def generate(in_file_search_tag:str="*.h5",
              lambda_coeff:float=0, multithread:bool=True):
     '''
     Generated output file with weights from one or more input previously processed ramp sums
-    :param in_file_search_tag: Python glob pattern for files generated using 'extract_ramp_sums.py'
-    :param lambda_coeff: a scaling factor
-    :param multithread: should the computations use multithreading?
+    
+    Parameters
+    ----------
+    in_file_search_tag: str; default = '*.h5'
+        Python glob pattern for files generated using 'extract_ramp_sums.py'
+    lambda_coeff: float, default = 0
+        a scaling factor
+    multithread: boolean, default = True
+        should the computations use multithreading?
+
+    Returns
+    ----------
+    alpha: ndarray (complex128)
+        alpha coefficients
+    gamma: ndarray (complex128)
+        gamma coefficients
+    zeta: ndarray (complex128)
+        zeta coefficients
     '''
     
     start_sec = time.time()
@@ -138,25 +153,32 @@ def _channel_coeff_func(chan:int, alpha:np.ndarray, gamma:np.ndarray, zeta:np.nd
                         conj_uu:np.ndarray, conj_vv:np.ndarray, conj_zz:np.ndarray, denom:np.ndarray):
     '''
     Generate the three streams for a single channel
-    :param chan: channel number
-    :param alpha: CHANGED IN PLACE - weights for reference output 
-    :param gamma: CHANGED IN PLACE - weights for left reference columns
-    :param zeta: CHANGED IN PLACE - weights for right reference columns
+
+    Parameters
+
+    chan: int 
+        channel number
+    alpha: ndarray 
+        CHANGED IN PLACE - weights for reference output 
+    gamma: ndarray
+        CHANGED IN PLACE - weights for left reference columns
+    zeta: ndarray
+        CHANGED IN PLACE - weights for right reference columns
     
     The following are intermediate quantities calculated a priori
-    :param aa:
-    :param ll:
-    :param rr:
-    :param uu:
-    :param vv:
-    :param ww:
-    :param xx:
-    :param yy:
-    :param zz:
-    :param conj_uu:
-    :param conj_vv:
-    :param conj_zz:
-    :param denom:
+    aa: ndarray
+    ll: ndarray
+    rr: ndarray 
+    uu: ndarray
+    vv: ndarray
+    ww: ndarray
+    xx: ndarray
+    yy: ndarray
+    zz: ndarray
+    conj_uu: ndarray
+    conj_vv: ndarray
+    conj_zz: ndarray
+    denom: ndarray
     '''
     
     alpha[chan,:] = (ll * rr * ww[chan,:] - ll * vv * xx[chan,:] - rr * uu * yy[chan,:] + uu * xx[chan,:] * zz + vv * yy[chan,:] * conj_zz - ww[chan,:] * zz * conj_zz) / denom
