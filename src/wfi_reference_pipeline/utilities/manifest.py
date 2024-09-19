@@ -21,7 +21,7 @@ def make_manifest(files):
     """
 
     useafter, exptype, element, detector = [], [], [], []
-    ma_name, reftype, description = [], [], []
+    ma_name, reftype, description, pedigree = [], [], [], []
 
     for file in files:
         with rdd.open(file) as rf:
@@ -31,6 +31,7 @@ def make_manifest(files):
         useafter.append(meta['useafter'].datetime.strftime('%Y-%m-%d %H:%M:%S'))
         detector.append(meta['instrument']['detector'])
         description.append(meta['description'])
+        pedigree.append(meta['pedigree'])
         try:
             exptype.append(meta['exposure']['type'])
         except KeyError:
@@ -49,6 +50,7 @@ def make_manifest(files):
                        'detector': detector,
                        'descirption': description,
                        'useafter': useafter,
+                       'pedigree': pedigree,
                        'exptype': exptype,
                        'optical_element': element,
                        'ma_table_name': ma_name}
