@@ -3,24 +3,10 @@ import asdf
 import numpy as np
 from astropy.time import Time
 from pathlib import Path
-import psutil
+
 from datetime import datetime
 import re
 import os
-
-
-def get_mem_usage():
-    """
-    Function to return memory usage throughout module.
-
-    Returns
-    ----------
-    memory_usage; float
-        Memory in Gigabytes being used.
-    """
-
-    memory_usage = psutil.virtual_memory().used / (1024 ** 3)  # in GB
-    return memory_usage
 
 
 class SuperDarkBase:
