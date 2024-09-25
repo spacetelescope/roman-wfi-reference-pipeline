@@ -4,64 +4,55 @@ import numpy as np
 from astropy.time import Time
 from pathlib import Path
 
+from abc import ABC
+
 from datetime import datetime
 import re
 import os
 
 
-class SuperDarkBase:
+class SuperDark(ABC):
     """
-    SuperDark() is a class that will ingest raw L1 dark calibration files and average every read for
-    as many exposures as there are available for that read to create a superdark.asdf file. This file
-    is the assumed input into the Dark() module in the RFP to create resampled dark calibration
-    reference files for a specific MA Table.
+    Base class SuperDark() for all SuperDark classes
     """
+
 
     def __init__(
         self,
         input_path,
-        file_list=None,
-        n_reads_list=None,
         short_dark_file_list=None,
+        short_dark_num_reads=46,
         long_dark_file_list=None,
-        outfile="roman_superdark.asdf",
+        long_dark_num_reads=98,
+        outfile=None,
     ):
         """
         Parameters
         ----------
         input_path: str,
             Path to input directory where files are located.
-        file_list: list,
-            List of files in the input_directory
-        short_dark_file_list : list, default = None
+        short_dark_file_list: list, default = None
             List of short dark exposure files.
-        long_dark_file_list : list, default = None
+        short_dark_num_reads: int, default = 46
+            Number of reads in the short dark data cubes.
+        long_dark_file_list: list, default = None
             List of long dark exposure files.
+        long_dark_num_reads: int, default = 98
+            Number of reads in the short dark data cubes.
         outfile: str, default="roman_superdark.asdf"
             File name written to disk.
         """
 
         # Specify file lists.
-        if file_list is None and (short_dark_file_list is None or long_dark_file_list is None):
-            raise ValueError("Either 'file_list' must be provided, or both "
-                             "'short_dark_file_list' and 'long_dark_file_list' must be provided.")
-
         self.input_path = Path(input_path)
-        self.file_list = None
-        self.n_reads_list = n_reads_list
+        self.short_dark_num_reads = short_dark_num_reads
+        self.long_dark_num_reads = long_dark_num_reads
 
-        # Initialize with file_list.
-        if file_list:
-            self.file_list = sorted(file_list)
-            if n_reads_list:
-                self.max_reads = np.amax(n_reads_list)
         # Initialize with short_dark_file_list and long_dark_file_list
-        elif short_dark_file_list and long_dark_file_list:
+        if short_dark_file_list and long_dark_file_list:
             self.short_dark_file_list = sorted(short_dark_file_list)
-            self.short_dark_num_reads = 46
             self.long_dark_file_list = sorted(long_dark_file_list)
-            self.long_dark_num_reads = 98
-            self.file_list = sorted(short_dark_file_list + long_dark_file_list)
+            self.file_list = short_dark_file_list + long_dark_file_list
         else:
             raise ValueError(
                 "Invalid input combination: both 'short_dark_file_list' and "
@@ -71,26 +62,25 @@ class SuperDarkBase:
         wfixx_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
                          re.search(r'(WFI\d{2})', file)]
         self.wfixx_string = list(set(wfixx_strings))  # Remove duplicates if needed
+
+        # TODO need filename to have date in YYYYMMDD format probably....need to get meta data from
+        # files to populate superdark meta - what is relevant besides detector and filelist and mode?
         if outfile:
             self.outfile = outfile
         else:
             self.outfile = str(self.input_path / (self.wfixx_string[0] + '_superdark.asdf'))
 
-        # The attribute that contains the i'th read from all files or exposures. This is the array
-        # that is sigma clipped or filtered to remove hot and dead pixels and cosmic rays.
-        self.read_i_from_all_files = None
-        # The array of filtered reads from all files for the i'th read of the superdark.
-        self.clipped_reads = None
+        # Make Temporary Metadata for now.  TODO - This should be gathered from files or config
+        self.meta_data = {'pedigree': "DUMMY",
+                    'description': "Super dark file calibration product "
+                                    "generated from Reference File Pipeline.",
+                    'date': Time(datetime.now()),
+                    'detector': self.wfixx_string,
+                    'filelist': self.file_list}
 
+        # This is the actual superdark cube
         self.superdark = None
 
-        # Meta data for RFP tracking and usage. Not a CRDS delivered product.
-        self.meta_data = {'pedigree': "DUMMY",
-                          'description': "Super dark file calibration product "
-                                         "generated from Reference File Pipeline.",
-                          'date': Time(datetime.now()),
-                          'detector': self.wfixx_string,
-                          'filelist': self.file_list}
 
     def generate_outfile(self, file_permission=0o666):
         """
