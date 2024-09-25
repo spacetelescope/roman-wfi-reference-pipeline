@@ -213,13 +213,17 @@ class SuperDarkDynamic(SuperDark):
             # Determine the number of files to process for the current read index.
             if read_index < self.short_dark_num_reads:
                 num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
+                start_file = 0
             else:
                 num_files_with_this_read_index = len(self.long_dark_file_list)
+                start_file = len(self.short_dark_file_list)
             read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
 
             # Use this index as not all files will be used
             used_file_index = 0
-            for file_nr in range(0, num_files_with_this_read_index):
+
+            # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
+            for file_nr in range(start_file, num_files_with_this_read_index):
                 file_name = self.file_list[file_nr]
                 file_path = self.input_path.joinpath(file_name)
                 # If the file to be opened has a valid read index then open the file and
