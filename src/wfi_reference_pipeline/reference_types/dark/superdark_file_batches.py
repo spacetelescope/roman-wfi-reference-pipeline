@@ -1,17 +1,15 @@
 import gc
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+
 import asdf
 import numpy as np
 import psutil
-import re
-import os
-from astropy.stats import sigma_clip
-from astropy.time import Time
 from astropy import units as u
-from pathlib import Path
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from astropy.stats import sigma_clip
+
 from .superdark import SuperDark
 
 

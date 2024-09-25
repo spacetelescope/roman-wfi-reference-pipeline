@@ -1,14 +1,12 @@
 import logging
-import asdf
-import numpy as np
-from astropy.time import Time
+import os
+import re
+from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 
-from abc import ABC, abstractmethod
-
-from datetime import datetime
-import re
-import os
+import asdf
+from astropy.time import Time
 
 
 class SuperDark(ABC):
