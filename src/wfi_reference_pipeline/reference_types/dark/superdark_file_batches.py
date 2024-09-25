@@ -65,11 +65,13 @@ class SuperDarkBatches(SuperDark):
         self.clipped_reads = None
 
 
-    def make_superdark_with_batches(self,
-                                    sig_clip_sd_low=3.0,
-                                    sig_clip_sd_high=3.0,
-                                    short_batch_size=4,
-                                    long_batch_size=4):
+    def generate_superdark(
+            self,
+            sig_clip_sd_low=3.0,
+            sig_clip_sd_high=3.0,
+            short_batch_size=4,
+            long_batch_size=4
+        ):
         """
         This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
         approach for every read in both short and long darks in creating the super dark cube. Starting with

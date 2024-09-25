@@ -4,7 +4,7 @@ import numpy as np
 from astropy.time import Time
 from pathlib import Path
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from datetime import datetime
 import re
@@ -107,3 +107,11 @@ class SuperDark(ABC):
         af.write_to(self.outfile)
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
+
+        # Enforce methods for all reference file reftype modules.
+    @abstractmethod
+    def generate_superdark(self):
+        """
+        all classes must be able to generate this
+        """
+        pass

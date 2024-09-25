@@ -65,11 +65,10 @@ class SuperDarkDynamic(SuperDark):
             outfile=outfile,
         )
 
-    def make_superdark_dynamic(
+    def generate_superdark(
         self,
         sig_clip_sd_low=3.0,
         sig_clip_sd_high=3.0,
-        file_list_sorted=None,
     ):
         """
         This method calculates the largest number of processes that can be run given the system resources.
@@ -90,15 +89,11 @@ class SuperDarkDynamic(SuperDark):
             Lower bound limit to filter data.
         sig_clip_sd_high: float; default = 3.0
             Upper bound limit to filter data
-        file_list_sorted: list, default = None
-            A list of the sorted by filenames and shortest to longest number of reads in each
-            in-flight calibration plan dark exposure.
         """
         logging.debug(f"Begin date and time: {datetime.now()}")
 
         self.sig_clip_sd_low = sig_clip_sd_low
         self.sig_clip_sd_high = sig_clip_sd_high
-        self.file_list = file_list_sorted
 
         timing_start_dynamic = time.time()
         num_cores = multiprocessing.cpu_count()
@@ -196,9 +191,7 @@ class SuperDarkDynamic(SuperDark):
         shared_mem = shared_memory.SharedMemory(
             name=shared_mem_name
         )  # create from the existing one made by the parent process
-        superdark_shared_mem = np.ndarray(
-            [self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
-        )  # attach a numpy array to the memory object
+        superdark_shared_mem = np.ndarray([self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
 
         # Run until we hit our STOP_PROCESS flag or queue is empty
         while True:
@@ -222,9 +215,7 @@ class SuperDarkDynamic(SuperDark):
                 num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
             else:
                 num_files_with_this_read_index = len(self.long_dark_file_list)
-            read_index_cube = np.zeros(
-                (num_files_with_this_read_index, 4096, 4096), dtype=np.float32
-            )
+            read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
 
             # Use this index as not all files will be used
             used_file_index = 0
@@ -236,16 +227,10 @@ class SuperDarkDynamic(SuperDark):
                 # darks with only 46 reads from long darks with 98 reads.
                 try:
                     with asdf.open(file_path) as asdf_file:
-                        if isinstance(
-                            asdf_file.tree["roman"]["data"], u.Quantity
-                        ):  # Only access data from quantity object.
-                            read_index_cube[used_file_index, :, :] = asdf_file.tree[
-                                "roman"
-                            ]["data"].value[read_index, :, :]
+                        if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
+                            read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
                         else:
-                            read_index_cube[used_file_index, :, :] = asdf_file.tree[
-                                "roman"
-                            ]["data"][read_index, :, :]
+                            read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"][read_index, :, :]
                         used_file_index += 1
                 except (
                     FileNotFoundError,
@@ -253,9 +238,7 @@ class SuperDarkDynamic(SuperDark):
                     PermissionError,
                     ValueError,
                 ) as e:
-                    logging.warning(
-                        f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}"
-                    )
+                    logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
                 gc.collect()
 
             clipped_reads = sigma_clip(
