@@ -110,17 +110,17 @@ class SuperDarkDynamic(SuperDark):
         # num_cores = 1
         # num_cores = 5
 
-        logging.debug("STARTING SUPERDARK DYNAMIC PROCESS")
-        logging.debug(
+        logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
+        logging.info(
             f"Number of CPU cores available:                      {num_cores}"
         )
-        logging.debug(
+        logging.info(
             f"Available memory:                                   {available_mem} "
         )
-        logging.debug(
+        logging.info(
             f"                                                    {available_mem / GB} GB"
         )
-        logging.debug(
+        logging.info(
             f"Calculated Max Processes:                           {max_num_processes} "
         )
 

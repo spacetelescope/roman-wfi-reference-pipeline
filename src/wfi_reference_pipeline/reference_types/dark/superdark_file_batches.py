@@ -89,9 +89,9 @@ class SuperDarkBatches(SuperDark):
             Number of long dark files to process in parallel at a time.
         """
         current_datetime = datetime.now()
-        logging.debug(f"Starting super dark batches at: {current_datetime}")
+        logging.info(f"Starting super dark batches at: {current_datetime}")
         timing_start_method_e = time.time()
-        logging.debug("Testing super dark method with file batches.")
+        logging.info("Testing super dark method with file batches.")
         logging.debug(f"Memory used at start of method: {get_mem_usage():.2f} GB")
 
         self.superdark = np.zeros((self.long_dark_num_reads, 4096, 4096), dtype=np.float32)
@@ -169,7 +169,6 @@ class SuperDarkBatches(SuperDark):
 
         timing_end_method_e = time.time()
         elapsed_time = timing_end_method_e - timing_start_method_e
-        logging.debug(f"Total time taken for method e: {elapsed_time:.2f} seconds")
         logging.info(f"Total time taken for method e: {elapsed_time:.2f} seconds")
 
 
@@ -206,7 +205,7 @@ def get_read_from_file(file_path, read_i):
 
     try:
         with asdf.open(file_path) as af:
-            logging.info(f"Opening file {file_path}")
+            logging.debug(f"Opening file {file_path}")
             if isinstance(af.tree['roman']['data'], u.Quantity):  # Only access data from quantity object.
                 return af.tree['roman']['data'][read_i, :, :].value
             else:
