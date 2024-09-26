@@ -66,15 +66,15 @@ class SuperDark(ABC):
         if outfile:
             self.outfile = outfile
         else:
-            self.outfile = str(self.input_path / (self.wfixx_string[0] + '_superdark.asdf'))
+            self.outfile = str(self.wfixx_string[0] + '_superdark.asdf')
 
         # Make Temporary Metadata for now.  TODO - This should be gathered from files or config
         self.meta_data = {'pedigree': "DUMMY",
-                    'description': "Super dark file calibration product "
-                                    "generated from Reference File Pipeline.",
-                    'date': Time(datetime.now()),
-                    'detector': self.wfixx_string,
-                    'filelist': self.file_list}
+                          'description': "Super dark file calibration product "
+                                         "generated from Reference File Pipeline.",
+                          'date': Time(datetime.now()),
+                          'detector': self.wfixx_string,
+                          'filelist': self.file_list}
 
         # This is the actual superdark cube
         self.superdark = None
