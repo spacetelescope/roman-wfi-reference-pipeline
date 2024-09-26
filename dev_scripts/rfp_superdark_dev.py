@@ -1,8 +1,12 @@
-from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import SuperDarkBatches
-from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import SuperDarkDynamic
 import os
-from memory_profiler import profile
 import time
+
+from memory_profiler import profile
+
+from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import SuperDarkDynamic
+from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import SuperDarkBatches
+
+from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 
 input_directory = "/grp/roman/RFP/DEV/sim_inflight_calplan/WFIsim_darks/asdf_files"
 
@@ -21,7 +25,7 @@ for f in long_dark_file_list:
     print(f)
 
 # If true run batches, else run dynamic
-run_superdark_batches = True
+run_superdark_batches = False
 
 
 # Add the @profile decorator to the function we want to monitor
@@ -49,4 +53,6 @@ def run_superdark():
     print(f"Time taken: {end_time - start_time:.2f} seconds")
 
 
+
+configure_logging("rfp_superdark_dev")
 run_superdark()
