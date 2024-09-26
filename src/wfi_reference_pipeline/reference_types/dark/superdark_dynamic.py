@@ -208,19 +208,19 @@ class SuperDarkDynamic(SuperDark):
             read_index = queue_item
             process_name = multiprocessing.current_process().name
 
+            start_file = 0
+            # Use this index as not all files will be used
+            used_file_index = 0
             # This code segment is to initialize our cube according to size of files with this read index so we dont have
             # unused zeroes that will affect averaging.
             # Determine the number of files to process for the current read index.
             if read_index < self.short_dark_num_reads:
                 num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
-                start_file = 0
             else:
                 num_files_with_this_read_index = len(self.long_dark_file_list)
+                # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                 start_file = len(self.short_dark_file_list)
             read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
-
-            # Use this index as not all files will be used
-            used_file_index = 0
 
             # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
             for file_nr in range(start_file, num_files_with_this_read_index):
