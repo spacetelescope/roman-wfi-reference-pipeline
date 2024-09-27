@@ -21,6 +21,9 @@ from .superdark import SuperDark
 class STOPPROCESS:
     pass
 
+# TODO - MAKE SURE SHARED MEMORY IS FREE AFTER A TERMINATION SIGNAL IS SENT! THIS SHOULDNT HAPPEN BUT IT SHOULD BE ACCOUNTED FOR!
+# investigate atexit and signal handlers  (I tried quickly but ran into some issues.)
+
 
 class SuperDarkDynamic(SuperDark):
     """
@@ -101,14 +104,9 @@ class SuperDarkDynamic(SuperDark):
 
         needed_mem_per_process = (
             20 * GB
-        )  # 20 GB needed per process, realistically this is a bit more than we need.
+        )  # 20 GB needed per process, realistically this is a good bit more than we need.
         max_num_processes = available_mem // needed_mem_per_process
         max_num_processes = min(num_cores, max_num_processes)
-
-        # HERE RESIDES DEBUG CODE SETTINGS - TODO - delete after dev work complete
-        # self.file_list = self.file_list[:11]
-        # num_cores = 1
-        # num_cores = 5
 
         logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
         logging.info(
@@ -130,38 +128,44 @@ class SuperDarkDynamic(SuperDark):
         element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
         num_elements = (self.long_dark_num_reads * 4096 * 4096)  # Total number of elements in the array
         shared_mem_size = num_elements * element_size  # Total size in bytes
-        shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
-        # create the numpy array from the allocated memory
-        superdark_shared_mem = np.ndarray(
-            [self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
-        )
-        # Initialize the shared memory to 0
-        superdark_shared_mem[:] = 0
 
-        # Create a list of processes that will pull from our queue
-        task_queue = Queue()
-        processes = [
-            Process(target=self.read_ix_process, args=(task_queue, shared_mem.name))
-            for _ in range(max_num_processes)
-        ]
-        for p in processes:
-            p.start()
+        try:
+            shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
+            # create the numpy array from the allocated memory
+            superdark_shared_mem = np.ndarray(
+                [self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
+            )
+            # Initialize the shared memory to 0
+            superdark_shared_mem[:] = 0
 
-        # Add read indexes (and stop flags) to the queue for our worker tasks to pull from.
-        # Add each read number to the queue to be read in by the next available process.
-        for i in range(self.long_dark_num_reads):
-            task_queue.put(i)
-        for _ in processes:
-            task_queue.put(STOPPROCESS())
+            # Create a list of processes that will pull from our queue
+            task_queue = Queue()
+            processes = [
+                Process(target=self.read_ix_process, args=(task_queue, shared_mem.name))
+                for _ in range(max_num_processes)
+            ]
+            for p in processes:
+                p.start()
 
-        # Wait for all processes to finish
-        for p in processes:
-            p.join()
+            # Add read indexes (and stop flags) to the queue for our worker tasks to pull from.
+            # Add each read number to the queue to be read in by the next available process.
+            for i in range(self.long_dark_num_reads):
+                task_queue.put(i)
+            for _ in processes:
+                task_queue.put(STOPPROCESS())
 
-        # Save shared mem before closing
-        self.superdark = np.copy(superdark_shared_mem)
-        shared_mem.close()  # cleanup
-        shared_mem.unlink()  # unlink is called only once after the last instance has been closed
+            # Wait for all processes to finish
+            for p in processes:
+                p.join()
+
+            # Save shared mem before closing
+            self.superdark = np.copy(superdark_shared_mem)
+        finally:
+            if shared_mem:
+                 # unlink is called only once after the last instance has been closed
+                shared_mem.close()
+                shared_mem.unlink()
+
         timing_end_dynamic = time.time()
         elapsed_time = timing_end_dynamic - timing_start_dynamic
         logging.debug(
@@ -194,66 +198,69 @@ class SuperDarkDynamic(SuperDark):
         superdark_shared_mem = np.ndarray([self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
 
         # Run until we hit our STOP_PROCESS flag or queue is empty
-        while True:
-            try:
-                # Dont wait longer than a second to get the next item off the queue
-                queue_item = input_queue.get(1)
-            except Empty:  # multiprocessing.Queue uses an exception template from the queue library
-                logging.debug("Assuming all tasks are complete. Stopping process...")
-                break
-            if isinstance(queue_item, STOPPROCESS):
-                print("STOP FLAG received.  Stopping process...")
-                break
-
-            read_index = queue_item
-            process_name = multiprocessing.current_process().name
-
-            start_file = 0
-            # Use this index as not all files will be used
-            used_file_index = 0
-            # This code segment is to initialize our cube according to size of files with this read index so we dont have
-            # unused zeroes that will affect averaging.
-            # Determine the number of files to process for the current read index.
-            if read_index < self.short_dark_num_reads:
-                num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
-            else:
-                num_files_with_this_read_index = len(self.long_dark_file_list)
-                # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
-                start_file = len(self.short_dark_file_list)
-            read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
-
-            # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
-            for file_nr in range(start_file, num_files_with_this_read_index):
-                file_name = self.file_list[file_nr]
-                file_path = self.input_path.joinpath(file_name)
-                # If the file to be opened has a valid read index then open the file and
-                # get its data and increase the file counter. Separating short
-                # darks with only 46 reads from long darks with 98 reads.
+        try:
+            while True:
                 try:
-                    with asdf.open(file_path) as asdf_file:
-                        if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
-                            read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
-                        else:
-                            read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"][read_index, :, :]
-                        used_file_index += 1
-                except (
-                    FileNotFoundError,
-                    IOError,
-                    PermissionError,
-                    ValueError,
-                ) as e:
-                    logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
-                gc.collect()
+                    # Dont wait longer than a second to get the next item off the queue
+                    queue_item = input_queue.get(1)
+                except Empty:  # multiprocessing.Queue uses an exception template from the queue library
+                    logging.debug("Assuming all tasks are complete. Stopping process...")
+                    break
+                if isinstance(queue_item, STOPPROCESS):
+                    print("STOP FLAG received.  Stopping process...")
+                    break
 
-            clipped_reads = sigma_clip(
-                read_index_cube,
-                sigma_lower=self.sig_clip_sd_low,
-                sigma_upper=self.sig_clip_sd_high,
-                cenfunc=np.mean,
-                axis=0,
-                masked=False,
-                copy=False,
-            )
-            superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)
+                read_index = queue_item
+                process_name = multiprocessing.current_process().name
 
-        shared_mem.close()  # cleanup after yourself (close the local copy. This does not close the copy in the other processes)
+                start_file = 0
+                # Use this index as not all files will be used
+                used_file_index = 0
+                # This code segment is to initialize our cube according to size of files with this read index so we dont have
+                # unused zeroes that will affect averaging.
+                # Determine the number of files to process for the current read index.
+                if read_index < self.short_dark_num_reads:
+                    num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
+                else:
+                    num_files_with_this_read_index = len(self.long_dark_file_list)
+                    # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
+                    start_file = len(self.short_dark_file_list)
+                read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
+
+                # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
+                for file_nr in range(start_file, num_files_with_this_read_index):
+                    file_name = self.file_list[file_nr]
+                    file_path = self.input_path.joinpath(file_name)
+                    # If the file to be opened has a valid read index then open the file and
+                    # get its data and increase the file counter. Separating short
+                    # darks with only 46 reads from long darks with 98 reads.
+                    try:
+                        with asdf.open(file_path) as asdf_file:
+                            if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
+                                read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
+                            else:
+                                read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"][read_index, :, :]
+                            used_file_index += 1
+                    except (
+                        FileNotFoundError,
+                        IOError,
+                        PermissionError,
+                        ValueError,
+                    ) as e:
+                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
+                    gc.collect()
+
+                clipped_reads = sigma_clip(
+                    read_index_cube.astype(np.float32),
+                    sigma_lower=self.sig_clip_sd_low,
+                    sigma_upper=self.sig_clip_sd_high,
+                    cenfunc="mean",
+                    axis=0,
+                    masked=False,
+                    copy=False,
+                )
+                superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)
+        finally:
+            if shared_mem:
+                # Close the local copy. This does not close the copy in the other processes
+                shared_mem.close()

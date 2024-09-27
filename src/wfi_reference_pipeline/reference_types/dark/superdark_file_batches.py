@@ -147,7 +147,7 @@ class SuperDarkBatches(SuperDark):
             clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
                                        sigma_upper=sig_clip_sd_high,
-                                       cenfunc=np.mean,
+                                       cenfunc="mean",
                                        axis=0,
                                        masked=False,
                                        copy=False)
