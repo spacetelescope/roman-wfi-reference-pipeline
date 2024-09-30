@@ -1,5 +1,8 @@
 CONFIG_PATH = "src/wfi_reference_pipeline/config/"
 
+GB = 1024**3  # 1 GB = 1,073,741,824 bytes
+MB = 1024**2  # 1 MB = 1,048,576 bytes
+
 QC_CHECK_FAIL = 0       # "Red", do not deliver
 QC_CHECK_SUCCEED = 1    # "Green", all is good to deliver
 QC_CHECK_WARNING = 2    # "Yellow", conditional deliver according to parameters/settings

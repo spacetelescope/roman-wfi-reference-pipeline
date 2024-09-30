@@ -1,20 +1,19 @@
 import gc
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+
 import asdf
 import numpy as np
 import psutil
-import re
-import os
-from astropy.stats import sigma_clip
-from astropy.time import Time
 from astropy import units as u
-from pathlib import Path
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from astropy.stats import sigma_clip
+
+from .superdark import SuperDark
 
 
-class SuperDarkBatches:
+class SuperDarkBatches(SuperDark):
     """
     SuperDark_Batches() is a class that will ingest raw L1 dark calibration files and average every read for
     all dark exposures available to create a superdark.asdf file. This file is the input into the Dark()
@@ -28,7 +27,7 @@ class SuperDarkBatches:
         short_dark_num_reads=46,
         long_dark_file_list=None,
         long_dark_num_reads=98,
-        outfile="roman_superdark.asdf",
+        outfile=None,
     ):
         """
         Parameters
@@ -47,51 +46,30 @@ class SuperDarkBatches:
             File name written to disk.
         """
 
-        self.input_path = Path(input_path)
-        self.short_dark_num_reads = short_dark_num_reads
-        self.long_dark_num_reads = long_dark_num_reads
-
-        # Initialize with short_dark_file_list and long_dark_file_list
-        if short_dark_file_list and long_dark_file_list:
-            self.short_dark_file_list = sorted(short_dark_file_list)
-            self.long_dark_file_list = sorted(long_dark_file_list)
-            self.file_list = sorted(short_dark_file_list + long_dark_file_list)
-        else:
-            raise ValueError(
-                "Invalid input combination: both 'short_dark_file_list' and "
-                "'long_dark_file_list' must be provided together.")
-
-        # Get WFIXX string
-        wfixx_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
-                         re.search(r'(WFI\d{2})', file)]
-        self.wfixx_string = list(set(wfixx_strings))  # Remove duplicates if needed
-        if outfile:
-            self.outfile = outfile
-        else:
-            self.outfile = str(self.input_path / (self.wfixx_string[0] + '_superdark.asdf'))
+        # Access methods of base class ReferenceType.
+        super().__init__(
+            input_path=input_path,
+            short_dark_file_list=short_dark_file_list,
+            short_dark_num_reads=short_dark_num_reads,
+            long_dark_file_list=long_dark_file_list,
+            long_dark_num_reads=long_dark_num_reads,
+            outfile=outfile,
+        )
 
         # The attribute that contains the i'th read from all files or exposures. This is the array
         # that is sigma clipped or filtered to remove hot and dead pixels and cosmic rays.
         self.read_i_from_all_files = None
         # The array of filtered reads from all files for the i'th read of the superdark.
         self.clipped_reads = None
-        # This is the superdark cube generated from the make_superdark_with_batches()
-        self.superdark = None
 
-        # Meta data for RFP tracking and usage. Not a CRDS delivered product.
-        # TODO consider making a schema for our own use and config file for superdark creation for RTB in mind
-        self.meta_data = {'pedigree': "DUMMY",
-                          'description': "Super dark file calibration product "
-                                         "generated from Reference File Pipeline.",
-                          'date': Time(datetime.now()),
-                          'detector': self.wfixx_string,
-                          'filelist': self.file_list}
 
-    def make_superdark_with_batches(self,
-                                    sig_clip_sd_low=3.0,
-                                    sig_clip_sd_high=3.0,
-                                    short_batch_size=4,
-                                    long_batch_size=4):
+    def generate_superdark(
+            self,
+            sig_clip_sd_low=3.0,
+            sig_clip_sd_high=3.0,
+            short_batch_size=4,
+            long_batch_size=4
+        ):
         """
         This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
         approach for every read in both short and long darks in creating the super dark cube. Starting with
@@ -111,9 +89,9 @@ class SuperDarkBatches:
             Number of long dark files to process in parallel at a time.
         """
         current_datetime = datetime.now()
-        logging.debug(f"Starting super dark batches at: {current_datetime}")
+        logging.info(f"Starting super dark batches at: {current_datetime}")
         timing_start_method_e = time.time()
-        logging.debug("Testing super dark method with file batches.")
+        logging.info("Testing super dark method with file batches.")
         logging.debug(f"Memory used at start of method: {get_mem_usage():.2f} GB")
 
         self.superdark = np.zeros((self.long_dark_num_reads, 4096, 4096), dtype=np.float32)
@@ -169,7 +147,7 @@ class SuperDarkBatches:
             clipped_reads = sigma_clip(self.read_i_from_all_files,
                                        sigma_lower=sig_clip_sd_low,
                                        sigma_upper=sig_clip_sd_high,
-                                       cenfunc=np.mean,
+                                       cenfunc="mean",
                                        axis=0,
                                        masked=False,
                                        copy=False)
@@ -191,34 +169,7 @@ class SuperDarkBatches:
 
         timing_end_method_e = time.time()
         elapsed_time = timing_end_method_e - timing_start_method_e
-        logging.debug(f"Total time taken for method e: {elapsed_time:.2f} seconds")
         logging.info(f"Total time taken for method e: {elapsed_time:.2f} seconds")
-
-    def generate_outfile(self, file_permission=0o666):
-        """
-        Writes the superdark specified asdf outfile.
-
-        Parameters
-        ----------
-        file_permission: octal string, default = 0o666
-            Default file permission is rw-rw-rw- in symbolic notation meaning:
-            owner, group and others have read and write permissions.
-        """
-
-        # Set reference pixel border to zero for super dark.
-        # Ensure multi processing returns a full assembled super dark cube.
-        self.superdark[:, :4, :] = 0.0
-        self.superdark[:, -4:, :] = 0.0
-        self.superdark[:, :, :4] = 0.0
-        self.superdark[:, :, -4:] = 0.0
-
-        # Use datamodel tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        af.tree = {'meta': self.meta_data,
-                   'data': self.superdark}
-        af.write_to(self.outfile)
-        os.chmod(self.outfile, file_permission)
-        logging.info(f"Saved {self.outfile}")
 
 
 def get_mem_usage():
@@ -254,7 +205,7 @@ def get_read_from_file(file_path, read_i):
 
     try:
         with asdf.open(file_path) as af:
-            logging.info(f"Opening file {file_path}")
+            logging.debug(f"Opening file {file_path}")
             if isinstance(af.tree['roman']['data'], u.Quantity):  # Only access data from quantity object.
                 return af.tree['roman']['data'][read_i, :, :].value
             else:
