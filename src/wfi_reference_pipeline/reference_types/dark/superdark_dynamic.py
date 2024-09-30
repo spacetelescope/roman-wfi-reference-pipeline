@@ -160,6 +160,8 @@ class SuperDarkDynamic(SuperDark):
 
             # Save shared mem before closing
             self.superdark = np.copy(superdark_shared_mem)
+        except Exception as e:
+            logging.error(f"Error processing generate_superdark with error: {e}")
         finally:
             if shared_mem:
                  # unlink is called only once after the last instance has been closed
@@ -249,16 +251,18 @@ class SuperDarkDynamic(SuperDark):
                     ) as e:
                         logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
                     gc.collect()
-
-                clipped_reads = sigma_clip(
-                    read_index_cube.astype(np.float32),
-                    sigma_lower=self.sig_clip_sd_low,
-                    sigma_upper=self.sig_clip_sd_high,
-                    cenfunc="mean",
-                    axis=0,
-                    masked=False,
-                    copy=False,
-                )
+                try:
+                    clipped_reads = sigma_clip(
+                        read_index_cube.astype(np.float32),
+                        sigma_lower=self.sig_clip_sd_low,
+                        sigma_upper=self.sig_clip_sd_high,
+                        cenfunc="mean",
+                        axis=0,
+                        masked=False,
+                        copy=False,
+                    )
+                except Exception as e:
+                    logging.error(f"Error Sigma Clipping read index {read_index} with exception: {e}")
                 superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)
         finally:
             if shared_mem:
