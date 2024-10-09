@@ -22,7 +22,7 @@ class SuperDarkBatches(SuperDark):
 
     def __init__(
         self,
-        input_path,
+        input_path, #TODO do not need nput path
         short_dark_file_list=None,
         short_dark_num_reads=46,
         long_dark_file_list=None,
@@ -214,7 +214,7 @@ def get_read_from_file(file_path, read_i):
         logging.warning(f"Could not open {file_path} - {e}")
 
 
-def process_files_in_batches(file_path, file_list, batch_size, read_i):
+def process_files_in_batches(file_path, file_list, batch_size, read_i):  # TODO do not need file_path, file_list will have full path
     """
     Processes a list of files in batches to read data for a specific read index. This function divides
     the list of files into batches, processes each batch in parallel using a ThreadPoolExecutor,

@@ -42,7 +42,7 @@ class SuperDark(ABC):
         """
 
         # Specify file lists.
-        self.input_path = Path(input_path)
+        self.input_path = Path(input_path)  #TODO do not need input path
         self.short_dark_num_reads = short_dark_num_reads
         self.long_dark_num_reads = long_dark_num_reads
 

@@ -34,7 +34,7 @@ class SuperDarkDynamic(SuperDark):
 
     def __init__(
         self,
-        input_path,
+        input_path,     #TODO do not need input_path
         short_dark_file_list=None,
         short_dark_num_reads=46,
         long_dark_file_list=None,
@@ -232,7 +232,10 @@ class SuperDarkDynamic(SuperDark):
                 # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                 for file_nr in range(start_file, num_files_with_this_read_index):
                     file_name = self.file_list[file_nr]
-                    file_path = self.input_path.joinpath(file_name)
+                    if self.input_path is None:
+                        file_path = file_name
+                    else:
+                        file_path = self.input_path.joinpath(file_name)
                     # If the file to be opened has a valid read index then open the file and
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
