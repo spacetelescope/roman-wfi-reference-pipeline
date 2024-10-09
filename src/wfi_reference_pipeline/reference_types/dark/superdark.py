@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
+from wfi_reference_pipeline.constants import WFI_DETECTORS
+
 import asdf
 from astropy.time import Time
 
@@ -14,7 +16,6 @@ class SuperDark(ABC):
     Base class SuperDark() for all SuperDark classes
     """
 
-
     def __init__(
         self,
         input_path,
@@ -22,6 +23,7 @@ class SuperDark(ABC):
         short_dark_num_reads=46,
         long_dark_file_list=None,
         long_dark_num_reads=98,
+        wfi_detector_str=None,
         outfile=None,
     ):
         """
@@ -37,7 +39,9 @@ class SuperDark(ABC):
             List of long dark exposure files.
         long_dark_num_reads: int, default = 98
             Number of reads in the short dark data cubes.
-        outfile: str, default="roman_superdark.asdf"
+        wfi_detector_str: str, default = None
+            The FPA detector assigned number 01-18
+        outfile: str, default = None
             File name written to disk.
         """
 
@@ -56,29 +60,39 @@ class SuperDark(ABC):
                 "Invalid input combination: both 'short_dark_file_list' and "
                 "'long_dark_file_list' must be provided together.")
 
-        # Get WFIXX string
-        wfixx_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
-                         re.search(r'(WFI\d{2})', file)]
-        self.wfixx_string = list(set(wfixx_strings))  # Remove duplicates if needed
+        if wfi_detector_str is None:
+            # Get detector strings from all files
+            wfi_detector_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
+                             re.search(r'(WFI\d{2})', file)]
+            print(wfi_detector_strings)
+            if len(list(set(wfi_detector_strings))) > 1:
+                raise ValueError(
+                    "More than one WFI detector ID found in file list provided.")
+            self.wfi_detector_str = list(set(wfi_detector_strings))  # Remove duplicates if needed
+        else:
+            self.wfi_detector_str = wfi_detector_str
+
+        if self.wfi_detector_str not in WFI_DETECTORS:
+            raise ValueError(
+                "Must have a valid WFI detector ID; WFI01-WFI18")
 
         # TODO need filename to have date in YYYYMMDD format probably....need to get meta data from
         # files to populate superdark meta - what is relevant besides detector and filelist and mode?
         if outfile:
             self.outfile = outfile
         else:
-            self.outfile = str(self.wfixx_string[0] + '_superdark.asdf')
+            self.outfile = str(self.wfi_detector_str) + '_superdark.asdf'
 
         # Make Temporary Metadata for now.  TODO - This should be gathered from files or config
         self.meta_data = {'pedigree': "DUMMY",
                           'description': "Super dark file calibration product "
                                          "generated from Reference File Pipeline.",
                           'date': Time(datetime.now()),
-                          'detector': self.wfixx_string,
+                          'detector': self.wfi_detector_str,
                           'filelist': self.file_list}
 
         # This is the actual superdark cube
         self.superdark = None
-
 
     def generate_outfile(self, file_permission=0o666):
         """

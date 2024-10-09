@@ -75,11 +75,13 @@ def simulate_dark_reads(n_reads,
 
     logging.info('Making dark read cube.')
     if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
-        print("Making WFI Imaging Mode (WIM) dark read cube with exposure time", exp_time, "seconds.")
+        print("Making WFI Imaging Mode (WIM) dark read cube with frame time", exp_time, "seconds.")
     elif exp_time == WFI_FRAME_TIME[WFI_MODE_WSM]:
-        print("Making WFI Spectral Mode (WSM) dark read cube with exposure time", exp_time, "seconds.")
+        print("Making WFI Spectral Mode (WSM) dark read cube with frame time", exp_time, "seconds.")
+    elif exp_time == 1.0:
+        print("Simulating reads for diagnostic purposes with frame time", exp_time, "second.")
     else:
-        raise ValueError('Invalid WFI exposure time.')
+        raise ValueError('Invalid WFI frame time.')
 
     # Initialize rate image.
     rate_image = np.random.normal(dark_rate, scale=dark_rate_var, size=(ni, ni))
