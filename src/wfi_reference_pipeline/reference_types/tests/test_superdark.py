@@ -3,10 +3,7 @@ import os
 import numpy as np
 from pathlib import Path
 from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
-from datetime import datetime
-from astropy.time import Time
-
-from wfi_reference_pipeline.constants import WFI_DETECTORS
+import time
 
 
 # Temporary subclass to test the abstract SuperDark class
@@ -79,17 +76,31 @@ class TestSuperDark:
                          wfi_detector_str="WFI99"
                          )
 
-    def test_superdark_mismatched_detectors(self):
+    def test_superdark_mismatched_short_long_detectors(self):
         """
         Test for mismatched detectors in short/long dark file lists.
         """
         input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI01_short.fits", "file_WFI02_short.fits"]  # Two detectors
+        short_dark_files = ["file_WFI01_short.asdf", "file_WFI01_short2.asdf"]
+        long_dark_files = ["file_WFI02_long.asdf"]
 
         with pytest.raises(ValueError, match="More than one WFI detector ID found"):
             TmpSuperDark(input_path=input_path,
                          short_dark_file_list=short_dark_files,
-                         long_dark_file_list=short_dark_files
+                         long_dark_file_list=long_dark_files
+                         )
+
+    def test_superdark_mismatched_short_detectors(self):
+        """
+        Test for mismatched detectors in short/long dark file lists.
+        """
+        input_path = "/mock/input/path"
+        short_dark_files = ["file_WFI01_short.asdf", "file_WFI02_short2.asdf"]
+        long_dark_files = ["file_WFI02_long.asdf"]
+        with pytest.raises(ValueError, match="More than one WFI detector ID found"):
+            TmpSuperDark(input_path=input_path,
+                         short_dark_file_list=short_dark_files,
+                         long_dark_file_list=long_dark_files
                          )
 
     def test_generate_outfile_permissions(self, tmp_path):
@@ -105,7 +116,7 @@ class TestSuperDark:
                            short_dark_file_list=short_dark_files,
                            long_dark_file_list=long_dark_files,
                            wfi_detector_str="WFI01"
-        )
+                           )
 
         # Mock the superdark data for the test
         obj.superdark = np.zeros((1, 4096, 4096))
@@ -114,8 +125,13 @@ class TestSuperDark:
         obj.outfile = tmp_path / "test_superdark.asdf"
         obj.generate_outfile(file_permission=0o644)
 
-        assert obj.outfile.exists()
-        assert oct(obj.outfile.stat().st_mode)[-3:] == "644"
+        try:
+            assert obj.outfile.exists()
+            assert oct(obj.outfile.stat().st_mode)[-3:] == "644"
+        finally:
+            # Cleanup the generated file
+            if obj.outfile.exists():
+                obj.outfile.unlink()
 
     def test_superdark_borders_set_to_zero(self, superdark_object, tmp_path):
         """
