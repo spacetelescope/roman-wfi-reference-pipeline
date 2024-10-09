@@ -22,7 +22,6 @@ class SuperDarkBatches(SuperDark):
 
     def __init__(
         self,
-        input_path, #TODO do not need nput path
         short_dark_file_list=None,
         short_dark_num_reads=46,
         long_dark_file_list=None,
@@ -32,8 +31,6 @@ class SuperDarkBatches(SuperDark):
         """
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
         short_dark_file_list: list, default = None
             List of short dark exposure files.
         short_dark_num_reads: int, default = 46
@@ -48,7 +45,6 @@ class SuperDarkBatches(SuperDark):
 
         # Access methods of base class ReferenceType.
         super().__init__(
-            input_path=input_path,
             short_dark_file_list=short_dark_file_list,
             short_dark_num_reads=short_dark_num_reads,
             long_dark_file_list=long_dark_file_list,
@@ -113,8 +109,7 @@ class SuperDarkBatches(SuperDark):
             short_dark_results = []
             # Process short dark files in batches if the read index is within the range of short dark reads
             if read_i < self.short_dark_num_reads:
-                short_dark_results = process_files_in_batches(self.input_path,
-                                                              self.short_dark_file_list,
+                short_dark_results = process_files_in_batches(self.short_dark_file_list,
                                                               short_batch_size,
                                                               read_i)
                 for i, result in enumerate(short_dark_results):
@@ -125,8 +120,7 @@ class SuperDarkBatches(SuperDark):
 
             # Need start at the short dark results to ensure correct placement and not overwrite short dark results
             # when doing long dark parallel processing.
-            long_dark_results = process_files_in_batches(self.input_path,
-                                                         self.long_dark_file_list,
+            long_dark_results = process_files_in_batches(self.long_dark_file_list,
                                                          long_batch_size,
                                                          read_i)
             for i, result in enumerate(long_dark_results, start=len(short_dark_results)):
@@ -214,7 +208,7 @@ def get_read_from_file(file_path, read_i):
         logging.warning(f"Could not open {file_path} - {e}")
 
 
-def process_files_in_batches(file_path, file_list, batch_size, read_i):  # TODO do not need file_path, file_list will have full path
+def process_files_in_batches(file_list, batch_size, read_i):
     """
     Processes a list of files in batches to read data for a specific read index. This function divides
     the list of files into batches, processes each batch in parallel using a ThreadPoolExecutor,
@@ -244,7 +238,7 @@ def process_files_in_batches(file_path, file_list, batch_size, read_i):  # TODO 
         # Specify that the batch size is the max number of workers or cores to open files.
         # Limit one core per file.
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
-            futures = [executor.submit(get_read_from_file, file_path.joinpath(file), read_i) for file in batch]
+            futures = [executor.submit(get_read_from_file, file, read_i) for file in batch]
             for future in as_completed(futures):
                 result = future.result()
                 if result is not None:

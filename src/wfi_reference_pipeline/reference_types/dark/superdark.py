@@ -18,7 +18,6 @@ class SuperDark(ABC):
 
     def __init__(
         self,
-        input_path,
         short_dark_file_list=None,
         short_dark_num_reads=46,
         long_dark_file_list=None,
@@ -29,8 +28,6 @@ class SuperDark(ABC):
         """
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
         short_dark_file_list: list, default = None
             List of short dark exposure files.
         short_dark_num_reads: int, default = 46
@@ -46,7 +43,6 @@ class SuperDark(ABC):
         """
 
         # Specify file lists.
-        self.input_path = Path(input_path)  #TODO do not need input path
         self.short_dark_num_reads = short_dark_num_reads
         self.long_dark_num_reads = long_dark_num_reads
 

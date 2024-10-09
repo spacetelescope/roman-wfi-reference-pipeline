@@ -34,7 +34,6 @@ class SuperDarkDynamic(SuperDark):
 
     def __init__(
         self,
-        input_path,     #TODO do not need input_path
         short_dark_file_list=None,
         short_dark_num_reads=46,
         long_dark_file_list=None,
@@ -44,8 +43,6 @@ class SuperDarkDynamic(SuperDark):
         """
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
         short_dark_file_list: list, default = None
             List of short dark exposure files.
         short_dark_num_reads: int, default = 46
@@ -60,7 +57,6 @@ class SuperDarkDynamic(SuperDark):
 
         # Access methods of base class ReferenceType.
         super().__init__(
-            input_path=input_path,
             short_dark_file_list=short_dark_file_list,
             short_dark_num_reads=short_dark_num_reads,
             long_dark_file_list=long_dark_file_list,
@@ -232,15 +228,11 @@ class SuperDarkDynamic(SuperDark):
                 # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                 for file_nr in range(start_file, num_files_with_this_read_index):
                     file_name = self.file_list[file_nr]
-                    if self.input_path is None:
-                        file_path = file_name
-                    else:
-                        file_path = self.input_path.joinpath(file_name)
                     # If the file to be opened has a valid read index then open the file and
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
                     try:
-                        with asdf.open(file_path) as asdf_file:
+                        with asdf.open(file_name) as asdf_file:
                             if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
                                 read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
                             else:
@@ -252,7 +244,7 @@ class SuperDarkDynamic(SuperDark):
                         PermissionError,
                         ValueError,
                     ) as e:
-                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
+                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
                     gc.collect()
                 try:
                     clipped_reads = sigma_clip(

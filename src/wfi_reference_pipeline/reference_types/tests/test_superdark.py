@@ -31,8 +31,7 @@ def superdark_object(tmp_path_factory):
     for file in short_dark_files + long_dark_files:
         Path(file).touch()
 
-    obj = TmpSuperDark(input_path=input_path,
-                       short_dark_file_list=short_dark_files,
+    obj = TmpSuperDark(short_dark_file_list=short_dark_files,
                        long_dark_file_list=long_dark_files,
                        wfi_detector_str="WFI01"
                        )
@@ -46,12 +45,10 @@ class TestSuperDark:
         """
         Test if the SuperDark object initializes properly with valid input.
         """
-        input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI01_short.asdf", "file_WFI01_short2.asdf"]
-        long_dark_files = ["file_WFI01_long.asdf"]
+        short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI01_short2.asdf"]
+        long_dark_files = ["/mock/input/path/file_WFI01_long.asdf"]
 
-        obj = TmpSuperDark(input_path=input_path,
-                           short_dark_file_list=short_dark_files,
+        obj = TmpSuperDark(short_dark_file_list=short_dark_files,
                            long_dark_file_list=long_dark_files,
                            wfi_detector_str="WFI01"
                            )
@@ -65,12 +62,11 @@ class TestSuperDark:
         """
         Test for invalid WFI detector string initialization.
         """
-        input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI99_short.fits"]  # Invalid detector
+
+        short_dark_files = ["/mock/input/path/file_WFI99_short.fits"]  # Invalid detector
 
         with pytest.raises(ValueError, match="Must have a valid WFI detector ID"):
-            TmpSuperDark(input_path=input_path,
-                         short_dark_file_list=short_dark_files,
+            TmpSuperDark(short_dark_file_list=short_dark_files,
                          long_dark_file_list=short_dark_files,
                          wfi_detector_str="WFI99"
                          )
@@ -79,13 +75,11 @@ class TestSuperDark:
         """
         Test for mismatched detectors in short/long dark file lists.
         """
-        input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI01_short.asdf", "file_WFI01_short2.asdf"]
-        long_dark_files = ["file_WFI02_long.asdf"]
+        short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI01_short2.asdf"]
+        long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
 
         with pytest.raises(ValueError, match="More than one WFI detector ID found"):
-            TmpSuperDark(input_path=input_path,
-                         short_dark_file_list=short_dark_files,
+            TmpSuperDark(short_dark_file_list=short_dark_files,
                          long_dark_file_list=long_dark_files
                          )
 
@@ -93,12 +87,10 @@ class TestSuperDark:
         """
         Test for mismatched detectors in short/long dark file lists.
         """
-        input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI01_short.asdf", "file_WFI02_short2.asdf"]
-        long_dark_files = ["file_WFI02_long.asdf"]
+        short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI02_short2.asdf"]
+        long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
         with pytest.raises(ValueError, match="More than one WFI detector ID found"):
-            TmpSuperDark(input_path=input_path,
-                         short_dark_file_list=short_dark_files,
+            TmpSuperDark(short_dark_file_list=short_dark_files,
                          long_dark_file_list=long_dark_files
                          )
 
@@ -107,12 +99,10 @@ class TestSuperDark:
         Test if the outfile is generated with correct permissions.
         """
         # Setup the SuperDark object
-        input_path = "/mock/input/path"
-        short_dark_files = ["file_WFI01_short.fits"]
-        long_dark_files = ["file_WFI01_long.fits"]
+        short_dark_files = ["/mock/input/path/file_WFI01_short.fits"]
+        long_dark_files = ["/mock/input/path/file_WFI01_long.fits"]
 
-        obj = TmpSuperDark(input_path=input_path,
-                           short_dark_file_list=short_dark_files,
+        obj = TmpSuperDark(short_dark_file_list=short_dark_files,
                            long_dark_file_list=long_dark_files,
                            wfi_detector_str="WFI01"
                            )
