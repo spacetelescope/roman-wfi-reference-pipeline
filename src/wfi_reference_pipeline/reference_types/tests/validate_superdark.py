@@ -1,8 +1,6 @@
-import numpy as np
 from pathlib import Path
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 import asdf
-from astropy import units as u
 from astropy.time import Time
 
 # TODO edit bekow if needed and add extra meta for testing/validation

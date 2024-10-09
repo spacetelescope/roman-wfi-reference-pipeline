@@ -3,7 +3,6 @@ import os
 import numpy as np
 from pathlib import Path
 from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
-import time
 
 
 # Temporary subclass to test the abstract SuperDark class
