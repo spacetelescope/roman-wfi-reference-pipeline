@@ -7,10 +7,11 @@ from romancal.saturation import SaturationStep
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-#from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
+from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import SuperDarkDynamic
+from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import SuperDarkBatches
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
-# from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb # TODO not used
+
 
 
 class DarkPipeline(Pipeline):
@@ -27,8 +28,9 @@ class DarkPipeline(Pipeline):
     Usage:
     dark_pipeline = DarkPipeline()
     dark_pipeline.select_uncal_files()
-    dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
-    dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
+    dark_pipeline.prep_pipeline()
+    dark_pipeline.prep_superdark()
+    dark_pipeline.run_pipeline()
 
     or
 
@@ -39,6 +41,7 @@ class DarkPipeline(Pipeline):
     def __init__(self):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_DARK)
+        self.superdark_file = None
 
     @log_info
     def select_uncal_files(self):
@@ -95,10 +98,53 @@ class DarkPipeline(Pipeline):
             "Starting to make SUPERDARK from PREPPED DARK asdf files"
         )
 
-        #TODO send preppred files into SuperDark and figure out how to name superdark.asdf file naming scheme
-        #superdark = SuperDark(self.prepped_files,
-        #                      outfile='superdark_XXXX.asdf')
 
+    @log_info
+    def prep_superdark(self, file_list=None, input_directory=None):
+        """
+        prepares superdark data file from an already "pipeline prepped" file list.
+        By default, will use self.prepped_files (which includes the file path).
+        For individual usage not part of the pipeline process, accepts file_list and input_directory
+        """
+        if file_list is None:
+            file_list = self.prepped_files
+        else:
+            file_list = file_list
+
+        # TODO - HOW TO GENERATE SHORT AND LONG FILES FROM FILE LIST?
+        # UNTIL THEN USE THIS TEMPORARY GARBAGE CODE
+        # Assuming short dark files contain '00444' and long dark files contain '00445'
+        selected_file_list = [file for file in file_list if "WFI03" in file]
+        short_dark_file_list = [file for file in selected_file_list if '00444' in file]
+        print("Short dark files ingested.")
+        for f in short_dark_file_list:
+            print(f)
+        long_dark_file_list = [file for file in selected_file_list if '00445' in file]
+        print("Long dark files ingested.")
+        for f in long_dark_file_list:
+            print(f)
+
+
+        # If true run batches, else run dynamic
+        run_superdark_batches = False
+
+
+        kwargs = {}
+        if run_superdark_batches:
+            print('Running superdark batches')
+            superdark = SuperDarkBatches(input_path=input_directory,
+                                        short_dark_file_list=short_dark_file_list,
+                                        long_dark_file_list=long_dark_file_list)
+            kwargs = {"short_batch_size": 4, "long_batch_size": 4}
+        else:
+            print('Running superdark dynamic')
+            superdark = SuperDarkDynamic(input_path=input_directory,
+                                        short_dark_file_list=short_dark_file_list,
+                                        long_dark_file_list=long_dark_file_list)
+
+        superdark.generate_superdark(**kwargs)
+        superdark.generate_outfile()
+        self.superdark_file = superdark.outfile
 
     @log_info
     def run_pipeline(self, file_list=None):
@@ -107,7 +153,7 @@ class DarkPipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = self.prepped_files
+            file_list = self.superdark_file
 
         tmp = MakeDevMeta(
             ref_type=self.ref_type
@@ -130,3 +176,14 @@ class DarkPipeline(Pipeline):
         rfp_dark.generate_outfile()
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
+
+
+    def restart_pipeline(self):
+        """
+        Run all steps of the pipeline.
+        Redefines base class method and includes `prep_superdark`
+        """
+        self.select_uncal_files()
+        self.prep_pipeline()
+        self.prep_superdark()
+        self.run_pipeline()
