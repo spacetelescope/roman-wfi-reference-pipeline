@@ -100,11 +100,11 @@ class DarkPipeline(Pipeline):
 
 
     @log_info
-    def prep_superdark(self, file_list=None, input_directory=None):
+    def prep_superdark(self, file_list=None):
         """
         prepares superdark data file from an already "pipeline prepped" file list.
         By default, will use self.prepped_files (which includes the file path).
-        For individual usage not part of the pipeline process, accepts file_list and input_directory
+        For individual usage not part of the pipeline process, accepts file_list
         """
         if file_list is None:
             file_list = self.prepped_files
@@ -132,14 +132,12 @@ class DarkPipeline(Pipeline):
         kwargs = {}
         if run_superdark_batches:
             print('Running superdark batches')
-            superdark = SuperDarkBatches(input_path=input_directory,
-                                        short_dark_file_list=short_dark_file_list,
+            superdark = SuperDarkBatches(short_dark_file_list=short_dark_file_list,
                                         long_dark_file_list=long_dark_file_list)
             kwargs = {"short_batch_size": 4, "long_batch_size": 4}
         else:
             print('Running superdark dynamic')
-            superdark = SuperDarkDynamic(input_path=input_directory,
-                                        short_dark_file_list=short_dark_file_list,
+            superdark = SuperDarkDynamic(short_dark_file_list=short_dark_file_list,
                                         long_dark_file_list=long_dark_file_list)
 
         superdark.generate_superdark(**kwargs)
