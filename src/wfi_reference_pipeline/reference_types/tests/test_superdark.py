@@ -128,7 +128,7 @@ class TestSuperDark:
         """
         # Make sure superdark is all ones initially
         assert np.all(superdark_object.superdark == 1)
-
+        superdark_object.outfile = tmp_path / "test_superdark.asdf"
         # Call generate_outfile, which should zero out the borders
         superdark_object.generate_outfile()
 
