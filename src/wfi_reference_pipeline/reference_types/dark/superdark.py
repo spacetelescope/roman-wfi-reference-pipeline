@@ -17,23 +17,23 @@ class SuperDark(ABC):
 
     def __init__(
         self,
-        short_dark_file_list=None,
-        short_dark_num_reads=46,
-        long_dark_file_list=None,
-        long_dark_num_reads=98,
+        short_dark_file_list,
+        long_dark_file_list,
+        short_dark_num_reads,
+        long_dark_num_reads,
         wfi_detector_str=None,
         outfile=None,
     ):
         """
         Parameters
         ----------
-        short_dark_file_list: list, default = None
-            List of short dark exposure files.
-        short_dark_num_reads: int, default = 46
+        short_dark_file_list: list
+            List of short dark exposure files. Can NOT be empty.
+        long_dark_file_list: list
+            List of long dark exposure files. Can be empty.
+        short_dark_num_reads: int
             Number of reads in the short dark data cubes.
-        long_dark_file_list: list, default = None
-            List of long dark exposure files.
-        long_dark_num_reads: int, default = 98
+        long_dark_num_reads: int
             Number of reads in the short dark data cubes.
         wfi_detector_str: str, default = None
             The FPA detector assigned number 01-18
@@ -41,19 +41,30 @@ class SuperDark(ABC):
             File name written to disk.
         """
 
+
+        if short_dark_num_reads < 1:
+            raise ValueError(
+                f"short_dark_num_reads {short_dark_num_reads} must be larger than 0"
+                )
+
+        if short_dark_num_reads > long_dark_num_reads:
+            if long_dark_num_reads > 0:
+                raise ValueError(
+                    f"short_dark_num_reads {short_dark_num_reads} cannot be larger than long_dark_num_reads {long_dark_num_reads}"
+                    )
+        if len(short_dark_file_list) == 0:
+            raise ValueError(
+                "Parameter 'short_dark_file_list' can not be empty list"
+                )
+
         # Specify file lists.
         self.short_dark_num_reads = short_dark_num_reads
         self.long_dark_num_reads = long_dark_num_reads
 
         # Initialize with short_dark_file_list and long_dark_file_list
-        if short_dark_file_list and long_dark_file_list:
-            self.short_dark_file_list = sorted(short_dark_file_list)
-            self.long_dark_file_list = sorted(long_dark_file_list)
-            self.file_list = short_dark_file_list + long_dark_file_list
-        else:
-            raise ValueError(
-                "Invalid input combination: both 'short_dark_file_list' and "
-                "'long_dark_file_list' must be provided together.")
+        self.short_dark_file_list = sorted(short_dark_file_list)
+        self.long_dark_file_list = sorted(long_dark_file_list)
+        self.file_list = short_dark_file_list + long_dark_file_list
 
         if wfi_detector_str is None:
             # Get detector strings from all files

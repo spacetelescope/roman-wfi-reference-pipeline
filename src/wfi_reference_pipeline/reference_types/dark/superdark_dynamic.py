@@ -12,7 +12,11 @@ import psutil
 from astropy import units as u
 from astropy.stats import sigma_clip
 
-from wfi_reference_pipeline.constants import GB
+from wfi_reference_pipeline.constants import (
+    DARK_LONG_NUM_READS,
+    DARK_SHORT_NUM_READS,
+    GB,
+)
 
 from .superdark import SuperDark
 
@@ -34,22 +38,22 @@ class SuperDarkDynamic(SuperDark):
 
     def __init__(
         self,
-        short_dark_file_list=None,
-        short_dark_num_reads=46,
-        long_dark_file_list=None,
-        long_dark_num_reads=98,
+        short_dark_file_list,
+        long_dark_file_list,
+        short_dark_num_reads=DARK_SHORT_NUM_READS,
+        long_dark_num_reads=DARK_LONG_NUM_READS,
         wfi_detector_str=None,
         outfile=None,
     ):
         """
         Parameters
         ----------
-        short_dark_file_list: list, default = None
+        short_dark_file_list: list
             List of short dark exposure files.
+        long_dark_file_list: list
+            List of long dark exposure files.
         short_dark_num_reads: int, default = 46
             Number of reads in the short dark data cubes.
-        long_dark_file_list: list, default = None
-            List of long dark exposure files.
         long_dark_num_reads: int, default = 98
             Number of reads in the short dark data cubes.
         outfile: str, default="roman_superdark.asdf"
@@ -58,10 +62,10 @@ class SuperDarkDynamic(SuperDark):
 
         # Access methods of base class ReferenceType.
         super().__init__(
-            short_dark_file_list=short_dark_file_list,
-            short_dark_num_reads=short_dark_num_reads,
-            long_dark_file_list=long_dark_file_list,
-            long_dark_num_reads=long_dark_num_reads,
+            short_dark_file_list,
+            long_dark_file_list,
+            short_dark_num_reads,
+            long_dark_num_reads,
             wfi_detector_str=wfi_detector_str,
             outfile=outfile,
         )
