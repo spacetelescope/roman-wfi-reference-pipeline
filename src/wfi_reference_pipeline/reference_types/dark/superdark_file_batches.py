@@ -26,6 +26,7 @@ class SuperDarkBatches(SuperDark):
         short_dark_num_reads=46,
         long_dark_file_list=None,
         long_dark_num_reads=98,
+        wfi_detector_str=None,
         outfile=None,
     ):
         """
@@ -49,6 +50,7 @@ class SuperDarkBatches(SuperDark):
             short_dark_num_reads=short_dark_num_reads,
             long_dark_file_list=long_dark_file_list,
             long_dark_num_reads=long_dark_num_reads,
+            wfi_detector_str=wfi_detector_str,
             outfile=outfile,
         )
 
