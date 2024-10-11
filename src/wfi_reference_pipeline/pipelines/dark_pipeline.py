@@ -10,6 +10,8 @@ from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_IDENTIFIER,
     DARK_SHORT_NUM_READS,
+    DARK_SIGMA_CLIP_SD_LOW,
+    DARK_SIGMA_CLIP_SD_HIGH,
     REF_TYPE_DARK,
 )
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
@@ -109,9 +111,9 @@ class DarkPipeline(Pipeline):
     @log_info
     def prep_superdark_file(
         self,
-        full_file_list=None,
-        short_file_list=None,
-        long_file_list=None,
+        full_file_list=[],
+        short_file_list=[],
+        long_file_list=[],
         wfi_detector_str=None,
         short_dark_num_reads=DARK_SHORT_NUM_READS,
         long_dark_num_reads=DARK_LONG_NUM_READS,
@@ -121,9 +123,10 @@ class DarkPipeline(Pipeline):
 
             This method is designed to be flexible with pipeline runs and user interaction which is reflected in the paramter list.
 
-            FOR PIPELINE RUNS:
-                No parameters are needed
+            FOR AUTOMATED PIPELINE RUNS:
+                No parameters are needed, however wfi_detector_str is expected
                 Uses self.prepped_files as file_list that gets created from `prep_pipeline` step
+                Filters prepped files with wfi_detector_str
                 Assumes system default short and long dark_num_reads unless parameters clarify otherwise
                 Assumes full list is adequate unless wfi_detector_str is provided for filtering purposes
 
@@ -134,15 +137,20 @@ class DarkPipeline(Pipeline):
         ----------
         full_file_list: [str], optional
             A single list of all files to be processed, files must use standardized naming conventions
+            This is intended for use with the pipeline architecture for special case uses
+                (ie. run specific files from an existing pipeline prepped directory or re-creating a superdark)
             Mutually exclusive from short_file_list and long_file_list
         short_file_list: [str], optional
             A list of all short files to be processed, files do not require standardized naming conventions
+            This is inteded for individual use where the user may not be working in the pipelines folder architecture.
+                (ie. validation testing, regression testing, 3rd party users)
             These files will all be used and will not be filtered by wfi_detector_str
             relies on accurate short_dark_num_reads parameter
             Mutually exclusive from full_file_list
         long_file_list: [str], optional
             A list of all long files to be processed, files do not require standardized naming conventions
             These files will all be used and will not be filtered by wfi_detector_str
+                (ie. validation testing, regression testing, 3rd party users)
             relies on accurate long_dark_num_reads parameter
             Mutually exclusive from full_file_list
         wfi_detector_str: str, optional
@@ -154,7 +162,7 @@ class DarkPipeline(Pipeline):
 
         """
         # Gather the short_dark_file_list and long_dark_file_list to send to superdark class
-        if short_file_list and long_file_list:
+        if short_file_list or long_file_list:
             if full_file_list:
                 raise ValueError(
                     "full_file_list parameter is mutually exclusive from short_file_list and long_file_list"
@@ -162,7 +170,9 @@ class DarkPipeline(Pipeline):
             short_dark_file_list = short_file_list
             long_dark_file_list = long_file_list
         else:
-            if full_file_list is None:
+            if full_file_list:
+                file_list = full_file_list
+            else:
                 # Standard case: use the pipeline prepped files
                 if len(self.prepped_files):
                     file_list = self.prepped_files
@@ -170,8 +180,7 @@ class DarkPipeline(Pipeline):
                     raise ValueError(
                         "Pipeline Files have not been prepped, run `prep_pipeline` or send in desired parameters. See Documentation for more info."
                     )  # TODO - once we have documentation add link here
-            else:
-                file_list = full_file_list
+
             if wfi_detector_str:
                 # Filter list for detector
                 file_list = [file for file in file_list if FilenameParser(file).wfi_sci_number in wfi_detector_str]
@@ -181,24 +190,30 @@ class DarkPipeline(Pipeline):
         # TODO - Create configurable setting for what method to run
         generate_superdark_dynamic_allocation = True
 
-        kwargs = {}
+        kwargs = {} # TODO add values to config file
         if generate_superdark_dynamic_allocation:
             logging.info("Running superdark dynamic")
             superdark = SuperDarkDynamic(
-                short_dark_file_list=short_dark_file_list,
+                short_dark_file_list,
+                long_dark_file_list,
                 short_dark_num_reads=short_dark_num_reads,
-                long_dark_file_list=long_dark_file_list,
-                long_dark_num_reads=long_dark_num_reads,
-            )
-        else:
-            logging.info("Running superdark batches")
-            superdark = SuperDarkBatches(
-                short_dark_file_list=short_dark_file_list,
-                short_dark_num_reads=short_dark_num_reads,
-                long_dark_file_list=long_dark_file_list,
                 long_dark_num_reads=long_dark_num_reads,
             )
             kwargs = {
+                "sig_clip_sd_low": DARK_SIGMA_CLIP_SD_LOW,
+                "sig_clip_sd_high": DARK_SIGMA_CLIP_SD_HIGH,
+            }  # TODO - get batch sizes from config file
+        else:
+            logging.info("Running superdark batches")
+            superdark = SuperDarkBatches(
+                short_dark_file_list,
+                long_dark_file_list,
+                short_dark_num_reads=short_dark_num_reads,
+                long_dark_num_reads=long_dark_num_reads,
+            )
+            kwargs = {
+                "sig_clip_sd_low": DARK_SIGMA_CLIP_SD_LOW,
+                "sig_clip_sd_high": DARK_SIGMA_CLIP_SD_HIGH,
                 "short_batch_size": 4,
                 "long_batch_size": 4,
             }  # TODO - get batch sizes from config file
