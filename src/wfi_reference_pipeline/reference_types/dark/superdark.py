@@ -3,7 +3,6 @@ import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 
 from wfi_reference_pipeline.constants import WFI_DETECTORS
 
@@ -116,7 +115,6 @@ class SuperDark(ABC):
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
 
-        # Enforce methods for all reference file reftype modules.
     @abstractmethod
     def generate_superdark(self):
         """

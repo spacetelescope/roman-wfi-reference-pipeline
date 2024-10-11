@@ -1,5 +1,10 @@
 CONFIG_PATH = "src/wfi_reference_pipeline/config/"
 
+DARK_SHORT_IDENTIFIER = "00444"
+DARK_LONG_IDENTIFIER = "00445"
+DARK_SHORT_NUM_READS = 46
+DARK_LONG_NUM_READS = 98
+
 GB = 1024**3  # 1 GB = 1,073,741,824 bytes
 MB = 1024**2  # 1 MB = 1,048,576 bytes
 
