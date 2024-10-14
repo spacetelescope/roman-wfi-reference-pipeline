@@ -23,14 +23,6 @@ def valid_ref_type_data():
 
 
 @pytest.fixture
-def invalid_ref_type_data():
-    """
-    Fixture to create invalid mask data (incorrect shape or dtype).
-    """
-    return np.ones((10, 10), dtype=np.float32)
-
-
-@pytest.fixture
 def mask_object(valid_meta_data, valid_ref_type_data):
     """
     Fixture to create a Mask object with valid reference type data.
@@ -58,12 +50,12 @@ def test_mask_instantiation_with_invalid_metadata(valid_ref_type_data):
         Mask(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data)
 
 
-def test_mask_instantiation_with_invalid_ref_type_data(valid_meta_data, invalid_ref_type_data):
+def test_mask_instantiation_with_invalid_ref_type_data(valid_meta_data):
     """
-    Test that Mask raises ValueError with invalid reference data.
+    Test that Mask raises ValueError with invalid reference type data.
     """
     with pytest.raises(ValueError):
-        Mask(meta_data=valid_meta_data, ref_type_data=invalid_ref_type_data)
+        Mask(meta_data=valid_meta_data, ref_type_data=np.ones((10, 10), dtype=np.float32))
 
 
 def test_make_mask_image(mask_object):
