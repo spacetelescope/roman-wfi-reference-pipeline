@@ -107,6 +107,14 @@ class Saturation(ReferenceType):
             The saturated level for development of romancal.
         """
 
+        # Type check input saturation threshold
+        if not isinstance(saturation_threshold, (float, int)):
+            raise ValueError("Saturation threshold must be a float or an int.")
+
+        # Check for a valid theshold value
+        if not (1 < saturation_threshold < 65535):
+            raise ValueError("Saturation threshold must be positive and less than uint16 maximum allowed value.")
+
         self.saturation_image = saturation_threshold * np.ones((4096, 4096), dtype=np.float32)
 
     def calculate_error(self):
