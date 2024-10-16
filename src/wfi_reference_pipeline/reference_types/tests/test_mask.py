@@ -40,9 +40,8 @@ class TestMask:
         assert isinstance(mask_object, Mask)
         assert mask_object.mask_image.shape == (4096, 4096)
         assert mask_object.mask_image.dtype == np.uint32
-        assert mask_object.mask_image.dtype == np.uint32
 
-    def test_mask_instantiation_with_invalid_metadata(self, valid_ref_type_data):
+    def test_mask_instantiation_with_invalid_metadata_reftype(self, valid_ref_type_data):
         """
         Test that Mask raises TypeError with invalid metadata type.
         """
@@ -50,7 +49,7 @@ class TestMask:
         with pytest.raises(TypeError):
             Mask(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data)
 
-    def test_mask_instantiation_with_invalid_ref_type_data(self, valid_meta_data):
+    def test_mask_instantiation_with_invalid_ref_type_data_type(self, valid_meta_data):
         """
         Test that Mask raises ValueError with invalid reference type data.
         """
