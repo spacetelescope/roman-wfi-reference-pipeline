@@ -5,11 +5,11 @@ from wfi_reference_pipeline.constants import REF_TYPE_DARK, REF_TYPE_READNOISE
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 
-
 @pytest.fixture(scope="class")
 def read_cube():
     read_cube, _ = simulate_dark_reads(10)
     yield read_cube
+
 
 @pytest.fixture(scope="class")
 def dark_object():
