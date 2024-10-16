@@ -33,11 +33,17 @@ def dark_object(valid_meta_data, valid_ref_type_data):
 
 @pytest.fixture
 def test_dark_rate_image():
-    """Fixture for a testable dark rate image."""
+    """Fixture for a testable dark rate image.
+
+    array flags = [ hot, hot, warm,
+                    warm, none, dead,
+                    dead, dead, hot]
+    """
+
     return np.array([
-        [0.02, 0.011, 0.00005],
-        [0.008, 0.0155, 0.0002],
-        [0.012, 0.009, 0.016]
+        [0.5, 0.016, 0.012],
+        [0.01, 0.005, 1e-5],
+        [0.0, 0.0, 0.1]
     ])
 
 
