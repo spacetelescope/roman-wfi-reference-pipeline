@@ -5,7 +5,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_DARK, REF_TYPE_READNOISE
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from unittest.mock import MagicMock
 import numpy as np
-# from romancal.lib import dqflags
+from romancal.lib import dqflags
 
 
 @pytest.fixture
@@ -41,9 +41,9 @@ def test_dark_rate_image():
     """
 
     return np.array([
-        [0.5, 0.016, 0.012],
-        [0.01, 0.005, 1e-5],
-        [0.0, 0.0, 0.1]
+        [2.1, 1.1, 0.2],  # should return hot, warm, no flag set
+        [2.0, 1.0, 0.1],  # should return hot, warm, dead
+        [0.5, 0.0, -0.1],  # should return no flag set, dead, dead
     ])
 
 
@@ -144,34 +144,34 @@ class TestDark:
         with pytest.raises(ValueError):
             dark_object.make_ma_table_resampled_data(num_resultants=1, num_reads_per_resultant=6)
 
-    # def test_update_data_quality_array(self, valid_meta_data, valid_ref_type_data, test_dark_rate_image):
-    #     """
-    #     Test the update_data_quality_array method to ensure that it properly updates
-    #     the DQ array based on the dark_rate_image and threshold values for hot, warm, and dead pixels.
-    #     """
-    #
-    #     dqflag_defs = dqflags.pixel
-    #
-    #     dark_obj = Dark(meta_data=valid_meta_data, ref_type_data=valid_ref_type_data)
-    #     dark_obj.data_cube = MagicMock()
-    #     dark_obj.data_cube.rate_image = test_dark_rate_image
-    #
-    #     # Set up a mock mask array (same shape as test_dark_rate_image)
-    #     dark_obj.mask = np.zeros(test_dark_rate_image.shape, dtype=np.uint32)
-    #
-    #     # Ensure dqflag_defs are set correctly in the dark object
-    #     dark_obj.dqflag_defs = dqflag_defs
-    #
-    #     # Call the update_data_quality_array method with specified rates
-    #     dark_obj.update_data_quality_array(hot_pixel_rate=0.015, warm_pixel_rate=0.010, dead_pixel_rate=0.0001)
-    #
-    #     # Create the expected mask after applying the DQ flags
-    #     expected_mask = np.array([
-    #         [dqflag_defs["HOT"], dqflag_defs["WARM"], 0],  # First row - modify as per your thresholds
-    #         [0, dqflag_defs["WARM"], 0],  # Second row - modify as per your thresholds
-    #         [0, 0, dqflag_defs["WARM"]]  # Third row - modify as per your thresholds
-    #     ], dtype=np.uint32)
-    #
-    #     # Assert that the mask array was updated correctly
-    #     np.testing.assert_array_equal(dark_obj.mask, expected_mask)
+    def test_update_data_quality_array(self, valid_meta_data, valid_ref_type_data, test_dark_rate_image):
+        """
+        Test the update_data_quality_array method to ensure that it properly updates
+        the DQ array based on the dark_rate_image and threshold values for hot, warm, and dead pixels.
+        """
+
+        # Use dqflags.pixel for defining the expected DQ flags
+        dqflag_defs = dqflags.pixel
+        dark_obj = Dark(meta_data=valid_meta_data, ref_type_data=valid_ref_type_data)
+        dark_obj.data_cube.rate_image = test_dark_rate_image
+
+        # Initialize the smaller mask array to be same as test_dark_rate_image
+        dark_obj.mask = np.zeros(test_dark_rate_image.shape, dtype=np.uint32)
+
+        # Put the dq flags in the dark object.
+        dark_obj.dqflag_defs = dqflag_defs
+
+        # Call the update_data_quality_array method with specified thresholds
+        dark_obj.update_data_quality_array(hot_pixel_rate=2.0, warm_pixel_rate=1.0, dead_pixel_rate=0.1)
+
+        # Create the expected mask based on the pixel values and threshold comparisons
+        expected_mask = np.array([
+            [dqflag_defs["HOT"], dqflag_defs["WARM"], dqflag_defs["GOOD"]],
+            [dqflag_defs["HOT"], dqflag_defs["WARM"], dqflag_defs["DEAD"]],
+            [dqflag_defs["GOOD"], dqflag_defs["DEAD"], dqflag_defs["DEAD"]]
+        ], dtype=np.uint32)
+
+        # Assert that the mask array was updated correctly
+        np.testing.assert_array_equal(dark_obj.mask, expected_mask,
+                                      err_msg="DQ array was not updated as expected.")
 
