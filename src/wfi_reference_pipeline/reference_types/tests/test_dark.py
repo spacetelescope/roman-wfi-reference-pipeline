@@ -32,12 +32,16 @@ def dark_object(valid_meta_data, valid_ref_type_data):
 
 
 @pytest.fixture
-def test_dark_rate_image():
+def dark_rate_image_3_by_3():
     """Fixture for a testable dark rate image.
 
-    array flags = [ hot, hot, warm,
-                    warm, none, dead,
-                    dead, dead, hot]
+    Returning array in top row that is above threshold values,
+    middle row which is equal to threshold values, and bottom
+    row that is below.
+
+    array flags = [ hot, warm, good,
+                    hot, warm, dead,
+                    good, dead, dead]
     """
 
     return np.array([
@@ -144,7 +148,7 @@ class TestDark:
         with pytest.raises(ValueError):
             dark_object.make_ma_table_resampled_data(num_resultants=1, num_reads_per_resultant=6)
 
-    def test_update_data_quality_array(self, valid_meta_data, valid_ref_type_data, test_dark_rate_image):
+    def test_update_data_quality_array(self, valid_meta_data, valid_ref_type_data, dark_rate_image_3_by_3):
         """
         Test the update_data_quality_array method to ensure that it properly updates
         the DQ array based on the dark_rate_image and threshold values for hot, warm, and dead pixels.
@@ -153,10 +157,10 @@ class TestDark:
         # Use dqflags.pixel for defining the expected DQ flags
         dqflag_defs = dqflags.pixel
         dark_obj = Dark(meta_data=valid_meta_data, ref_type_data=valid_ref_type_data)
-        dark_obj.data_cube.rate_image = test_dark_rate_image
+        dark_obj.data_cube.rate_image = dark_rate_image_3_by_3
 
         # Initialize the smaller mask array to be same as test_dark_rate_image
-        dark_obj.mask = np.zeros(test_dark_rate_image.shape, dtype=np.uint32)
+        dark_obj.mask = np.zeros(dark_rate_image_3_by_3.shape, dtype=np.uint32)
 
         # Put the dq flags in the dark object.
         dark_obj.dqflag_defs = dqflag_defs
