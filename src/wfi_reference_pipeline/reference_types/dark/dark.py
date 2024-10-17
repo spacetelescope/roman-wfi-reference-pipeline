@@ -365,10 +365,10 @@ class Dark(ReferenceType):
 
         logging.info("Flagging dead, hot, and warm pixels and updating DQ array.")
         # Locate hot and warm pixel num_i_pixels, num_j_pixels positions in 2D array
-        self.mask[self.data_cube.rate_image > self.hot_pixel_rate] += self.dqflag_defs["HOT"]
-        self.mask[(self.warm_pixel_rate <= self.data_cube.rate_image)
-            & (self.data_cube.rate_image < self.hot_pixel_rate)] += self.dqflag_defs["WARM"]
-        self.mask[self.data_cube.rate_image < self.dead_pixel_rate] += self.dqflag_defs["DEAD"]
+        self.mask[self.data_cube.rate_image >= self.hot_pixel_rate] += self.dqflag_defs["HOT"]
+        self.mask[(self.data_cube.rate_image >= self.warm_pixel_rate)
+                  & (self.data_cube.rate_image < self.hot_pixel_rate)] += self.dqflag_defs["WARM"]
+        self.mask[self.data_cube.rate_image <= self.dead_pixel_rate] += self.dqflag_defs["DEAD"]
 
     def populate_datamodel_tree(self):
         """
