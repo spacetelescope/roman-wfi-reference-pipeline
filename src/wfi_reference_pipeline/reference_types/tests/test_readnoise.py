@@ -127,3 +127,23 @@ class TestReadNoise:
         readnoise_object.comp_cds_noise.assert_called_once()
         assert readnoise_object.readnoise_image == 'mock_cds_noise_image'
 
+    def test_populate_datamodel_tree(self, readnoise_object):
+        """
+        Test that the data model tree is correctly populated in the ReadNoise object.
+        """
+        data_model_tree = readnoise_object.populate_datamodel_tree()
+
+        # Assuming the ReadNoise data model includes 'meta' and 'noise' (instead of 'dq')
+        assert 'meta' in data_model_tree
+        assert 'data' in data_model_tree  # For read noise data, it would likely be 'noise' instead of 'dq'
+
+        # Check the shape and dtype of the 'noise' array
+        assert data_model_tree['data'].shape == (4096, 4096)
+        assert data_model_tree['data'].dtype == np.float32  # Assuming read noise values are stored as floats
+
+    def test_readnoise_outfile_default(self, readnoise_object):
+        """
+        Test that the default outfile name is correct in the ReadNoise object.
+        """
+        assert readnoise_object.outfile == "roman_readnoise.asdf"  # Assuming the default name is 'roman_readnoise.asdf'
+
