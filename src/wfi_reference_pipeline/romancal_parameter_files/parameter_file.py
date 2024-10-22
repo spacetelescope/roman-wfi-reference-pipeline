@@ -221,9 +221,9 @@ class ParameterFile():
                                         raise Warning(f'{key} specified in {step_name} step in input file and not in expected step parameters.')
                                 setattr(self, step_name, step_attr)
                             else:
-                                raise Warning(f'input file class name {step['class']} does not match expected step class name {step_attr['class']} for provided pipeline file.')
+                                raise Warning(f'input file class name {step["class"]} does not match expected step class name {step_attr["class"]} for provided pipeline file.')
                         else:
-                            raise Warning(f'Got an unexpected step {step['name']} in the {self.name_string} input file.')
+                            raise Warning(f'Got an unexpected step {step["name"]} in the {self.name_string} input file.')
                         
                 # save the history of the file, if possible, to add to the next saved file when writing
                 if 'history' in input_keys:
