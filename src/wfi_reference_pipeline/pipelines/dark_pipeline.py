@@ -117,6 +117,9 @@ class DarkPipeline(Pipeline):
         wfi_detector_str=None,
         short_dark_num_reads=DARK_SHORT_NUM_READS,
         long_dark_num_reads=DARK_LONG_NUM_READS,
+        sig_clip_sd_low=DARK_SIGMA_CLIP_SD_LOW,
+        sig_clip_sd_high=DARK_SIGMA_CLIP_SD_HIGH,
+        outfile=None
     ):
         f"""
         Prepares the superdark data file from an existing file list to be used as input for the `run_pipeline` method
@@ -198,10 +201,11 @@ class DarkPipeline(Pipeline):
                 long_dark_file_list,
                 short_dark_num_reads=short_dark_num_reads,
                 long_dark_num_reads=long_dark_num_reads,
+                outfile=outfile,
             )
             kwargs = {
-                "sig_clip_sd_low": DARK_SIGMA_CLIP_SD_LOW,
-                "sig_clip_sd_high": DARK_SIGMA_CLIP_SD_HIGH,
+                "sig_clip_sd_low": sig_clip_sd_low,
+                "sig_clip_sd_high": sig_clip_sd_high,
             }  # TODO - get batch sizes from config file
         else:
             logging.info("Running superdark batches")
@@ -210,10 +214,11 @@ class DarkPipeline(Pipeline):
                 long_dark_file_list,
                 short_dark_num_reads=short_dark_num_reads,
                 long_dark_num_reads=long_dark_num_reads,
+                outfile=outfile,
             )
             kwargs = {
-                "sig_clip_sd_low": DARK_SIGMA_CLIP_SD_LOW,
-                "sig_clip_sd_high": DARK_SIGMA_CLIP_SD_HIGH,
+                "sig_clip_sd_low": sig_clip_sd_low,
+                "sig_clip_sd_high": sig_clip_sd_high,
                 "short_batch_size": 4,
                 "long_batch_size": 4,
             }  # TODO - get batch sizes from config file

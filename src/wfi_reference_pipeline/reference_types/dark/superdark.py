@@ -3,6 +3,7 @@ import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 
 from wfi_reference_pipeline.constants import WFI_DETECTORS
 
@@ -50,12 +51,19 @@ class SuperDark(ABC):
         if short_dark_num_reads > long_dark_num_reads:
             if long_dark_num_reads > 0:
                 raise ValueError(
-                    f"short_dark_num_reads {short_dark_num_reads} cannot be larger than long_dark_num_reads {long_dark_num_reads}"
+                    f"long_dark_num_reads {long_dark_num_reads} must be 0 or larger than short_dark_num_reads {short_dark_num_reads}"
                     )
+
         if len(short_dark_file_list) == 0:
             raise ValueError(
                 "Parameter 'short_dark_file_list' can not be empty list"
                 )
+
+        if len(long_dark_file_list) == 0:
+            if long_dark_num_reads > 0:
+                raise ValueError(
+                    f"long_dark_num_reads {long_dark_num_reads} must be 0 if sending empty long_dark_file_list"
+                    )
 
         # Specify file lists.
         self.short_dark_num_reads = short_dark_num_reads
@@ -70,17 +78,18 @@ class SuperDark(ABC):
             # Get detector strings from all files
             wfi_detector_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
                              re.search(r'(WFI\d{2})', file)]
-            print(wfi_detector_strings)
             if len(list(set(wfi_detector_strings))) > 1:
                 raise ValueError(
                     "More than one WFI detector ID found in file list provided.")
-            self.wfi_detector_str = list(set(wfi_detector_strings))  # Remove duplicates if needed
+            self.wfi_detector_str = list(set(wfi_detector_strings))[0]
         else:
             self.wfi_detector_str = wfi_detector_str
 
+        print(self.wfi_detector_str)
+
         if self.wfi_detector_str not in WFI_DETECTORS:
             raise ValueError(
-                "Must have a valid WFI detector ID; WFI01-WFI18")
+                f"Invalid WFI detector ID {self.wfi_detector_str}; Must be WFI01-WFI18")
 
         # TODO need filename to have date in YYYYMMDD format probably....need to get meta data from
         # files to populate superdark meta - what is relevant besides detector and filelist and mode?

@@ -96,46 +96,52 @@ class SuperDarkDynamic(SuperDark):
             Upper bound limit to filter data
         """
         logging.debug(f"Begin date and time: {datetime.now()}")
-
+        self._calculated_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
         self.sig_clip_sd_low = sig_clip_sd_low
         self.sig_clip_sd_high = sig_clip_sd_high
 
         timing_start_dynamic = time.time()
         num_cores = multiprocessing.cpu_count()
-        available_mem = psutil.virtual_memory().available
+        total_available_mem = psutil.virtual_memory().available  #TODO SUBTRACT THE SHARED MEMORY BEING USED
 
-        needed_mem_per_process = (
-            20 * GB
-        )  # 20 GB needed per process, realistically this is a good bit more than we need.
+
+        # Calculate the required size for the shared memory cube
+        element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
+        num_elements = (self._calculated_num_reads * 4096 * 4096)  # Total number of elements in the array
+        shared_mem_size = num_elements * element_size  # Total size in bytes
+
+        available_mem = total_available_mem - shared_mem_size # This memory will be used and unavailable for other processes
+
+        needed_mem_per_process = (shared_mem_size * 2) + (2*GB)  # 2 cubes per process from starting and sigma clip result, plus 2 gigs for processing # TODO VERIFY
         max_num_processes = available_mem // needed_mem_per_process
-        max_num_processes = min(num_cores, max_num_processes)
+        max_num_processes = min(num_cores - 1, max_num_processes - 1) # reserve a process for main thread with shared memory
 
         logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
         logging.info(
-            f"Number of CPU cores available:                      {num_cores}"
+            f"Number of CPU cores available:                    {num_cores}"
         )
         logging.info(
-            f"Available memory:                                   {available_mem} "
+            f"Available Memory:                                 {total_available_mem} "
         )
         logging.info(
-            f"                                                    {available_mem / GB} GB"
+            f"                                                  {total_available_mem / GB} GB"
         )
         logging.info(
-            f"Calculated Max Processes:                           {max_num_processes} "
+            f"Shared Memory Size:                               {shared_mem_size / GB} GB "
+        )
+        logging.info(
+            f"Calculated Max Additional Processes:              {max_num_processes} "
         )
 
         print(f"Begin Multiprocessing with {max_num_processes} processes")
 
-        # Calculate the required size for the shared memory cube
-        element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
-        num_elements = (self.long_dark_num_reads * 4096 * 4096)  # Total number of elements in the array
-        shared_mem_size = num_elements * element_size  # Total size in bytes
+
 
         try:
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
             # create the numpy array from the allocated memory
             superdark_shared_mem = np.ndarray(
-                [self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
+                [self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
             )
             # Initialize the shared memory to 0
             superdark_shared_mem[:] = 0
@@ -151,7 +157,7 @@ class SuperDarkDynamic(SuperDark):
 
             # Add read indexes (and stop flags) to the queue for our worker tasks to pull from.
             # Add each read number to the queue to be read in by the next available process.
-            for i in range(self.long_dark_num_reads):
+            for i in range(self._calculated_num_reads):
                 task_queue.put(i)
             for _ in processes:
                 task_queue.put(STOPPROCESS())
@@ -199,7 +205,7 @@ class SuperDarkDynamic(SuperDark):
         shared_mem = shared_memory.SharedMemory(
             name=shared_mem_name
         )  # create from the existing one made by the parent process
-        superdark_shared_mem = np.ndarray([self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
+        superdark_shared_mem = np.ndarray([self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
 
         # Run until we hit our STOP_PROCESS flag or queue is empty
         try:
