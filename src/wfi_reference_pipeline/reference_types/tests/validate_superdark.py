@@ -6,6 +6,7 @@ import asdf
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from astropy.time import Time
+import numpy as np
 
 # TODO edit below if needed and add extra meta for testing/validation
 # Define your metadata, including only the 'exposure' information
@@ -217,7 +218,31 @@ def test_validate_superdark_values(input_dir='/grp/roman/RFP/DEV/scratch'):
     # superdark.asdf file.
     dark = Dark(meta_data=test_meta.meta_dark, file_list=[dark_pipeline.superdark_file], outfile="validate_superdark_test_dark.asdf")
     dark.make_rate_image_from_data_cube()
-    
+    dark.make_ma_table_resampled_data(num_resultants=8, num_reads_per_resultant=6)
+    dark.update_data_quality_array()
+
+
+
+    # SAPP TODO - YOU ARE HERE
+    # CURRENTLY SOME NAN values exist that are causing stddev not to work.
+    # need to verify
+    # https://innerspace.stsci.edu/display/RI/SuperDark+-+Notes%2C+Planning%2C+and+Prospects
+    # mean = 5.625
+    # std or sigma = 7.6
+
+    nan_indexes = np.argwhere(np.isnan(dark.data_cube.data))
+    print(f"Indexes of {len(nan_indexes)} NaN values:")
+    print(nan_indexes)
+
+    print(f"shape of dark.data_cube.data{dark.data_cube.data.shape}")
+    print(f"dark.data_cube.data : {dark.data_cube.data}")
+    data_cube_array = np.array(dark.data_cube.data)
+    std_dev_all = np.nanstd(data_cube_array)
+    mean_all = np.nanmean(data_cube_array)
+    print(f"standard deviation of entire cube is: {std_dev_all}")
+    print(f"mean of entire cube is: {mean_all}")
+
+
     # Generate superdark from BOTH short and long darks.
 
     # Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
@@ -249,25 +274,6 @@ def generate_files(input_dir='/grp/roman/RFP/DEV/scratch'):
         long_files = generate_long_dark_files()
 
     return short_files, long_files
-
-
-# Set sigma clipping level to 1 or 3 sigma
-
-# Generate superdark from only short darks
-
-# Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
-# superdark.asdf file.
-
-# Generate superdark from BOTH short and long darks.
-
-# Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
-# superdark.asdf file.
-
-# NOTE checking the dark rate might be easier than inspecting values of large cubes and more comprehensive in utilizing
-# the RFP Dark() module and fitting.
-
-# Next step: more scientifically interesting validation would be to include noise and variance of the rates and assert
-# that the measured dark rate from Dark() with the superdark as input produces a dark rate image within some tolerance.
 
 
 if __name__ == "__main__":
