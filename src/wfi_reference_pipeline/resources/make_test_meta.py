@@ -1,16 +1,36 @@
+from astropy import units as u
+
+from wfi_reference_pipeline.constants import (
+    REF_TYPE_DARK,
+    REF_TYPE_FLAT,
+    REF_TYPE_GAIN,
+    REF_TYPE_INVERSELINEARITY,
+    REF_TYPE_IPC,
+    REF_TYPE_LINEARITY,
+    REF_TYPE_MASK,
+    REF_TYPE_READNOISE,
+    REF_TYPE_REFPIX,
+    REF_TYPE_SATURATION,
+    WFI_DETECTORS,
+    WFI_MODE_WIM,
+    WFI_PEDIGREE,
+    WFI_REF_TYPES,
+    WFI_TYPE_IMAGE,
+)
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
-from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
+from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
+    WFIMetaInverseLinearity,
+)
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
-from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
+from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
+    WFIMetaReferencePixel,
+)
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
-from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_MODE_WIM, WFI_PEDIGREE
-from wfi_reference_pipeline.constants import WFI_REF_TYPES, WFI_TYPE_IMAGE
-from astropy import units as u
 
 
 class MakeTestMeta:
@@ -119,34 +139,34 @@ class MakeTestMeta:
         meta_data_params = [ref_type, pedigree, description, author,
                             use_after, telescope, origin, instrument, detector]
 
-        if ref_type == "DARK":
+        if ref_type == REF_TYPE_DARK:
             self._create_test_meta_dark(meta_data_params)
 
-        if ref_type == "FLAT":
+        if ref_type == REF_TYPE_FLAT:
             self._create_test_meta_flat(meta_data_params)
 
-        if ref_type == "GAIN":
+        if ref_type == REF_TYPE_GAIN:
             self._create_test_meta_gain(meta_data_params)
 
-        if ref_type == "INVERSELINEARITY":
+        if ref_type == REF_TYPE_INVERSELINEARITY:
             self._create_test_meta_inverselinearity(meta_data_params)
 
-        if ref_type == "IPC":
+        if ref_type == REF_TYPE_IPC:
             self._create_test_meta_interpixelcapacitance(meta_data_params)
 
-        if ref_type == "LINEARITY":
+        if ref_type == REF_TYPE_LINEARITY:
             self._create_test_meta_linearity(meta_data_params)
 
-        if ref_type == "MASK":
+        if ref_type == REF_TYPE_MASK:
             self._create_test_meta_mask(meta_data_params)
 
-        if ref_type == "READNOISE":
+        if ref_type == REF_TYPE_READNOISE:
             self._create_test_meta_readnoise(meta_data_params)
 
-        if ref_type == "REFPIX":
+        if ref_type == REF_TYPE_REFPIX:
             self._create_test_meta_referencepixel(meta_data_params)
 
-        if ref_type == "SATURATION":
+        if ref_type == REF_TYPE_SATURATION:
             self._create_test_meta_saturation(meta_data_params)
 
 
