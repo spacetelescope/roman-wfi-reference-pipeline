@@ -178,7 +178,7 @@ class Dark(ReferenceType):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
 
-        Must call amek_ma_table_resampled_data to finish populating
+        Must call make_ma_table_resampled_data to finish populating
 
         Parameters
         ----------
