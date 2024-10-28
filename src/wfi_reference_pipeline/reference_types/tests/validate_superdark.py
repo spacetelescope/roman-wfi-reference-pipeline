@@ -1,9 +1,13 @@
 from pathlib import Path
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
+from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
+from wfi_reference_pipeline.reference_types.dark.dark import Dark
 import asdf
+from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from astropy.time import Time
 
-# TODO edit bekow if needed and add extra meta for testing/validation
+# TODO edit below if needed and add extra meta for testing/validation
 # Define your metadata, including only the 'exposure' information
 meta = {
     'exposure': {
@@ -40,7 +44,7 @@ meta = {
     }
 }
 
-
+test_meta = MakeTestMeta(REF_TYPE_DARK)
 def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/DEV/scratch'):
     """
     Generate short dark files with controlled inputs using simulate_dark_reads and save as ASDF files.
@@ -72,7 +76,7 @@ def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
-
+    short_files=[]
     for i in range(n_files):
 
         # Use simulate_dark_reads but control the pixel rates to achieve desired values
@@ -114,6 +118,9 @@ def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/
         # Write to ASDF
         with asdf.AsdfFile(tree) as af:
             af.write_to(file_path)
+            short_files.append(file_path)
+
+    return short_files
 
 
 def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/DEV/scratch'):
@@ -148,7 +155,7 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
-
+    long_files = []
     for i in range(n_files):
         # Use simulate_dark_reads but control the pixel rates to achieve desired values
         read_cube, rate_image = simulate_dark_reads(
@@ -189,10 +196,60 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
         # Write to ASDF
         with asdf.AsdfFile(tree) as af:
             af.write_to(file_path)
+            long_files.append(file_path)
+
+    return long_files
 
 # Validate SuperDark function or class Rick pseudo code
+def test_validate_superdark_values(input_dir='/grp/roman/RFP/DEV/scratch'):
+    # Make the files (or dont if they already exist)
+    short_files, long_files = generate_files(input_dir)
+
+    # Set sigma clipping level to 1 or 3 sigma
+    sigma_clip_low_bound = 1
+    sigma_clip_high_bound = 3
+
+    # Generate superdark from only short darks
+    dark_pipeline = DarkPipeline()
+    dark_pipeline.prep_superdark_file(short_file_list=short_files, short_dark_num_reads=10, long_dark_num_reads=0, sig_clip_sd_low=sigma_clip_low_bound, sig_clip_sd_high=sigma_clip_high_bound, outfile="validate_superdark_test_prepped_superdark.asdf")
+
+    # Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
+    # superdark.asdf file.
+    dark = Dark(meta_data=test_meta.meta_dark, file_list=[dark_pipeline.superdark_file], outfile="validate_superdark_test_dark.asdf")
+    dark.make_rate_image_from_data_cube()
+    
+    # Generate superdark from BOTH short and long darks.
+
+    # Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
+    # superdark.asdf file.
+
+    # NOTE checking the dark rate might be easier than inspecting values of large cubes and more comprehensive in utilizing
+    # the RFP Dark() module and fitting.
+
+    # Next step: more scientifically interesting validation would be to include noise and variance of the rates and assert
+    # that the measured dark rate from Dark() with the superdark as input produces a dark rate image within some tolerance.
+
+
+
+
+
 
 # Check if files exist for validation test, if not make them with above, if they do proceed
+def generate_files(input_dir='/grp/roman/RFP/DEV/scratch'):
+
+    input_path = Path(input_dir)
+    files = [file for file in input_path.iterdir() if file.is_file()]
+    asdf_files = [file for file in files if ".asdf" in file.name]
+    short_files = [str(file) for file in asdf_files if "short" in file.name]
+    long_files = [str(file) for file in asdf_files if "long" in file.name]
+
+    if len(short_files) == 0:
+        short_files = generate_short_dark_files()
+    if len(long_files) == 0:
+        long_files = generate_long_dark_files()
+
+    return short_files, long_files
+
 
 # Set sigma clipping level to 1 or 3 sigma
 
@@ -211,3 +268,7 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
 
 # Next step: more scientifically interesting validation would be to include noise and variance of the rates and assert
 # that the measured dark rate from Dark() with the superdark as input produces a dark rate image within some tolerance.
+
+
+if __name__ == "__main__":
+    test_validate_superdark_values()
