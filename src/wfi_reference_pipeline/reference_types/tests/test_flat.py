@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-from astropy import units as u
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_FLAT, REF_TYPE_READNOISE
