@@ -42,7 +42,6 @@ def dark_rate_image_3_by_3():
                     hot, warm, dead,
                     good, dead, dead]
     """
-
     return np.array([
         [2.1, 1.1, 0.2],  # should return hot, warm, no flag set
         [2.0, 1.0, 0.1],  # should return hot, warm, dead
