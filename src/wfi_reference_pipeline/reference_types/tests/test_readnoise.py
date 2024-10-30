@@ -84,7 +84,7 @@ class TestReadNoise:
         mock_asdf_file = MagicMock()
         mock_asdf_file.tree = {
             "roman": {
-                "data": np.zeros((10, 2048, 2048))  # Mocking a datacube with 10 reads
+                "data": np.zeros((3, 10, 10))  # Mocking a datacube with 10 reads
             }
         }
 
