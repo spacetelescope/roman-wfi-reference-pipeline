@@ -1,51 +1,47 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_SATURATION, REF_TYPE_READNOISE
-from astropy import units as u
 
 
 @pytest.fixture
 def valid_meta_data():
-    """Fixture for generating valid meta_data for Saturation class."""
+    """Fixture for generating valid meta_data for the SAturation class."""
     test_meta = MakeTestMeta(ref_type=REF_TYPE_SATURATION)
     return test_meta.meta_saturation
 
 
 @pytest.fixture
-def valid_ref_type_data():
-    """Fixture for generating valid ref_type_data (saturation data)."""
-    # Simulating a 2D saturation data array (4096x4096)
-    ref_type_data = np.random.randint(0, 100000, size=(4096, 4096)).astype(np.float32)
-    return ref_type_data
+def valid_ref_type_data_array():
+    """Fixture for generating a valid ref_type_data array (saturation image)."""
+    return np.ones((4096, 4096)).astype(np.float32)
 
 
 @pytest.fixture
-def saturation_object(valid_meta_data, valid_ref_type_data):
-    """Fixture for initializing a valid Saturation object."""
-    saturation_obj = Saturation(meta_data=valid_meta_data, ref_type_data=valid_ref_type_data)
-    saturation_obj.make_saturation_image()
-    yield saturation_obj
+def saturation_object_with_data_array(valid_meta_data, valid_ref_type_data_array):
+    """Fixture for initializing a Mask object with a valid data array."""
+    saturation_object_with_data_array = Saturation(meta_data=valid_meta_data,
+                                                   ref_type_data=valid_ref_type_data_array)
+    yield saturation_object_with_data_array
 
 
 class TestSaturation:
 
-    def test_saturation_instantiation_with_valid_data(self, saturation_object):
+    def test_saturation_instantiation_with_valid_data(self, saturation_object_with_data_array):
         """
         Test that Saturation object is created successfully with valid input data.
         """
-        assert isinstance(saturation_object, Saturation)
-        assert saturation_object.saturation_image.shape == (4096, 4096)
+        assert isinstance(saturation_object_with_data_array, Saturation)
+        assert saturation_object_with_data_array.saturation_image.shape == (4096, 4096)
 
-    def test_saturation_instantiation_with_invalid_metadata(self, valid_ref_type_data):
+    def test_saturation_instantiation_with_invalid_metadata(self, valid_ref_type_data_array):
         """
         Test that Saturation raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)  # Assume this creates an invalid type
+        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
         with pytest.raises(TypeError):
-            Saturation(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data)
+            Saturation(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data_array)
 
     def test_saturation_instantiation_with_invalid_ref_type_data(self, valid_meta_data):
         """
@@ -54,52 +50,57 @@ class TestSaturation:
         with pytest.raises(TypeError):
             Saturation(meta_data=valid_meta_data, ref_type_data='not_data.txt')
 
-    def test_make_saturation_image(self, saturation_object):
+    def test_make_saturation_image(self, saturation_object_with_data_array):
         """
         Test that the make_saturation_image method creates an image of the correct uniform value.
         """
-        saturation_object.make_saturation_image(saturation_threshold=60000)
-        assert np.all(saturation_object.saturation_image == 60000)
+        saturation_object_with_data_array.make_saturation_image(saturation_threshold=60000)
+        assert np.all(saturation_object_with_data_array.saturation_image == 60000)
 
-    def test_make_saturation_image_with_invalid_input(self, saturation_object):
+    def test_make_saturation_image_with_invalid_input(self, saturation_object_with_data_array):
         """
         Test that the make_saturation_image method handles invalid inputs.
         """
         # Check for invalid string input
         with pytest.raises(ValueError, match="Saturation threshold must be a float or an int."):
-            saturation_object.make_saturation_image(saturation_threshold='invalid_value')
+            saturation_object_with_data_array.make_saturation_image(saturation_threshold='invalid_value')
 
         # Check for negative threshold
         with pytest.raises(ValueError,
                            match="Saturation threshold must be positive and less than uint16 maximum allowed value."):
-            saturation_object.make_saturation_image(saturation_threshold=-1)
+            saturation_object_with_data_array.make_saturation_image(saturation_threshold=-1)
 
         # Check for invalid list input
         with pytest.raises(ValueError, match="Saturation threshold must be a float or an int."):
-            saturation_object.make_saturation_image(saturation_threshold=[55000])
+            saturation_object_with_data_array.make_saturation_image(saturation_threshold=[55000])
 
         # Check for invalid dictionary input
         with pytest.raises(ValueError, match="Saturation threshold must be a float or an int."):
-            saturation_object.make_saturation_image(saturation_threshold={'value': 55000})
+            saturation_object_with_data_array.make_saturation_image(saturation_threshold={'value': 55000})
 
-    # def test_update_data_quality_array(self, saturation_object):
-    #     """
-    #     Test that the update_data_quality_array method flags the correct pixels.
-    #     """
-    #     # Initialize mask with zeros
-    #     saturation_object.mask = np.zeros_like(saturation_object.saturation_image, dtype=int)
-    #     saturation_object.saturation_image = np.random.randint(0, 100000, size=(4096, 4096)).astype(np.float32)
-    #
-    #     saturation_object.update_data_quality_array(bad_saturation_threshold=64000)
-    #     assert np.any(saturation_object.mask[saturation_object.saturation_image > 64000] == saturation_object.dqflag_defs['NO_SAT_CHECK'])
-
-    def test_populate_datamodel_tree(self, saturation_object):
+    def test_populate_datamodel_tree(self, saturation_object_with_data_array):
         """
         Test that the populate_datamodel_tree method constructs the data model correctly.
         """
-        saturation_datamodel_tree = saturation_object.populate_datamodel_tree()
-        assert 'meta' in saturation_datamodel_tree
-        assert 'data' in saturation_datamodel_tree
-        assert 'dq' in saturation_datamodel_tree
-        assert saturation_datamodel_tree['data'].shape == (4096, 4096)
+        saturation_object_with_data_array.make_saturation_image()
+        data_model_tree = saturation_object_with_data_array.populate_datamodel_tree()
 
+        # Assuming the Saturation data model includes:
+        assert 'meta' in data_model_tree
+        assert 'data' in data_model_tree
+        assert 'dq' in data_model_tree
+
+        # Check the shape and dtype of the 'data' array
+        assert data_model_tree['data'].shape == (4096, 4096)
+        assert data_model_tree['data'].dtype == np.float32
+
+        # Check the shape and dtype of the 'dq' array
+        assert data_model_tree['dq'].shape == (4096, 4096)
+        assert data_model_tree['dq'].dtype == np.uint32
+
+    def test_saturation_outfile_default(self, saturation_object_with_data_array):
+        """
+        Test that the default outfile name is correct in the Saturation object with the assumption
+        that the default name is 'roman_saturation.asdf'
+        """
+        assert saturation_object_with_data_array.outfile == "roman_saturation.asdf"
