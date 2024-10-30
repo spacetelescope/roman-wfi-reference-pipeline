@@ -121,7 +121,7 @@ class Flat(ReferenceType):
                 logging.debug(
                     "Initializing flat error array with all zeros."
                 )
-                self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
+                self.flat_error = np.zeros((4088, 4088), dtype=np.float32)
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
@@ -172,7 +172,7 @@ class Flat(ReferenceType):
         logging.debug(
             "Initializing flat error array with all zeros. Run calculate_error()."
         )
-        self.flat_error = np.zeros((4096, 4096), dtype=np.float32)
+        self.flat_error = np.zeros((4088, 4088), dtype=np.float32)
         logging.debug("Ready to generate reference file.")
 
     def make_rate_image_from_data_cube(self, fit_order=1):
