@@ -87,6 +87,7 @@ ignore = ["E501"]
 [tool.coverage.run]
 source = ["wfi_reference_pipeline"]
 omit = [
+    "**/__init__.py",
     "**/tests/*",
     "wfi_reference_pipeline/version.py",
 ]
