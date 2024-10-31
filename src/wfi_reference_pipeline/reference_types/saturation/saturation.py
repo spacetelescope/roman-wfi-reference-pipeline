@@ -109,11 +109,11 @@ class Saturation(ReferenceType):
 
         # Type check input saturation threshold
         if not isinstance(saturation_threshold, (float, int)):
-            raise ValueError("Saturation threshold must be a float or an int.")
+            raise ValueError("Saturation threshold must be a float or an integer.")
 
         # Check for a valid theshold value
-        if not (1 < saturation_threshold < 65535):
-            raise ValueError("Saturation threshold must be positive and less than uint16 maximum allowed value.")
+        if saturation_threshold < 1 or saturation_threshold > 65535:
+            raise ValueError("Saturation threshold must be 1 or less than unit16 maximum value 66535.")
 
         self.saturation_image = saturation_threshold * np.ones((4096, 4096), dtype=np.float32)
 
