@@ -66,9 +66,12 @@ class TestSaturation:
             saturation_object_with_data_array.make_saturation_image(saturation_threshold='invalid_value')
 
         # Check for negative threshold
-        with pytest.raises(ValueError,
-                           match="Saturation threshold must be positive and less than uint16 maximum allowed value."):
+        with pytest.raises(ValueError, match="Saturation threshold must be 1 or less than unit16 maximum value 66535."):
             saturation_object_with_data_array.make_saturation_image(saturation_threshold=-1)
+
+        # Check for greater than uint16 value
+        with pytest.raises(ValueError, match="Saturation threshold must be 1 or less than unit16 maximum value 66535."):
+            saturation_object_with_data_array.make_saturation_image(saturation_threshold=700000)
 
         # Check for invalid list input
         with pytest.raises(ValueError, match="Saturation threshold must be a float or an int."):
