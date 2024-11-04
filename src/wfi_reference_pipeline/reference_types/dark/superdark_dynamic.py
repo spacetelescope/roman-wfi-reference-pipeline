@@ -114,7 +114,7 @@ class SuperDarkDynamic(SuperDark):
 
         needed_mem_per_process = (shared_mem_size * 2) + (2*GB)  # 2 cubes per process from starting and sigma clip result, plus 2 gigs for processing # TODO VERIFY
         max_num_processes = available_mem // needed_mem_per_process
-        max_num_processes = min(num_cores - 1, max_num_processes - 1) # reserve a process for main thread with shared memory
+        max_num_processes = min(num_cores - 1, max_num_processes - 1, self._calculated_num_reads) # reserve a process for main thread with shared memory
 
         logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
         logging.info(
@@ -259,15 +259,16 @@ class SuperDarkDynamic(SuperDark):
                         logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
                     gc.collect()
                 try:
-                    clipped_reads = sigma_clip(
-                        read_index_cube.astype(np.float32),
-                        sigma_lower=self.sig_clip_sd_low,
-                        sigma_upper=self.sig_clip_sd_high,
-                        cenfunc="mean",
-                        axis=0,
-                        masked=False,
-                        copy=False,
-                    )
+                    clipped_reads = np.median(read_index_cube, axis=0) # TODO Get a functional sigma_clip without NAN values
+                    # clipped_reads = sigma_clip(
+                    #     read_index_cube.astype(np.float32),
+                    #     sigma_lower=self.sig_clip_sd_low,
+                    #     sigma_upper=self.sig_clip_sd_high,
+                    #     cenfunc="mean",
+                    #     axis=0,
+                    #     masked=False,
+                    #     copy=False,
+                    # )
                 except Exception as e:
                     logging.error(f"Error Sigma Clipping read index {read_index} with exception: {e}")
                 superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)
