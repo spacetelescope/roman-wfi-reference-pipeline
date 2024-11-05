@@ -43,9 +43,12 @@ class ReferenceType(ABC):
         have_file_list = False
         have_ref_type_data = False
         have_input = False
-        if file_list is not None and len(file_list) > 0:
-            have_file_list = True
-            have_input = True
+        if file_list is not None:
+            if not isinstance(file_list, list):
+                raise ValueError("'file_list' must be of type list")
+            if len(file_list) > 0:
+                have_file_list = True
+                have_input = True
         if ref_type_data is not None and len(ref_type_data) > 0:
             have_ref_type_data = True
             have_input = True
@@ -60,7 +63,7 @@ class ReferenceType(ABC):
 
 
         # Allow for input string use_after to be converted to astropy time object.
-        if isinstance(meta_data.use_after, str):
+        if hasattr(meta_data, "use_after") and isinstance(meta_data.use_after, str):
             meta_data.use_after = Time(meta_data.use_after)
 
         self.meta_data = meta_data

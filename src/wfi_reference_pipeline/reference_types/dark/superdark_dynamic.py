@@ -10,9 +10,12 @@ import asdf
 import numpy as np
 import psutil
 from astropy import units as u
-from astropy.stats import sigma_clip
 
-from wfi_reference_pipeline.constants import GB
+from wfi_reference_pipeline.constants import (
+    DARK_LONG_NUM_READS,
+    DARK_SHORT_NUM_READS,
+    GB,
+)
 
 from .superdark import SuperDark
 
@@ -34,24 +37,22 @@ class SuperDarkDynamic(SuperDark):
 
     def __init__(
         self,
-        input_path,
-        short_dark_file_list=None,
-        short_dark_num_reads=46,
-        long_dark_file_list=None,
-        long_dark_num_reads=98,
+        short_dark_file_list,
+        long_dark_file_list,
+        short_dark_num_reads=DARK_SHORT_NUM_READS,
+        long_dark_num_reads=DARK_LONG_NUM_READS,
+        wfi_detector_str=None,
         outfile=None,
     ):
         """
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
-        short_dark_file_list: list, default = None
+        short_dark_file_list: list
             List of short dark exposure files.
+        long_dark_file_list: list
+            List of long dark exposure files.
         short_dark_num_reads: int, default = 46
             Number of reads in the short dark data cubes.
-        long_dark_file_list: list, default = None
-            List of long dark exposure files.
         long_dark_num_reads: int, default = 98
             Number of reads in the short dark data cubes.
         outfile: str, default="roman_superdark.asdf"
@@ -60,11 +61,11 @@ class SuperDarkDynamic(SuperDark):
 
         # Access methods of base class ReferenceType.
         super().__init__(
-            input_path=input_path,
-            short_dark_file_list=short_dark_file_list,
-            short_dark_num_reads=short_dark_num_reads,
-            long_dark_file_list=long_dark_file_list,
-            long_dark_num_reads=long_dark_num_reads,
+            short_dark_file_list,
+            long_dark_file_list,
+            short_dark_num_reads,
+            long_dark_num_reads,
+            wfi_detector_str=wfi_detector_str,
             outfile=outfile,
         )
 
@@ -94,46 +95,52 @@ class SuperDarkDynamic(SuperDark):
             Upper bound limit to filter data
         """
         logging.debug(f"Begin date and time: {datetime.now()}")
-
+        self._calculated_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
         self.sig_clip_sd_low = sig_clip_sd_low
         self.sig_clip_sd_high = sig_clip_sd_high
 
         timing_start_dynamic = time.time()
         num_cores = multiprocessing.cpu_count()
-        available_mem = psutil.virtual_memory().available
+        total_available_mem = psutil.virtual_memory().available  #TODO SUBTRACT THE SHARED MEMORY BEING USED
 
-        needed_mem_per_process = (
-            20 * GB
-        )  # 20 GB needed per process, realistically this is a good bit more than we need.
+
+        # Calculate the required size for the shared memory cube
+        element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
+        num_elements = (self._calculated_num_reads * 4096 * 4096)  # Total number of elements in the array
+        shared_mem_size = num_elements * element_size  # Total size in bytes
+
+        available_mem = total_available_mem - shared_mem_size # This memory will be used and unavailable for other processes
+
+        needed_mem_per_process = (shared_mem_size * 2) + (2*GB)  # 2 cubes per process from starting and sigma clip result, plus 2 gigs for processing # TODO VERIFY
         max_num_processes = available_mem // needed_mem_per_process
-        max_num_processes = min(num_cores, max_num_processes)
+        max_num_processes = min(num_cores - 1, max_num_processes - 1, self._calculated_num_reads) # reserve a process for main thread with shared memory
 
         logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
         logging.info(
-            f"Number of CPU cores available:                      {num_cores}"
+            f"Number of CPU cores available:                    {num_cores}"
         )
         logging.info(
-            f"Available memory:                                   {available_mem} "
+            f"Available Memory:                                 {total_available_mem} "
         )
         logging.info(
-            f"                                                    {available_mem / GB} GB"
+            f"                                                  {total_available_mem / GB} GB"
         )
         logging.info(
-            f"Calculated Max Processes:                           {max_num_processes} "
+            f"Shared Memory Size:                               {shared_mem_size / GB} GB "
+        )
+        logging.info(
+            f"Calculated Max Additional Processes:              {max_num_processes} "
         )
 
         print(f"Begin Multiprocessing with {max_num_processes} processes")
 
-        # Calculate the required size for the shared memory cube
-        element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
-        num_elements = (self.long_dark_num_reads * 4096 * 4096)  # Total number of elements in the array
-        shared_mem_size = num_elements * element_size  # Total size in bytes
+
 
         try:
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
             # create the numpy array from the allocated memory
             superdark_shared_mem = np.ndarray(
-                [self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
+                [self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
             )
             # Initialize the shared memory to 0
             superdark_shared_mem[:] = 0
@@ -149,7 +156,7 @@ class SuperDarkDynamic(SuperDark):
 
             # Add read indexes (and stop flags) to the queue for our worker tasks to pull from.
             # Add each read number to the queue to be read in by the next available process.
-            for i in range(self.long_dark_num_reads):
+            for i in range(self._calculated_num_reads):
                 task_queue.put(i)
             for _ in processes:
                 task_queue.put(STOPPROCESS())
@@ -197,7 +204,7 @@ class SuperDarkDynamic(SuperDark):
         shared_mem = shared_memory.SharedMemory(
             name=shared_mem_name
         )  # create from the existing one made by the parent process
-        superdark_shared_mem = np.ndarray([self.long_dark_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
+        superdark_shared_mem = np.ndarray([self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
 
         # Run until we hit our STOP_PROCESS flag or queue is empty
         try:
@@ -232,12 +239,11 @@ class SuperDarkDynamic(SuperDark):
                 # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                 for file_nr in range(start_file, num_files_with_this_read_index):
                     file_name = self.file_list[file_nr]
-                    file_path = self.input_path.joinpath(file_name)
                     # If the file to be opened has a valid read index then open the file and
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
                     try:
-                        with asdf.open(file_path) as asdf_file:
+                        with asdf.open(file_name) as asdf_file:
                             if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
                                 read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
                             else:
@@ -249,18 +255,19 @@ class SuperDarkDynamic(SuperDark):
                         PermissionError,
                         ValueError,
                     ) as e:
-                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_path)} - {e}")
+                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
                     gc.collect()
                 try:
-                    clipped_reads = sigma_clip(
-                        read_index_cube.astype(np.float32),
-                        sigma_lower=self.sig_clip_sd_low,
-                        sigma_upper=self.sig_clip_sd_high,
-                        cenfunc="mean",
-                        axis=0,
-                        masked=False,
-                        copy=False,
-                    )
+                    clipped_reads = np.median(read_index_cube, axis=0) # TODO Get a functional sigma_clip without NAN values
+                    # clipped_reads = sigma_clip(
+                    #     read_index_cube.astype(np.float32),
+                    #     sigma_lower=self.sig_clip_sd_low,
+                    #     sigma_upper=self.sig_clip_sd_high,
+                    #     cenfunc="mean",
+                    #     axis=0,
+                    #     masked=False,
+                    #     copy=False,
+                    # )
                 except Exception as e:
                     logging.error(f"Error Sigma Clipping read index {read_index} with exception: {e}")
                 superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)

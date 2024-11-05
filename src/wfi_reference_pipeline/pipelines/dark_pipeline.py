@@ -4,13 +4,27 @@ from pathlib import Path
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
 from romancal.saturation import SaturationStep
-from wfi_reference_pipeline.constants import REF_TYPE_DARK
+
+from wfi_reference_pipeline.constants import (
+    DARK_LONG_IDENTIFIER,
+    DARK_LONG_NUM_READS,
+    DARK_SHORT_IDENTIFIER,
+    DARK_SHORT_NUM_READS,
+    DARK_SIGMA_CLIP_SD_LOW,
+    DARK_SIGMA_CLIP_SD_HIGH,
+    REF_TYPE_DARK,
+)
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-#from wfi_reference_pipeline.reference_types.dark.dark import SuperDark
+from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
+    SuperDarkDynamic,
+)
+from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import (
+    SuperDarkBatches,
+)
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
 from wfi_reference_pipeline.utilities.logging_functions import log_info
-# from wfi_reference_pipeline.utilities.rtbdb_functions import get_ma_table_from_rtbdb # TODO not used
 
 
 class DarkPipeline(Pipeline):
@@ -21,14 +35,16 @@ class DarkPipeline(Pipeline):
     Gives user access to:
     select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
     prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
+    prep_superdark_file: Prepares the superdark file input to be used as input for run_pipeline
     run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
     dark_pipeline = DarkPipeline()
     dark_pipeline.select_uncal_files()
-    dark_pipeline.prep_pipeline(dark_pipeline.uncal_files)
-    dark_pipeline.run_pipeline(dark_pipeline.prepped_files)
+    dark_pipeline.prep_pipeline()
+    dark_pipeline.prep_superdark()
+    dark_pipeline.run_pipeline()
 
     or
 
@@ -39,6 +55,7 @@ class DarkPipeline(Pipeline):
     def __init__(self):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_DARK)
+        self.superdark_file = None
 
     @log_info
     def select_uncal_files(self):
@@ -49,7 +66,7 @@ class DarkPipeline(Pipeline):
         # Get files from input directory
         # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(
-            #self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
+            # self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
             self.ingest_path.glob("r00444*_WFI01_uncal.asdf")
         )
 
@@ -78,7 +95,7 @@ class DarkPipeline(Pipeline):
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
-            #TODO Need to confirm steps from romancal and their functionality
+            # TODO Need to confirm steps from romancal and their functionality
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
@@ -87,18 +104,128 @@ class DarkPipeline(Pipeline):
 
             self.prepped_files.append(prep_output_file_path)
 
-        logging.info(
-            "Finished PREPPING files to make DARK reference file from RFP"
-        )
+        logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
-        logging.info(
-            "Starting to make SUPERDARK from PREPPED DARK asdf files"
-        )
+        logging.info("Starting to make SUPERDARK from PREPPED DARK asdf files")
 
-        #TODO send preppred files into SuperDark and figure out how to name superdark.asdf file naming scheme
-        #superdark = SuperDark(self.prepped_files,
-        #                      outfile='superdark_XXXX.asdf')
+    @log_info
+    def prep_superdark_file(
+        self,
+        full_file_list=[],
+        short_file_list=[],
+        long_file_list=[],
+        wfi_detector_str=None,
+        short_dark_num_reads=DARK_SHORT_NUM_READS,
+        long_dark_num_reads=DARK_LONG_NUM_READS,
+        sig_clip_sd_low=DARK_SIGMA_CLIP_SD_LOW,
+        sig_clip_sd_high=DARK_SIGMA_CLIP_SD_HIGH,
+        outfile=None
+    ):
+        f"""
+        Prepares the superdark data file from an existing file list to be used as input for the `run_pipeline` method
 
+            This method is designed to be flexible with pipeline runs and user interaction which is reflected in the paramter list.
+
+            FOR AUTOMATED PIPELINE RUNS:
+                No parameters are needed, however wfi_detector_str is expected
+                Uses self.prepped_files as file_list that gets created from `prep_pipeline` step
+                Filters prepped files with wfi_detector_str
+                Assumes system default short and long dark_num_reads unless parameters clarify otherwise
+                Assumes full list is adequate unless wfi_detector_str is provided for filtering purposes
+
+            FOR ISOLATED RUNS:
+                If you are not interested in running other pipeline steps, you can utilize the parameters outlined below
+
+        Parameters
+        ----------
+        full_file_list: [str], optional
+            A single list of all files to be processed, files must use standardized naming conventions
+            This is intended for use with the pipeline architecture for special case uses
+                (ie. run specific files from an existing pipeline prepped directory or re-creating a superdark)
+            Mutually exclusive from short_file_list and long_file_list
+        short_file_list: [str], optional
+            A list of all short files to be processed, files do not require standardized naming conventions
+            This is inteded for individual use where the user may not be working in the pipelines folder architecture.
+                (ie. validation testing, regression testing, 3rd party users)
+            These files will all be used and will not be filtered by wfi_detector_str
+            relies on accurate short_dark_num_reads parameter
+            Mutually exclusive from full_file_list
+        long_file_list: [str], optional
+            A list of all long files to be processed, files do not require standardized naming conventions
+            These files will all be used and will not be filtered by wfi_detector_str
+                (ie. validation testing, regression testing, 3rd party users)
+            relies on accurate long_dark_num_reads parameter
+            Mutually exclusive from full_file_list
+        wfi_detector_str: str, optional
+            Detector name used to filter full_file_list or prepped_files for processing
+        short_dark_num_reads: int, optional default={DARK_SHORT_NUM_READS}
+            Number of reads for every short file
+        long_dark_num_reads: int, optional default={DARK_LONG_NUM_READS}
+            Number of reads for every long file
+
+        """
+        # Gather the short_dark_file_list and long_dark_file_list to send to superdark class
+        if short_file_list or long_file_list:
+            if full_file_list:
+                raise ValueError(
+                    "full_file_list parameter is mutually exclusive from short_file_list and long_file_list"
+                )
+            short_dark_file_list = short_file_list
+            long_dark_file_list = long_file_list
+        else:
+            if full_file_list:
+                file_list = full_file_list
+            else:
+                # Standard case: use the pipeline prepped files
+                if len(self.prepped_files):
+                    file_list = self.prepped_files
+                else:
+                    raise ValueError(
+                        "Pipeline Files have not been prepped, run `prep_pipeline` or send in desired parameters. See Documentation for more info."
+                    )  # TODO - once we have documentation add link here
+
+            if wfi_detector_str:
+                # Filter list for detector
+                file_list = [file for file in file_list if FilenameParser(file).wfi_sci_number in wfi_detector_str]
+
+            short_dark_file_list, long_dark_file_list = self.extract_short_and_long_file_lists(file_list)
+
+        # TODO - Create configurable setting for what method to run
+        generate_superdark_dynamic_allocation = True
+
+        kwargs = {} # TODO add values to config file
+        if generate_superdark_dynamic_allocation:
+            logging.info("Running superdark dynamic")
+            superdark = SuperDarkDynamic(
+                short_dark_file_list,
+                long_dark_file_list,
+                short_dark_num_reads=short_dark_num_reads,
+                long_dark_num_reads=long_dark_num_reads,
+                outfile=outfile,
+            )
+            kwargs = {
+                "sig_clip_sd_low": sig_clip_sd_low,
+                "sig_clip_sd_high": sig_clip_sd_high,
+            }  # TODO - get batch sizes from config file
+        else:
+            logging.info("Running superdark batches")
+            superdark = SuperDarkBatches(
+                short_dark_file_list,
+                long_dark_file_list,
+                short_dark_num_reads=short_dark_num_reads,
+                long_dark_num_reads=long_dark_num_reads,
+                outfile=outfile,
+            )
+            kwargs = {
+                "sig_clip_sd_low": sig_clip_sd_low,
+                "sig_clip_sd_high": sig_clip_sd_high,
+                "short_batch_size": 4,
+                "long_batch_size": 4,
+            }  # TODO - get batch sizes from config file
+
+        superdark.generate_superdark(**kwargs)
+        superdark.generate_outfile()
+        self.superdark_file = superdark.outfile
 
     @log_info
     def run_pipeline(self, file_list=None):
@@ -107,26 +234,56 @@ class DarkPipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = self.prepped_files
+            file_list = self.superdark_file
 
-        tmp = MakeDevMeta(
-            ref_type=self.ref_type
-        )
+        tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_dark.mode,
             tmp.meta_dark.instrument_detector,
         )
 
-        rfp_dark = Dark(meta_data=tmp.meta_dark,
-                        file_list=file_list,
-                        ref_type_data=None,
-                        outfile=out_file_path,
-                        clobber=True
+        rfp_dark = Dark(
+            meta_data=tmp.meta_dark,
+            file_list=file_list,
+            ref_type_data=None,
+            outfile=out_file_path,
+            clobber=True,
         )
         # ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)  # TODO currently not used
-        read_pattern = [[1], [2,3], [5,6,7], [10]]
+        read_pattern = [[1], [2, 3], [5, 6, 7], [10]]
         rfp_dark.make_ma_table_resampled_cube(read_pattern=read_pattern)
         rfp_dark.make_dark_rate_image()
         rfp_dark.generate_outfile()
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
+
+    def restart_pipeline(self):
+        """
+        Run all steps of the pipeline.
+        Redefines base class method and includes `prep_superdark`
+        """
+        self.select_uncal_files()
+        self.prep_pipeline()
+        self.prep_superdark_file()
+        self.run_pipeline()
+
+    @staticmethod
+    def extract_short_and_long_file_lists(file_list):
+        short_dark_file_list = []
+        long_dark_file_list = []
+
+        for file in file_list:
+            program_id = FilenameParser(file).program_id
+            if DARK_SHORT_IDENTIFIER == program_id:
+                short_dark_file_list.append(file)
+            elif DARK_LONG_IDENTIFIER == program_id:
+                long_dark_file_list.append(file)
+
+        logging.debug("Short dark files ingested:")
+        for file in short_dark_file_list:
+            logging.debug(f"    {file}")
+        logging.debug("Long dark files ingested:")
+        for file in long_dark_file_list:
+            logging.debug(f"    {file}")
+
+        return short_dark_file_list, long_dark_file_list

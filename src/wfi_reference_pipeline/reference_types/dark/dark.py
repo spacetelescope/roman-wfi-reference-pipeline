@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-import roman_datamodels as rdm  # Used to open superdark vs asdf?
+import asdf
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
@@ -127,7 +127,7 @@ class Dark(ReferenceType):
         if self.file_list:
             # Get file list properties and select data cube.
             if len(self.file_list) > 1:
-                raise ValueError("A single super dark was expected in file_list..")
+                raise ValueError(f"A single super dark was expected in file_list. Received {self.file_list}")
             else:
                 self._get_data_cube_from_superdark_file()
 
@@ -166,10 +166,10 @@ class Dark(ReferenceType):
         """
 
         logging.info(
-            "OPENING - " + self.file_list
+            "OPENING - " + self.file_list[0]
         )  # Already checked that file_list is of length one.
-        # TODO Two options - 1 superdark data model, or 2 asdf open
-        data = rdm.open(self.file_list)
+        af = asdf.open(self.file_list[0]) # Use asdf open here for formatting
+        data = af.tree['data']
         if isinstance(data, u.Quantity):  # Only access data from quantity object.
             data = data.value
         self.data_cube = self.DarkDataCube(data, self.meta_data.type)
@@ -178,7 +178,7 @@ class Dark(ReferenceType):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
 
-        Must call amek_ma_table_resampled_data to finish populating
+        Must call make_ma_table_resampled_data to finish populating
 
         Parameters
         ----------

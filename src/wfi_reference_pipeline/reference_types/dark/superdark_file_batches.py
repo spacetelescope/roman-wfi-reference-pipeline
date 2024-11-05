@@ -10,6 +10,11 @@ import psutil
 from astropy import units as u
 from astropy.stats import sigma_clip
 
+from wfi_reference_pipeline.constants import (
+    DARK_LONG_NUM_READS,
+    DARK_SHORT_NUM_READS,
+)
+
 from .superdark import SuperDark
 
 
@@ -22,25 +27,23 @@ class SuperDarkBatches(SuperDark):
 
     def __init__(
         self,
-        input_path,
-        short_dark_file_list=None,
-        short_dark_num_reads=46,
-        long_dark_file_list=None,
-        long_dark_num_reads=98,
+        short_dark_file_list,
+        long_dark_file_list,
+        short_dark_num_reads=DARK_SHORT_NUM_READS,
+        long_dark_num_reads=DARK_LONG_NUM_READS,
+        wfi_detector_str=None,
         outfile=None,
     ):
-        """
+        f"""
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
-        short_dark_file_list: list, default = None
+        short_dark_file_list: list
             List of short dark exposure files.
-        short_dark_num_reads: int, default = 46
-            Number of reads in the short dark data cubes.
-        long_dark_file_list: list, default = None
+        long_dark_file_list: list
             List of long dark exposure files.
-        long_dark_num_reads: int, default = 98
+        short_dark_num_reads: int, default = {DARK_SHORT_NUM_READS}
+            Number of reads in the short dark data cubes.
+        long_dark_num_reads: int, default = {DARK_LONG_NUM_READS}
             Number of reads in the short dark data cubes.
         outfile: str, default="roman_superdark.asdf"
             File name written to disk.
@@ -48,11 +51,11 @@ class SuperDarkBatches(SuperDark):
 
         # Access methods of base class ReferenceType.
         super().__init__(
-            input_path=input_path,
-            short_dark_file_list=short_dark_file_list,
-            short_dark_num_reads=short_dark_num_reads,
-            long_dark_file_list=long_dark_file_list,
-            long_dark_num_reads=long_dark_num_reads,
+            short_dark_file_list,
+            long_dark_file_list,
+            short_dark_num_reads,
+            long_dark_num_reads,
+            wfi_detector_str=wfi_detector_str,
             outfile=outfile,
         )
 
@@ -107,14 +110,14 @@ class SuperDarkBatches(SuperDark):
                 num_files = len(self.short_dark_file_list) + len(self.long_dark_file_list)
             else:
                 num_files = len(self.long_dark_file_list)
+
             # Create temporary array for i'th read from all files.
             self.read_i_from_all_files = np.zeros((num_files, 4096, 4096), dtype=np.float32)
 
             short_dark_results = []
             # Process short dark files in batches if the read index is within the range of short dark reads
             if read_i < self.short_dark_num_reads:
-                short_dark_results = process_files_in_batches(self.input_path,
-                                                              self.short_dark_file_list,
+                short_dark_results = process_files_in_batches(self.short_dark_file_list,
                                                               short_batch_size,
                                                               read_i)
                 for i, result in enumerate(short_dark_results):
@@ -125,15 +128,15 @@ class SuperDarkBatches(SuperDark):
 
             # Need start at the short dark results to ensure correct placement and not overwrite short dark results
             # when doing long dark parallel processing.
-            long_dark_results = process_files_in_batches(self.input_path,
-                                                         self.long_dark_file_list,
-                                                         long_batch_size,
-                                                         read_i)
-            for i, result in enumerate(long_dark_results, start=len(short_dark_results)):
-                if result is not None:
-                    logging.debug(f"Assigning result from long dark file to index {i} in superdark"
-                                  f"for read {read_i}")
-                    self.read_i_from_all_files[i, :, :] = result
+            if self.long_dark_file_list:
+                long_dark_results = process_files_in_batches(self.long_dark_file_list,
+                                                            long_batch_size,
+                                                            read_i)
+                for i, result in enumerate(long_dark_results, start=len(short_dark_results)):
+                    if result is not None:
+                        logging.debug(f"Assigning result from long dark file to index {i} in superdark"
+                                    f"for read {read_i}")
+                        self.read_i_from_all_files[i, :, :] = result
 
             timing_method_file_loop_end = time.time()
             elapsed_file_loop_time = timing_method_file_loop_end - timing_method_file_loop_start
@@ -214,7 +217,7 @@ def get_read_from_file(file_path, read_i):
         logging.warning(f"Could not open {file_path} - {e}")
 
 
-def process_files_in_batches(file_path, file_list, batch_size, read_i):
+def process_files_in_batches(file_list, batch_size, read_i):
     """
     Processes a list of files in batches to read data for a specific read index. This function divides
     the list of files into batches, processes each batch in parallel using a ThreadPoolExecutor,
@@ -244,7 +247,7 @@ def process_files_in_batches(file_path, file_list, batch_size, read_i):
         # Specify that the batch size is the max number of workers or cores to open files.
         # Limit one core per file.
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
-            futures = [executor.submit(get_read_from_file, file_path.joinpath(file), read_i) for file in batch]
+            futures = [executor.submit(get_read_from_file, file, read_i) for file in batch]
             for future in as_completed(futures):
                 result = future.result()
                 if result is not None:

@@ -3,7 +3,6 @@ import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 
 from wfi_reference_pipeline.constants import WFI_DETECTORS
 
@@ -18,26 +17,23 @@ class SuperDark(ABC):
 
     def __init__(
         self,
-        input_path,
-        short_dark_file_list=None,
-        short_dark_num_reads=46,
-        long_dark_file_list=None,
-        long_dark_num_reads=98,
+        short_dark_file_list,
+        long_dark_file_list,
+        short_dark_num_reads,
+        long_dark_num_reads,
         wfi_detector_str=None,
         outfile=None,
     ):
         """
         Parameters
         ----------
-        input_path: str,
-            Path to input directory where files are located.
-        short_dark_file_list: list, default = None
-            List of short dark exposure files.
-        short_dark_num_reads: int, default = 46
+        short_dark_file_list: list
+            List of short dark exposure files. Can NOT be empty.
+        long_dark_file_list: list
+            List of long dark exposure files. Can be empty.
+        short_dark_num_reads: int
             Number of reads in the short dark data cubes.
-        long_dark_file_list: list, default = None
-            List of long dark exposure files.
-        long_dark_num_reads: int, default = 98
+        long_dark_num_reads: int
             Number of reads in the short dark data cubes.
         wfi_detector_str: str, default = None
             The FPA detector assigned number 01-18
@@ -45,36 +41,61 @@ class SuperDark(ABC):
             File name written to disk.
         """
 
+
+        if short_dark_num_reads < 1:
+            raise ValueError(
+                f"short_dark_num_reads {short_dark_num_reads} must be larger than 0"
+                )
+
+        if short_dark_num_reads > long_dark_num_reads:
+            if long_dark_num_reads > 0:
+                raise ValueError(
+                    f"long_dark_num_reads {long_dark_num_reads} must be 0 or larger than short_dark_num_reads {short_dark_num_reads}"
+                    )
+
+        if len(short_dark_file_list) == 0:
+            raise ValueError(
+                "Parameter 'short_dark_file_list' can not be empty list"
+                )
+        else:
+            #verify we wre working with strings and not Paths for metadata below
+            short_dark_file_list = [str(path) for path in short_dark_file_list]
+
+        if len(long_dark_file_list) == 0:
+            if long_dark_num_reads > 0:
+                raise ValueError(
+                    f"long_dark_num_reads {long_dark_num_reads} must be 0 if sending empty long_dark_file_list"
+                    )
+        else:
+            #verify we wre working with posixpath
+            long_dark_file_list = [str(path) for path in long_dark_file_list]
+
+
         # Specify file lists.
-        self.input_path = Path(input_path)
         self.short_dark_num_reads = short_dark_num_reads
         self.long_dark_num_reads = long_dark_num_reads
 
         # Initialize with short_dark_file_list and long_dark_file_list
-        if short_dark_file_list and long_dark_file_list:
-            self.short_dark_file_list = sorted(short_dark_file_list)
-            self.long_dark_file_list = sorted(long_dark_file_list)
-            self.file_list = short_dark_file_list + long_dark_file_list
-        else:
-            raise ValueError(
-                "Invalid input combination: both 'short_dark_file_list' and "
-                "'long_dark_file_list' must be provided together.")
+        self.short_dark_file_list = sorted(short_dark_file_list)
+        self.long_dark_file_list = sorted(long_dark_file_list)
+        self.file_list = short_dark_file_list + long_dark_file_list
 
         if wfi_detector_str is None:
             # Get detector strings from all files
             wfi_detector_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
                              re.search(r'(WFI\d{2})', file)]
-            print(wfi_detector_strings)
             if len(list(set(wfi_detector_strings))) > 1:
                 raise ValueError(
                     "More than one WFI detector ID found in file list provided.")
-            self.wfi_detector_str = list(set(wfi_detector_strings))  # Remove duplicates if needed
+            self.wfi_detector_str = list(set(wfi_detector_strings))[0]
         else:
             self.wfi_detector_str = wfi_detector_str
 
+        print(self.wfi_detector_str)
+
         if self.wfi_detector_str not in WFI_DETECTORS:
             raise ValueError(
-                "Must have a valid WFI detector ID; WFI01-WFI18")
+                f"Invalid WFI detector ID {self.wfi_detector_str}; Must be WFI01-WFI18")
 
         # TODO need filename to have date in YYYYMMDD format probably....need to get meta data from
         # files to populate superdark meta - what is relevant besides detector and filelist and mode?
@@ -120,7 +141,6 @@ class SuperDark(ABC):
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
 
-        # Enforce methods for all reference file reftype modules.
     @abstractmethod
     def generate_superdark(self):
         """
