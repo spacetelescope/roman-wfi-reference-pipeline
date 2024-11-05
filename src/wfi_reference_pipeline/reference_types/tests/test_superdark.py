@@ -73,7 +73,7 @@ class TestSuperDark:
 
         short_dark_files = ["/mock/input/path/file_WFI99_short.fits"]  # Invalid detector
 
-        with pytest.raises(ValueError, match="Must have a valid WFI detector ID"):
+        with pytest.raises(ValueError, match="Invalid WFI detector ID WFI99; Must be WFI01-WFI18"):
             TmpSuperDark(short_dark_files,
                          short_dark_files,
                          DARK_SHORT_NUM_READS,
