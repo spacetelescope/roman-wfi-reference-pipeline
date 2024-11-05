@@ -58,12 +58,19 @@ class SuperDark(ABC):
             raise ValueError(
                 "Parameter 'short_dark_file_list' can not be empty list"
                 )
+        else:
+            #verify we wre working with strings and not Paths for metadata below
+            short_dark_file_list = [str(path) for path in short_dark_file_list]
 
         if len(long_dark_file_list) == 0:
             if long_dark_num_reads > 0:
                 raise ValueError(
                     f"long_dark_num_reads {long_dark_num_reads} must be 0 if sending empty long_dark_file_list"
                     )
+        else:
+            #verify we wre working with posixpath
+            long_dark_file_list = [str(path) for path in long_dark_file_list]
+
 
         # Specify file lists.
         self.short_dark_num_reads = short_dark_num_reads
