@@ -3,7 +3,6 @@ import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 
 from wfi_reference_pipeline.constants import WFI_DETECTORS
 
