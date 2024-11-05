@@ -46,7 +46,7 @@ meta = {
 }
 
 test_meta = MakeTestMeta(REF_TYPE_DARK)
-def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/DEV/scratch'):
+def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/DEV/scratch'):
     """
     Generate short dark files with controlled inputs using simulate_dark_reads and save as ASDF files.
 
@@ -54,26 +54,26 @@ def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/
     ----------
     output_dir: str
         Directory where the files will be saved.
-    n_files: int, default = 8
+    n_files: int, default = 9
         Number of short dark files to generate.
     n_reads: int, default = 10
         Number of reads for each file.
 
     The function generates files that are described by:
         (1) short dark file with a dark rate of 1
-        (4) short dark files with a dark rate of 2
+        (5) short dark files with a dark rate of 2
         (1) short dark file with a dark rate of 3
         (1) short dark file with a dark rate of 8
         (1) short dark file with a dark rate of 25
 
-    The mean of these dark rates is 5.625 with no outlier rejection.
-    The 1-sigma standard deviation is 7.6 and the 3-sigma std dev is 22.8
+    The mean of these dark rates is 5.2222222 with no outlier rejection.
+    The 1-sigma standard deviation is 7.254 and the 3-sigma std dev is 21.761
 
     If sigma clipping is set to 1-sigma, the rate values of 8 and 25 should be rejected yielding a mean dark rate of 2
     If sigma clipping is set to 3-sigma, the rate value of 25 should be rejected.
-        The average dark rate in this case is 2.85.
+        The average dark rate in this case is 2.75.
     """
-    rate_values = [1, 2, 2, 2, 2, 3, 8, 25]  # Values for each file
+    rate_values = [1, 2, 2, 2, 2, 2, 3, 8, 25]  # Values for each file
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
@@ -90,6 +90,7 @@ def generate_short_dark_files(n_files=8, n_reads=10, output_dir='/grp/roman/RFP/
             num_hot_pix_var=0,
             num_warm_pix=0,
             num_warm_pix_var=0,
+            num_dead_pix=0,
             num_dead_pix_var=0,
             noise_mean=0.0,
             noise_var=0.0
@@ -206,13 +207,28 @@ def test_validate_superdark_values(input_dir='/grp/roman/RFP/DEV/scratch'):
     # Make the files (or dont if they already exist)
     short_files, long_files = generate_files(input_dir)
 
-    # Set sigma clipping level to 1 or 3 sigma
+    # Set sigma clipping level to 1 or 3 sigma (keep them the same when doing this test)
     sigma_clip_low_bound = 1
-    sigma_clip_high_bound = 3
+    sigma_clip_high_bound = 1
+
+    # TODO JUST VERIFY NOTHING HAS NANS
+    # for file in short_files:
+    #     with asdf.open(file) as af:
+    #         data = af.tree["roman"]["data"]
+    #         nan_indexes = np.argwhere(np.isnan(data))
+    #         print(f"SHORT FILE: {nan_indexes}")
 
     # Generate superdark from only short darks
     dark_pipeline = DarkPipeline()
     dark_pipeline.prep_superdark_file(short_file_list=short_files, short_dark_num_reads=10, long_dark_num_reads=0, sig_clip_sd_low=sigma_clip_low_bound, sig_clip_sd_high=sigma_clip_high_bound, outfile="validate_superdark_test_prepped_superdark.asdf")
+
+    # TODO NOTE TEMPORARY CODE TO VERIFY THERE ARE NO NANS IN SHORT OR LONG FILES.  DELETE AFTER VERIFICATION
+    file = dark_pipeline.superdark_file
+    af = asdf.open(file)
+    data = af.tree["data"]
+    nan_indexes = np.argwhere(np.isnan(data))
+    print(f"SUPERDARK FILE NAN INDEXES: {nan_indexes}")
+    # TODO FINISH CHECK FOR NANS DELETE CODE
 
     # Check 1-sigma and 3-sigma rejection and dark rates. Use the Dark() to compute the mean dark rate from the generated
     # superdark.asdf file.
@@ -224,7 +240,7 @@ def test_validate_superdark_values(input_dir='/grp/roman/RFP/DEV/scratch'):
 
 
     # SAPP TODO - YOU ARE HERE
-    # CURRENTLY SOME NAN values exist that are causing stddev not to work.
+    # SIGMA CLIP WAS RETURNING NAN values.  Need differen't sigma clip
     # need to verify
     # https://innerspace.stsci.edu/display/RI/SuperDark+-+Notes%2C+Planning%2C+and+Prospects
     # mean = 5.625
@@ -241,6 +257,13 @@ def test_validate_superdark_values(input_dir='/grp/roman/RFP/DEV/scratch'):
     mean_all = np.nanmean(data_cube_array)
     print(f"standard deviation of entire cube is: {std_dev_all}")
     print(f"mean of entire cube is: {mean_all}")
+
+    #TODO remove this debug code when no longer needed
+    for ix in range(0, 10):
+        print()
+        print(f"data_cube_array slice `{ix},0:10,0:10`")
+        print(data_cube_array[ix,0:10,0:10])
+
 
 
     # Generate superdark from BOTH short and long darks.
@@ -265,8 +288,8 @@ def generate_files(input_dir='/grp/roman/RFP/DEV/scratch'):
     input_path = Path(input_dir)
     files = [file for file in input_path.iterdir() if file.is_file()]
     asdf_files = [file for file in files if ".asdf" in file.name]
-    short_files = [str(file) for file in asdf_files if "short" in file.name]
-    long_files = [str(file) for file in asdf_files if "long" in file.name]
+    short_files = [file for file in asdf_files if "short" in file.name]
+    long_files = [file for file in asdf_files if "long" in file.name]
 
     if len(short_files) == 0:
         short_files = generate_short_dark_files()
