@@ -2,10 +2,16 @@ import logging
 import math
 import os
 import asdf
+import crds
+import subprocess
+import datetime
+from crds.client import api
+from crds import getrecommendations
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
+from astropy.time import Time
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
@@ -108,7 +114,6 @@ class ReadNoise(ReferenceType):
         if self.file_list:
             # Get file list properties and select data cube.
             self.num_files = len(self.file_list)
-            self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
             if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
@@ -299,6 +304,68 @@ class ReadNoise(ReferenceType):
         )
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
         return self.cds_noise
+
+    def apply_gain_from_crds(self,
+                             crds_server="https://roman-crds-test.stsci.edu",
+                             crds_path='./',
+                             crds_context=None):
+
+        # Check if the provided crds_path exists, if not use the current directory
+        if not os.path.exists(crds_path):
+            print(f"Directory {crds_path} does not exist. Using the current directory instead.")
+            crds_path = './'
+        os.environ["CRDS_PATH"] = crds_path
+        print('The path to where gain files will be downloaded is: ', os.environ.get("CRDS_PATH"))
+
+        if crds_context is None:
+            crds_context = crds.get_default_context()
+        print('The CRDS context is: ', crds_context)
+
+        # TODO cant seem to figure out how to set the CRDS server in python to override the environment variable
+        # TODO and then get the proper context; switching from TVAC to TEST
+        # print(os.environ.get("CRDS_SERVER_URL"))
+        # os.environ["CRDS_SERVER_URL"] = crds_server
+        # print('The CRDS server is:')
+        # print(os.environ.get("CRDS_SERVER_URL"))
+
+        print(os.environ.get("CRDS_SERVER_URL"))
+
+        # Need to get all of the gain files from the default context from CRDS on disk. Need all of the file names and
+        # need the context those files are associated with in order to download only the most recent or appropriate
+        # gain reference files.
+        gain_files_crds = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
+        crds_context = crds.get_default_context()
+        results = api.dump_references(crds_context, gain_files_crds)
+        # results is a dictionary with {filename: 'path to download file' + filename}
+        # example: 'roman_wfi_gain_0001.asdf': crds_path + '/references/roman/wfi/roman_wfi_gain_0001.asdf'
+
+        current_time_iso = Time(datetime.datetime.now(), format="datetime").isot
+        parameters = {'ROMAN.META.INSTRUMENT.NAME': 'WFI',
+                      'ROMAN.META.INSTRUMENT.DETECTOR': self.meta_data.instrument_detector,
+                      'ROMAN.META.EXPOSURE.TYPE': self.meta_data.type,
+                      'ROMAN.META.EXPOSURE.START_TIME': current_time_iso}
+
+        # Call getrecommendations to get the reference file name for the specific detector and exposure type: i.e. mode
+        # example: WFI01 and imaging mode WFI_IMAGE (WIM) or spectral mode WFI_GRISM or WFI_PRISM (WSM)
+        recommendation = crds.getrecommendations(
+            parameters=parameters,
+            reftypes=['GAIN'],
+            context=crds_context,
+            observatory="roman",
+        )
+        gain_file_name = recommendation['gain']
+
+        # Now look through downloaded reference files and get proper match.
+        # NOTE - CRDS renames files making this query necessary and not assuming the downloaded files are numerically
+        # in the same order as WFI01-WFI18
+        gain_file_path = results.get(gain_file_name)
+
+        # Open the gain file to get the data array and multiply the readnoise_image from the data cube by the gain
+        # per pixel
+        af = asdf.open(gain_file_path)
+        gain_image = af.tree['roman']['data']
+
+        self.readnoise_image *= gain_image
 
     def calculate_error(self):
         """
