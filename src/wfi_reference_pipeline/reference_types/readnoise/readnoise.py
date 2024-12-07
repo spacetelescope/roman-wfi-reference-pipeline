@@ -306,15 +306,15 @@ class ReadNoise(ReferenceType):
         return self.cds_noise
 
     def apply_gain_from_crds(self,
+                             tmp_crds_path='./',
                              crds_server="https://roman-crds-test.stsci.edu",
-                             crds_path='./',
                              crds_context=None):
 
         # Check if the provided crds_path exists, if not use the current directory
-        if not os.path.exists(crds_path):
-            print(f"Directory {crds_path} does not exist. Using the current directory instead.")
-            crds_path = './'
-        os.environ["CRDS_PATH"] = crds_path
+        if not os.path.exists(tmp_crds_path):
+            print(f"Directory {tmp_crds_path} does not exist. Using the current directory instead.")
+            tmp_crds_path = './'
+        os.environ["CRDS_PATH"] = tmp_crds_path
         print('The path to where gain files will be downloaded is: ', os.environ.get("CRDS_PATH"))
 
         if crds_context is None:
@@ -328,7 +328,7 @@ class ReadNoise(ReferenceType):
         # print('The CRDS server is:')
         # print(os.environ.get("CRDS_SERVER_URL"))
 
-        print(os.environ.get("CRDS_SERVER_URL"))
+        print('Accessing the CRDS server:', os.environ.get("CRDS_SERVER_URL"))
 
         # Need to get all of the gain files from the default context from CRDS on disk. Need all of the file names and
         # need the context those files are associated with in order to download only the most recent or appropriate
@@ -359,11 +359,18 @@ class ReadNoise(ReferenceType):
         # NOTE - CRDS renames files making this query necessary and not assuming the downloaded files are numerically
         # in the same order as WFI01-WFI18
         gain_file_path = results.get(gain_file_name)
+        print(gain_file_path)
 
         # Open the gain file to get the data array and multiply the readnoise_image from the data cube by the gain
         # per pixel
-        af = asdf.open(gain_file_path)
-        gain_image = af.tree['roman']['data']
+        with asdf.open(gain_file_path) as af:
+            gain_meta = af.tree['roman']['meta']
+            print(gain_meta)
+            gain_image = af.tree['roman']['data']
+
+        if isinstance(gain_image, u.Quantity):  # Only access data from quantity object.
+            gain_image = gain_image.value
+            logging.debug("Quantity object detected. Extracted data values.")
 
         self.readnoise_image *= gain_image
 
