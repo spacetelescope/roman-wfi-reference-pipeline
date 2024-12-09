@@ -310,6 +310,41 @@ class ReadNoise(ReferenceType):
                              crds_server="https://roman-crds-test.stsci.edu",
                              crds_context=None):
 
+        """
+        # TODO Ru sent the below on 12/9 for follow-up
+        from crds.core import config as crds_config
+        old_state = crds_config.get_crds_state()
+        new_state = dict(old_state)
+
+        # optional..probably not advisable unless you are changing observatories and CRDS paths etc
+        # crds_config.clear_crds_state()
+
+        # these key-vals can now be set
+        new_state["CRDS_SERVER_URL"] = "https://roman-crds-tvac.stsci.edu"
+        crds_config.set_crds_state(new_state)
+
+        The CRDS test suite changes configuration quite a bit during a single pytest run, and we do
+        something similar to the above
+        https://github.com/spacetelescope/crds/blob/f7cad6ca48bced760351dd52985e9cc5e00b92b0/conftest.py#L146
+
+        # end of Ru message and notes!
+
+        This method downloads all of the gain reference files from CRDS that is context and server specific to
+        local directory. The default behavior is to get the most recent files with the closest useafter and the
+        roman-crds-test.stsci.edu server. Once the gain files are downloaded into the default scratch directory,
+        the detector in the ReadNoise module is matched to the gain file, opened, and the readnoise array is
+        multiplied by the gain values per pixel.
+
+        Parameters
+        ----------
+        tmp_crds_path: string, default = '/';
+            Path to download files from CRDS. Default set to cwd or pwd.
+        crds_server: string, default = "https://roman-crds-test.stsci.edu"
+            Roman CRDS server. Test, Operations, TVAC are allowed.
+        crds_context: default = None;
+            Specify a context. If context is None, the most recent context is used if None provided.
+        """
+
         # Check if the provided crds_path exists, if not use the current directory
         if not os.path.exists(tmp_crds_path):
             print(f"Directory {tmp_crds_path} does not exist. Using the current directory instead.")
