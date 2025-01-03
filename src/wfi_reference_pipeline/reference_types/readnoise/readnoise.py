@@ -110,6 +110,10 @@ class ReadNoise(ReferenceType):
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
         self.num_files = 0
 
+        self.residual_cube = None
+        self.clipped_res_cube = None
+
+
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
@@ -198,6 +202,7 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
         self.make_rate_image_from_data_cube(fit_order=1)
         self.data_cube.make_ramp_model()
+        print('Making read noise image')
         self.readnoise_image = self.comp_ramp_res_var()
 
     def make_rate_image_from_data_cube(self, fit_order=1):
@@ -239,18 +244,28 @@ class ReadNoise(ReferenceType):
         self.ramp_res_var = np.zeros(
             (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
-        residual_cube = self.data_cube.ramp_model - self.data_cube.data
-        clipped_res_cube = sigma_clip(
-            residual_cube,
+        self.residual_cube = self.data_cube.ramp_model - self.data_cube.data
+
+        self.clipped_res_cube = sigma_clip(
+            self.residual_cube,
             sigma_lower=sig_clip_res_low,
             sigma_upper=sig_clip_res_high,
-            cenfunc=np.mean,
+            cenfunc=np.median,
             axis=0,
-            masked=False,
+            masked=True,
             copy=False,
         )
-        std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std * std)
+        # Masked = True in sigma clip now returns a masked array with any clipped values being removed
+        # from the returned list.
+
+        contains_nans_residual = np.isnan(self.clipped_res_cube).any()
+        print("clipped_res_cube contains NaNs:", contains_nans_residual)
+        # Count the total number of NaNs in residual_cube
+        num_nans_residual = np.isnan(self.clipped_res_cube).sum()
+        print("Number of NaNs in clipped_res_cube:", num_nans_residual)
+
+        std = np.std(self.clipped_res_cube, axis=0)
+        self.ramp_res_var = np.float32(std)
         return self.ramp_res_var
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):

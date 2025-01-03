@@ -32,12 +32,33 @@ outfile = '/grp/roman/RFP/DEV/scratch/rfp_readnoise_dev_CRDS.asdf'
 # Use dev meta maker for READNOISE
 tmp2 = MakeDevMeta(ref_type='READNOISE')
 # Set simulated cube read noise variance for testing ReadNoise().
-sim_readnoise_var = 5
+sim_readnoise_std = 5
 # Create simulated data cube. Adjust parameters as desired.
-sim_dev_cube, dev_rate_image = simulate_dark_reads(40,
-                                                   dark_rate=1,
-                                                   noise_mean=15,
-                                                   noise_var=np.sqrt(sim_readnoise_var))
+
+# dark_rate=0.005,
+# dark_rate_var=0.001,
+# hot_pix_rate=0.015,
+# hot_pix_rate_var=0.010,
+# num_hot_pix=2000,
+# num_hot_pix_var=0,
+# warm_pix_rate=0.050,
+# warm_pix_rate_var=0.010,
+# num_warm_pix=1000,
+# num_warm_pix_var=0,
+# dead_pix_rate=0.0001,
+# dead_pix_rate_var=0.00001,
+# num_dead_pix=500,
+# num_dead_pix_var=0,
+# noise_mean=0.001,
+                    
+sim_dev_cube, dev_rate_image = simulate_dark_reads(55,
+                                                   dark_rate=.001,
+                                                   dark_rate_var=0.0,
+                                                   num_hot_pix=0,
+                                                   num_warm_pix=0,
+                                                   num_dead_pix=0,
+                                                   noise_mean=200,
+                                                   noise_std=sim_readnoise_std)
 # Instantiate rfp readnoise object.
 rfp_readnoise2 = ReadNoise(meta_data=tmp.meta_readnoise,
                            ref_type_data=sim_dev_cube,
