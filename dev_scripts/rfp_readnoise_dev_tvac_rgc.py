@@ -38,24 +38,65 @@ for file in files:
 # Convert defaultdict to a regular dict (optional)
 wfi_filelists = dict(wfi_filelists)
 
-for i in range(1, 19):
-    wfi_id = f'WFI{i:02}'
-    file_list = wfi_filelists.get(wfi_id, [])
-    output_dir = '/grp/roman/RFP/TVAC/TVAC1/rfp_readnoise_first_pass/'
-    outfile = output_dir + 'roman_tvac1_readnoise_rfp_first_pass_'+wfi_id + '.asdf'
+do_all = False
+if do_all:
 
-    tmp = MakeDevMeta(ref_type='READNOISE')
-    tmp.meta_readnoise.use_after = '2023-08-01T00:00:00.000'
-    tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from activity ' \
-                                     'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC'
-    tmp.meta_readnoise.instrument_detector = wfi_id
+    for i in range(1, 19):
+        wfi_id = f'WFI{i:02}'
+        file_list = wfi_filelists.get(wfi_id, [])
+        output_dir = '/grp/roman/RFP/TVAC/TVAC1/rfp_readnoise_first_pass/'
+        outfile = output_dir + 'roman_tvac1_readnoise_rfp_first_pass_'+wfi_id + '.asdf'
 
-    rfp_tvac1_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
-                                    file_list=file_list,
-                                    outfile=outfile,
-                                    clobber=True)
-    rfp_tvac1_readnoise.make_readnoise_image()
-    rfp_tvac1_readnoise.apply_gain_from_crds(tmp_crds_path='/grp/roman/RFP/DEV/scratch/')
-    # Save file.
-    rfp_tvac1_readnoise.generate_outfile()
-    print('Made reference file', rfp_tvac1_readnoise.outfile)
+        tmp = MakeDevMeta(ref_type='READNOISE')
+        tmp.meta_readnoise.use_after = '2023-08-01T00:00:00.000'
+        tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from activity ' \
+                                        'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC removed.'
+        tmp.meta_readnoise.instrument_detector = wfi_id
+
+        rfp_tvac1_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
+                                        file_list=file_list,
+                                        outfile=outfile,
+                                        clobber=True)
+        rfp_tvac1_readnoise.make_readnoise_image()
+        #rfp_tvac1_readnoise.apply_gain_from_crds(tmp_crds_path='/grp/roman/RFP/DEV/scratch/')
+        # Save file.
+        rfp_tvac1_readnoise.generate_outfile()
+        print('Made reference file', rfp_tvac1_readnoise.outfile)
+
+
+i = 1
+wfi_id = f'WFI{i:02}'
+file_list_wfi01 = wfi_filelists.get(wfi_id, [])
+
+output_dir = '/grp/roman/RFP/TVAC/TVAC1/rfp_readnoise_first_pass/'
+outfile = output_dir + 'roman_testing_readnoise_'+wfi_id + '.asdf'
+
+tmp = MakeDevMeta(ref_type='READNOISE')
+tmp.meta_readnoise.use_after = '2023-08-01T00:00:00.000'
+tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from activity ' \
+                                'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC removed.'
+tmp.meta_readnoise.instrument_detector = wfi_id
+
+from operator import itemgetter
+
+indices = [0, 10, 50, 90]
+file_list_wfi01_files = list(itemgetter(*indices)(file_list_wfi01))
+
+rfp_tvac1_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
+                                file_list=file_list_wfi01_files,
+                                outfile=outfile,
+                                clobber=True)
+
+rfp_tvac1_readnoise.make_readnoise_image()
+
+print('The current path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
+print('The current CRDS server is:', os.environ.get("CRDS_SERVER_URL"))
+rfp_tvac1_readnoise.apply_gain_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/', 
+                                         crds_server="https://roman-crds-test.stsci.edu")
+
+
+rfp_tvac1_readnoise.apply_gain_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/', 
+                                         crds_server="https://roman-crds-tvac.stsci.edu")
+
+
+

@@ -183,6 +183,7 @@ class ReadNoise(ReferenceType):
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
+        print('Using the file', fl_reads_ordered_list[0][0])
         self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
     def make_readnoise_image(self):
@@ -256,7 +257,8 @@ class ReadNoise(ReferenceType):
             copy=False,
         )
         # Masked = True in sigma clip now returns a masked array with any clipped values being removed
-        # from the returned list.
+        # from the returned list. If Masked = False nan's are used for values that have been identified 
+        # as being clipped.
 
         contains_nans_residual = np.isnan(self.clipped_res_cube).any()
         print("clipped_res_cube contains NaNs:", contains_nans_residual)
@@ -321,9 +323,9 @@ class ReadNoise(ReferenceType):
         return self.cds_noise
 
     def apply_gain_from_crds(self,
-                             tmp_crds_path='./',
-                             crds_server="https://roman-crds-test.stsci.edu",
-                             crds_context=None):
+                            crds_path='/grp/roman/RFP/DEV/scratch/',
+                            crds_server="https://roman-crds-test.stsci.edu",
+                            crds_context=None):
 
         """
         # TODO Ru sent the below on 12/9 for follow-up
@@ -344,32 +346,58 @@ class ReadNoise(ReferenceType):
 
         # end of Ru message and notes!
 
-        This method downloads all of the gain reference files from CRDS that is context and server specific to
-        local directory. The default behavior is to get the most recent files with the closest useafter and the
-        roman-crds-test.stsci.edu server. Once the gain files are downloaded into the default scratch directory,
-        the detector in the ReadNoise module is matched to the gain file, opened, and the readnoise array is
-        multiplied by the gain values per pixel.
+        This method downloads all the gain reference files from CRDS that are context and server-specific to
+        a local directory. The default behavior is to get the most recent files with the closest use-after date
+        and the `roman-crds-test.stsci.edu` server. Once downloaded, the gain files are matched to the detector
+        in the ReadNoise module, and the readnoise array is multiplied by the per-pixel gain values.
 
         Parameters
         ----------
-        tmp_crds_path: string, default = '/';
-            Path to download files from CRDS. Default set to cwd or pwd.
-        crds_server: string, default = "https://roman-crds-test.stsci.edu"
-            Roman CRDS server. Test, Operations, TVAC are allowed.
+        crds_path: string, default = '/grp/roman/RFP/DEV/scratch/';
+            Path to download files from CRDS. Defaults to the scratch directory.
+            If a different path is specified, it must exist and have read/write permissions.
+        crds_server: string, default = "https://roman-crds-test.stsci.edu";
+            Roman CRDS server. Options: Test, Operations, TVAC.
         crds_context: default = None;
-            Specify a context. If context is None, the most recent context is used if None provided.
+            Specify a CRDS context. If `None`, the most recent context is used.
         """
 
-        # Check if the provided crds_path exists, if not use the current directory
-        if not os.path.exists(tmp_crds_path):
-            print(f"Directory {tmp_crds_path} does not exist. Using the current directory instead.")
-            tmp_crds_path = './'
-        os.environ["CRDS_PATH"] = tmp_crds_path
-        print('The path to where gain files will be downloaded is: ', os.environ.get("CRDS_PATH"))
+        # Validate the method input tmp_crds_path
+        if crds_path != '/grp/roman/RFP/DEV/scratch/':
+            if not os.path.exists(crds_path):
+                raise ValueError(f"Provided directory '{crds_path}' does not exist.")
+            if not os.access(crds_path, os.R_OK | os.W_OK):
+                raise PermissionError(f"Provided directory '{crds_path}' does not have read/write permissions.")
+        else:
+            print(f"Using default tmp_crds_path to set environment variable as CRDS_PATH: {crds_path}")
+            logging.info("Calculating CDS noise.")
+        # Update the environment variable to the tmp_crds_path
+        os.environ["CRDS_PATH"] = crds_path
+        print('The path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
 
+        # Check that the provided CRDS URL is one of the test, ops, or tvac servers
+        valid_servers = [
+            "https://roman-crds-test.stsci.edu",
+            "https://roman-crds.stsci.edu",
+            "https://roman-crds-tvac.stsci.edu"
+        ]
+        if crds_server not in valid_servers:
+            raise ValueError(f"Invalid CRDS server '{crds_server}'. Must be one of: {', '.join(valid_servers)}")
+        else:
+            print(f"Accessing the CRDS server: {crds_server}")
+            os.environ["CRDS_SERVER_URL"] = crds_server
+
+        # Sync CRDS for all mappings.
+        result = subprocess.run(["crds", "sync", "--all"], capture_output=True, text=True)
+        print("Output:", result.stdout)
+        if result.returncode != 0:
+            print("Error during CRDS sync:", result.stderr)
+            raise RuntimeError("CRDS sync failed.")
+
+        # Get CRDS context
         if crds_context is None:
-            crds_context = crds.get_default_context()
-        print('The CRDS context is: ', crds_context)
+            crds_context = api.get_default_context()
+        print('The CRDS context is:', crds_context)
 
         # TODO cant seem to figure out how to set the CRDS server in python to override the environment variable
         # TODO and then get the proper context; switching from TVAC to TEST
@@ -378,13 +406,10 @@ class ReadNoise(ReferenceType):
         # print('The CRDS server is:')
         # print(os.environ.get("CRDS_SERVER_URL"))
 
-        print('Accessing the CRDS server:', os.environ.get("CRDS_SERVER_URL"))
-
         # Need to get all of the gain files from the default context from CRDS on disk. Need all of the file names and
         # need the context those files are associated with in order to download only the most recent or appropriate
         # gain reference files.
         gain_files_crds = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
-        crds_context = crds.get_default_context()
         results = api.dump_references(crds_context, gain_files_crds)
         # results is a dictionary with {filename: 'path to download file' + filename}
         # example: 'roman_wfi_gain_0001.asdf': crds_path + '/references/roman/wfi/roman_wfi_gain_0001.asdf'
