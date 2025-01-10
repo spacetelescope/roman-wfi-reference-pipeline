@@ -5,6 +5,32 @@ from pathlib import Path
 from collections import defaultdict
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
+from wfi_reference_pipeline.reference_types.readnoise.readnoise import get_gain_files_from_crds, clean_crds_path
+from operator import itemgetter
+
+
+# Need to ensure that the environment variables in .bash_profile are set to tvac and to the right directory 
+print('The current path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
+print('The current CRDS server is:', os.environ.get("CRDS_SERVER_URL"))
+
+gain_files_path = os.environ.get("CRDS_PATH")
+crds_server_from_env = os.environ.get("CRDS_SERVER_URL")
+
+print('Gain files path:', gain_files_path)
+print('The server from the crds server env var:', crds_server_from_env)
+
+# TODO somehow want to make this more flexible and on the fly work flow in the RFP.
+crds_path='/grp/roman/RFP/DEV/scratch/'
+crds_server="https://roman-crds-tvac.stsci.edu"
+
+# Clear the path of old mappings, reference files, etc.
+clean_crds_path(crds_path)
+
+tvac_crds_context, downloaded_crds_gain_files_dict = get_gain_files_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/',
+                                                                         crds_server="https://roman-crds-tvac.stsci.edu",
+                                                                         crds_context=None)
+
+
 
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
 tvac1_totalnoise_dir = '/grp/roman/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
@@ -77,8 +103,6 @@ tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from act
                                 'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC removed.'
 tmp.meta_readnoise.instrument_detector = wfi_id
 
-from operator import itemgetter
-
 indices = [0, 10, 50, 90]
 file_list_wfi01_files = list(itemgetter(*indices)(file_list_wfi01))
 
@@ -88,15 +112,10 @@ rfp_tvac1_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                                 clobber=True)
 
 rfp_tvac1_readnoise.make_readnoise_image()
-
-print('The current path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
-print('The current CRDS server is:', os.environ.get("CRDS_SERVER_URL"))
-rfp_tvac1_readnoise.apply_gain_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/', 
-                                         crds_server="https://roman-crds-test.stsci.edu")
-
-
-rfp_tvac1_readnoise.apply_gain_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/', 
-                                         crds_server="https://roman-crds-tvac.stsci.edu")
+print(np.mean(rfp_tvac1_readnoise.readnoise_image))
+rfp_tvac1_readnoise.apply_gain_from_crds(gain_files_dict=downloaded_crds_gain_files_dict, 
+                                         crds_context=tvac_crds_context)
+print(np.mean(rfp_tvac1_readnoise.readnoise_image))
 
 
 
