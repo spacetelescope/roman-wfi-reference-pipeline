@@ -111,7 +111,7 @@ class Polynomial():
         # Make the modeling matrix. This is used to model the data
         # from the fit
         self.B_x_pinvB = np.matmul(self.B, self.pinvB)
-        
+
     # Fitter
     def polyfit(self, D):
         # Print a warning if not float32
@@ -123,7 +123,7 @@ class Polynomial():
         # Fit
         R = np.matmul(self.pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
         return(R)
-    
+
     # Modeler
     def polyval(self, D):
         # Print a warning if not float32
@@ -134,7 +134,7 @@ class Polynomial():
         # Model
         M = np.matmul(self.B_x_pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
         return(M)
-    
+
 def get_slope(data):
     sh = data.shape
     nz = sh[0]
@@ -184,76 +184,3 @@ def create_normalized_slope_image(filelist, sigma, boxwidth):
 
     # Returning the normalized image
     return master_slope / smoothed_image
-
-
-def get_adjacent_pix(x_val, y_val, im):
-    """
-    Identify the pixels adjacent to a given pixel.
-    Ex, note that x are the returned coordinates.
-    [ ][x][ ]
-    [x][o][x]
-    [ ][x][ ]
-    """
-    y_dim, x_dim = im.shape
-
-    if ((x_val > 0) and (x_val < (x_dim-1))):
-
-        if ((y_val > 0) and (y_val < y_dim-1)):
-            adj_x = np.array([x_val, x_val+1, x_val, x_val-1])
-            adj_y = np.array([y_val+1, y_val, y_val-1, y_val])
-
-        elif y_val == 0:
-            adj_x = np.array([x_val, x_val+1, x_val-1])
-            adj_y = np.array([y_val+1, y_val, y_val])
-
-        elif y_val == (y_dim-1):
-            adj_x = np.array([x_val+1, x_val, x_val-1])
-            adj_y = np.array([y_val, y_val-1, y_val])
-
-    elif x_val == 0:
-
-        if ((y_val > 0) and (y_val < y_dim-1)):
-            adj_x = np.array([x_val, x_val+1, x_val])
-            adj_y = np.array([y_val+1, y_val, y_val-1])
-
-        elif y_val == 0:
-            adj_x = np.array([x_val, x_val+1])
-            adj_y = np.array([y_val+1, y_val])
-
-        elif y_val == (y_dim-1):
-            adj_x = np.array([x_val+1, x_val])
-            adj_y = np.array([y_val, y_val-1])
-
-    elif x_val == (x_dim-1):
-
-        if ((y_val > 0) and (y_val < y_dim-1)):
-
-            adj_x = np.array([x_val, x_val, x_val-1])
-            adj_y = np.array([y_val+1, y_val-1, y_val])
-
-        elif y_val == 0:
-
-            adj_x = np.array([x_val, x_val-1])
-            adj_y = np.array([y_val+1, y_val])
-
-        elif y_val == (y_dim-1):
-
-            adj_x = np.array([x_val, x_val-1])
-            adj_y = np.array([y_val-1, y_val])
-
-    return adj_y, adj_x
-
-
-# TODO should this be from romancal instead?
-# Existing function in basic_calibration's CalDCL but for Detector Characterization Lab data
-def subtract_reference_pixels(cube):
-    """
-    Subtract the reference pixel average from the cube.
-    """
-    ref_pix = np.concatenate(cube[:, :, :4],
-                             cube[:, :, -4:],
-                             axis=2)
-
-    new_cube = (cube.shape[0], cube)
-
-    return None

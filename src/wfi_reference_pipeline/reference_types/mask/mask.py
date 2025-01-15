@@ -29,12 +29,6 @@ class Mask(ReferenceType):
         bit_mask=None,
         outfile="roman_mask.asdf",
         clobber=False,
-        boxwidth=15,
-        sigma_stats=3.,
-        dead_sigma=5.,
-        max_dead_signal=0.05,
-        max_low_qe_signal=0.5,
-        max_open_adj_signal=1.05
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -61,16 +55,6 @@ class Mask(ReferenceType):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
-
-        boxwidth: int, default = 15
-            The width of the smoothing kernel.
-
-        sigma_stats: float, default = 3.
-            Sigma value for sigma clipping the master + normalized image.
-
-        dead_sigma: float, default = 5.
-            Sigma value used when determing DEAD pixels. Number of standard 
-            deviations below the mean at which a pixel is considered DEAD and DO_NOT_USE.
         ---------
 
         See reference_type.py base class for additional attributes and methods.
@@ -85,21 +69,6 @@ class Mask(ReferenceType):
             outfile=outfile,
             clobber=clobber
         )
-
-        self.boxwidth = boxwidth
-        self.sigma_stats = sigma_stats
-        self.dead_sigma = dead_sigma
-        self.max_dead_signal = max_dead_signal
-        self.max_low_qe_signal = max_low_qe_signal
-        self.max_open_adj_signal = max_open_adj_signal
-
-        ## if they add an array will they still need filelist,,, they're compyting
-        # Multiple flags are identified via normalized image
-        self.normalized_image = helper.create_normalized_slope_image(
-            filelist=self.file_list,
-            sigma=self.sigma_stats,
-            boxwidth=self.boxwidth
-            )
 
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaMask):
@@ -126,21 +95,144 @@ class Mask(ReferenceType):
         #     self.mask_image = ref_type_data
         #     logging.debug("Ready to generate reference file.")
 
-    def make_mask_image(self):
+    def make_mask_image(self,
+                        boxwidth=15,
+                        sigma_stats=3.,
+                        dead_sigma=5.,
+                        max_dead_signal=0.05,
+                        max_low_qe_signal=0.5,
+                        min_open_adj_signal=1.05,
+                        do_not_use_flags=["DEAD"]):
         """
         This method is used to generate the reference file image.
 
         NOTE: This method is intended to be the module's internal pipeline where each method's internal
         variables and parameters are set and this is the single call to populate all attributes needed
         for the reference file data model.
+
+        Parameters:
+        -----------
+        boxwidth: int, default = 15
+            The width of the smoothing kernel.
+
+        sigma_stats: float, default = 3.
+            Sigma value for sigma clipping the master + normalized image.
+
+        dead_sigma: float, default = 5.
+            Sigma value used when determing DEAD pixels. Number of standard
+            deviations below the mean at which a pixel is considered DEAD.
+
+        max_dead_sigmal: float, default = 0.05
+            Maximum normalized countrate value of a DEAD pixel.
+
+        max_low_qe_signal: float, default = 0.5
+            Maximum normalized countrate value of a LOW_QE pixel.
+
+        min_open_adj_signal: float, default = 1.05
+            Minimum normalized countrate value of an ADJ_OPEN pixel.
+            If center pixel < max_low_qe_signal AND all adjacent pixels > min_open_adj_signal,
+            then the center pixel is flagged as OPEN (instead of LOW_QE) and adjacent 
+            pixels are flagged as ADJ_OPEN.
+
+        do_not_use_flags: arr of str, default = ["DEAD"]
+            A list of flags whose pixels need to be marked as DO_NOT_USE.
+            Used in _update_mask_do_not_use_pixels() so pixels aren't double-flagged as DNU.
         """
-        # TODO add normalized image step...
+        # Used in DEAD, LOW_QE, OPEN/ADJ pixel identification
+        normalized_image = helper.create_normalized_slope_image(
+            filelist=self.file_list,
+            sigma=sigma_stats,
+            boxwidth=boxwidth
+        )
 
         self._update_mask_ref_pixels()
-        self._update_mask_dead_pixels()
-        self._update_mask_low_qe_open_adj_pixels()
+
+        self._update_mask_dead_pixels(normalized_image=normalized_image,
+                                      sigma_stats=sigma_stats,
+                                      dead_sigma=dead_sigma)
+
+        self._update_mask_low_qe_open_adj_pixels(normalized_image=normalized_image,
+                                                 max_dead_signal=max_dead_signal,
+                                                 max_low_qe_signal=max_low_qe_signal,
+                                                 min_open_adj_signal=min_open_adj_signal)
+
+        self._update_mask_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
         self.mask_image = self.mask
+
+    def pad_with_ref_pixels(self, image):
+        """
+        Pad the image with four rows and columns of (reference) pixels with value of zero.
+        """
+        padded_im = np.zeros((4096, 4096), dtype=np.uint32)
+        padded_im[4:-4, 4:-4] = image
+
+        return padded_im
+
+    def remove_ref_pixel_border(self, image):
+        """
+        Remove the outer four columns and rows of (reference) pixels to return the science image.
+        """
+        return image[4:-4, 4:-4]
+
+    def get_adjacent_pix(self, x_val, y_val, im):
+        """
+        Identify the pixels adjacent to a given pixel. Copied from Webb's RFP.
+        This is used in _update_mask_low_qe_open_adj() function.
+
+        Ex: note that x are the returned coordinates.
+        [ ][x][ ]
+        [x][o][x]
+        [ ][x][ ]
+        """
+        y_dim, x_dim = im.shape
+
+        if ((x_val > 0) and (x_val < (x_dim-1))):
+
+            if ((y_val > 0) and (y_val < y_dim-1)):
+                adj_x = np.array([x_val, x_val+1, x_val, x_val-1])
+                adj_y = np.array([y_val+1, y_val, y_val-1, y_val])
+
+            elif y_val == 0:
+                adj_x = np.array([x_val, x_val+1, x_val-1])
+                adj_y = np.array([y_val+1, y_val, y_val])
+
+            elif y_val == (y_dim-1):
+                adj_x = np.array([x_val+1, x_val, x_val-1])
+                adj_y = np.array([y_val, y_val-1, y_val])
+
+        elif x_val == 0:
+
+            if ((y_val > 0) and (y_val < y_dim-1)):
+                adj_x = np.array([x_val, x_val+1, x_val])
+                adj_y = np.array([y_val+1, y_val, y_val-1])
+
+            elif y_val == 0:
+                adj_x = np.array([x_val, x_val+1])
+                adj_y = np.array([y_val+1, y_val])
+
+            elif y_val == (y_dim-1):
+                adj_x = np.array([x_val+1, x_val])
+                adj_y = np.array([y_val, y_val-1])
+
+        elif x_val == (x_dim-1):
+
+            if ((y_val > 0) and (y_val < y_dim-1)):
+
+                adj_x = np.array([x_val, x_val, x_val-1])
+                adj_y = np.array([y_val+1, y_val-1, y_val])
+
+            elif y_val == 0:
+
+                adj_x = np.array([x_val, x_val-1])
+                adj_y = np.array([y_val+1, y_val])
+
+            elif y_val == (y_dim-1):
+
+                adj_x = np.array([x_val, x_val-1])
+                adj_y = np.array([y_val-1, y_val])
+
+        return adj_y, adj_x
 
     def _update_mask_ref_pixels(self):
         """
@@ -155,36 +247,41 @@ class Mask(ReferenceType):
 
         self.mask += refpix_mask
 
-    def _update_mask_dead_pixels(self):
+    def _update_mask_dead_pixels(self,
+                                 normalized_image,
+                                 sigma_stats=3.,
+                                 dead_sigma=5.):
         """
         Identify the DEAD pixels using the normalized image.
         """
         # Mean and stdev of the normalized master image
         mean_norm, stdev_norm = helper.create_image_stats(
-            data=self.normalized_image,
-            sigma=self.sigma_stats
+            data=normalized_image,
+            sigma=sigma_stats
         )
 
         # Threshold for pixel to be considered DEAD
-        threshold = mean_norm - (self.dead_sigma * stdev_norm)
+        threshold = mean_norm - (dead_sigma * stdev_norm)
 
         # Getting the map of DEAD pixels where GOOD = 0 and DEAD = 1
-        dead_mask = (self.normalized_image < threshold).astype(np.uint32)
+        dead_mask = (normalized_image < threshold).astype(np.uint32)
 
         # Setting DEAD pixels to the actual dq flag value
         dead_mask[dead_mask == 1] = dqflags.DEAD.value
 
         # Padding the image with ref pixel border
-        dead_mask = helper.pad_with_ref_pixels(dead_mask)
+        dead_mask = self.pad_with_ref_pixels(dead_mask)
 
         self.mask += dead_mask
 
-    def _update_mask_low_qe_open_adj_pixels(self):
+    def _update_mask_low_qe_open_adj_pixels(self,
+                                            normalized_image,
+                                            max_dead_signal=0.05,
+                                            max_low_qe_signal=0.5,
+                                            min_open_adj_signal=1.05):
         """
         Using the normalized image, identify LOW_QE, OPEN/ADJ pixels.
         """
-        normalized_image = self.normalized_image
-
         # Empty arrays for the open/adj/low_qe
         low_qe_map = np.zeros(normalized_image.shape)
         open_map = np.zeros(normalized_image.shape)
@@ -193,14 +290,14 @@ class Mask(ReferenceType):
         # A map of the locations of low signal pixels
         # TODO: use the already ID'd DEAD pix, not some arbitrary 5% number
         # If you use the 5% number, then you're gonna have to use that for DEAD ID step
-        low_sig_y, low_sig_x = np.where((normalized_image > self.max_dead_signal)
-                                      & (normalized_image < self.max_low_qe_signal))
+        low_sig_y, low_sig_x = np.where((normalized_image > max_dead_signal)
+                                      & (normalized_image < max_low_qe_signal))
 
         # Going through each low signal pixel and determining type
         for x, y in zip(low_sig_x, low_sig_y):
 
-            adj_pix = normalized_image[helper.get_adjacent_pix(x, y, normalized_image)]
-            all_adj = (adj_pix > self.max_open_adj_signal)
+            adj_pix = normalized_image[self.get_adjacent_pix(x, y, normalized_image)]
+            all_adj = (adj_pix > min_open_adj_signal)
 
             # TODO: there currently aren't specific flags for OPEN/ADJ pixels.
             if all(all_adj):
@@ -211,23 +308,26 @@ class Mask(ReferenceType):
             else:
                 low_qe_map[y, x] = dqflags.LOW_QE.value
 
-        low_qe_map = helper.pad_with_ref_pixels(low_qe_map)
-        open_map = helper.pad_with_ref_pixels(open_map)
-        adj_map = helper.pad_with_ref_pixels(adj_map)
+        low_qe_map = self.pad_with_ref_pixels(low_qe_map)
+        open_map = self.pad_with_ref_pixels(open_map)
+        adj_map = self.pad_with_ref_pixels(adj_map)
 
         # Adding to mask
         self.mask += low_qe_map.astype(np.uint32)
         self.mask += open_map.astype(np.uint32)
         self.mask += adj_map.astype(np.uint32)
 
-    def _update_mask_do_not_use_pixels(self, flags=["DEAD"]):
+    def _update_mask_do_not_use_pixels(self, do_not_use_flags=["DEAD"]):
         """
         This function adds the DO_NOT_USE flag to pixels with the following flags:
             DEAD
         This may be updated in the future with more flags.
+        #TODO: RC/Inverse RC will likely be marked as DNU...
         """
         # Gonna implement this later...
         return
+
+
 
     def calculate_error(self):
         """
