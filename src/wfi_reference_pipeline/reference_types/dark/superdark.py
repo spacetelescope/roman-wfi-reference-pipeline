@@ -4,7 +4,7 @@ import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from wfi_reference_pipeline.constants import WFI_DETECTORS
+from wfi_reference_pipeline.constants import VIRTUAL_PIXEL_DEPTH, WFI_DETECTORS
 
 import asdf
 from astropy.time import Time
@@ -128,10 +128,10 @@ class SuperDark(ABC):
 
         # Set reference pixel border to zero for super dark.
         # Ensure multi processing returns a full assembled super dark cube.
-        self.superdark[:, :4, :] = 0.0
-        self.superdark[:, -4:, :] = 0.0
-        self.superdark[:, :, :4] = 0.0
-        self.superdark[:, :, -4:] = 0.0
+        self.superdark[:, :VIRTUAL_PIXEL_DEPTH, :] = 0.0
+        self.superdark[:, -VIRTUAL_PIXEL_DEPTH:, :] = 0.0
+        self.superdark[:, :, :VIRTUAL_PIXEL_DEPTH] = 0.0
+        self.superdark[:, :, -VIRTUAL_PIXEL_DEPTH:] = 0.0
 
         # Use datamodel tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()

@@ -3,6 +3,7 @@ from abc import ABC
 
 import numpy as np
 from wfi_reference_pipeline.constants import (
+    VIRTUAL_PIXEL_DEPTH,
     WFI_FRAME_TIME,
     WFI_MODE_WIM,
     WFI_MODE_WSM,
@@ -56,3 +57,13 @@ class DataCube(ABC):
         self.time_array = np.array(
             [self.frame_time * i for i in range(1, self.num_reads + 1)]
         )
+
+    def get_science_pixels_cube(self, border=VIRTUAL_PIXEL_DEPTH):
+        if self.num_i_pixels == 4096:
+            return self.data[:,border:-border,border:-border]
+        elif self.num_i_pixels == 4088:
+            return self.data
+        else:
+            raise ValueError(
+                f"DataCube not correct shape: ({self.num_reads}, {self.num_i_pixels}, {self.num_j_pixels})"
+            )
