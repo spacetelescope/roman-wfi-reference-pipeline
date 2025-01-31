@@ -74,8 +74,19 @@ def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/
     output_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
     short_files=[]
     for i in range(n_files):
-
-        read_cube = np.full((n_reads, 4096, 4096), rate_values[i])
+        read_cube, rate_image = simulate_dark_reads(
+            n_reads=n_reads,
+            exp_time=1.0,  # Exposure time set to 1 second as per request
+            dark_rate=rate_values[i],  # Set the dark rate to the desired value (1, 2, 3, 5, 10)
+            dark_rate_var=0.0,  # No variance to maintain uniform values
+            num_hot_pix=0,
+            num_hot_pix_var=0,
+            num_warm_pix=0,
+            num_warm_pix_var=0,
+            num_dead_pix_var=0,
+            noise_mean=0.0,
+            noise_var=0.0
+        )
 
         # Create the ASDF file
         file_name = f'short_dark{i + 1}_WFI01.asdf'
@@ -125,8 +136,19 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
     output_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
     long_files = []
     for i in range(n_files):
-
-        read_cube = np.full((n_reads, 4096, 4096), rate_values[i])
+        read_cube, rate_image = simulate_dark_reads(
+            n_reads=n_reads,
+            exp_time=1.0,  # Exposure time set to 1 second as per request
+            dark_rate=rate_values[i],  # Set the dark rate to the desired value (2, 2)
+            dark_rate_var=0.0,  # No variance to maintain uniform values
+            num_hot_pix=0,
+            num_hot_pix_var=0,
+            num_warm_pix=0,
+            num_warm_pix_var=0,
+            num_dead_pix_var=0,
+            noise_mean=0.0,
+            noise_var=0.0
+        )
 
         # Create the ASDF file
         file_name = f'long_dark{i + 1}_WFI01.asdf'
@@ -168,17 +190,17 @@ def test_validate_superdark_sigma_clip_short_only_values_pass(input_dir='/grp/ro
     # Check 1-sigma rejection and dark rates.
     # Use the Dark() to compute the mean dark rate from the generated superdark.asdf file.
     dark = Dark(meta_data=test_meta.meta_dark, file_list=[dark_pipeline.superdark_file], outfile="validate_superdark_test_dark.asdf")
-    # 1-sigma: (clips all values but 2)
-    # [nan  2.  2.  2.  2.  2. nan nan nan]
-    # mean: 2.0
-    # std_dev: 0.0
+    # 1-sigma: (clips all values but the rate values associated with 2's)
+    # data_cube_array - [ 2.  4.  6.  8. 10. 12. 14. 16. 18. 20.]
+    # std_dev_all - 5.74456262588501
+    # mean_all - 11.0
     science_pixels_cube = get_science_pixels_cube(dark.data_cube.data) # only verify numbers with science pixels
     data_cube_array = np.array(science_pixels_cube)
     std_dev_all = np.nanstd(data_cube_array)
     mean_all = np.nanmean(data_cube_array)
 
-    assert(std_dev_all == 0)
-    assert(mean_all == 2)
+    assert(np.isclose(std_dev_all, 5.74, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(mean_all, 11.0, rtol=1e-2, atol=1e-2))
     print("PASSED - test_validate_superdark_sigma_clip_short_only_values_pass")
 
 
@@ -198,17 +220,16 @@ def test_validate_superdark_sigma_clip_values_pass(input_dir='/grp/roman/RFP/DEV
     dark = Dark(meta_data=test_meta.meta_dark, file_list=[dark_pipeline.superdark_file], outfile="validate_superdark_test_dark.asdf")
 
     # 3-sigma:
-    # [ 1.  2.  2.  2.  2.  2.  3.  8. nan  2.  2.]
-    # Unique values are ten slices of 2.6 (short and long average) and ten slices of 2 (long only)
-    # mean: around 2.3
-    # std_dev: around 0.3
+    # Each value represents all values in a slice in the data cube
+    # [2.599, 5.199, 7.800, 10.39, 13.0, 15.60, 18.20, 20.79, 23.39, 26.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0]
+    # mean: around 22.650
+    # std_dev: around 10.682
     science_pixels_cube = get_science_pixels_cube(dark.data_cube.data) # only verify numbers with science pixels
     data_cube_array = np.array(science_pixels_cube)
     std_dev_all = np.nanstd(data_cube_array)
     mean_all = np.nanmean(data_cube_array)
-
-    assert(np.isclose(std_dev_all, 0.3, rtol=1e-2, atol=1e-2))
-    assert(np.isclose(mean_all, 2.3, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(std_dev_all, 10.682, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(mean_all, 22.650, rtol=1e-2, atol=1e-2))
     print("PASSED - test_validate_superdark_sigma_clip_values_pass")
 
 
