@@ -31,7 +31,6 @@ tvac_crds_context, downloaded_crds_gain_files_dict = get_gain_files_from_crds(cr
                                                                          crds_context=None)
 
 
-
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
 tvac1_totalnoise_dir = '/grp/roman/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
 
@@ -64,9 +63,9 @@ for file in files:
 # Convert defaultdict to a regular dict (optional)
 wfi_filelists = dict(wfi_filelists)
 
-do_all = False
-if do_all:
-
+# Make all of the readnoise reference files from TVAC data to submit to CRDS TVAC
+make_files = False
+if make_files:
     for i in range(1, 19):
         wfi_id = f'WFI{i:02}'
         file_list = wfi_filelists.get(wfi_id, [])
@@ -90,32 +89,7 @@ if do_all:
         print('Made reference file', rfp_tvac1_readnoise.outfile)
 
 
-i = 1
-wfi_id = f'WFI{i:02}'
-file_list_wfi01 = wfi_filelists.get(wfi_id, [])
 
-output_dir = '/grp/roman/RFP/TVAC/TVAC1/rfp_readnoise_first_pass/'
-outfile = output_dir + 'roman_testing_readnoise_'+wfi_id + '.asdf'
-
-tmp = MakeDevMeta(ref_type='READNOISE')
-tmp.meta_readnoise.use_after = '2023-08-01T00:00:00.000'
-tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from activity ' \
-                                'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC removed.'
-tmp.meta_readnoise.instrument_detector = wfi_id
-
-indices = [0, 10, 50, 90]
-file_list_wfi01_files = list(itemgetter(*indices)(file_list_wfi01))
-
-rfp_tvac1_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
-                                file_list=file_list_wfi01_files,
-                                outfile=outfile,
-                                clobber=True)
-
-rfp_tvac1_readnoise.make_readnoise_image()
-print(np.mean(rfp_tvac1_readnoise.readnoise_image))
-rfp_tvac1_readnoise.apply_gain_from_crds(gain_files_dict=downloaded_crds_gain_files_dict, 
-                                         crds_context=tvac_crds_context)
-print(np.mean(rfp_tvac1_readnoise.readnoise_image))
 
 
 
