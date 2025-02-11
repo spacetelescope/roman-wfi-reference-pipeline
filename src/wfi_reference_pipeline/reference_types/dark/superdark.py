@@ -133,10 +133,12 @@ class SuperDark(ABC):
         self.superdark[:, :, :VIRTUAL_PIXEL_DEPTH] = 0.0
         self.superdark[:, :, -VIRTUAL_PIXEL_DEPTH:] = 0.0
 
-        # Use datamodel tree if supplied. Else write tree from module.
+        # Despite not being a reference type,
+        # keep the asdf files consistent in formatting
         af = asdf.AsdfFile()
-        af.tree = {'meta': self.meta_data,
-                   'data': self.superdark}
+        datamodel_tree = {'meta': self.meta_data,
+                          'data': self.superdark}
+        af.tree = {'roman': datamodel_tree}
         af.write_to(self.outfile)
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")

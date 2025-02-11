@@ -135,8 +135,6 @@ class SuperDarkDynamic(SuperDark):
 
         print(f"Begin Multiprocessing with {max_num_processes} processes")
 
-
-
         try:
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
             # create the numpy array from the allocated memory
