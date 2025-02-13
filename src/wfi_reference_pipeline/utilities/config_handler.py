@@ -8,7 +8,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
     REF_TYPE_READNOISE,
 )
-from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA, CRDS_CONFIG_SCHEMA
+from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA, CRDS_CONFIG_SCHEMA, PIPELINES_CONFIG_SCHEMA
 
 
 def _find_config_file(config_filename):
@@ -104,6 +104,17 @@ def get_data_files_config(config_file="config.yml"):
     settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
     return settings["data_files"]
+
+def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
+    settings = _get_config(config_file)
+    _validate_config(settings, PIPELINES_CONFIG_SCHEMA)
+    if ref_type == REF_TYPE_DARK:
+        settings_type = "dark"
+    else:
+        raise ValueError(
+            f"{ref_type} has not yet been implemented for configuration."
+        )
+    return settings[settings_type]
 
 
 def get_quality_control_config(ref_type, config_file="quality_control_config.yml"):

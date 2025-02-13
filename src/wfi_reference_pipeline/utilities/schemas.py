@@ -1,4 +1,4 @@
-# Define the schema for config.json
+# Define the schema for config.yml
 CONFIG_SCHEMA = {
     "type": "object",
     "properties": {  # List all the possible entries and their types
@@ -25,7 +25,94 @@ CONFIG_SCHEMA = {
     "required": ["logging", "data_files"],
 }
 
-# Define the schema for quality_control_config.json
+# Define the schema for crds_submission_config.yml
+CRDS_CONFIG_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "files_to_submit": {
+            "type": "object",
+            "properties": {
+                "crds_ready_dir": {"type": "string"},
+            },
+            "required": ["crds_ready_dir"],
+        },
+        "form_info": {
+            "type": "object",
+            "properties": {
+                "instrument": {"type": "string"},
+                "deliverer": {"type": "string"},
+                "other_email": {"type": "string"},
+                "file_type": {"type": "string"},
+                "history_updated": {"type": "boolean"},
+                "pedigree_updated": {"type": "boolean"},
+                "keywords_checked": {"type": "boolean"},
+                "descrip_updated": {"type": "boolean"},
+                "useafter_updated": {"type": "boolean"},
+                "useafter_matches": {"type": "string"},
+                "compliance_verified": {"type": "string"},
+                "etc_delivery": {"type": "boolean"},
+                "calpipe_version": {"type": "string"},
+                "replacement_files": {"type": "boolean"},
+                "old_reference_files": {"type": "string"},
+                "replacing_badfiles": {"type": "string"},
+                "jira_issue": {"type": "string"},
+                "table_rows_changed": {"type": "string"},
+                "reprocess_affected": {"type": "boolean"},
+                "modes_affected": {"type": "string"},
+                "change_level": {"type": "string"},
+                "correctness_testing": {"type": "string"},
+                "additional_considerations": {"type": "string"},
+                "description": {"type": "string"},
+            },
+            "required": [
+                "instrument",
+                "deliverer",
+                "other_email",
+                "file_type",
+                "history_updated",
+                "pedigree_updated",
+                "keywords_checked",
+                "descrip_updated",
+                "useafter_updated",
+                "useafter_matches",
+                "compliance_verified",
+                "etc_delivery",
+                "calpipe_version",
+                "replacement_files",
+                "old_reference_files",
+                "replacing_badfiles",
+                "jira_issue",
+                "table_rows_changed",
+                "reprocess_affected",
+                "modes_affected",
+                "change_level",
+                "correctness_testing",
+                "additional_considerations",
+                "description",
+            ],
+        },
+    },
+    "required": ["files_to_submit", "form_info"],
+}
+
+# Define the schema for pipelines_config.yml
+PIPELINES_CONFIG_SCHEMA = {
+    "type": "object",
+    "properties": {  # List all the possible entries and their types
+        "dark": {
+            "type": "object",
+            "properties": {
+                "multiprocess_superdark": {"type": "boolean"},
+            },
+            "required": ["multiprocess_superdark"],
+        },
+    },
+    # List which entries are needed (all of them)
+    "required": ["dark"],
+}
+
+
+# Define the schema for quality_control_config.yml
 # NOTE: All elements added to any ref_type control schema MUST be required
 QC_CONFIG_SCHEMA = {
     "type": "object",
@@ -117,74 +204,4 @@ QC_CONFIG_SCHEMA = {
         "dark_control",
         "readnoise_control",
     ],
-}
-
-# Define the schema for crds_submission_config.json
-CRDS_CONFIG_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "files_to_submit": {
-            "type": "object",
-            "properties": {
-                "crds_ready_dir": {"type": "string"},
-            },
-            "required": ["crds_ready_dir"],
-        },
-        "form_info": {
-            "type": "object",
-            "properties": {
-                "instrument": {"type": "string"},
-                "deliverer": {"type": "string"},
-                "other_email": {"type": "string"},
-                "file_type": {"type": "string"},
-                "history_updated": {"type": "boolean"},
-                "pedigree_updated": {"type": "boolean"},
-                "keywords_checked": {"type": "boolean"},
-                "descrip_updated": {"type": "boolean"},
-                "useafter_updated": {"type": "boolean"},
-                "useafter_matches": {"type": "string"},
-                "compliance_verified": {"type": "string"},
-                "etc_delivery": {"type": "boolean"},
-                "calpipe_version": {"type": "string"},
-                "replacement_files": {"type": "boolean"},
-                "old_reference_files": {"type": "string"},
-                "replacing_badfiles": {"type": "string"},
-                "jira_issue": {"type": "string"},
-                "table_rows_changed": {"type": "string"},
-                "reprocess_affected": {"type": "boolean"},
-                "modes_affected": {"type": "string"},
-                "change_level": {"type": "string"},
-                "correctness_testing": {"type": "string"},
-                "additional_considerations": {"type": "string"},
-                "description": {"type": "string"},
-            },
-            "required": [
-                "instrument",
-                "deliverer",
-                "other_email",
-                "file_type",
-                "history_updated",
-                "pedigree_updated",
-                "keywords_checked",
-                "descrip_updated",
-                "useafter_updated",
-                "useafter_matches",
-                "compliance_verified",
-                "etc_delivery",
-                "calpipe_version",
-                "replacement_files",
-                "old_reference_files",
-                "replacing_badfiles",
-                "jira_issue",
-                "table_rows_changed",
-                "reprocess_affected",
-                "modes_affected",
-                "change_level",
-                "correctness_testing",
-                "additional_considerations",
-                "description",
-            ],
-        },
-    },
-    "required": ["files_to_submit", "form_info"],
 }
