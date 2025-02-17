@@ -100,3 +100,44 @@ class FlatPipeline(Pipeline):
             "Finished PREPPING files to make FLAT reference file from RFP")
 
         logging.info("Starting to make FLAT from PREPPED FLAT asdf files")
+
+    @log_info
+    def run_pipeline(self, file_list=None):
+        logging.info("FLAT PIPE")
+
+        if file_list is not None:
+            file_list = list(map(Path, file_list))
+        else:
+            if self.prepped_files is not None:
+                file_list = self.prepped_files
+            else:
+                raise ValueError(
+                    'Prepare file or pass a (pre-processed) file list')
+
+        tmp = MakeDevMeta(ref_type=self.ref_type)
+        out_file_path = self.file_handler.format_pipeline_output_file_path(
+            tmp.meta_flat.mode,
+            tmp.meta_flat.instrument_detector,
+        )
+
+        rfp_flat = Flat(
+            meta_data=tmp.meta_flat,
+            file_list=file_list,
+            ref_type_data=None,
+            outfile=out_file_path,
+            clobber=True,
+        )
+        rfp_flat.flat_image = rfp_flat.make_flat_from_files(file_list)
+        rfp_flat.populate_datamodel_tree()
+        rfp_flat.generate_outfile()
+        logging.info("Finished RFP to make FLAT")
+        print("Finished RFP to make FLAT")
+
+    def restart_pipeline(self):
+        """
+        Run all steps of the pipeline.
+        Redefines base class method and includes `prep_superdark`
+        """
+        self.select_uncal_files()
+        self.prep_pipeline()
+        self.run_pipeline()
