@@ -54,10 +54,8 @@ class FlatPipeline(Pipeline):
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
-        # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(
-            # self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
-            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")
+            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")  # Change this
         )
 
         self.uncal_files = files

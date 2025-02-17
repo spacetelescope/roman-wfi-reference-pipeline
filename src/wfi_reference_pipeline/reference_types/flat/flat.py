@@ -195,7 +195,8 @@ class Flat(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
-    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=100):
+    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=100,
+                             flat_lo=1e-3, flat_hi=2.):
         """
         Go through the files supplied to the module and generate a
         cube of rate images into an array. This method uses FlatDataCube
@@ -216,6 +217,10 @@ class Flat(ReferenceType):
             Default is `False`.
         nsamples: int;
             Number of bootstrap samples to compute the uncertainty.
+        flat_lo: float;
+            If a flat value for a pixel is below `flat_lo` it is flagged and replaced by 1.
+        flat_hi: float;
+            If a flat value for a pixel is above `flat_hi` it is flagged and replaced by 1.
         """
 
         logging.debug(
@@ -253,6 +258,9 @@ class Flat(ReferenceType):
                 rate_image_array[fl, :, :] = np.nan*np.ones_like(tmp_cube)
 
         flat_image = np.nanmedian(rate_image_array, axis=0)
+        self.mask[np.isnan(flat_image)] += self.dqflag_defs['UNRELIABLE_FLAT']
+        self.mask[flat_image < flat_lo] += self.dqflag_defs['UNRELIABLE_FLAT']
+        self.mask[flat_image > flat_hi] += self.dqflag_defs['UNRELIABLE_FLAT']
         if calc_error:
             # We randomly select a subset of the images to calculate the median on them
             sel = np.random.randint((nsamples, self.num_files/2))
