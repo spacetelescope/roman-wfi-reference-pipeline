@@ -226,15 +226,17 @@ class Flat(ReferenceType):
         logging.debug(
             "Making flat from the average flat rate of file list data cubes.")
         n_reads_per_fl_arr = np.zeros(self.num_files)
-        rate_image_array = np.zeros((self.num_files,
-                                     self.data_cube.num_i_pixels,
-                                     self.data_cube.num_j_pixels),
-                                    dtype=np.float32)
 
         for fl in range(0, self.num_files):
+            print('Working with', self.file_list[fl])
             tmp = asdf.open(self.file_list[fl])
-            n_reads_per_fl_arr[fl], _, _ = np.shape(tmp.tree["roman"]["data"])
-            tmp_cube = tmp.tree["roman"]["data"]
+            npixx, npixy = np.shape(tmp.tree["roman"]["data"])
+            tmp_cube = tmp.tree["roman"]["data"].copy()
+            if fl == 0:
+                rate_image_array = np.zeros((self.num_files,
+                                             npixx,
+                                             npixy),
+                                            dtype=np.float32)
             tmp.close()
             if not isinstance(tmp_cube, (np.ndarray, u.Quantity)):
                 raise TypeError(
@@ -258,9 +260,12 @@ class Flat(ReferenceType):
                 rate_image_array[fl, :, :] = np.nan*np.ones_like(tmp_cube)
 
         flat_image = np.nanmedian(rate_image_array, axis=0)
-        self.mask[np.isnan(flat_image)] += self.dqflag_defs['UNRELIABLE_FLAT']
-        self.mask[flat_image < flat_lo] += self.dqflag_defs['UNRELIABLE_FLAT']
-        self.mask[flat_image > flat_hi] += self.dqflag_defs['UNRELIABLE_FLAT']
+        self.mask[np.isnan(flat_image)
+                  ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        self.mask[flat_image <
+                  flat_lo] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        self.mask[flat_image >
+                  flat_hi] += self.dqflag_defs['UNRELIABLE_FLAT'].value
         if calc_error:
             # We randomly select a subset of the images to calculate the median on them
             sel = np.random.randint((nsamples, self.num_files/2))
