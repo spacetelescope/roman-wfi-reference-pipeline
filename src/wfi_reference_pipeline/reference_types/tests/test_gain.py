@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-from astropy import units as u
 from wfi_reference_pipeline.reference_types.gain.gain import Gain
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_GAIN, REF_TYPE_READNOISE
@@ -62,7 +61,7 @@ class TestGain:
 
         # Check data shape and type.
         assert data_model_tree['data'].shape == (4096, 4096)
-        assert data_model_tree['data'].unit == u.electron / u.DN
+        assert data_model_tree['data'].dtype == np.float32
 
     def test_gain_outfile_default(self, gain_object_with_data_array):
         """

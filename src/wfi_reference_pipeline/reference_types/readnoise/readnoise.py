@@ -339,9 +339,7 @@ class ReadNoise(ReferenceType):
         # Construct the read noise object from the data model.
         readnoise_datamodel_tree = rds.ReadnoiseRef()
         readnoise_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        readnoise_datamodel_tree["data"] = (
-            self.readnoise_image.astype(np.float32) * u.DN
-        )
+        readnoise_datamodel_tree["data"] = self.readnoise_image.astype(np.float32)
 
         return readnoise_datamodel_tree
 
