@@ -1,41 +1,14 @@
-import os
-import glob
-import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.reference_types.readnoise.readnoise import get_gain_files_from_crds, clean_crds_path
-from operator import itemgetter
-
-
-# Need to ensure that the environment variables in .bash_profile are set to tvac and to the right directory 
-print('The current path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
-print('The current CRDS server is:', os.environ.get("CRDS_SERVER_URL"))
-
-gain_files_path = os.environ.get("CRDS_PATH")
-crds_server_from_env = os.environ.get("CRDS_SERVER_URL")
-
-print('Gain files path:', gain_files_path)
-print('The server from the crds server env var:', crds_server_from_env)
-
-# TODO somehow want to make this more flexible and on the fly work flow in the RFP.
-crds_path='/grp/roman/RFP/DEV/scratch/'
-crds_server="https://roman-crds-tvac.stsci.edu"
-
-# Clear the path of old mappings, reference files, etc.
-clean_crds_path(crds_path)
-
-tvac_crds_context, downloaded_crds_gain_files_dict = get_gain_files_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/',
-                                                                         crds_server="https://roman-crds-tvac.stsci.edu",
-                                                                         crds_context=None)
 
 
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
 tvac1_totalnoise_dir = '/grp/roman/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
 
 # This directory has irrc corrected asdf files from TVAC1 WITH LIGHT
-tvac1_NOT_dark_dir = '/grp/roman/GROUND_TESTS/TVAC1/NOM_OPS/OTP00636_Dark_TV1a_R3_MCEB_IRRCcorr/*/'
+tvac1_not_dark_dir = '/grp/roman/GROUND_TESTS/TVAC1/NOM_OPS/OTP00636_Dark_TV1a_R3_MCEB_IRRCcorr/*/'
 
 # Path to directory
 directory = Path(tvac1_totalnoise_dir)
@@ -87,9 +60,3 @@ if make_files:
         # Save file.
         rfp_tvac1_readnoise.generate_outfile()
         print('Made reference file', rfp_tvac1_readnoise.outfile)
-
-
-
-
-
-

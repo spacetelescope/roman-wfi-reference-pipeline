@@ -25,7 +25,10 @@ class ReadNoise(ReferenceType):
     measure the variance of the detector read by read. A ramp model for all available reads
     will be subtracted from the input data cube provided and the variance in the residuals
     is determined to be the best measurement of the read noise (Casertano and Cosentino email
-    discussions Dec 2022).
+    discussions Dec 2022). The output is the read noise of each pixel in DN where in romancal
+    processing during the exposure pipeline the gain is applied to the read noise reference
+    file in the ramp fitting step, which takes the read noise and gain as inputs in DN in
+    the available fitting algorithms.
 
     Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise,
     etc. are to be determined. The method get_cds_noise() is available for diagnostics purposes
