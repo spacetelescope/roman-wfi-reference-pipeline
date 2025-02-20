@@ -2,17 +2,10 @@ import logging
 import math
 import os
 import asdf
-import crds
-import subprocess
-import datetime
-import shutil
-from crds.client import api
-from crds import getrecommendations
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
-from astropy.time import Time
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 
@@ -252,7 +245,7 @@ class ReadNoise(ReferenceType):
             self.residual_cube,
             sigma_lower=sig_clip_res_low,
             sigma_upper=sig_clip_res_high,
-            cenfunc=np.median,
+            cenfunc="median",
             axis=0,
             masked=True,
             copy=False,
@@ -322,67 +315,6 @@ class ReadNoise(ReferenceType):
         )
         self.cds_noise = np.std(clipped_diff_cube, axis=0)
         return self.cds_noise
-
-    def apply_gain_from_crds(self,
-                             gain_files_dict,
-                             crds_context):
-
-        """
-        This method downloads all the gain reference files from CRDS that are context and server-specific to
-        a local directory. The default behavior is to get the most recent files with the closest use-after date
-        and the `roman-crds-test.stsci.edu` server. Once downloaded, the gain files are matched to the detector
-        in the ReadNoise module, and the readnoise array is multiplied by the per-pixel gain values.
-
-        Parameters
-        ----------
-        gain_files_dict: dictionary 
-            The dictionary of gain file names and paths to their downloaded location. Intended to be "results"
-            returned from the function get_gain_files_from_crds().
-        crds_context: string
-            The context returned from function get_gain_files_from_crds().
-        """
-
-        # Use the current time and query crds with meta data necessary to retrieve correct gain file.
-        current_time_iso = Time(datetime.datetime.now(), format="datetime").isot
-        parameters = {'ROMAN.META.INSTRUMENT.NAME': 'WFI',
-                      'ROMAN.META.INSTRUMENT.DETECTOR': self.meta_data.instrument_detector,
-                      'ROMAN.META.EXPOSURE.TYPE': self.meta_data.type,
-                      'ROMAN.META.EXPOSURE.START_TIME': current_time_iso}
-
-        # Call getrecommendations to get the reference file name for the specific detector and exposure type: i.e. mode
-        # example: WFI01 and imaging mode WFI_IMAGE (WIM) or spectral mode WFI_GRISM or WFI_PRISM (WSM)
-        recommendation = crds.getrecommendations(
-            parameters=parameters,
-            reftypes=['GAIN'],
-            context=crds_context,
-            observatory="roman",
-        )
-        gain_file_name = recommendation['gain']
-        logging.info(f"Recommended gain file from CRDS: {gain_file_name}")
-
-        # Get the correct matching gain file from the dictionary of downloaded gain files.
-        gain_file_path = gain_files_dict.get(gain_file_name)
-
-        # Raise an error if the gain file is not found in the dictionary.
-        if gain_file_path is None:
-            logging.error(f"Gain file '{gain_file_name}' not found in the provided gain_files_dict.")
-            raise KeyError(f"Gain file '{gain_file_name}' not found in the gain_files_dict. "
-                        f"Ensure the file is downloaded and included in the dictionary.")
-
-        logging.info(f"Using gain file located at: {gain_file_path}")
-
-        # Open the gain file to get the data array and multiply the readnoise_image from the data cube by the gain
-        # per pixel
-        with asdf.open(gain_file_path) as af:
-            #gain_meta = af.tree['roman']['meta']
-            gain_image = af.tree['roman']['data']
-        # TODO consider double checking that the meta from the open gain file matches self.meta_data.instrument_detector
-
-        if isinstance(gain_image, u.Quantity):  # Only access data from quantity object.
-            gain_image = gain_image.value
-            logging.debug("Quantity object detected. Extracted data values.")
-
-        self.readnoise_image *= gain_image
 
     def calculate_error(self):
         """
@@ -532,95 +464,3 @@ class ReadNoise(ReferenceType):
             except (ValueError, TypeError) as e:
                 logging.error(f"Unable to make_ramp_cube_model with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
-
-
-def get_gain_files_from_crds(crds_path='/grp/roman/RFP/DEV/scratch/',
-                             crds_server="https://roman-crds-test.stsci.edu",
-                             crds_context=None):
-    """
-    Function to download gain reference files from CRDS for the specified context and server.
-
-    Parameters
-    ----------
-    crds_path: string, default = '/grp/roman/RFP/DEV/scratch/'
-        Path to download files from CRDS.
-    crds_server: string, default = "https://roman-crds-test.stsci.edu"
-        Roman CRDS server. Options: Test, Operations, TVAC.
-    crds_context: default = None
-        Specify a CRDS context. If `None`, the most recent context is used.
-
-    Returns
-    -------
-    dict
-        A dictionary mapping gain reference file names to their download paths.
-    """
-    # Validate the method input tmp_crds_path
-    if crds_path != '/grp/roman/RFP/DEV/scratch/':
-        if not os.path.exists(crds_path):
-            raise ValueError(f"Provided directory '{crds_path}' does not exist.")
-        if not os.access(crds_path, os.R_OK | os.W_OK):
-            raise PermissionError(f"Provided directory '{crds_path}' does not have read/write permissions.")
-    else:
-        print(f"Using default tmp_crds_path to set environment variable as CRDS_PATH: {crds_path}")
-        logging.info("CUsing default tmp_crds_path to set environment variable as CRDS_PATH: {crds_path}")
-    # Update the environment variable to the tmp_crds_path
-    os.environ["CRDS_PATH"] = crds_path
-    print('The path to where mappings and gain files will be downloaded is:', os.environ.get("CRDS_PATH"))
-    logging.info(f"The path to where mappings and gain files will be downloaded is: {os.environ.get('CRDS_PATH')}")
-
-    # Check that the provided CRDS URL is valid
-    valid_servers = [
-        "https://roman-crds-test.stsci.edu",
-        "https://roman-crds.stsci.edu",
-        "https://roman-crds-tvac.stsci.edu"
-    ]
-    if crds_server not in valid_servers:
-        raise ValueError(f"Invalid CRDS server '{crds_server}'. Must be one of: {', '.join(valid_servers)}")
-    else:
-        print(f"Accessing the CRDS server: {crds_server}")
-        logging.info(f"Accessing the CRDS server: {crds_server}")
-        os.environ["CRDS_SERVER_URL"] = crds_server
-
-    # Sync CRDS for all mappings
-    result = subprocess.run(["crds", "sync", "--all"], capture_output=True, text=True)
-    print("Output:", result.stdout)
-    # if result.returncode != 0:
-    #    print("Error during CRDS sync:", result.stderr)
-    #    raise RuntimeError("CRDS sync failed.")
-
-    # Get CRDS context
-    if crds_context is None:
-        crds_context = api.get_default_context()
-    print('The CRDS context that will be used is:', crds_context)
-    logging.info(f"The CRDS context that will be used is: {crds_context}")
-
-    # Get the gain files from the most current default context into a list.
-    gain_files_crds = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
-    # Download the gain files in the 
-    results = api.dump_references(crds_context, gain_files_crds)
-
-    return crds_context, results
-
-
-def clean_crds_path(crds_path):
-    """
-    Removes specific directories (mappings/, references/, config/) from the CRDS path if they exist.
-
-    Parameters
-    ----------
-    crds_path: string
-        The base path for CRDS-related files.
-    """
-    directories_to_remove = ["mappings", "references", "config"]
-    print('removing previous versions of directories')
-    for directory in directories_to_remove:
-        dir_path = os.path.join(crds_path, directory)
-        if os.path.exists(dir_path):
-            try:
-                shutil.rmtree(dir_path)
-                logging.info(f"Removed directory: {dir_path}")
-            except Exception as e:
-                logging.warning(f"Failed to remove directory {dir_path}: {e}")
-
-    return
-
