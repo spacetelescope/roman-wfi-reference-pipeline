@@ -4,7 +4,7 @@
 
 It is recommended to begin with a clean environment, such as:
 ```buildoutcfg
-conda create -n wfirefpipe python=3.10
+conda create -n wfirefpipe python=3.12
 ```
 To install the package, run:
 ```buildoutcfg
