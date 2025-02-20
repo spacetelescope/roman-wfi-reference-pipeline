@@ -62,7 +62,7 @@ class TestGain:
 
         # Check data shape and type.
         assert data_model_tree['data'].shape == (4096, 4096)
-        assert data_model_tree['data'].unit == u.electron / u.DN
+        assert data_model_tree['data'].dtype == np.float32
 
     def test_gain_outfile_default(self, gain_object_with_data_array):
         """
