@@ -99,7 +99,6 @@ class Mask(ReferenceType):
                         boxwidth=15,
                         sigma_stats=3.,
                         dead_sigma=5.,
-                        max_dead_signal=0.05,
                         max_low_qe_signal=0.5,
                         min_open_adj_signal=1.05,
                         do_not_use_flags=["DEAD"]):
@@ -147,14 +146,17 @@ class Mask(ReferenceType):
 
         self._update_mask_ref_pixels()
 
-        self._update_mask_dead_pixels(normalized_image=normalized_image,
-                                      sigma_stats=sigma_stats,
-                                      dead_sigma=dead_sigma)
+        self._update_mask_dead_pixels(
+            normalized_image=normalized_image,
+            sigma_stats=sigma_stats,
+            dead_sigma=dead_sigma
+        )
 
-        self._update_mask_low_qe_open_adj_pixels(normalized_image=normalized_image,
-                                                 max_dead_signal=max_dead_signal,
-                                                 max_low_qe_signal=max_low_qe_signal,
-                                                 min_open_adj_signal=min_open_adj_signal)
+        self._update_mask_low_qe_open_adj_pixels(
+            normalized_image=normalized_image,
+            max_low_qe_signal=max_low_qe_signal,
+            min_open_adj_signal=min_open_adj_signal
+        )
 
         self._update_mask_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
@@ -171,11 +173,12 @@ class Mask(ReferenceType):
 
     def remove_ref_pixel_border(self, image):
         """
-        Remove the outer four columns and rows of (reference) pixels to return the science image.
+        Remove the outer four columns and rows of (reference) pixels to
+        return the science image.
         """
         return image[4:-4, 4:-4]
 
-    def get_adjacent_pix(self, x_val, y_val, im):
+    def get_adjacent_pix(self, x_coor, y_coor, im):
         """
         Identify the pixels adjacent to a given pixel. Copied from Webb's RFP.
         This is used in _update_mask_low_qe_open_adj() function.
@@ -187,56 +190,70 @@ class Mask(ReferenceType):
         """
         y_dim, x_dim = im.shape
 
-        if ((x_val > 0) and (x_val < (x_dim-1))):
+        if ((x_coor > 0) and (x_coor < (x_dim-1))):
 
-            if ((y_val > 0) and (y_val < y_dim-1)):
-                adj_x = np.array([x_val, x_val+1, x_val, x_val-1])
-                adj_y = np.array([y_val+1, y_val, y_val-1, y_val])
+            if ((y_coor > 0) and (y_coor < y_dim-1)):
+                adj_x = np.array([x_coor, x_coor+1, x_coor, x_coor-1])
+                adj_y = np.array([y_coor+1, y_coor, y_coor-1, y_coor])
 
-            elif y_val == 0:
-                adj_x = np.array([x_val, x_val+1, x_val-1])
-                adj_y = np.array([y_val+1, y_val, y_val])
+            elif y_coor == 0:
+                adj_x = np.array([x_coor, x_coor+1, x_coor-1])
+                adj_y = np.array([y_coor+1, y_coor, y_coor])
 
-            elif y_val == (y_dim-1):
-                adj_x = np.array([x_val+1, x_val, x_val-1])
-                adj_y = np.array([y_val, y_val-1, y_val])
+            elif y_coor == (y_dim-1):
+                adj_x = np.array([x_coor+1, x_coor, x_coor-1])
+                adj_y = np.array([y_coor, y_coor-1, y_coor])
 
-        elif x_val == 0:
+        elif x_coor == 0:
 
-            if ((y_val > 0) and (y_val < y_dim-1)):
-                adj_x = np.array([x_val, x_val+1, x_val])
-                adj_y = np.array([y_val+1, y_val, y_val-1])
+            if ((y_coor > 0) and (y_coor < y_dim-1)):
+                adj_x = np.array([x_coor, x_coor+1, x_coor])
+                adj_y = np.array([y_coor+1, y_coor, y_coor-1])
 
-            elif y_val == 0:
-                adj_x = np.array([x_val, x_val+1])
-                adj_y = np.array([y_val+1, y_val])
+            elif y_coor == 0:
+                adj_x = np.array([x_coor, x_coor+1])
+                adj_y = np.array([y_coor+1, y_coor])
 
-            elif y_val == (y_dim-1):
-                adj_x = np.array([x_val+1, x_val])
-                adj_y = np.array([y_val, y_val-1])
+            elif y_coor == (y_dim-1):
+                adj_x = np.array([x_coor+1, x_coor])
+                adj_y = np.array([y_coor, y_coor-1])
 
-        elif x_val == (x_dim-1):
+        elif x_coor == (x_dim-1):
 
-            if ((y_val > 0) and (y_val < y_dim-1)):
+            if ((y_coor > 0) and (y_coor < y_dim-1)):
 
-                adj_x = np.array([x_val, x_val, x_val-1])
-                adj_y = np.array([y_val+1, y_val-1, y_val])
+                adj_x = np.array([x_coor, x_coor, x_coor-1])
+                adj_y = np.array([y_coor+1, y_coor-1, y_coor])
 
-            elif y_val == 0:
+            elif y_coor == 0:
 
-                adj_x = np.array([x_val, x_val-1])
-                adj_y = np.array([y_val+1, y_val])
+                adj_x = np.array([x_coor, x_coor-1])
+                adj_y = np.array([y_coor+1, y_coor])
 
-            elif y_val == (y_dim-1):
+            elif y_coor == (y_dim-1):
 
-                adj_x = np.array([x_val, x_val-1])
-                adj_y = np.array([y_val-1, y_val])
+                adj_x = np.array([x_coor, x_coor-1])
+                adj_y = np.array([y_coor-1, y_coor])
 
         return adj_y, adj_x
 
+    def check_if_dead_pixel(self, x_coor, y_coor):
+        """
+        Check if a pixel is DEAD. Used when identifying LOW_QE/OPEN/ADJ pixels.
+        """
+        science_mask = self.remove_ref_pixel_border(self.mask)
+
+        bitval = dqflags.DEAD.value
+
+        if science_mask[y_coor, x_coor] & bitval == bitval:
+            return True
+
+        else:
+            return False
+
     def _update_mask_ref_pixels(self):
         """
-        Create array to flag the 4 pixel reference pixel border around the detector.
+        Create array to flag the 4 px reference pixel border around detector.
         """
         refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
 
@@ -276,7 +293,6 @@ class Mask(ReferenceType):
 
     def _update_mask_low_qe_open_adj_pixels(self,
                                             normalized_image,
-                                            max_dead_signal=0.05,
                                             max_low_qe_signal=0.5,
                                             min_open_adj_signal=1.05):
         """
@@ -288,15 +304,22 @@ class Mask(ReferenceType):
         adj_map = np.zeros(normalized_image.shape)
 
         # A map of the locations of low signal pixels
-        # TODO: use the already ID'd DEAD pix, not some arbitrary 5% number
-        # If you use the 5% number, then you're gonna have to use that for DEAD ID step
-        low_sig_y, low_sig_x = np.where((normalized_image > max_dead_signal)
-                                      & (normalized_image < max_low_qe_signal))
+        low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
 
         # Going through each low signal pixel and determining type
         for x, y in zip(low_sig_x, low_sig_y):
 
-            adj_pix = normalized_image[self.get_adjacent_pix(x, y, normalized_image)]
+            # Checking if DEAD
+            if self.check_if_dead_pixel(xcoor=x, ycoor=y):
+                continue
+
+            adj_coor = self.get_adjacent_pix(
+                xcorr=x,
+                ycorr=y,
+                im=normalized_image
+            )
+
+            adj_pix = normalized_image[adj_coor]
             all_adj = (adj_pix > min_open_adj_signal)
 
             # TODO: there currently aren't specific flags for OPEN/ADJ pixels.
@@ -319,15 +342,29 @@ class Mask(ReferenceType):
 
     def _update_mask_do_not_use_pixels(self, do_not_use_flags=["DEAD"]):
         """
-        This function adds the DO_NOT_USE flag to pixels with the following flags:
+        This function adds the DO_NOT_USE flag to pixels with flags:
             DEAD
         This may be updated in the future with more flags.
         #TODO: RC/Inverse RC will likely be marked as DNU...
         """
-        # Gonna implement this later...
+        dnupix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+
+        # Going through each DNU flag
+        for flag in do_not_use_flags:
+
+            # Bitval for the current flag
+            bitval = dqflags[flag].value
+
+            # The indices of pixels with the current iteration's flag
+            flagged_pix = np.where((self.mask & bitval) == bitval)
+
+            # Setting flagged pix to DNU bitval
+            dnupix_mask[flagged_pix] = dqflags.DO_NOT_USE.value
+
+        # Adding to mask
+        self.mask += dnupix_mask.astype(np.uint32)
+
         return
-
-
 
     def calculate_error(self):
         """

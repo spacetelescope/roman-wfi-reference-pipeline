@@ -155,6 +155,10 @@ def create_master_slope_image(filelist, sigma):
 
     for file in filelist:
 
+        # with asdf.open(file) as af:
+        #     data = af["roman"]["data"].value
+
+        # slope = get_slope(data)
         with rdm.open(file) as data:
             slope = get_slope(data.data.value)
 
