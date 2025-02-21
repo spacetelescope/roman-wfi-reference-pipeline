@@ -148,7 +148,7 @@ class Saturation(ReferenceType):
         # Construct the saturation object from the data model.
         saturation_datamodel_tree = rds.SaturationRef()
         saturation_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        saturation_datamodel_tree["data"] = self.saturation_image * u.DN
+        saturation_datamodel_tree["data"] = self.saturation_image
         saturation_datamodel_tree["dq"] = self.mask
 
         return saturation_datamodel_tree

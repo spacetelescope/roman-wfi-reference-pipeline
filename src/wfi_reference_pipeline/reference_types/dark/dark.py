@@ -378,11 +378,9 @@ class Dark(ReferenceType):
         # Construct the dark object from the data model.
         dark_datamodel_tree = rds.DarkRef()
         dark_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        dark_datamodel_tree["data"] = self.resampled_data * u.DN
-        dark_datamodel_tree["dark_slope"] = self.dark_rate_image.astype(np.float32) * u.DN / u.s
-        dark_datamodel_tree["dark_slope_error"] = (
-            (self.dark_rate_image_error.astype(np.float32)**0.5) * u.DN / u.s
-        )
+        dark_datamodel_tree["data"] = self.resampled_data
+        dark_datamodel_tree["dark_slope"] = self.dark_rate_image.astype(np.float32)
+        dark_datamodel_tree["dark_slope_error"] = (self.dark_rate_image_error.astype(np.float32))**0.5
         dark_datamodel_tree["dq"] = self.mask
 
         return dark_datamodel_tree
