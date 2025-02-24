@@ -97,68 +97,100 @@ def smooth_image(image, boxwidth):
 
 #     return slope
 
-class Polynomial():
-    def __init__(self, nz:int, degree:int=1):
-        # Setup
+# class Polynomial():
+#     def __init__(self, nz:int, degree:int=1):
+#         # Setup
+#         self.nz = nz
+#         self.z = np.arange(nz)
+#         self.degree = degree
+#         # Make basis matrix
+#         self.B = np.empty((self.nz,degree+1))
+#         for col in np.arange(degree + 1):
+#             self.B[:,col] = self.z**col
+#         # Make the fitting matrix. This does least squares fitting
+#         self.pinvB = np.linalg.pinv(self.B)
+#         # Make the modeling matrix. This is used to model the data
+#         # from the fit
+#         self.B_x_pinvB = np.matmul(self.B, self.pinvB)
+
+#     # Fitter
+#     def polyfit(self, D):
+#         # Print a warning if not float32
+#         # if D.dtype != np.float32:
+#         #     print('Warning: This operation is faster using np.float32 input')
+#         # Pick off dimensions
+#         ny = D.shape[1]
+#         nx = D.shape[2]
+#         # Fit
+#         R = np.matmul(self.pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
+#         return(R)
+
+#     # Modeler
+#     def polyval(self, D):
+#         # Print a warning if not float32
+#         # if D.dtype != np.float32:
+#         #     print('Warning: This operation is faster using np.float32 input')
+#         ny = D.shape[1]
+#         nx = D.shape[2]
+#         # Model
+#         M = np.matmul(self.B_x_pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
+#         return(M)
+
+class Polynomial:
+    def __init__(self, nz: int, degree: int = 1):
+        """Initialize the Polynomial class."""
         self.nz = nz
         self.z = np.arange(nz)
         self.degree = degree
+
         # Make basis matrix
-        self.B = np.empty((self.nz,degree+1))
-        for col in np.arange(degree+1):
-            self.B[:,col] = self.z**col
-        # Make the fitting matrix. This does least squares fitting
-        self.pinvB = np.linalg.pinv(self.B)
-        # Make the modeling matrix. This is used to model the data
-        # from the fit
-        self.B_x_pinvB = np.matmul(self.B, self.pinvB)
+        self.b = np.empty((self.nz, degree + 1))
+        for col in range(degree + 1):
+            self.b[:, col] = self.z**col
 
-    # Fitter
-    def polyfit(self, D):
-        # Print a warning if not float32
-        # if D.dtype != np.float32:
-        #     print('Warning: This operation is faster using np.float32 input')
-        # Pick off dimensions
-        ny = D.shape[1]
-        nx = D.shape[2]
-        # Fit
-        R = np.matmul(self.pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
-        return(R)
+        # Make the fitting matrix (least squares fitting)
+        self.pinv_b = np.linalg.pinv(self.b)
 
-    # Modeler
-    def polyval(self, D):
-        # Print a warning if not float32
-        # if D.dtype != np.float32:
-        #     print('Warning: This operation is faster using np.float32 input')
-        ny = D.shape[1]
-        nx = D.shape[2]
-        # Model
-        M = np.matmul(self.B_x_pinvB, D.reshape(self.nz,-1)).reshape((-1,ny,nx))
-        return(M)
+        # Make the modeling matrix (used to model the data from the fit)
+        self.b_x_pinv_b = np.matmul(self.b, self.pinv_b)
+
+    def polyfit(self, d):
+        """Perform polynomial fitting."""
+        ny = d.shape[1]
+        nx = d.shape[2]
+
+        r = np.matmul(self.pinv_b, d.reshape(self.nz, -1)).reshape((-1, ny, nx))
+        return r
+
+    def polyval(self, d):
+        """Perform polynomial evaluation."""
+        ny = d.shape[1]
+        nx = d.shape[2]
+
+        m = np.matmul(self.b_x_pinv_b, d.reshape(self.nz, -1)).reshape((-1, ny, nx))
+        return m
+
 
 def get_slope(data):
-    # Check if file path or is already opened
+    """Calculate the slope of the given data."""
     if isinstance(data, str):
         rf = rdm.open(data)
-        data = rf.data
-        sh = data.shape
-        nz = sh[0]
-        ny = sh[1]
-        nx = sh[2]
-        P = Polynomial(nz, 1)
-        S = np.empty((1,ny,nx))
-        S[0] = P.polyfit(data)[1]
+        sh = rf.data.shape
+        nz, ny, nx = sh[0], sh[1], sh[2]
+        p = Polynomial(nz, 1)
+        s = np.empty((1, ny, nx))
+        s[0] = p.polyfit(rf.data)[1]
+        return s[0, :, :]
 
-    else:      
+    else:
         sh = data.shape
-        nz = sh[0]
-        ny = sh[1]
-        nx = sh[2]
-        P = Polynomial(nz, 1)
-        S = np.empty((1,ny,nx))
-        S[0] = P.polyfit(data)[1]
+        nz, ny, nx = sh[0], sh[1], sh[2]
+        p = Polynomial(nz, 1)
+        s = np.empty((1, ny, nx))
+        s[0] = p.polyfit(data)[1]
 
-    return S[0, :,:]
+        return s[0, :, :]
+
 
 def create_master_slope_image(filelist, sigma, multip=False):
     """
