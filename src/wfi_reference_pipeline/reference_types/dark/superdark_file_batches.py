@@ -96,14 +96,15 @@ class SuperDarkBatches(SuperDark):
         timing_start_method_e = time.time()
         logging.info("Testing super dark method with file batches.")
         logging.debug(f"Memory used at start of method: {get_mem_usage():.2f} GB")
+        self._superdark_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
 
-        self.superdark = np.zeros((self.long_dark_num_reads, 4096, 4096), dtype=np.float32)
+        self.superdark = np.zeros((self._superdark_num_reads, 4096, 4096), dtype=np.float32)
         # Loop over read to construct superdark of length of long dark reads.
         # Going into each file for every i'th read or read_i index.
-        for read_i in range(0, self.long_dark_num_reads):
+        for read_i in range(0, self._superdark_num_reads):
             timing_method_file_loop_start = time.time()
-            logging.debug(f"On read {read_i} of {self.long_dark_num_reads}")
-            print(f"On read {read_i} of {self.long_dark_num_reads}")
+            logging.debug(f"On read {read_i} of {self._superdark_num_reads}")
+            print(f"On read {read_i} of {self._superdark_num_reads}")
 
             # Determine the number of files to process for the current read index.
             if read_i < self.short_dark_num_reads:
@@ -164,7 +165,7 @@ class SuperDarkBatches(SuperDark):
 
             if np.isnan(clipped_reads).any():
                 logging.debug("NaNs found in sigma clipped reads cube.")
-            self.superdark[read_i, :, :] = np.mean(clipped_reads, axis=0)
+            self.superdark[read_i, :, :] = np.nanmean(clipped_reads, axis=0)
 
             logging.debug(f"Memory used at end of method: {get_mem_usage():.2f} GB")
             del clipped_reads, self.read_i_from_all_files

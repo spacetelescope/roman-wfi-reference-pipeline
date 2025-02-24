@@ -256,7 +256,7 @@ class SuperDarkDynamic(SuperDark):
                         logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
                     gc.collect()
                 try:
-                    # NOTE: may want to have option to use utilities.data_functions.get_science_pixels_cube for sigma clipping
+                    # TODO NOTE: may want to have option to use utilities.data_functions.get_science_pixels_cube for sigma clipping
                     clipped_reads = sigma_clip(
                         read_index_cube.astype(np.float32),
                         sigma_lower=self.sig_clip_sd_low,
