@@ -101,7 +101,8 @@ class Mask(ReferenceType):
                         dead_sigma=5.,
                         max_low_qe_signal=0.5,
                         min_open_adj_signal=1.05,
-                        do_not_use_flags=["DEAD"]):
+                        do_not_use_flags=["DEAD"],
+                        multip=False):
         """
         This method is used to generate the reference file image.
 
@@ -141,7 +142,8 @@ class Mask(ReferenceType):
         normalized_image = helper.create_normalized_slope_image(
             filelist=self.file_list,
             sigma=sigma_stats,
-            boxwidth=boxwidth
+            boxwidth=boxwidth,
+            multip=multip
         )
 
         self._update_mask_ref_pixels()
@@ -303,19 +305,21 @@ class Mask(ReferenceType):
         open_map = np.zeros(normalized_image.shape)
         adj_map = np.zeros(normalized_image.shape)
 
-        # A map of the locations of low signal pixels
-        low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
+        # A map of the locations of low signal pixels 
+        # TODO: update DEAD
+        low_sig_y, low_sig_x = np.where((normalized_image >= 0.05) & (normalized_image < max_low_qe_signal))
 
         # Going through each low signal pixel and determining type
         for x, y in zip(low_sig_x, low_sig_y):
 
+            # TODO update 
             # Checking if DEAD
-            if self.check_if_dead_pixel(xcoor=x, ycoor=y):
-                continue
+            # if self.check_if_dead_pixel(x_coor=x, y_coor=y):
+            #     continue
 
             adj_coor = self.get_adjacent_pix(
-                xcorr=x,
-                ycorr=y,
+                x_coor=x,
+                y_coor=y,
                 im=normalized_image
             )
 

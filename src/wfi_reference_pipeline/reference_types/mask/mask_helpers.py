@@ -3,7 +3,8 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.convolution import convolve, Box2DKernel
 
-import asdf
+from multiprocessing import Pool
+
 import roman_datamodels as rdm
 
 def create_image_stats(data, sigma):
@@ -136,33 +137,49 @@ class Polynomial():
         return(M)
 
 def get_slope(data):
-    sh = data.shape
-    nz = sh[0]
-    ny = sh[1]
-    nx = sh[2]
-    P = Polynomial(nz, 1)
-    S = np.empty((1,ny,nx))
-    S[0] = P.polyfit(data)[1]
+    # Check if file path or is already opened
+    if isinstance(data, str):
+        rf = rdm.open(data)
+        data = rf.data
+        sh = data.shape
+        nz = sh[0]
+        ny = sh[1]
+        nx = sh[2]
+        P = Polynomial(nz, 1)
+        S = np.empty((1,ny,nx))
+        S[0] = P.polyfit(data)[1]
+
+    else:      
+        sh = data.shape
+        nz = sh[0]
+        ny = sh[1]
+        nx = sh[2]
+        P = Polynomial(nz, 1)
+        S = np.empty((1,ny,nx))
+        S[0] = P.polyfit(data)[1]
+
     return S[0, :,:]
 
-def create_master_slope_image(filelist, sigma):
+def create_master_slope_image(filelist, sigma, multip=False):
     """
     Perform reference pixel correction and create slope image for each file in filelist.
     Then, sigma-clip the stack to create a single, master slope image.
     """
-    # Beginning by getting a list of slopes
-    slopes = []
+    if multip:
 
-    for file in filelist:
+        with Pool() as pool:
+            slopes = pool.map(get_slope, filelist)
 
-        # with asdf.open(file) as af:
-        #     data = af["roman"]["data"].value
+    else:    
+        # Beginning by getting a list of slopes
+        slopes = []
 
-        # slope = get_slope(data)
-        with rdm.open(file) as data:
-            slope = get_slope(data.data.value)
+        for file in filelist:
 
-        slopes.append(slope)
+            with rdm.open(file) as rf:
+                slope = get_slope(rf.data)
+
+            slopes.append(slope)
 
     # Creating a master slope image by sigma-clipping
     master_slope, _ = create_image_stats(slopes,
@@ -171,13 +188,14 @@ def create_master_slope_image(filelist, sigma):
     return master_slope
 
 
-def create_normalized_slope_image(filelist, sigma, boxwidth):
+def create_normalized_slope_image(filelist, sigma, boxwidth, multip=False):
     """
     Create a normalized image by dividing the master-averaged slope image by
     the smoothed image. Used for DEAD, LOW_QE, OPEN/ADJ.
     """
     master_slope = create_master_slope_image(filelist,
-                                             sigma=sigma)
+                                             sigma=sigma,
+                                             multip=multip)
 
     # Removing reference pixel border from image
     master_slope = remove_ref_pixel_border(master_slope)
