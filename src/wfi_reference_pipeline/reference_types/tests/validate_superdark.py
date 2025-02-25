@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 from wfi_reference_pipeline.utilities.data_functions import get_science_pixels_cube
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
@@ -8,6 +9,7 @@ from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
 from astropy.time import Time
 import numpy as np
+from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 
 # TODO edit below if needed and add extra meta for testing/validation
 # Define your metadata, including only the 'exposure' information
@@ -46,7 +48,6 @@ meta = {
     }
 }
 
-test_meta = MakeTestMeta(REF_TYPE_DARK)
 def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/DEV/scratch'):
     """
     Generate short dark files with controlled inputs using simulate_dark_reads and save as ASDF files.
@@ -76,7 +77,7 @@ def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/
     for i in range(n_files):
         read_cube, rate_image = simulate_dark_reads(
             n_reads=n_reads,
-            exp_time=1.0,  # Exposure time set to 1 second as per request
+            exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
             dark_rate=rate_values[i],  # Set the dark rate to the desired value (1, 2, 3, 5, 10)
             dark_rate_var=0.0,  # No variance to maintain uniform values
             num_hot_pix=0,
@@ -138,7 +139,7 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
     for i in range(n_files):
         read_cube, rate_image = simulate_dark_reads(
             n_reads=n_reads,
-            exp_time=1.0,  # Exposure time set to 1 second as per request
+            exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
             dark_rate=rate_values[i],  # Set the dark rate to the desired value (2, 2)
             dark_rate_var=0.0,  # No variance to maintain uniform values
             num_hot_pix=0,
@@ -176,9 +177,8 @@ def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/D
     return long_files
 
 # Validate SuperDark function or class Rick pseudo code
-def test_validate_superdark_sigma_clip_short_only_values_pass(input_dir='/grp/roman/RFP/DEV/scratch'):
-    # Make the files (or dont if they already exist)
-    short_files, long_files = generate_files(input_dir)
+def test_validate_superdark_sigma_clip_short_only_values_pass(short_files):
+    test_meta = MakeTestMeta(REF_TYPE_DARK)
 
     # Set sigma clipping level to 1 (keep them the same when doing this test)
     sigma_clip_low_bound = 1
@@ -191,22 +191,24 @@ def test_validate_superdark_sigma_clip_short_only_values_pass(input_dir='/grp/ro
     # Use the Dark() to compute the mean dark rate from the generated superdark.asdf file.
     dark = Dark(meta_data=test_meta.meta_dark, file_list=[dark_pipeline.superdark_file], outfile="validate_superdark_test_dark.asdf")
     # 1-sigma: (clips all values but the rate values associated with 2's)
-    # data_cube_array - [ 2.  4.  6.  8. 10. 12. 14. 16. 18. 20.]
-    # std_dev_all - 5.74456262588501
-    # mean_all - 11.0
     science_pixels_cube = get_science_pixels_cube(dark.data_cube.data) # only verify numbers with science pixels
     data_cube_array = np.array(science_pixels_cube)
     std_dev_all = np.nanstd(data_cube_array)
     mean_all = np.nanmean(data_cube_array)
 
-    assert(np.isclose(std_dev_all, 5.74, rtol=1e-2, atol=1e-2))
-    assert(np.isclose(mean_all, 11.0, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(std_dev_all, 17.46, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(mean_all, 33.44, rtol=1e-2, atol=1e-2))
+
+    dark.make_rate_image_from_data_cube()
+    average = np.mean(dark.dark_rate_image)
+    assert(np.isclose(average, 2, rtol=1e-1, atol=1e-1))
+    print(f"average {average}")
+    #Reference pixels are set to zero, so just grabbing science pixels.
     print("PASSED - test_validate_superdark_sigma_clip_short_only_values_pass")
 
 
-def test_validate_superdark_sigma_clip_values_pass(input_dir='/grp/roman/RFP/DEV/scratch'):
-    # Make the files (or dont if they already exist)
-    short_files, long_files = generate_files(input_dir)
+def test_validate_superdark_sigma_clip_values_pass(short_files, long_files):
+    test_meta = MakeTestMeta(REF_TYPE_DARK)
 
     # Set sigma clipping level 3 sigma (keep them the same when doing this test)
     sigma_clip_low_bound = 3
@@ -221,50 +223,40 @@ def test_validate_superdark_sigma_clip_values_pass(input_dir='/grp/roman/RFP/DEV
 
     # 3-sigma:
     # Each value represents all values in a slice in the data cube
-    # [2.599, 5.199, 7.800, 10.39, 13.0, 15.60, 18.20, 20.79, 23.39, 26.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0]
-    # mean: around 22.650
-    # std_dev: around 10.682
     science_pixels_cube = get_science_pixels_cube(dark.data_cube.data) # only verify numbers with science pixels
     data_cube_array = np.array(science_pixels_cube)
     std_dev_all = np.nanstd(data_cube_array)
     mean_all = np.nanmean(data_cube_array)
-    print(f"data_cube_array:{data_cube_array[:,10,10]}")
-    print(f"std_dev_all: {std_dev_all}")
-    print(f"mean_all: {mean_all}")
-    assert(np.isclose(std_dev_all, 10.682, rtol=1e-2, atol=1e-2))
-    assert(np.isclose(mean_all, 22.650, rtol=1e-2, atol=1e-2))
+
+    assert(np.isclose(std_dev_all, 32.47, rtol=1e-2, atol=1e-2))
+    assert(np.isclose(mean_all, 68.85, rtol=1e-2, atol=1e-2))
+
+    dark.make_rate_image_from_data_cube()
+    average = np.mean(dark.dark_rate_image)
+    assert(np.isclose(average, 2, rtol=1e-1, atol=1e-1))
     print("PASSED - test_validate_superdark_sigma_clip_values_pass")
 
-
-    # TODO - GET THESE TESTS WORKING ONCE rate_image is properly working
-    # dark.make_rate_image_from_data_cube()
-    # print(f"Dark Rate Image Shape: {np.shape(dark.dark_rate_image)}")
-    # print(f"Dark Rate Image unique elements[10,10]: {dark.dark_rate_image[10,10]}")
-    # print(f"Dark Rate Image unique error [10,10]- {dark.dark_rate_image_error[10,10]}")
-    # dark.make_ma_table_resampled_data(num_resultants=8, num_reads_per_resultant=6)
-    # dark.update_data_quality_array()
-    # Use the Dark() to compute the mean dark rate from the generated
-    # superdark.asdf file.
-
-    # NOTE checking the dark rate might be easier than inspecting values of large cubes and more comprehensive in utilizing
-    # the RFP Dark() module and fitting.
-
-    # Next step: more scientifically interesting validation would be to include noise and variance of the rates and assert
-    # that the measured dark rate from Dark() with the superdark as input produces a dark rate image within some tolerance.
-
-
-
-
-
-
 # Check if files exist for validation test, if not make them with above, if they do proceed
-def generate_files(input_dir='/grp/roman/RFP/DEV/scratch'):
+def generate_files(rebuild_files, input_dir):
 
     input_path = Path(input_dir)
+
     files = [file for file in input_path.iterdir() if file.is_file()]
     asdf_files = [file for file in files if ".asdf" in file.name]
     short_files = [file for file in asdf_files if "short" in file.name]
     long_files = [file for file in asdf_files if "long" in file.name]
+
+    if rebuild_files:
+        print("Removing pre-existing dark files for test")
+        for file in short_files:
+            file.unlink()
+            print(f"Deleted: {file}")
+        short_files = []
+
+        for file in long_files:
+            file.unlink()
+            print(f"Deleted: {file}")
+        long_files=[]
 
     if len(short_files) == 0:
         short_files = generate_short_dark_files()
@@ -275,5 +267,24 @@ def generate_files(input_dir='/grp/roman/RFP/DEV/scratch'):
 
 
 if __name__ == "__main__":
-    #test_validate_superdark_sigma_clip_short_only_values_pass()
-    test_validate_superdark_sigma_clip_values_pass()
+    parser = argparse.ArgumentParser(
+        description="Validate that a superdark is constructed properly",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-r", "--rebuild", action="store_true", help="Rebuild the dark files")
+    parser.add_argument("-p", "--path", type=str, help="Dark Files Path.", default="/grp/roman/RFP/DEV/scratch"
+    )
+    args = parser.parse_args()
+
+    # Make the files (or dont if they already exist)
+    if args.rebuild:
+        rebuild = True
+        print("-r: Rebuilding Dark Files")
+    else:
+        rebuild = False
+
+    print(f"Generated Dark File Path: {args.path}")
+    short_files, long_files = generate_files(rebuild, args.path)
+
+    test_validate_superdark_sigma_clip_values_pass(short_files, long_files)
+    test_validate_superdark_sigma_clip_short_only_values_pass(short_files)
