@@ -225,7 +225,6 @@ class Flat(ReferenceType):
 
         logging.debug(
             "Making flat from the average flat rate of file list data cubes.")
-        n_reads_per_fl_arr = np.zeros(self.num_files)
 
         for fl in range(0, self.num_files):
             print('Working with', self.file_list[fl])

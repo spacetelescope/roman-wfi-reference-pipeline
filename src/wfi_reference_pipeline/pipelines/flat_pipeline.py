@@ -14,7 +14,6 @@ from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.constants import REF_TYPE_FLAT
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
@@ -136,7 +135,6 @@ class FlatPipeline(Pipeline):
     def restart_pipeline(self):
         """
         Run all steps of the pipeline.
-        Redefines base class method and includes `prep_superdark`
         """
         self.select_uncal_files()
         self.prep_pipeline()
