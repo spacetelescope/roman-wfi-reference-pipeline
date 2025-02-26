@@ -12,24 +12,24 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "astropy>=5.3.1",
-    "crds>=11.17.2",
+    "astropy>=6.1.0,<6.2.0",
+    "crds>=11.18.2,<11.19.0",
     "h5py",
-    "matplotlib>=3.7.2",
-    "numpy>=1.25.2",
-    "pandas>=2.1.2",
-    "photutils>=1.8.0",
+    "matplotlib>=3.9.0,<3.10.0",
+    "numpy>=1.25.0,<2.2.0",
+    "pandas>=2.2.1,<2.3.0",
+    "photutils>=1.12.0,<1.14.0",
     "pytest-cov",
     "pytest",
-    "pysiaf>=0.20.0",
-    "PyYAML>=6.0.1",
-    #"rad>=0.23.0",
-    "requests>=2.31.0",
+    "pysiaf>=0.22.0,<0.24.0",
+    "PyYAML>=6.0.1,<6.1.0",
+    "rad>=0.23.0,<0.24.0",
+    "requests>=2.31.0,<2.33.0",
     "romancal>=0.18.0",
-    #"roman-datamodels>=0.23.0",
-    "scipy>=1.11.3",
-    "soc_roman_tools>=0.1.0",
-    "webbpsf>=1.3.0", # for aperture correction reference file
+    "roman-datamodels>=0.23.0,<0.24.0",
+    "scipy>=1.12.0,<1.16.0",
+    "soc_roman_tools>=0.1.0,<0.2.0",
+    "stpsf>=2.0.0",
 ]
 dynamic = [
     "version",
@@ -51,7 +51,7 @@ content-type = "text/markdown"
 
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=61.2",
     "setuptools_scm[toml]>=3.4",
     "wheel",
 ]
@@ -80,6 +80,7 @@ namespaces = false
 ]
 
 [tool.setuptools_scm]
+local_scheme = "no-local-version"
 write_to = "src/wfi_reference_pipeline/version.py"
 
 [tool.ruff.lint]
