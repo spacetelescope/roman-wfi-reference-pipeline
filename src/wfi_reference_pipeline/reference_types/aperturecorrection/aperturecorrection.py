@@ -1,13 +1,13 @@
 #import logging #uncomment if ever used
 
 import asdf
-import webbpsf
+import stpsf
 import numpy as np
 import roman_datamodels.stnode as rds
 from photutils.aperture import CircularAperture, aperture_photometry
 from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import WFIMetaApertureCorrection
 from wfi_reference_pipeline.constants import (
-    WFI_REF_OPTICAL_ELEMENTS, 
+    WFI_REF_OPTICAL_ELEMENTS,
     WFI_REF_OPTICAL_ELEMENT_DARK,
     WFI_REF_OPTICAL_ELEMENT_GRISM,
     WFI_REF_OPTICAL_ELEMENT_PRISM
@@ -52,18 +52,18 @@ class ApertureCorrection(ReferenceType):
         """
         Calculate the radii of enclosed energy fractions and the associated aperture corrections.
 
-        Generates a webbpsf model and performs circular aperture photometry at integer oversampled pixel radii between min_radius and max_radius. Interpolating the aperture photometry and evaluating the interpolation at the enclosed energy fractions determines the enclosed energy pixel radii and allows for the aperture correction to be calculated.
+        Generates a stpsf model and performs circular aperture photometry at integer oversampled pixel radii between min_radius and max_radius. Interpolating the aperture photometry and evaluating the interpolation at the enclosed energy fractions determines the enclosed energy pixel radii and allows for the aperture correction to be calculated.
 
         Parameters
         ----------
-        psf_object: webbpsf instrument instance
-            webbpsf Roman WFI instance for the correct filter and detector
+        psf_object: stpsf instrument instance
+            stpsf Roman WFI instance for the correct filter and detector
         enclosed_energy_fractions : 1d-array
             the enclosed energy fractions at which to calculate the aperture corrections and the pixel radii
         pixel_position: tuple of floats; default = (2048,2048)
             the position at which to evaluate the PSF object and calculate the PSF. The default is the center of the detector as the corrections did not vary by more than 1% across the detector.
         oversample : integer; default = 21
-            Oversampling rate for calculating the webbpsf model. Default of 21 was the lowest value that achieved a relative error to within 1% compared to oversample = 50.
+            Oversampling rate for calculating the stpsf model. Default of 21 was the lowest value that achieved a relative error to within 1% compared to oversample = 50.
         min_radius: integer; default = 1
             Minimum radius to start the interpolation function of circular aperture photometry
         max_radius: integer; default=20
@@ -88,7 +88,7 @@ class ApertureCorrection(ReferenceType):
 
         #TODO: this needs to be updated to include background effects
         aperture_corrections = 1./enclosed_energy_fractions
-        
+
         # These percentiles were chosen to match the JWST definitions
         sky_in = np.interp(0.8, np.array(aperture_fluxes), np.array(aperture_radii))
         sky_out = np.interp(0.85, np.array(aperture_fluxes), np.array(aperture_radii))
@@ -99,7 +99,7 @@ class ApertureCorrection(ReferenceType):
         """
         Create the dictionary of all required quantities needed for the APCORR reference file. The current methodology iterates over fixed enclosed energy fractions to match the JWST NIRCAM reference files. The quantities are saved under the following keys:
         - ee_fractions: enclosed energy fractions
-        - ee_radii: pixel radii of each enclosed energy fraction 
+        - ee_radii: pixel radii of each enclosed energy fraction
         - ap_corrections: aperture corrections for each enclosed energy radius
         - sky_background_rin: inner pixel radius to estimate the sky background
         - sky_background_rout: outer pixel radius to estimate the sky background
@@ -107,8 +107,8 @@ class ApertureCorrection(ReferenceType):
         aperture_correction_dict = dict()
         # enclosed energy percentiles were chosen to match JWST
         enclosed_energy_fractions = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9])
-        
-        wfi = webbpsf.WFI()
+
+        wfi = stpsf.WFI()
         wfi.detector = f'SCA{self.meta_data.instrument_detector[-2:]}'
 
         for optical_element in WFI_REF_OPTICAL_ELEMENTS:
@@ -116,7 +116,7 @@ class ApertureCorrection(ReferenceType):
             if optical_element in [WFI_REF_OPTICAL_ELEMENT_DARK,
                                    WFI_REF_OPTICAL_ELEMENT_GRISM,
                                    WFI_REF_OPTICAL_ELEMENT_PRISM]:
-                
+
                  aperture_correction_dict[optical_element] = {
                     'ee_fractions': None,
                     'ee_radii': None,
@@ -142,8 +142,8 @@ class ApertureCorrection(ReferenceType):
 
     def populate_asdf_tree(self):
         """
-        Create the asdf element tree before the datamodel is created. 
-        
+        Create the asdf element tree before the datamodel is created.
+
         *** After the datamodel is created, we can delete this function. ***
 
         """
