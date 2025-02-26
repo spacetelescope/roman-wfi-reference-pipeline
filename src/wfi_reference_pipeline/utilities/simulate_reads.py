@@ -22,7 +22,7 @@ def simulate_dark_reads(n_reads,
                         num_dead_pix=500,
                         num_dead_pix_var=0,
                         noise_mean=0.001,
-                        noise_var=0.0005):
+                        noise_std=0.0005):
     """
     Function to create a dark read cube with random number of hot, warm, and dead pixels.
 
@@ -65,8 +65,9 @@ def simulate_dark_reads(n_reads,
         The variance in the random number of dead pixels.
     noise_mean: float; default = 0.001
         The average noise value in the dark rate image.
-    noise_var: float; default = 0.0005
-        The variance in the dark rate image.
+    noise_std: float; default = 0.0005
+        The standard deviation in the Gaussian spread or width of
+        frame noise added to the noise mean for the array.
 
     Returns
     ----------
@@ -126,7 +127,9 @@ def simulate_dark_reads(n_reads,
     read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
     for read_r in range(0, n_reads):
         # Create read cube by simulating data in reads and add noise.
-        rn = np.random.normal(noise_mean, noise_var, size=(ni, ni))  # Random noise term to add; simulate a read noise.
+        rn = np.random.normal(loc=noise_mean, 
+                              scale=noise_std, 
+                              size=(ni, ni))  # Random noise term to add; simulate a read noise.
         read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
     return read_cube, rate_image
 

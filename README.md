@@ -4,13 +4,18 @@
 
 It is recommended to begin with a clean environment, such as:
 ```buildoutcfg
-conda create -n wfirefpipe python=3.10
+conda create -n wfirefpipe python=3.12
 ```
 To install the package, run:
 ```buildoutcfg
 pip install .
 ```
 This will also install all of the dependencies.
+
+> NOTE: Installing this way uses the dependencies outlined in `pyproject.toml`.
+> These dependencies mirror `requirements.txt`.
+> If you would like to install with custom dependencies,
+> just update them in requirements.txt and `pip install -r requrements.txt`
 
 Users must create a config.yml living at:
 ```/wfi_reference_pipeline/src/wfi_reference_pipeline/config/config.yml```

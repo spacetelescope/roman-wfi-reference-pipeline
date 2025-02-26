@@ -25,7 +25,7 @@ class Dark(ReferenceType):
     Example file creation commands:
     With user cube and even spacing.
     dark_obj = Dark(meta_data, ref_type_data=input_data_cube)
-    dark_obj.make_dark_rate_image_from_data_cube()
+    dark_obj.make_rate_image_from_data_cube()
     dark_obj.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant)
     dark_obj.calculate_error()
     dark_obj.update_data_quality_array()
@@ -40,7 +40,7 @@ class Dark(ReferenceType):
 
     With user cube and uneven spacing and resampling from a user read pattern.
     dark_obj = Dark(meta_data, ref_type_data=user_cube)
-    dark_obj.make_dark_rate_image_from_data_cube()
+    dark_obj.make_rate_image_from_data_cube()
     dark_obj.make_ma_table_resampled_data(None, None, user_read_pattern)
     dark_obj.calculate_error()
     dark_obj.update_data_quality_array()
@@ -169,7 +169,7 @@ class Dark(ReferenceType):
             "OPENING - " + self.file_list[0]
         )  # Already checked that file_list is of length one.
         af = asdf.open(self.file_list[0]) # Use asdf open here for formatting
-        data = af.tree['data']
+        data = af.tree['roman']['data']
         if isinstance(data, u.Quantity):  # Only access data from quantity object.
             data = data.value
         self.data_cube = self.DarkDataCube(data, self.meta_data.type)
@@ -378,11 +378,9 @@ class Dark(ReferenceType):
         # Construct the dark object from the data model.
         dark_datamodel_tree = rds.DarkRef()
         dark_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        dark_datamodel_tree["data"] = self.resampled_data * u.DN
-        dark_datamodel_tree["dark_slope"] = self.dark_rate_image.astype(np.float32) * u.DN / u.s
-        dark_datamodel_tree["dark_slope_error"] = (
-            (self.dark_rate_image_error.astype(np.float32)**0.5) * u.DN / u.s
-        )
+        dark_datamodel_tree["data"] = self.resampled_data
+        dark_datamodel_tree["dark_slope"] = self.dark_rate_image.astype(np.float32)
+        dark_datamodel_tree["dark_slope_error"] = (self.dark_rate_image_error.astype(np.float32))**0.5
         dark_datamodel_tree["dq"] = self.mask
 
         return dark_datamodel_tree

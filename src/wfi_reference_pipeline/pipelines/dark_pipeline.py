@@ -14,6 +14,7 @@ from wfi_reference_pipeline.constants import (
     DARK_SIGMA_CLIP_SD_HIGH,
     REF_TYPE_DARK,
 )
+from wfi_reference_pipeline.utilities.config_handler import get_pipelines_config
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
@@ -56,6 +57,7 @@ class DarkPipeline(Pipeline):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_DARK)
         self.superdark_file = None
+        self.config = get_pipelines_config(REF_TYPE_DARK)
 
     @log_info
     def select_uncal_files(self):
@@ -190,11 +192,10 @@ class DarkPipeline(Pipeline):
 
             short_dark_file_list, long_dark_file_list = self.extract_short_and_long_file_lists(file_list)
 
-        # TODO - Create configurable setting for what method to run
-        generate_superdark_dynamic_allocation = True
-
+        # TODO - Unpack configuration
+        generate_superdark_with_multiprocessing = self.config["multiprocess_superdark"]
         kwargs = {} # TODO add values to config file
-        if generate_superdark_dynamic_allocation:
+        if generate_superdark_with_multiprocessing:
             logging.info("Running superdark dynamic")
             superdark = SuperDarkDynamic(
                 short_dark_file_list,

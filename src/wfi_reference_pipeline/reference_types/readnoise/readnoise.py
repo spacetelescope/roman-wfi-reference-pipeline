@@ -25,7 +25,10 @@ class ReadNoise(ReferenceType):
     measure the variance of the detector read by read. A ramp model for all available reads
     will be subtracted from the input data cube provided and the variance in the residuals
     is determined to be the best measurement of the read noise (Casertano and Cosentino email
-    discussions Dec 2022).
+    discussions Dec 2022). The output is the read noise of each pixel in DN where in romancal
+    processing during the exposure pipeline the gain is applied to the read noise reference
+    file in the ramp fitting step, which takes the read noise and gain as inputs in DN in
+    the available fitting algorithms.
 
     Additional complexity such as the treatment of Poisson noise, shot noise, read-out noise,
     etc. are to be determined. The method get_cds_noise() is available for diagnostics purposes
@@ -104,11 +107,14 @@ class ReadNoise(ReferenceType):
         self.cds_noise = None  # The correlated double sampling noise estimate between successive pairs
         self.num_files = 0
 
+        self.residual_cube = None
+        self.clipped_res_cube = None
+
+
         # Module flow creating reference file
         if self.file_list:
             # Get file list properties and select data cube.
             self.num_files = len(self.file_list)
-            self._select_data_cube_from_file_list()
             # Must make_readnoise_image() to finish creating reference file.
         else:
             if not isinstance(ref_type_data, (np.ndarray, u.Quantity)):
@@ -174,6 +180,7 @@ class ReadNoise(ReferenceType):
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
         )
+        print('Using the file', fl_reads_ordered_list[0][0])
         self.data_cube = self.ReadNoiseDataCube(ref_type_data, self.meta_data.type)
 
     def make_readnoise_image(self):
@@ -193,6 +200,7 @@ class ReadNoise(ReferenceType):
             self._select_data_cube_from_file_list()
         self.make_rate_image_from_data_cube(fit_order=1)
         self.data_cube.make_ramp_model()
+        print('Making read noise image')
         self.readnoise_image = self.comp_ramp_res_var()
 
     def make_rate_image_from_data_cube(self, fit_order=1):
@@ -234,18 +242,29 @@ class ReadNoise(ReferenceType):
         self.ramp_res_var = np.zeros(
             (self.data_cube.num_i_pixels, self.data_cube.num_j_pixels), dtype=np.float32
         )
-        residual_cube = self.data_cube.ramp_model - self.data_cube.data
-        clipped_res_cube = sigma_clip(
-            residual_cube,
+        self.residual_cube = self.data_cube.ramp_model - self.data_cube.data
+
+        self.clipped_res_cube = sigma_clip(
+            self.residual_cube,
             sigma_lower=sig_clip_res_low,
             sigma_upper=sig_clip_res_high,
-            cenfunc=np.mean,
+            cenfunc="median",
             axis=0,
-            masked=False,
+            masked=True,
             copy=False,
         )
-        std = np.std(clipped_res_cube, axis=0)
-        self.ramp_res_var = np.float32(std * std)
+        # Masked = True in sigma clip now returns a masked array with any clipped values being removed
+        # from the returned list. If Masked = False nan's are used for values that have been identified 
+        # as being clipped.
+
+        contains_nans_residual = np.isnan(self.clipped_res_cube).any()
+        print("clipped_res_cube contains NaNs:", contains_nans_residual)
+        # Count the total number of NaNs in residual_cube
+        num_nans_residual = np.isnan(self.clipped_res_cube).sum()
+        print("Number of NaNs in clipped_res_cube:", num_nans_residual)
+
+        std = np.std(self.clipped_res_cube, axis=0)
+        self.ramp_res_var = np.float32(std)
         return self.ramp_res_var
 
     def comp_cds_noise(self, sig_clip_cds_low=5.0, sig_clip_cds_high=5.0):
@@ -320,9 +339,7 @@ class ReadNoise(ReferenceType):
         # Construct the read noise object from the data model.
         readnoise_datamodel_tree = rds.ReadnoiseRef()
         readnoise_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        readnoise_datamodel_tree["data"] = (
-            self.readnoise_image.astype(np.float32) * u.DN
-        )
+        readnoise_datamodel_tree["data"] = self.readnoise_image.astype(np.float32)
 
         return readnoise_datamodel_tree
 
@@ -448,4 +465,3 @@ class ReadNoise(ReferenceType):
             except (ValueError, TypeError) as e:
                 logging.error(f"Unable to make_ramp_cube_model with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
-
