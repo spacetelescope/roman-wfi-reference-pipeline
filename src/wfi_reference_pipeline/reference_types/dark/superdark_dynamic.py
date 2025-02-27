@@ -11,6 +11,7 @@ import numpy as np
 import psutil
 from astropy import units as u
 
+from astropy.stats import sigma_clip
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,
@@ -101,7 +102,7 @@ class SuperDarkDynamic(SuperDark):
 
         timing_start_dynamic = time.time()
         num_cores = multiprocessing.cpu_count()
-        total_available_mem = psutil.virtual_memory().available  #TODO SUBTRACT THE SHARED MEMORY BEING USED
+        total_available_mem = psutil.virtual_memory().available
 
 
         # Calculate the required size for the shared memory cube
@@ -133,8 +134,6 @@ class SuperDarkDynamic(SuperDark):
         )
 
         print(f"Begin Multiprocessing with {max_num_processes} processes")
-
-
 
         try:
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
@@ -236,9 +235,8 @@ class SuperDarkDynamic(SuperDark):
                     start_file = len(self.short_dark_file_list)
                 read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
 
-                # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
-                for file_nr in range(start_file, num_files_with_this_read_index):
-                    file_name = self.file_list[file_nr]
+                for file_nr in range(0, num_files_with_this_read_index):
+                    file_name = self.file_list[start_file + file_nr]
                     # If the file to be opened has a valid read index then open the file and
                     # get its data and increase the file counter. Separating short
                     # darks with only 46 reads from long darks with 98 reads.
@@ -258,19 +256,20 @@ class SuperDarkDynamic(SuperDark):
                         logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
                     gc.collect()
                 try:
-                    clipped_reads = np.median(read_index_cube, axis=0) # TODO Get a functional sigma_clip without NAN values
-                    # clipped_reads = sigma_clip(
-                    #     read_index_cube.astype(np.float32),
-                    #     sigma_lower=self.sig_clip_sd_low,
-                    #     sigma_upper=self.sig_clip_sd_high,
-                    #     cenfunc="mean",
-                    #     axis=0,
-                    #     masked=False,
-                    #     copy=False,
-                    # )
+                    # TODO NOTE: may want to have option to use utilities.data_functions.get_science_pixels_cube for sigma clipping
+                    clipped_reads = sigma_clip(
+                        read_index_cube.astype(np.float32),
+                        sigma_lower=self.sig_clip_sd_low,
+                        sigma_upper=self.sig_clip_sd_high,
+                        cenfunc="mean",
+                        axis=0,
+                        masked=False,
+                        copy=False,
+                    )
                 except Exception as e:
                     logging.error(f"Error Sigma Clipping read index {read_index} with exception: {e}")
-                superdark_shared_mem[read_index] = np.mean(clipped_reads, axis=0)
+                # Imperative that we ignore NaN values when calculating mean
+                superdark_shared_mem[read_index] = np.nanmean(clipped_reads, axis=0)
         finally:
             if shared_mem:
                 # Close the local copy. This does not close the copy in the other processes

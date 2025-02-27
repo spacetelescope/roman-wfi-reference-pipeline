@@ -15,6 +15,8 @@ QC_CHECK_SUCCEED = 1    # "Green", all is good to deliver
 QC_CHECK_WARNING = 2    # "Yellow", conditional deliver according to parameters/settings
 QC_CHECK_SKIP = 3       # Not Run, all good
 
+VIRTUAL_PIXEL_DEPTH = 4 # Reference pixels are connected to virtual pixels acting as a 4 element deep border on each slice of an uncalibrated cube
+
 WFI_MODE_WIM = "WIM"
 WFI_MODE_WSM = "WSM"
 
