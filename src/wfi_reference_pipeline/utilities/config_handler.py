@@ -12,8 +12,7 @@ from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SC
 
 
 def _find_config_file(config_filename):
-    """Find the config file using CONFIG path and
-    our projects root directory
+    """Find the config file using CONFIG path and our projects root directory
 
     Parameters
     ----------
@@ -21,8 +20,8 @@ def _find_config_file(config_filename):
         config file we're looking for within the CONFIG_PATH
 
     """
-    current_path = Path.cwd()
-    this_path = Path(current_path) / "pyproject.toml"
+    current_path = Path(__file__).resolve()
+    this_path = current_path / "pyproject.toml"
     if this_path.is_file():
         root_path = current_path
     else:
@@ -31,13 +30,13 @@ def _find_config_file(config_filename):
             (path for path in current_path.parents if (path / "pyproject.toml").is_file()),
             None,
         )
-
     # once we have our root path, grab the path to the config_file
     config_file_path = root_path / CONFIG_PATH / config_filename
-    if config_file_path.is_file():
-        return config_file_path
 
-    return None  # Config file not found
+    if not config_file_path.is_file():
+        config_file_path = None # Config file not found
+
+    return config_file_path
 
 
 def _validate_config(config_file_dict, schema):
@@ -68,6 +67,11 @@ def _validate_config(config_file_dict, schema):
 def _get_config(config_filename):
     """Return a dictionary that holds the contents of config.yml
 
+     Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
     Returns
     -------
     settings : dict
@@ -94,6 +98,19 @@ def _get_config(config_filename):
 
 
 def get_logging_config(config_file="config.yml"):
+    """Get configuration settings from config.yml for logging
+    Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+    """
     # Ensure the file has all the needed entries with expected data types
     settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
@@ -101,11 +118,44 @@ def get_logging_config(config_file="config.yml"):
 
 
 def get_data_files_config(config_file="config.yml"):
+    """Get configuration settings from config.yml for data_files
+    Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+    """
     settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
     return settings["data_files"]
 
 def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
+    """Get configuration settings from pipelines_config.yml for any reference type
+    Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    ref_type : CONSTANT
+        The defined reference type from constants.py
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+
+    Raises
+    ------
+    ValueError
+        If the ref_type hasn't been implemented yet
+    """
     settings = _get_config(config_file)
     _validate_config(settings, PIPELINES_CONFIG_SCHEMA)
     if ref_type == REF_TYPE_DARK:
@@ -120,6 +170,25 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
 def get_quality_control_config(ref_type, config_file="quality_control_config.yml"):
     """Get configuration settings from quality_control_config.yml for any reference type
     Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    ref_type : CONSTANT
+        The defined reference type from constants.py
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_submission_config.yml".
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+
+    Raises
+    ------
+    ValueError
+        If the YAML file is incorrectly formatted.
+    KeyError
+        If the configuration can't find your ref type.
     """
     setting_type = ""
     try:
