@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 from jsonschema import exceptions, validate
 from wfi_reference_pipeline.constants import (
-    CONFIG_PATH,
     WFI_REF_TYPES,
     REF_TYPE_DARK,
     REF_TYPE_READNOISE,
