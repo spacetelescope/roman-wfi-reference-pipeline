@@ -1,3 +1,5 @@
+import sys
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -33,7 +35,7 @@ class Pipeline(ABC):
             self.pipeline_out_path = Path(self._data_files_config["crds_ready_dir"])
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
-            exit()
+            sys.exit()
         self.file_handler = FileHandler(self.ref_type, self.prep_path, self.pipeline_out_path)
 
 
