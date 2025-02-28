@@ -60,7 +60,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 zip-safe = false
-include-package-data = false
+include-package-data = true
 
 [tool.setuptools.packages.find]
 exclude = [
@@ -76,8 +76,8 @@ namespaces = false
 "" = "src"
 
 [tool.setuptools.package-data]
-"wfi_reference_pipeline.resources" = [
-    "data/*.yaml",
+"wfi_reference_pipeline.config" = [
+    "*.yaml",
 ]
 
 [tool.setuptools_scm]
