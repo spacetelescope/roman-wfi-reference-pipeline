@@ -12,8 +12,8 @@ from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SC
 
 
 def _find_config_file(config_filename, config_path=""):
-    """Find the config file using CONFIG path and
-    our projects root directory
+    """Find the config file using CONFIG path and our projects root directory
+    Only need to send in config_path if you do NOT want to use our default config files.
 
     Parameters
     ----------
@@ -29,7 +29,7 @@ def _find_config_file(config_filename, config_path=""):
         else:
             config_file_path = config_path / config_filename
     else:
-        current_path = Path.cwd()
+        current_path = Path(__file__).resolve()
         this_path = Path(current_path) / "pyproject.toml"
         if this_path.is_file():
             root_path = current_path
@@ -82,6 +82,7 @@ def _get_config(config_filename, config_path=""):
         The name of the configuration file to load, by default "crds_submission_config.yml".
     config_path : str, optional
         The full path to the configuration file to load, by default empty and will find within repo file structure
+        This is intended for users who do NOT want to use our default configuration files.
 
     Returns
     -------
