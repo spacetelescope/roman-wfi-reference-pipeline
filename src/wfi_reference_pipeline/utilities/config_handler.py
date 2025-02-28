@@ -21,7 +21,7 @@ def _find_config_file(config_filename):
 
     """
     current_path = Path(__file__).resolve()
-    this_path = Path(current_path) / "pyproject.toml"
+    this_path = current_path / "pyproject.toml"
     if this_path.is_file():
         root_path = current_path
     else:
