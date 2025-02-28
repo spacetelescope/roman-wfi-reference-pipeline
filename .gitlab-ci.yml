@@ -35,10 +35,10 @@ run-pytest:
     - pip install -r requirements.txt
     - pip install bs4
     - pip install pytest pytest-cov
-    - ls -R venv/lib/python3.12/site-packages/wfi_reference_pipeline/
-#    - pytest --cov=. --cov-config=.coveragerc
-#    - coverage report
-#    - coverage xml -o reports/coverage.xml
+#    - ls -R venv/lib/python3.12/site-packages/wfi_reference_pipeline/
+    - pytest --cov=. --cov-config=.coveragerc
+    - coverage report
+    - coverage xml -o reports/coverage.xml
   artifacts:
     reports:
       coverage_report:
