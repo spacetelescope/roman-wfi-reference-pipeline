@@ -1,6 +1,6 @@
 import pytest
 from wfi_reference_pipeline.constants import REF_TYPE_DARK
-from wfi_reference_pipeline.utilities.config_handler import get_data_files_config, get_logging_config, get_quality_control_config
+from wfi_reference_pipeline.config.config_access import get_data_files_config, get_logging_config, get_quality_control_config
 
 def test_bad_filename_fail_with_file_not_found_error():
     """Assert that the if a bad file name is sent, we get the correct error."""

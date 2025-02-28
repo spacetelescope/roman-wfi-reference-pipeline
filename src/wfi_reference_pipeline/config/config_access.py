@@ -11,34 +11,6 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA, CRDS_CONFIG_SCHEMA, PIPELINES_CONFIG_SCHEMA
 
 
-def _find_config_file(config_filename):
-    """Find the config file using CONFIG path and our projects root directory
-
-    Parameters
-    ----------
-    config_filename : string
-        config file we're looking for within the CONFIG_PATH
-
-    """
-    current_path = Path(__file__).resolve()
-    this_path = current_path / "pyproject.toml"
-    if this_path.is_file():
-        root_path = current_path
-    else:
-        # move up our directory path until we find pyproject.toml
-        root_path = next(
-            (path for path in current_path.parents if (path / "pyproject.toml").is_file()),
-            None,
-        )
-    # once we have our root path, grab the path to the config_file
-    config_file_path = root_path / CONFIG_PATH / config_filename
-
-    if not config_file_path.is_file():
-        config_file_path = None # Config file not found
-
-    return config_file_path
-
-
 def _validate_config(config_file_dict, schema):
     """Check that the config.yml file contains all the needed entries with
     expected data types
@@ -77,7 +49,12 @@ def _get_config(config_filename):
     settings : dict
         A dictionary that holds the contents of the config file.
     """
-    config_file_location = _find_config_file(config_filename)
+
+    # all config files stored in same directory
+    current_path = Path(__file__).parent.resolve()
+    config_file_location = current_path / config_filename
+    if not config_file_location.is_file():
+        config_file_location = None # Config file not found
 
     if config_file_location is None:
         raise FileNotFoundError(
