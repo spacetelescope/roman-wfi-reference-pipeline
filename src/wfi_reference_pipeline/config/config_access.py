@@ -52,7 +52,6 @@ def _get_config(config_filename):
     # all config files stored in same directory
     current_path = Path(__file__).parent.resolve()
     config_file_location = current_path / config_filename
-    print(f"config_file_location is {config_file_location}") # SAPP TODO REMOVE
     if not config_file_location.is_file():
         config_file_location = None # Config file not found
 
