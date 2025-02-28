@@ -54,7 +54,7 @@ import sys
 import time
 from functools import wraps
 
-from wfi_reference_pipeline.utilities.config_handler import get_logging_config
+from wfi_reference_pipeline.config.config_handler import get_logging_config
 
 
 def configure_logging(target_module):
