@@ -13,7 +13,7 @@ from crds.certify import certify_files
 from crds.core import heavy_client
 
 from .notifications import send_slack_message
-from ..config.config_handler import get_crds_submission_config
+from ..config.config_access import get_crds_submission_config
 from wfi_reference_pipeline.constants import WFI_REF_TYPES
 
 

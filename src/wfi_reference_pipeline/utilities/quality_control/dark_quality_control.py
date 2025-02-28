@@ -7,7 +7,7 @@ from wfi_reference_pipeline.constants import (
     QC_CHECK_SKIP,
     REF_TYPE_DARK,
 )
-from wfi_reference_pipeline.config.config_handler import get_quality_control_config
+from wfi_reference_pipeline.config.config_access import get_quality_control_config
 
 
 class DarkQualityControl:

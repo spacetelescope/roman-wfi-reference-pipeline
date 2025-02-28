@@ -14,7 +14,7 @@ from wfi_reference_pipeline.constants import (
     DARK_SIGMA_CLIP_SD_HIGH,
     REF_TYPE_DARK,
 )
-from wfi_reference_pipeline.config.config_handler import get_pipelines_config
+from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
