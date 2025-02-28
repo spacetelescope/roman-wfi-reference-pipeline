@@ -78,6 +78,7 @@ namespaces = false
 [tool.setuptools.package-data]
 "wfi_reference_pipeline.config" = [
     "*.yaml",
+    "*.yml",
 ]
 
 [tool.setuptools_scm]
