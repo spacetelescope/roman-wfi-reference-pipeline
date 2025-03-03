@@ -123,30 +123,19 @@ class ABVegaMagnitudeOffset(ReferenceType):
 
         return abvega_offset_dict
 
-    def populate_asdf_tree(self):
-        """
-        Create the asdf element tree before the datamodel is created. After the datamodel is created, we can delete this function.
-        """
-        abvegaoffset_asdf_tree = dict()
-        abvegaoffset_asdf_tree['meta'] = self.meta_data.export_asdf_meta()
-        abvegaoffset_asdf_tree['data'] = self.generate_abvega_offset_dict()
-
-        return abvegaoffset_asdf_tree
-
     def populate_datamodel_tree(self):
         """
         Create data model from DMS and populate tree.
         """
-        # TODO: THis will need to be updated when we have rad model updated
 
         # Construct the dark object from the data model.
-        abvegaoffset_datamodel_tree = rds.SaturationRef()
-        abvegaoffset_datamodel_tree['meta'] = self.meta
+        abvegaoffset_datamodel_tree = rds.AbvegaoffsetRef()
+        abvegaoffset_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         abvegaoffset_datamodel_tree['data'] = self.generate_abvega_offset_dict()
 
         return abvegaoffset_datamodel_tree
 
-    def save_abvega_offset(self, datamodel_tree=None, no_datamodel=True):
+    def save_abvega_offset(self, datamodel_tree=None):
         """
         The method save_aperture_correction writes the reference file object to the specified asdf outfile.
         """
@@ -155,8 +144,6 @@ class ABVegaMagnitudeOffset(ReferenceType):
         af = asdf.AsdfFile()
         if datamodel_tree:
             af.tree = {'roman': datamodel_tree}
-        elif no_datamodel:
-            af.tree = {'roman': self.populate_asdf_tree()}
         else:
             af.tree = {'roman': self.populate_datamodel_tree()}
 

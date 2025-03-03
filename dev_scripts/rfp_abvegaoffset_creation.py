@@ -7,17 +7,18 @@ from pathlib import Path
 # configure a logging file
 logging_functions.configure_logging("wfi_ABVega_mag_offset_creation")
 
-write_path = Path('/grp/roman/wschultz/')#'/grp/roman/RFP/DEV/scratch/'  # Set the write path to be in the RFP scratch directory. I don't seem to have permissions to write here....
+write_path = Path('/grp/roman/RFP/DEV/scratch/') # Set the write path to be in the RFP scratch directory.
 
 # Start by making the generic Meta data for all the files
 tmp = MakeDevMeta(ref_type='ABVEGAOFFSET') 
 tmp.meta_abvegaoffset.author = 'W. C. Schultz'
 tmp.meta_abvegaoffset.use_after = Time('2020-01-01T00:00:00.000')
 tmp.meta_abvegaoffset.pedigree = "GROUND"
+#TODO update the version numbers below to match the software used, look into automatic version number updates
 tmp.meta_abvegaoffset.description = \
 """AB-Vega Magnitude Offset Reference File
-Intended for romancal version: >0.16.2
-roman_datamodels version: not yet implemented
+Intended for romancal version: >0.17.0
+roman_datamodels version: 0.23.1
 Software versions: 
     synphot: 1.4.0 
 
@@ -41,5 +42,5 @@ for detector_index in range(18):
                                 clobber=True 
                             )
 
-    abvega_offset.save_abvega_offset(no_datamodel=True) 
+    abvega_offset.save_abvega_offset() 
     print('Made file -> ', outfile)
