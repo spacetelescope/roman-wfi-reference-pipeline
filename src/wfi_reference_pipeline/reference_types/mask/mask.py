@@ -1,12 +1,19 @@
 import logging
 import numpy as np
+
 import roman_datamodels.stnode as rds
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 
 from ..reference_type import ReferenceType
 
-from . import mask_helpers as helper
+import roman_datamodels as rdm
 from roman_datamodels.dqflags import pixel as dqflags
+
+from astropy.io import fits
+from astropy.convolution import convolve, Box2DKernel
+
+from multiprocessing import Pool
+import os
 
 class Mask(ReferenceType):
     """
@@ -84,25 +91,28 @@ class Mask(ReferenceType):
         # Initialize attributes.
         self.mask_image = None
 
-        # # Module flow creating reference file.
-        # if not (isinstance(ref_type_data, np.ndarray) and
-        #         ref_type_data.dtype == np.uint32 and
-        #         ref_type_data.shape == (4096, 4096)):
-        #     raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
+        # Module flow creating reference file.
+        if not ((isinstance(ref_type_data, np.ndarray) and
+                ref_type_data.dtype == np.uint32 and
+                ref_type_data.shape == (4096, 4096)) or file_list):
 
-        # else:
-        #     logging.debug("The input 2D data array is now self.mask_image.")
-        #     self.mask_image = ref_type_data
-        #     logging.debug("Ready to generate reference file.")
+            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
+
+        else:
+
+            logging.debug("The input 2D data array is now self.mask_image.")
+            self.mask_image = ref_type_data
+            logging.debug("Ready to generate reference file.")
 
     def make_mask_image(self,
-                        boxwidth=15,
-                        sigma_stats=3.,
+                        boxwidth=4,
                         dead_sigma=5.,
                         max_low_qe_signal=0.5,
                         min_open_adj_signal=1.05,
                         do_not_use_flags=["DEAD"],
-                        multip=False):
+                        multip=False,
+                        normalized_path=None,
+                        from_smoothed=True):
         """
         This method is used to generate the reference file image.
 
@@ -138,57 +148,166 @@ class Mask(ReferenceType):
             A list of flags whose pixels need to be marked as DO_NOT_USE.
             Used in _update_mask_do_not_use_pixels() so pixels aren't double-flagged as DNU.
         """
-        # Used in DEAD, LOW_QE, OPEN/ADJ pixel identification
-        normalized_image = helper.create_normalized_slope_image(
-            filelist=self.file_list,
-            sigma=sigma_stats,
-            boxwidth=boxwidth,
-            multip=multip
-        )
+        # TODO: If a user inputs ref_type_data, is that the users own mask?
+        # In test_mask.py mask is created from np.zeros arr, but requires
+        # that all reference pixels have value 2**31
+        if self.file_list is not None:
 
-        self._update_mask_ref_pixels()
+            self.update_mask_from_flats(filelist=self.file_list,
+                                        multip=multip,
+                                        from_smoothed=from_smoothed,
+                                        boxwidth=boxwidth,
+                                        normalized_path=normalized_path,
+                                        dead_sigma=dead_sigma,
+                                        max_low_qe_signal=max_low_qe_signal,
+                                        min_open_adj_signal=min_open_adj_signal)
 
-        self._update_mask_dead_pixels(
-            normalized_image=normalized_image,
-            sigma_stats=sigma_stats,
-            dead_sigma=dead_sigma
-        )
+            self.update_mask_from_darks()
 
-        self._update_mask_low_qe_open_adj_pixels(
-            normalized_image=normalized_image,
-            max_low_qe_signal=max_low_qe_signal,
-            min_open_adj_signal=min_open_adj_signal
-        )
+        # These functions can be implemented without input files
+        self.update_mask_ref_pixels()
 
-        self._update_mask_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
+        self.set_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
         self.mask_image = self.mask
 
-    def pad_with_ref_pixels(self, image):
+    def update_mask_from_flats(self, filelist, multip, from_smoothed, boxwidth, normalized_path, dead_sigma, max_low_qe_signal, min_open_adj_signal):
         """
-        Pad the image with four rows and columns of (reference) pixels with value of zero.
+        This function is used when ID'ing flags from FLAT files.
+        The following flags are idenfitied:
+            - DEAD: set_dead_pixels()
+            - LOW_QE: set_low_qe_pixels()
+            - OPEN and ADJ: set_open_adj_pixels()
         """
-        padded_im = np.zeros((4096, 4096), dtype=np.uint32)
-        padded_im[4:-4, 4:-4] = image
+        normalized_image = self.create_normalized_image(filelist,
+                                                        multip,
+                                                        from_smoothed,
+                                                        boxwidth)
 
-        return padded_im
+        if normalized_path is not None:
 
-    def remove_ref_pixel_border(self, image):
-        """
-        Remove the outer four columns and rows of (reference) pixels to
-        return the science image.
-        """
-        return image[4:-4, 4:-4]
+            fits.writeto(f"{normalized_path}normalized_image.fits",
+                         data=normalized_image,
+                         overwrite=True)
 
-    def get_adjacent_pix(self, x_coor, y_coor, im):
+        self.set_dead_pixels(normalized_image,
+                             dead_sigma)
+
+        self.set_low_qe_open_adj_pixels(normalized_image,
+                                        max_low_qe_signal,
+                                        min_open_adj_signal)
+
+        return
+
+    class MaskDataCube:
+        def __init__(self, nz: int, degree: int = 1):
+            self.nz = nz
+            self.degree = degree
+            self.z = np.arange(nz)
+
+            # Precompute basis matrix and its pseudo-inverse
+            self.B = np.vander(self.z, N=degree + 1, increasing=True)
+            self.pinvB = np.linalg.pinv(self.B)
+            self.B_x_pinvB = self.B @ self.pinvB
+
+        def fit(self, D):
+            """
+            Fits the polynomial to the data.
+            Returns the coefficients of the fit.
+            """
+            return (self.pinvB @ D.reshape(self.nz, -1)).reshape((-1, *D.shape[1:]))
+
+        def model(self, D):
+            """
+            Models the data based on the polynomial fit.
+            Returns the modeled data.
+            """
+            return (self.B_x_pinvB @ D.reshape(self.nz, -1)).reshape((-1, *D.shape[1:]))
+
+    def _get_slope(self, file):
+        """
+        Extracts the slope (linear term) of the data using polynomial fitting.
+        """
+        with rdm.open(file) as rf:
+
+            data = rf.data
+
+            datacube = Mask.MaskDataCube(data.shape[0], degree=1)
+
+            # Extract the linear coefficient
+            slope = datacube.fit(data)[1]
+
+        return slope
+
+    def _create_super_slope_image(self, filelist, multip):
+        """
+        Fit a slope to each file in filelist, then average
+        all slopes together to create a super slope image.
+        """
+        # Speed up slope calculationg with Pool's map function
+        if multip:
+
+            with Pool(processes=os.cpu_count()-2) as pool:
+                slopes = pool.map(self._get_slope, filelist)
+
+        else:
+            slopes = [self._get_slope(file) for file in filelist]
+
+        super_slope_image = np.nanmean(slopes,
+                                       axis=0)
+
+        return super_slope_image
+
+    def create_normalized_image(self, filelist, multip, from_smoothed, boxwidth):
+
+        super_slope = self._create_super_slope_image(filelist,
+                                                     multip)
+
+        if from_smoothed:
+
+            smoothing_kernel = Box2DKernel(boxwidth)
+
+            smoothed_image = convolve(super_slope,
+                                      smoothing_kernel,
+                                      boundary="fill",
+                                      fill_value=np.nanmedian(super_slope),
+                                      nan_treatment="interpolate")
+
+            return super_slope / smoothed_image
+
+        else:
+
+            return super_slope / np.nanmean(super_slope)
+
+    def set_dead_pixels(self, normalized_image, dead_sigma):
+        """
+        Identify the DEAD pixels using the normalized image.
+        """
+        norm_mean = np.nanmean(normalized_image)
+        norm_std = np.nanstd(normalized_image)
+
+        threshold = norm_mean - (dead_sigma * norm_std)
+
+        # Getting the map of DEAD pixels where GOOD = 0 and DEAD = 1
+        dead_mask = (normalized_image < threshold).astype(np.uint32)
+
+        dead_mask[dead_mask == 1] = dqflags.DEAD.value
+
+        self.mask += dead_mask
+
+        return
+
+    def _get_adjacent_pix(self, x_coor, y_coor, im):
         """
         Identify the pixels adjacent to a given pixel. Copied from Webb's RFP.
-        This is used in _update_mask_low_qe_open_adj() function.
+        This is used in set_low_qe_open_adj() function.
 
         Ex: note that x are the returned coordinates.
         [ ][x][ ]
         [x][o][x]
         [ ][x][ ]
+        TODO: should we modify this function to return the corners too?
+              Also, Tim brought up the case of two adjacent open pixels
         """
         y_dim, x_dim = im.shape
 
@@ -239,85 +358,23 @@ class Mask(ReferenceType):
 
         return adj_y, adj_x
 
-    def check_if_dead_pixel(self, x_coor, y_coor):
+    def set_low_qe_open_adj_pixels(self, normalized_image, max_low_qe_signal, min_open_adj_signal):
         """
-        Check if a pixel is DEAD. Used when identifying LOW_QE/OPEN/ADJ pixels.
+        Identify LOW_QE, OPEN and ADJ pixels using the normalized image.
         """
-        science_mask = self.remove_ref_pixel_border(self.mask)
+        low_qe_map = np.zeros((4096, 4096), dtype=np.uint32)
+        open_map = np.zeros((4096, 4096), dtype=np.uint32)
+        adj_map = np.zeros((4096, 4096), dtype=np.uint32)
 
-        bitval = dqflags.DEAD.value
+        low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
 
-        if science_mask[y_coor, x_coor] & bitval == bitval:
-            return True
-
-        else:
-            return False
-
-    def _update_mask_ref_pixels(self):
-        """
-        Create array to flag the 4 px reference pixel border around detector.
-        """
-        refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
-
-        refpix_mask[:4, :] = dqflags.REFERENCE_PIXEL.value
-        refpix_mask[-4:, :] = dqflags.REFERENCE_PIXEL.value
-        refpix_mask[:, :4] = dqflags.REFERENCE_PIXEL.value
-        refpix_mask[:, -4:] = dqflags.REFERENCE_PIXEL.value
-
-        self.mask += refpix_mask
-
-    def _update_mask_dead_pixels(self,
-                                 normalized_image,
-                                 sigma_stats=3.,
-                                 dead_sigma=5.):
-        """
-        Identify the DEAD pixels using the normalized image.
-        """
-        # Mean and stdev of the normalized master image
-        mean_norm, stdev_norm = helper.create_image_stats(
-            data=normalized_image,
-            sigma=sigma_stats
-        )
-
-        # Threshold for pixel to be considered DEAD
-        threshold = mean_norm - (dead_sigma * stdev_norm)
-
-        # Getting the map of DEAD pixels where GOOD = 0 and DEAD = 1
-        dead_mask = (normalized_image < threshold).astype(np.uint32)
-
-        # Setting DEAD pixels to the actual dq flag value
-        dead_mask[dead_mask == 1] = dqflags.DEAD.value
-
-        # Padding the image with ref pixel border
-        dead_mask = self.pad_with_ref_pixels(dead_mask)
-
-        self.mask += dead_mask
-
-    def _update_mask_low_qe_open_adj_pixels(self,
-                                            normalized_image,
-                                            max_low_qe_signal=0.5,
-                                            min_open_adj_signal=1.05):
-        """
-        Using the normalized image, identify LOW_QE, OPEN/ADJ pixels.
-        """
-        # Empty arrays for the open/adj/low_qe
-        low_qe_map = np.zeros(normalized_image.shape)
-        open_map = np.zeros(normalized_image.shape)
-        adj_map = np.zeros(normalized_image.shape)
-
-        # A map of the locations of low signal pixels 
-        # TODO: update DEAD
-        low_sig_y, low_sig_x = np.where((normalized_image >= 0.05) & (normalized_image < max_low_qe_signal))
-
-        # Going through each low signal pixel and determining type
         for x, y in zip(low_sig_x, low_sig_y):
 
-            # TODO update 
-            # Checking if DEAD
-            # if self.check_if_dead_pixel(x_coor=x, y_coor=y):
-            #     continue
+            # Skip calculations if this is a DEAD pixel
+            if self.mask[y, x] & dqflags.DEAD.value == dqflags.DEAD.value:
+                continue
 
-            adj_coor = self.get_adjacent_pix(
+            adj_coor = self._get_adjacent_pix(
                 x_coor=x,
                 y_coor=y,
                 im=normalized_image
@@ -335,21 +392,18 @@ class Mask(ReferenceType):
             else:
                 low_qe_map[y, x] = dqflags.LOW_QE.value
 
-        low_qe_map = self.pad_with_ref_pixels(low_qe_map)
-        open_map = self.pad_with_ref_pixels(open_map)
-        adj_map = self.pad_with_ref_pixels(adj_map)
-
-        # Adding to mask
         self.mask += low_qe_map.astype(np.uint32)
         self.mask += open_map.astype(np.uint32)
         self.mask += adj_map.astype(np.uint32)
 
-    def _update_mask_do_not_use_pixels(self, do_not_use_flags=["DEAD"]):
+        return
+
+    def set_do_not_use_pixels(self, do_not_use_flags):
         """
         This function adds the DO_NOT_USE flag to pixels with flags:
             DEAD
-        This may be updated in the future with more flags.
-        #TODO: RC/Inverse RC will likely be marked as DNU...
+        DO_NOT_USE pixels are excluded in subsequent pipeline processing.
+        More flags may be added after further analyses.
         """
         dnupix_mask = np.zeros((4096, 4096), dtype=np.uint32)
 
@@ -369,6 +423,25 @@ class Mask(ReferenceType):
         self.mask += dnupix_mask.astype(np.uint32)
 
         return
+
+    # TODO: Functions used when IDing flags from DARKS
+    def update_mask_from_darks(self):
+
+        return
+
+    # Reference pixels have a static definition
+    def update_mask_ref_pixels(self):
+        """
+        Create array to flag the 4 px reference pixel border around detector.
+        """
+        refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+
+        refpix_mask[:4, :] = dqflags.REFERENCE_PIXEL.value
+        refpix_mask[-4:, :] = dqflags.REFERENCE_PIXEL.value
+        refpix_mask[:, :4] = dqflags.REFERENCE_PIXEL.value
+        refpix_mask[:, -4:] = dqflags.REFERENCE_PIXEL.value
+
+        self.mask += refpix_mask
 
     def calculate_error(self):
         """
