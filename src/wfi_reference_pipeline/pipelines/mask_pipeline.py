@@ -2,9 +2,8 @@ import roman_datamodels as rdm
 
 import logging
 
-from pathlib import Path
-
-import os, glob
+import os
+import glob
 
 from romancal.refpix import RefPixStep
 from romancal.dq_init import DQInitStep

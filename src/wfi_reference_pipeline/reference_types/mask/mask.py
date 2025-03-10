@@ -114,7 +114,10 @@ class Mask(ReferenceType):
                         normalized_path=None,
                         from_smoothed=True):
         """
-        This method is used to generate the reference file image.
+        This method is used to generate the reference file image. We can ID bad pixels from
+        dark images and flatfield images.
+
+        See docstring for each step for more information on the flag algorithms.
 
         NOTE: This method is intended to be the module's internal pipeline where each method's internal
         variables and parameters are set and this is the single call to populate all attributes needed
@@ -122,37 +125,49 @@ class Mask(ReferenceType):
 
         Parameters:
         -----------
-        boxwidth: int, default = 15
+        boxwidth: int, default = 4
             The width of the smoothing kernel.
 
-        sigma_stats: float, default = 3.
-            Sigma value for sigma clipping the master + normalized image.
-
         dead_sigma: float, default = 5.
-            Sigma value used when determing DEAD pixels. Number of standard
+            Sigma value used when determining DEAD pixels. Number of standard
             deviations below the mean at which a pixel is considered DEAD.
 
-        max_dead_sigmal: float, default = 0.05
-            Maximum normalized countrate value of a DEAD pixel.
-
         max_low_qe_signal: float, default = 0.5
-            Maximum normalized countrate value of a LOW_QE pixel.
+            Maximum normalized countrate value of a LOW_QE or OPEN pixel.
 
         min_open_adj_signal: float, default = 1.05
             Minimum normalized countrate value of an ADJ_OPEN pixel.
             If center pixel < max_low_qe_signal AND all adjacent pixels > min_open_adj_signal,
-            then the center pixel is flagged as OPEN (instead of LOW_QE) and adjacent 
+            then the center pixel is flagged as OPEN (instead of LOW_QE) and adjacent
             pixels are flagged as ADJ_OPEN.
 
         do_not_use_flags: arr of str, default = ["DEAD"]
             A list of flags whose pixels need to be marked as DO_NOT_USE.
             Used in _update_mask_do_not_use_pixels() so pixels aren't double-flagged as DNU.
+
+        multip: bool, default = False
+            When running the code in a script or ipython session, utilize
+            multiprocessing's Pool map function to parallelize the code
+            when calculating a super slope image.
+
+        normalized_path: str, default = None
+            If a path is specified, then the normalized image that is used
+            when IDing pixels from flats is saved. If None, then no normalized
+            image is saved.
+
+        from_smoothed: bool, default = True
+            If True, then the normalized image is from adaptive local
+            normalization. If False, then normalized image is from mean
+            normalization.
+
         """
         # TODO: If a user inputs ref_type_data, is that the users own mask?
         # In test_mask.py mask is created from np.zeros arr, but requires
         # that all reference pixels have value 2**31
         if self.file_list is not None:
 
+            # TODO: we should check that the filelist is all flats/darks
+            # or make sure we filter out the correct files for a given step
             self.update_mask_from_flats(filelist=self.file_list,
                                         multip=multip,
                                         from_smoothed=from_smoothed,
@@ -166,9 +181,9 @@ class Mask(ReferenceType):
 
         # These functions can be implemented without input files
         self.update_mask_ref_pixels()
-
         self.set_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
+        # Updating the Mask object with calculated mask
         self.mask_image = self.mask
 
     def update_mask_from_flats(self, filelist, multip, from_smoothed, boxwidth, normalized_path, dead_sigma, max_low_qe_signal, min_open_adj_signal):
@@ -178,6 +193,10 @@ class Mask(ReferenceType):
             - DEAD: set_dead_pixels()
             - LOW_QE: set_low_qe_pixels()
             - OPEN and ADJ: set_open_adj_pixels()
+
+        The filelist is a list of flat files; since flat images are evenly
+        illuminated pixels across the entire detector, they are ideal for
+        identifying low sensitivity pixels (such as DEAD).
         """
         normalized_image = self.create_normalized_image(filelist,
                                                         multip,
@@ -210,19 +229,19 @@ class Mask(ReferenceType):
             self.pinvB = np.linalg.pinv(self.B)
             self.B_x_pinvB = self.B @ self.pinvB
 
-        def fit(self, D):
+        def fit(self, data):
             """
             Fits the polynomial to the data.
             Returns the coefficients of the fit.
             """
-            return (self.pinvB @ D.reshape(self.nz, -1)).reshape((-1, *D.shape[1:]))
+            return (self.pinvB @ data.reshape(self.nz, -1)).reshape((-1, *data.shape[1:]))
 
-        def model(self, D):
+        def model(self, data):
             """
             Models the data based on the polynomial fit.
             Returns the modeled data.
             """
-            return (self.B_x_pinvB @ D.reshape(self.nz, -1)).reshape((-1, *D.shape[1:]))
+            return (self.B_x_pinvB @ data.reshape(self.nz, -1)).reshape((-1, *data.shape[1:]))
 
     def _get_slope(self, file):
         """
@@ -244,7 +263,7 @@ class Mask(ReferenceType):
         Fit a slope to each file in filelist, then average
         all slopes together to create a super slope image.
         """
-        # Speed up slope calculationg with Pool's map function
+        # Speed up slope calculation with Pool's map function
         if multip:
 
             with Pool(processes=os.cpu_count()-2) as pool:
@@ -282,6 +301,8 @@ class Mask(ReferenceType):
     def set_dead_pixels(self, normalized_image, dead_sigma):
         """
         Identify the DEAD pixels using the normalized image.
+        A pixel is considered DEAD if it is 5 sigma below the mean
+        of the normalized image.
         """
         norm_mean = np.nanmean(normalized_image)
         norm_std = np.nanstd(normalized_image)
@@ -307,7 +328,9 @@ class Mask(ReferenceType):
         [x][o][x]
         [ ][x][ ]
         TODO: should we modify this function to return the corners too?
-              Also, Tim brought up the case of two adjacent open pixels
+              Also, Tim brought up the case of two adjacent open pixels,
+              currently if two open pixels are adjacent to each other then
+              they're marked as LOW_QE since all four corners must be >1.05 norm im value.
         """
         y_dim, x_dim = im.shape
 
@@ -361,6 +384,11 @@ class Mask(ReferenceType):
     def set_low_qe_open_adj_pixels(self, normalized_image, max_low_qe_signal, min_open_adj_signal):
         """
         Identify LOW_QE, OPEN and ADJ pixels using the normalized image.
+        First, a list of coordinates of low signal pixels (defined as having a normalized
+        value less than max_low_qe_signal) is created. The code then iterates through
+        each of these low signal pixels, getting the four adject pixels and seeing
+        if ALL of these four pixels are >1.05 norm im. If so, then this is a OPEN/ADJ
+        pixel. Otherwise, then just the center is marked as LOW_QE.
         """
         low_qe_map = np.zeros((4096, 4096), dtype=np.uint32)
         open_map = np.zeros((4096, 4096), dtype=np.uint32)
