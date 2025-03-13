@@ -1,7 +1,7 @@
 import glob
 import time
 from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
-from wfi_reference_pipeline.utilities.config_access import get_crds_submission_config
+from wfi_reference_pipeline.config.config_access import get_crds_submission_config
 from wfi_reference_pipeline.utilities.manifest import make_manifest, print_manifest, print_meta_fields_together
 
 
