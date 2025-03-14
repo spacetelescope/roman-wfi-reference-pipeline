@@ -2,13 +2,18 @@ from pathlib import Path
 
 import yaml
 from jsonschema import exceptions, validate
+
 from wfi_reference_pipeline.constants import (
-    CONFIG_PATH,
-    WFI_REF_TYPES,
     REF_TYPE_DARK,
     REF_TYPE_READNOISE,
+    WFI_REF_TYPES,
 )
-from wfi_reference_pipeline.utilities.schemas import CONFIG_SCHEMA, QC_CONFIG_SCHEMA, CRDS_CONFIG_SCHEMA, PIPELINES_CONFIG_SCHEMA
+from wfi_reference_pipeline.utilities.schemas import (
+    CONFIG_SCHEMA,
+    CRDS_CONFIG_SCHEMA,
+    PIPELINES_CONFIG_SCHEMA,
+    QC_CONFIG_SCHEMA,
+)
 
 
 def _validate_config(config_file_dict, schema):
@@ -54,7 +59,7 @@ def _get_config(config_filename):
     current_path = Path(__file__).parent.resolve()
     config_file_location = current_path / config_filename
     if not config_file_location.is_file():
-        config_file_location = None # Config file not found
+        config_file_location = None  # Config file not found
 
     if config_file_location is None:
         raise FileNotFoundError(
@@ -112,6 +117,7 @@ def get_data_files_config(config_file="config.yml"):
     _validate_config(settings, CONFIG_SCHEMA)
     return settings["data_files"]
 
+
 def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     """Get configuration settings from pipelines_config.yml for any reference type
     Validate that the settings are in the correct format before returning
@@ -138,9 +144,7 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     if ref_type == REF_TYPE_DARK:
         settings_type = "dark"
     else:
-        raise ValueError(
-            f"{ref_type} has not yet been implemented for configuration."
-        )
+        raise ValueError(f"{ref_type} has not yet been implemented for configuration.")
     return settings[settings_type]
 
 
@@ -180,7 +184,7 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
                 f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
             )
     except KeyError as e:
-        raise KeyError (f"Invalid schema index for ref_type: {ref_type} -- {e}")
+        raise KeyError(f"Invalid schema index for ref_type: {ref_type} -- {e}")
 
     _validate_config(settings, QC_CONFIG_SCHEMA)
     return settings[setting_type]
