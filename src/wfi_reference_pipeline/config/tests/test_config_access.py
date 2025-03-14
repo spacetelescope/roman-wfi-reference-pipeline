@@ -1,6 +1,6 @@
-import pytest
-from wfi_reference_pipeline.constants import REF_TYPE_DARK
-from wfi_reference_pipeline.config.config_access import get_data_files_config, get_logging_config, get_quality_control_config
+import pytest #noqa
+from wfi_reference_pipeline.constants import REF_TYPE_DARK #noqa
+from wfi_reference_pipeline.config.config_access import get_data_files_config, get_logging_config, get_quality_control_config #noqa
 
 
 def test_bad_filename_fail_with_file_not_found_error():
