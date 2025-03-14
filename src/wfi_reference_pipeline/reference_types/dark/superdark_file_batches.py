@@ -1,7 +1,7 @@
 import gc
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 
 import asdf
@@ -241,13 +241,13 @@ def process_files_in_batches(file_list, batch_size, read_i):
     list of np.ndarray
         List of numpy arrays containing data for the specified read index from each file.
     """
-
+    # TODO THIS METHOD (AND CALLERS) NEEDS TO BE RE-EVALUATED FOR ACCURACY AND EFFICIENCY
     all_results = []
     for i in range(0, len(file_list), batch_size):
         batch = file_list[i:i + batch_size]
         # Specify that the batch size is the max number of workers or cores to open files.
         # Limit one core per file.
-        with ThreadPoolExecutor(max_workers=batch_size) as executor:
+        with ProcessPoolExecutor(max_workers=batch_size) as executor:
             futures = [executor.submit(get_read_from_file, file, read_i) for file in batch]
             for future in as_completed(futures):
                 result = future.result()

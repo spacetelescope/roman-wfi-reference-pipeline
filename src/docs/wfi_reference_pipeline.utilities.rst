@@ -23,7 +23,7 @@ wfi\_reference\_pipeline.utilities.basic\_calibration module
 wfi\_reference\_pipeline.utilities.config\_handler module
 ---------------------------------------------------------
 
-.. automodule:: wfi_reference_pipeline.utilities.config_handler
+.. automodule:: wfi_reference_pipeline.config.config_access
    :members:
    :undoc-members:
    :show-inheritance:
