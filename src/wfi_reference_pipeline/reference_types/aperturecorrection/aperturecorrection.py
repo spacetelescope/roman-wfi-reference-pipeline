@@ -90,8 +90,8 @@ class ApertureCorrection(ReferenceType):
         aperture_corrections = 1./enclosed_energy_fractions
 
         # These percentiles were chosen to match the JWST definitions
-        sky_in = np.interp(0.8, np.array(aperture_fluxes), np.array(aperture_radii))
-        sky_out = np.interp(0.85, np.array(aperture_fluxes), np.array(aperture_radii))
+        sky_in = float(np.interp(0.8, np.array(aperture_fluxes), np.array(aperture_radii)))
+        sky_out = float(np.interp(0.85, np.array(aperture_fluxes), np.array(aperture_radii)))
 
         return enclosed_energy_radii, aperture_corrections, sky_in , sky_out
 
@@ -106,8 +106,8 @@ class ApertureCorrection(ReferenceType):
         """
         aperture_correction_dict = dict()
         # enclosed energy percentiles were chosen to match JWST
-        enclosed_energy_fractions = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9])
-
+        enclosed_energy_fractions = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9,0.95])
+        
         wfi = stpsf.WFI()
         wfi.detector = f'SCA{self.meta_data.instrument_detector[-2:]}'
 
@@ -116,8 +116,7 @@ class ApertureCorrection(ReferenceType):
             if optical_element in [WFI_REF_OPTICAL_ELEMENT_DARK,
                                    WFI_REF_OPTICAL_ELEMENT_GRISM,
                                    WFI_REF_OPTICAL_ELEMENT_PRISM]:
-
-                 aperture_correction_dict[optical_element] = {
+                aperture_correction_dict[optical_element] = {
                     'ee_fractions': None,
                     'ee_radii': None,
                     'ap_corrections': None,
@@ -140,33 +139,19 @@ class ApertureCorrection(ReferenceType):
 
         return aperture_correction_dict
 
-    def populate_asdf_tree(self):
-        """
-        Create the asdf element tree before the datamodel is created.
-
-        *** After the datamodel is created, we can delete this function. ***
-
-        """
-        apcorr_asdf_tree = dict()
-        apcorr_asdf_tree['meta'] = self.meta_data.export_asdf_meta()
-        apcorr_asdf_tree['data'] = self.generate_aperture_correction_dict()
-
-        return apcorr_asdf_tree
-
     def populate_datamodel_tree(self):
         """
         Create data model from DMS and populate tree.
         """
-        # TODO: THis will need to be updated when we have rad model updated
 
         # Construct the dark object from the data model.
-        apcorr_datamodel_tree = rds.SaturationRef()
-        apcorr_datamodel_tree['meta'] = self.meta
+        apcorr_datamodel_tree = rds.ApcorrRef()
+        apcorr_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         apcorr_datamodel_tree['data'] = self.generate_aperture_correction_dict()
 
         return apcorr_datamodel_tree
 
-    def save_aperture_correction(self, datamodel_tree=None, no_datamodel=True):
+    def save_aperture_correction(self, datamodel_tree=None):
         """
         The method save_aperture_correction writes the reference file object to the specified asdf outfile.
         """
@@ -175,8 +160,6 @@ class ApertureCorrection(ReferenceType):
         af = asdf.AsdfFile()
         if datamodel_tree:
             af.tree = {'roman': datamodel_tree}
-        elif no_datamodel:
-            af.tree = {'roman': self.populate_asdf_tree()}
         else:
             af.tree = {'roman': self.populate_datamodel_tree()}
 
