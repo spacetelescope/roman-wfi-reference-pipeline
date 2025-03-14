@@ -29,6 +29,7 @@ class SuperDark(ABC):
         ----------
         short_dark_file_list: list
             List of short dark exposure files. Can NOT be empty.
+            This is param to use if sending in only one file list regardless of size.
         long_dark_file_list: list
             List of long dark exposure files. Can be empty.
         short_dark_num_reads: int
@@ -55,7 +56,7 @@ class SuperDark(ABC):
 
         if len(short_dark_file_list) == 0:
             raise ValueError(
-                "Parameter 'short_dark_file_list' can not be empty list"
+                "Parameter 'short_dark_file_list' can not be empty list. This is param to use if sending in only one file list regardless of size."
                 )
         else:
             #verify we wre working with strings and not Paths for metadata below
