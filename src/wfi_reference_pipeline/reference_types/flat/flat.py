@@ -162,8 +162,8 @@ class Flat(ReferenceType):
             logging.debug(
                 "Making flat_image from average of rate images from file list."
             )
-            avg_rate_image = self.make_flat_from_files()
-            self.flat_image = avg_rate_image / np.mean(avg_rate_image)
+            # Run and populate flat image array and error
+            self.make_flat_from_files(calc_error=True)
         else:
             logging.debug(
                 "Making flat_image from data cube."
