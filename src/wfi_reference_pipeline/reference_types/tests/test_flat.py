@@ -56,7 +56,8 @@ class TestFlat:
         """
         assert isinstance(flat_object_with_data_cube, Flat)
         assert flat_object_with_data_cube.data_cube is not None
-        assert flat_object_with_data_cube.flat_image is None  # Ensure image is not created yet
+        # Ensure image is not created yet
+        assert flat_object_with_data_cube.flat_image is None
 
     def test_flat_instantiation_with_invalid_metadata(self, valid_ref_type_data_array):
         """
@@ -64,7 +65,8 @@ class TestFlat:
         """
         bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
         with pytest.raises(TypeError):
-            Flat(meta_data=bad_test_meta.meta_dark, ref_type_data=valid_ref_type_data_array)
+            Flat(meta_data=bad_test_meta.meta_dark,
+                 ref_type_data=valid_ref_type_data_array)
 
     def test_flat_instantiation_with_invalid_ref_type_data(self, valid_meta_data):
         """
@@ -82,7 +84,7 @@ class TestFlat:
         mock_asdf_file = MagicMock()
         mock_asdf_file.tree = {
             "roman": {
-                "data": np.zeros((3, 10, 10))  # Mocking data cube
+                "data": np.zeros((10, 10))  # Mocking data
             }
         }
 
@@ -98,7 +100,8 @@ class TestFlat:
         """
         Test that the make_mask_image method successfully creates the flat image.
         """
-        flat_object = Flat(meta_data=valid_meta_data, ref_type_data=valid_ref_type_data_cube)
+        flat_object = Flat(meta_data=valid_meta_data,
+                           ref_type_data=valid_ref_type_data_cube)
         flat_object.make_flat_image()
         assert flat_object.flat_image is not None
 
@@ -106,25 +109,29 @@ class TestFlat:
         """
         Test calculate_error from input data cube.
         """
-        flat_object_with_data_cube.calculate_error()
+        flat_object_with_data_cube.calculate_error(fill_random=True)
         assert flat_object_with_data_cube.flat_error is not None
         assert flat_object_with_data_cube.flat_error.shape == (4088, 4088)
 
-    def test_calculate_error_with_custom_array(self, flat_object_with_data_cube):
+    def test_calculate_error_with_individual_images(self, flat_object_with_data_cube):
         """
         Test calculate_error with a user-supplied error array.
         """
-        custom_error = np.ones((4088, 4088), dtype=np.float32) * 0.05
-        flat_object_with_data_cube.calculate_error(error_array=custom_error)
-        assert np.array_equal(flat_object_with_data_cube.flat_error, custom_error)
+        custom_individual = np.ones((10, 4088, 4088), dtype=np.float32)
+        flat_object_with_data_cube.calculate_error(ind_flat_array=custom_individual,
+                                                   nsamples=5, nboot=10)
+        assert np.array_equal(
+            flat_object_with_data_cube.flat_error, np.zeros((4088, 4088), dtype=np.float32))
 
     def test_update_data_quality_array(self, flat_object_with_data_array):
         """
         Test update_data_quality_array adds DQ flags for low QE pixels.
         """
         low_qe_threshold = 0.2
-        flat_object_with_data_array.flat_image[2000, 2000] = 0.1  # Simulate a low-QE pixel
-        flat_object_with_data_array.update_data_quality_array(low_qe_threshold=low_qe_threshold)
+        # Simulate a low-QE pixel
+        flat_object_with_data_array.flat_image[2000, 2000] = 0.1
+        flat_object_with_data_array.update_data_quality_array(
+            low_qe_threshold=low_qe_threshold)
         assert flat_object_with_data_array.mask[2000, 2000] > 0
 
     def test_populate_datamodel_tree(self, flat_object_with_data_array):

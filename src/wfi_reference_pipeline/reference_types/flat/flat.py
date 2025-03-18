@@ -44,7 +44,6 @@ class Flat(ReferenceType):
             outfile="roman_flat.asdf",
             clobber=False,
     ):
-
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
         file base class.
@@ -110,13 +109,16 @@ class Flat(ReferenceType):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
+            # Only access data from quantity object.
+            if isinstance(ref_type_data, u.Quantity):
                 ref_type_data = ref_type_data.value
-                logging.debug("Quantity object detected. Extracted data values.")
+                logging.debug(
+                    "Quantity object detected. Extracted data values.")
 
             dim = ref_type_data.shape
             if len(dim) == 2:
-                logging.debug("The input 2D data array is now self.flat_image.")
+                logging.debug(
+                    "The input 2D data array is now self.flat_image.")
                 self.flat_image = ref_type_data.astype(np.float32)
                 logging.debug(
                     "Initializing flat error array with all zeros."
@@ -160,14 +162,15 @@ class Flat(ReferenceType):
             logging.debug(
                 "Making flat_image from average of rate images from file list."
             )
-            avg_rate_image = self.make_flat_from_files()
-            self.flat_image = avg_rate_image / np.mean(avg_rate_image)
+            # Run and populate flat image array and error
+            self.make_flat_from_files(calc_error=True)
         else:
             logging.debug(
                 "Making flat_image from data cube."
             )
             self.make_rate_image_from_data_cube()
-            self.flat_image = self.data_cube.rate_image / np.mean(self.data_cube.rate_image)
+            self.flat_image = self.data_cube.rate_image / \
+                np.mean(self.data_cube.rate_image)
 
         logging.debug(
             "Initializing flat error array with all zeros. Run calculate_error()."
@@ -192,7 +195,8 @@ class Flat(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
-    def make_flat_from_files(self):
+    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=None,
+                             flat_lo=0.2, flat_hi=2.):
         """
         Go through the files supplied to the module and generate a
         cube of rate images into an array. This method uses FlatDataCube
@@ -202,60 +206,114 @@ class Flat(ReferenceType):
         -------
         avg_rate_image: 2D array;
             The average of the rate_image_array in the z axis.
+        lo: float;
+            Minimum median (in a given sensor/exposure) count rate (in units of DN/s)
+            for an image to be considered during the flat generation process.
+        hi: float;
+            Maximum median (in a given sensor/exposure) count rate (in units of DN/s)
+            for an image to be considered during the flat generation process.
+        calc_error: bool,
+            If `True` compute on the fly an uncertainty via bootstrap (slow).
+            Default is `False`.
+        nsamples: int; default None,
+            Number of bootstrap samples to compute the uncertainty. If `None` we will sample
+            half of the files used.
+        flat_lo: float; default 0.2,
+            If a flat value for a pixel is below `flat_lo` it is flagged and replaced by 1.
+        flat_hi: float; default 2.0,
+            If a flat value for a pixel is above `flat_hi` it is flagged and replaced by 1.
         """
 
-        logging.debug("Making flat from the average flat rate of file list data cubes.")
-        n_reads_per_fl_arr = np.zeros(self.num_files)
-        rate_image_array = np.zeros((self.num_files,
-                                     self.data_cube.num_i_pixels,
-                                     self.data_cube.num_j_pixels),
-                                    dtype=np.float32)
-        rate_image_var_array = np.zeros((self.num_files,
-                                         self.data_cube.num_i_pixels,
-                                         self.data_cube.num_j_pixels),
-                                        dtype=np.float32)
+        logging.debug(
+            "Making flat from the average flat rate of file list data cubes.")
+
+        if nsamples is None:
+            # Trying to avoid oversampling
+            nsamples = max(1, int(self.num_files / 2))
         for fl in range(0, self.num_files):
             tmp = asdf.open(self.file_list[fl])
-            n_reads_per_fl_arr[fl], _, _ = np.shape(tmp.tree["roman"]["data"])
-            tmp_cube = tmp.tree["roman"]["data"]
+            if len(np.shape(tmp.tree["roman"]["data"])) != 2:
+                raise ValueError("The input data is expected to be a ramp (2D).\
+                                  Please calculate or process your data first.")
+            else:
+                npixx, npixy = np.shape(tmp.tree["roman"]["data"])
+                tmp_cube = tmp.tree["roman"]["data"].copy()
+                if fl == 0:
+                    rate_image_array = np.zeros((self.num_files,
+                                                 npixx,
+                                                 npixy),
+                                                dtype=np.float32)
             tmp.close()
             if not isinstance(tmp_cube, (np.ndarray, u.Quantity)):
                 raise TypeError(
                     "Input data is neither a numpy array nor a Quantity object."
                 )
-            if isinstance(tmp_cube, u.Quantity):  # Only access data from quantity object.
+            # Only access data from quantity object.
+            if isinstance(tmp_cube, u.Quantity):
                 tmp_cube = tmp_cube.value
-                logging.debug("Quantity object detected. Extracted data values.")
-            self.data_cube = self.FlatDataCube(tmp_cube, WFI_TYPE_IMAGE)  # WIM mode only for flats.
-            self.data_cube.fit_cube(degree=1)
-            rate_image_array[fl, :, :] = self.data_cube.rate_image
-            rate_image_var_array[fl, :, :] = self.data_cube.covars_array
+                logging.debug(
+                    "Quantity object detected. Extracted data values.")
 
-        avg_rate_image = np.mean(rate_image_array, axis=0)
-        return avg_rate_image
+            # Sub-out infs by nans to ignore them safely
+            tmp_cube[np.isinf(tmp_cube)] = np.nan
+            # We will normalize each L2 image by the median rate (ignoring infs/NaNs)
+            median = np.nanmedian(tmp_cube)
+            # We will only consider images with median rates between "lo" and "hi"
+            if (median >= lo) & (median <= hi):
+                rate_image_array[fl, :, :] = tmp_cube/median  # Normalized L2
+            else:
+                # This is a bit wasteful memory wise...
+                rate_image_array[fl, :, :] = np.nan*np.ones_like(tmp_cube)
+        # Compute "master" flat as median of individual flats pixel-by-pixel
+        flat_image = np.nanmedian(rate_image_array, axis=0)
+        self.flat_image = flat_image  # populate the attribute
+        # Flag bad pixels
+        self.update_data_quality_array(low_qe_threshold=flat_lo,
+                                       flat_hi_threshold=flat_hi)
+        # Force non-finite values to 1
+        self.flat_image[~np.isfinite(self.flat_image)] = 1.0
+        if calc_error:
+            self.calculate_error(ind_flat_array=rate_image_array,
+                                 nsamples=nsamples, nboot=nsamples)
+            return self.flat_image, self.flat_error
+        else:
+            return self.flat_image
 
-    def calculate_error(self, error_array=None):
+    def calculate_error(self, ind_flat_array=None,
+                        nsamples=100, nboot=10, fill_random=False):
         """
-        Calculate the uncertainty in the flat rate image. If error array is None,
+        Calculate the uncertainty in the flat rate image using bootstrap resampling.
+        If error array is None,
         generate random flat error array.
 
         Parameters
         ----------
-        error_array: ndarray; default = None,
-           Variable to provide a precalculated error array. If None, random error is
-           calculated for flat error array.
+        ind_flat_array: ndarray; default = None,
+           Array containing the individual ``flat" images for each exposure used to
+           calculate the master flat.
+        nsamples: int; default = 100,
+           Number of samples for median bootstraping calculation.
+        nboot: int; default = 10,
+           Number of bootstrap samples. 
+        fill_random: bool; default = False,
+           If `True` fill out the array with random numbers.
         """
 
-        # TODO for future implementation from A. Petric
-        # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
-        # (n_reads * (n_reads * 2 - 1) * self.frame_time)
-        #
-        if error_array is None:
-            self.flat_error = np.random.randint(1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+        if fill_random:
+            self.flat_error = np.random.randint(
+                1, 11, size=(4088, 4088)).astype(np.float32) / 100.
         else:
-            self.flat_error = error_array
+            # We randomly select a subset of the images to calculate the median on them
+            sel = np.random.choice(
+                np.arange(ind_flat_array.shape[0]), size=(nsamples, nboot))
+            median_samples = np.nanmedian(ind_flat_array[sel], axis=0)
+            # Compute the standard deviation of the median estimates as the uncertainty
+            flat_unc = np.nanstd(median_samples, axis=0)
+            self.flat_error = flat_unc
 
-    def update_data_quality_array(self, low_qe_threshold=0.2, add_low_qe_pixels=False):
+    def update_data_quality_array(self, low_qe_threshold=0.2,
+                                  flat_hi_threshold=2.,
+                                  add_low_qe_pixels=False):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -266,6 +324,8 @@ class Flat(ReferenceType):
         ----------
         low_qe_threshold: float; default = 0.2,
            Limit below which to flag pixels as low quantum efficiency.
+        flat_hi_threshold: float; default = 2.0,
+           Limit above which to flag pixels as unreliable flat (too high).
         add_low_qe_pixels: bool; default = False,
         """
 
@@ -275,12 +335,21 @@ class Flat(ReferenceType):
             rand_num_lowqe = np.random.randint(200, 300)
             coords_x = np.random.randint(0, 4088, rand_num_lowqe)
             coords_y = np.random.randint(0, 4088, rand_num_lowqe)
-            rand_low_qe_values = np.random.randint(5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
+            rand_low_qe_values = np.random.randint(
+                5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
             self.flat_image[coords_x, coords_y] = rand_low_qe_values
-
-        logging.info('Flagging low quantum efficiency pixels and updating DQ array.')
+        logging.info(
+            'Flagging unreliable flat pixels')
+        # Flag bad pixels
+        self.mask[np.isnan(self.flat_image)
+                  ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        self.mask[self.flat_image >
+                  flat_hi_threshold] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        logging.info(
+            'Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
-        self.mask[self.flat_image < low_qe_threshold] += self.dqflag_defs['LOW_QE']
+        self.mask[self.flat_image <
+                  low_qe_threshold] += self.dqflag_defs['LOW_QE'].value
 
     def populate_datamodel_tree(self):
         """
@@ -314,7 +383,8 @@ class Flat(ReferenceType):
                 data=ref_type_data,
                 wfi_type=wfi_type,
             )
-            self.rate_image = None  # The linear slope coefficient of the fitted data cube.
+            # The linear slope coefficient of the fitted data cube.
+            self.rate_image = None
             self.rate_image_err = None  # uncertainty in rate image
             self.intercept_image = None
             self.intercept_image_err = (
@@ -348,7 +418,7 @@ class Flat(ReferenceType):
                     cov=True,
                 )
                 # Reshape the parameter slope array into a 2D rate image.
-                #TODO the reshape and indices here are for linear degree fit = 1 only; update to handle quadratic also
+                # TODO the reshape and indices here are for linear degree fit = 1 only; update to handle quadratic also
                 self.rate_image = self.coeffs_array[0].reshape(
                     self.num_i_pixels, self.num_j_pixels
                 )
@@ -357,7 +427,8 @@ class Flat(ReferenceType):
                     self.num_i_pixels, self.num_j_pixels
                 )
             except (TypeError, ValueError) as e:
-                logging.error(f"Unable to initialize DarkDataCube with error {e}")
+                logging.error(
+                    f"Unable to initialize DarkDataCube with error {e}")
                 # TODO - DISCUSS HOW TO HANDLE ERRORS LIKE THIS, ASSUME WE CAN'T JUST LOG IT - For cube class discussion - should probably raise the error
 
         def make_ramp_model(self, order=1):
