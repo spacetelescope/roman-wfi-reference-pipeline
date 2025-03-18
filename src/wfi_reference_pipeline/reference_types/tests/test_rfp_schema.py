@@ -19,6 +19,7 @@ class TestSchema(unittest.TestCase):
     """
     Class test suite for all RFP schema tests
     """
+
     def test_rfp_dark_schema(self):
         """
         Use the WFI reference file pipeline Dark() module to build a testable object
@@ -35,7 +36,8 @@ class TestSchema(unittest.TestCase):
                         file_list=None,
                         ref_type_data=test_data)
         rfp_dark.make_rate_image_from_data_cube()
-        rfp_dark.make_ma_table_resampled_data(num_resultants=3, num_reads_per_resultant=1)
+        rfp_dark.make_ma_table_resampled_data(
+            num_resultants=3, num_reads_per_resultant=1)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -58,7 +60,7 @@ class TestSchema(unittest.TestCase):
         rfp_flat = Flat(meta_data=tmp.meta_flat,
                         file_list=None,
                         ref_type_data=test_data)
-        rfp_flat.calculate_error(error_array=test_data)
+        rfp_flat.calculate_error(fill_random=True)
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -151,7 +153,7 @@ class TestSchema(unittest.TestCase):
         with self.assertRaises(ValueError):
             Linearity(test_data, meta_data=linearity_test_meta)
         rfp_linearity = Linearity(test_data, meta_data=linearity_test_meta,
-                                    optical_element='F184')
+                                  optical_element='F184')
 
         # Make test asdf tree
         tf = asdf.AsdfFile()
@@ -216,8 +218,8 @@ class TestSchema(unittest.TestCase):
         # Make RFP Reference Pixel reference file object for testing.
         shape = (2, 4096, 4224)
         test_data = np.ones(shape, dtype=np.float32)
-        rfp_referencepixel = ReferencePixel(meta_data=tmp.meta_referencepixel, 
-                                            ref_type_data = test_data)
+        rfp_referencepixel = ReferencePixel(meta_data=tmp.meta_referencepixel,
+                                            ref_type_data=test_data)
         rfp_referencepixel.make_referencepixel_image(detector_name='WFI01')
 
         # Make test asdf tree
