@@ -60,7 +60,6 @@ class CalDCL:
         cube_shape = self.cal_reads.shape
         data_x = [self.meta['FRTIME'] * (frame + 1) for frame in
                   range(cube_shape[0])]
-
         # Reshape the data and compute slopes. Then reshape back to the
         # 2D image shape (i.e., the flattened cube).
         data_y = self.cal_reads.copy().reshape(cube_shape[0], -1)

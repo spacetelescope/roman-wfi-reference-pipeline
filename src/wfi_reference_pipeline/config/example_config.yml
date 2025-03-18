@@ -1,7 +1,7 @@
 #
 # These example values are to be used as a template to guide the user in creating CONFIG.YML
 # CONFIG.YML should not exist in our repo
-# Whenever altering this file template, remember to update config_handler.py::_validate_config() and your local config.yml
+# Whenever altering this file template, remember to update config_access.py::_validate_config() and your local config.yml
 #
 logging:
   # log_dir: string location to store logs

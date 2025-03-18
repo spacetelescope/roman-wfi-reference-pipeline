@@ -14,7 +14,7 @@ from wfi_reference_pipeline.constants import (
     DARK_SIGMA_CLIP_SD_HIGH,
     REF_TYPE_DARK,
 )
-from wfi_reference_pipeline.utilities.config_handler import get_pipelines_config
+from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
@@ -91,7 +91,7 @@ class DarkPipeline(Pipeline):
 
         for file in file_list:
             logging.info("OPENING - " + file.name)
-            in_file = rdm.open(file)
+            in_file = rdm.open(file)    # SAPP should this be asdf open or rdm.open
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
@@ -107,8 +107,6 @@ class DarkPipeline(Pipeline):
             self.prepped_files.append(prep_output_file_path)
 
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
-
-        logging.info("Starting to make SUPERDARK from PREPPED DARK asdf files")
 
     @log_info
     def prep_superdark_file(
@@ -137,6 +135,7 @@ class DarkPipeline(Pipeline):
 
             FOR ISOLATED RUNS:
                 If you are not interested in running other pipeline steps, you can utilize the parameters outlined below
+                If only sending in one file list, use "short_file_list" regardless of num_reads
 
         Parameters
         ----------
@@ -149,6 +148,7 @@ class DarkPipeline(Pipeline):
             A list of all short files to be processed, files do not require standardized naming conventions
             This is inteded for individual use where the user may not be working in the pipelines folder architecture.
                 (ie. validation testing, regression testing, 3rd party users)
+            If sending in only 1 list of uniformly sized files, use this parameter
             These files will all be used and will not be filtered by wfi_detector_str
             relies on accurate short_dark_num_reads parameter
             Mutually exclusive from full_file_list
@@ -174,6 +174,10 @@ class DarkPipeline(Pipeline):
                 )
             short_dark_file_list = short_file_list
             long_dark_file_list = long_file_list
+            if len(short_dark_file_list) == 0:
+                short_dark_num_reads = 0
+            if len(long_dark_file_list) == 0:
+                long_dark_num_reads = 0
         else:
             if full_file_list:
                 file_list = full_file_list
