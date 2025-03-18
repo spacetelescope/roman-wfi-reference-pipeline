@@ -195,7 +195,7 @@ class Flat(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
-    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=100,
+    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=None,
                              flat_lo=0.2, flat_hi=2.):
         """
         Go through the files supplied to the module and generate a
@@ -215,8 +215,9 @@ class Flat(ReferenceType):
         calc_error: bool,
             If `True` compute on the fly an uncertainty via bootstrap (slow).
             Default is `False`.
-        nsamples: int;
-            Number of bootstrap samples to compute the uncertainty.
+        nsamples: int; default None,
+            Number of bootstrap samples to compute the uncertainty. If `None` we will sample
+            half of the files used.
         flat_lo: float; default 0.2,
             If a flat value for a pixel is below `flat_lo` it is flagged and replaced by 1.
         flat_hi: float; default 2.0,
@@ -226,6 +227,9 @@ class Flat(ReferenceType):
         logging.debug(
             "Making flat from the average flat rate of file list data cubes.")
 
+        if nsamples is None:
+            # Trying to avoid oversampling
+            nsamples = max(1, int(self.num_files / 2))
         for fl in range(0, self.num_files):
             tmp = asdf.open(self.file_list[fl])
             if len(np.shape(tmp.tree["roman"]["data"])) != 2:
@@ -269,36 +273,43 @@ class Flat(ReferenceType):
         # Force non-finite values to 1
         self.flat_image[~np.isfinite(self.flat_image)] = 1.0
         if calc_error:
-            # We randomly select a subset of the images to calculate the median on them
-            sel = np.random.randint((nsamples, self.num_files/2))
-            median_samples = np.nanmedian(rate_image_array[sel], axis=1)
-            # Compute the standard deviation of the median estimates as the uncertainty
-            flat_unc = np.std(median_samples, axis=0)
-            return self.flat_image, flat_unc
+            self.calculate_error(ind_flat_array=rate_image_array,
+                                 nsamples=nsamples, nboot=nsamples)
+            return self.flat_image, self.flat_error
         else:
             return self.flat_image
 
-    def calculate_error(self, error_array=None):
+    def calculate_error(self, ind_flat_array=None,
+                        nsamples=100, nboot=10, fill_random=False):
         """
-        Calculate the uncertainty in the flat rate image. If error array is None,
+        Calculate the uncertainty in the flat rate image using bootstrap resampling.
+        If error array is None,
         generate random flat error array.
 
         Parameters
         ----------
-        error_array: ndarray; default = None,
-           Variable to provide a precalculated error array. If None, random error is
-           calculated for flat error array.
+        ind_flat_array: ndarray; default = None,
+           Array containing the individual ``flat" images for each exposure used to
+           calculate the master flat.
+        nsamples: int; default = 100,
+           Number of samples for median bootstraping calculation.
+        nboot: int; default = 10,
+           Number of bootstrap samples. 
+        fill_random: bool; default = False,
+           If `True` fill out the array with random numbers.
         """
 
-        # TODO for future implementation from A. Petric
-        # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
-        # (n_reads * (n_reads * 2 - 1) * self.frame_time)
-        #
-        if error_array is None:
+        if fill_random:
             self.flat_error = np.random.randint(
                 1, 11, size=(4088, 4088)).astype(np.float32) / 100.
         else:
-            self.flat_error = error_array
+            # We randomly select a subset of the images to calculate the median on them
+            sel = np.random.choice(
+                np.arange(ind_flat_array.shape[0]), size=(nsamples, nboot))
+            median_samples = np.nanmedian(ind_flat_array[sel], axis=0)
+            # Compute the standard deviation of the median estimates as the uncertainty
+            flat_unc = np.nanstd(median_samples, axis=0)
+            self.flat_error = flat_unc
 
     def update_data_quality_array(self, low_qe_threshold=0.2,
                                   flat_hi_threshold=2.,
