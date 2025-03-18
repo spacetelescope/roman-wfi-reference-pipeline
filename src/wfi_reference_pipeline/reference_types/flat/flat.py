@@ -196,7 +196,7 @@ class Flat(ReferenceType):
         self.data_cube.fit_cube(degree=fit_order)
 
     def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=100,
-                             flat_lo=1e-3, flat_hi=2.):
+                             flat_lo=0.2, flat_hi=2.):
         """
         Go through the files supplied to the module and generate a
         cube of rate images into an array. This method uses FlatDataCube
@@ -217,9 +217,9 @@ class Flat(ReferenceType):
             Default is `False`.
         nsamples: int;
             Number of bootstrap samples to compute the uncertainty.
-        flat_lo: float;
+        flat_lo: float; default 0.2,
             If a flat value for a pixel is below `flat_lo` it is flagged and replaced by 1.
-        flat_hi: float;
+        flat_hi: float; default 2.0,
             If a flat value for a pixel is above `flat_hi` it is flagged and replaced by 1.
         """
 
@@ -227,15 +227,18 @@ class Flat(ReferenceType):
             "Making flat from the average flat rate of file list data cubes.")
 
         for fl in range(0, self.num_files):
-            print('Working with', self.file_list[fl])
             tmp = asdf.open(self.file_list[fl])
-            npixx, npixy = np.shape(tmp.tree["roman"]["data"])
-            tmp_cube = tmp.tree["roman"]["data"].copy()
-            if fl == 0:
-                rate_image_array = np.zeros((self.num_files,
-                                             npixx,
-                                             npixy),
-                                            dtype=np.float32)
+            if len(np.shape(tmp.tree["roman"]["data"])) != 2:
+                raise ValueError("The input data is expected to be a ramp (2D).\
+                                  Please calculate or process your data first.")
+            else:
+                npixx, npixy = np.shape(tmp.tree["roman"]["data"])
+                tmp_cube = tmp.tree["roman"]["data"].copy()
+                if fl == 0:
+                    rate_image_array = np.zeros((self.num_files,
+                                                 npixx,
+                                                 npixy),
+                                                dtype=np.float32)
             tmp.close()
             if not isinstance(tmp_cube, (np.ndarray, u.Quantity)):
                 raise TypeError(
@@ -257,23 +260,23 @@ class Flat(ReferenceType):
             else:
                 # This is a bit wasteful memory wise...
                 rate_image_array[fl, :, :] = np.nan*np.ones_like(tmp_cube)
-
+        # Compute "master" flat as median of individual flats pixel-by-pixel
         flat_image = np.nanmedian(rate_image_array, axis=0)
-        self.mask[np.isnan(flat_image)
-                  ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
-        self.mask[flat_image <
-                  flat_lo] += self.dqflag_defs['UNRELIABLE_FLAT'].value
-        self.mask[flat_image >
-                  flat_hi] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        self.flat_image = flat_image  # populate the attribute
+        # Flag bad pixels
+        self.update_data_quality_array(low_qe_threshold=flat_lo,
+                                       flat_hi_threshold=flat_hi)
+        # Force non-finite values to 1
+        self.flat_image[~np.isfinite(self.flat_image)] = 1.0
         if calc_error:
             # We randomly select a subset of the images to calculate the median on them
             sel = np.random.randint((nsamples, self.num_files/2))
             median_samples = np.nanmedian(rate_image_array[sel], axis=1)
             # Compute the standard deviation of the median estimates as the uncertainty
             flat_unc = np.std(median_samples, axis=0)
-            return flat_image, flat_unc
+            return self.flat_image, flat_unc
         else:
-            return flat_image
+            return self.flat_image
 
     def calculate_error(self, error_array=None):
         """
@@ -297,7 +300,9 @@ class Flat(ReferenceType):
         else:
             self.flat_error = error_array
 
-    def update_data_quality_array(self, low_qe_threshold=0.2, add_low_qe_pixels=False):
+    def update_data_quality_array(self, low_qe_threshold=0.2,
+                                  flat_hi_threshold=2.,
+                                  add_low_qe_pixels=False):
         """
         Update data quality array bit mask with flag integer value.
 
@@ -308,6 +313,8 @@ class Flat(ReferenceType):
         ----------
         low_qe_threshold: float; default = 0.2,
            Limit below which to flag pixels as low quantum efficiency.
+        flat_hi_threshold: float; default = 2.0,
+           Limit above which to flag pixels as unreliable flat (too high).
         add_low_qe_pixels: bool; default = False,
         """
 
@@ -320,12 +327,18 @@ class Flat(ReferenceType):
             rand_low_qe_values = np.random.randint(
                 5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
             self.flat_image[coords_x, coords_y] = rand_low_qe_values
-
+        logging.info(
+            'Flagging unreliable flat pixels')
+        # Flag bad pixels
+        self.mask[np.isnan(self.flat_image)
+                  ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+        self.mask[self.flat_image >
+                  flat_hi_threshold] += self.dqflag_defs['UNRELIABLE_FLAT'].value
         logging.info(
             'Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
         self.mask[self.flat_image <
-                  low_qe_threshold] += self.dqflag_defs['LOW_QE']
+                  low_qe_threshold] += self.dqflag_defs['LOW_QE'].value
 
     def populate_datamodel_tree(self):
         """
