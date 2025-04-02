@@ -36,6 +36,38 @@ The documentation can then be found in doc/build/html/index.html.
 To use the Slack notifications, you must set up a Slack token.
 When you have a token, you can point to it with the environment variable WFI_SLACK_TOKEN.
 
+## Updating reference files on CRDS
+
+Go to your .bash_profile and set environment variables to determine the crds state.
+
+This is for the Roman test instance of CRDS.
+```buildoutcfg
+export CRDS_SERVER_URL="https://roman-crds-test.stsci.edu"
+export CRDS_PATH="/grp/roman/RFP/DEV/scratch/test_crds/"
+```
+This is for the Roman TVAC CRDS server which is temporary for analysis up to commissioning.
+```buildoutcfg
+export CRDS_SERVER_URL="https://roman-crds-tvac.stsci.edu"
+export CRDS_PATH="/grp/roman/RFP/DEV/scratch/tvac_crds"
+```
+
+Start with a clean environment where you will get the latest versions of romancal, roman attribute
+dictionary, and roman data models.
+```buildoutcfg
+conda create -yn devRFP_RGCenv_update_refs ipython
+conda activate devRFP_RGCenv_update_refs
+pip install romancal crds
+```
+By doing this pip install you will get the latest released versions since this workflow is setup
+to replace old reference files with the most current.
+
+Now sync crds to get all of the mappings updated.
+```buildoutcfg
+crds sync --all
+```
+
+See the update_reference_files.py script in examples that was done for Build 17 in April 2025.
+
 ### Miscellaneous
 
 <div>Project icon made by <a href="" title="Good Ware">Good Ware</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
