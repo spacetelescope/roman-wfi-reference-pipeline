@@ -3,21 +3,31 @@ import asdf
 import crds
 import roman_datamodels.stnode as rds
 
+
 class UpdateReferences:
     """
     A class to update Roman Space Telescope reference files to the latest data model.
+    This is meant to only update files from the latest context from the CRDS server
+    set in a users environment varilable.
+
+    CRDS_SERVER_URL="https://roman-crds-test.stsci.edu" or CRDS_SERVER_URL="https://roman-crds-tvac.stsci.edu"
     """
 
+    #TODO add more reference file types to this list here.
     ALLOWED_REF_TYPES = {"DARK", "GAIN", "READNOISE", "SATURATION"}
 
     def __init__(self, ref_type, input_dir, output_dir, file_suffix="_updated"):
         """
         Initialize the UpdateReferences class.
 
-        :param ref_type: Type of reference file to update (e.g., DARK, GAIN, etc.).
-        :param input_dir: Directory where the old reference files are located.
-        :param output_dir: Directory where updated files will be saved.
-        :param file_suffix: Suffix to append to updated file names (default: "_updated").
+        ref_type: str;
+            Type of reference file to update (e.g., DARK, GAIN, etc.). All caps.
+        input_dir: str;
+            Directory where the old reference files are located.
+        output_dir: str; 
+            Directory where updated files will be saved.
+        file_suffix: str, default = "_updated";
+            Suffix to append to updated file names.
         """
         if ref_type not in self.ALLOWED_REF_TYPES:
             raise ValueError(f"Invalid ref_type '{ref_type}'. Must be one of {self.ALLOWED_REF_TYPES}.")
@@ -27,21 +37,21 @@ class UpdateReferences:
         self.output_dir = output_dir.rstrip("/") + "/"
         self.file_suffix = file_suffix
 
+        # Get the default context from the CRDS server and the associated pmap
         self.context = crds.get_default_context()
         self.pmap = crds.rmap.asmapping(self.context)
 
     def get_old_files(self):
-        """
-        Retrieve the list of old reference files from CRDS.
-
-        :return: List of old reference file names.
-        """
+        """Retrieve the list of old reference files from CRDS."""
         ref_map = self.pmap.get_imap('wfi').get_rmap(self.ref_type.lower())
         return ref_map.reference_names()
 
     def process_files(self, appended_description=None):
         """
         Process and update all reference files of the specified type.
+
+        appended_description: str, default=None; 
+            Custom string to append to the description metadata.
         """
         old_files = self.get_old_files()
         for old_file in old_files:
@@ -51,44 +61,60 @@ class UpdateReferences:
         """
         Update an individual reference file to the latest data model.
 
-        :param old_file: Name of the old reference file.
-        :param appended_description: String to append to the description metadata (default: " Updated to latest data model").
+        old_file: str;
+            Name of the old reference file.
+        appended_description: str, default = " Updated to latest roman data model.";
+            String to append to the description metadata.
         """
         old_path = os.path.join(self.input_dir, old_file)
 
         with asdf.open(old_path, copy_arrays=True) as old_af:
             old_meta = old_af.tree['roman']['meta']
-            old_meta["description"] += appended_description
+            
+            # Ensure appended_description is a string.
+            if not isinstance(appended_description, str):
+                appended_description = " Updated to latest roman data model."
 
-            # Create new data model
-            datamodel_tree = self.create_datamodel(old_af, old_meta)
+            # Create a copy of metadata.
+            updated_meta = old_meta.copy()
+            updated_meta["description"] += appended_description
 
-            # Generate new filename with specified suffix
+            # Create new data model.
+            datamodel_tree = self.create_datamodel(old_af, updated_meta)
+
+            # Generate new filename with specified suffix.
             new_filename = old_file.replace(".asdf", f"{self.file_suffix}.asdf")
             new_path = os.path.join(self.output_dir, new_filename)
 
-            # Write updated file
+            # Write updated file.
             new_af = asdf.AsdfFile()
             new_af.tree = {'roman': datamodel_tree}
             new_af.write_to(new_path)
             new_af.close()
 
-            # Set file permissions
+            # Set file permissions.
             os.chmod(new_path, 0o666)
             print(f"Created: {new_path}")
 
-    def create_datamodel(self, old_af, old_meta):
+    def create_datamodel(self, old_af, updated_meta):
         """
         Create the appropriate data model for the specified reference type.
 
-        :param old_af: ASDF file object of the old reference file.
-        :param old_meta: Updated metadata for the new file.
-        :return: New reference data model tree.
+        old_af: str;
+            ASDF file object of the old reference file.
+        updated_meta: dict;
+            Updated metadata for the new file.
+        
+        return: New reference data model tree.
 
-        NOTE - The code below only access the data values in the quantity array object and 
-        ignores the unit to support the removal of units in roman data models in B17 for
-        these reference file types. 
+        NOTE: This method extracts `.value` to remove units from arrays for Build 17 compatibility.
+        Additional note: This might be where one would edit the code to do something different when
+        updating the reference file, such as populating a new array, renaming an existing tree
+        element.
         """
+        #TODO add additional reference file types here. All have meta data, but the use of data, 
+        # coefficients, etc. are reference file type specific and set in the schema from Roman
+        # attribute dictionary. 
         if self.ref_type == "DARK":
             datamodel = rds.DarkRef()
             datamodel["data"] = old_af.tree['roman']['data'].value
@@ -108,6 +134,6 @@ class UpdateReferences:
         else:
             raise ValueError(f"Unhandled reference type: {self.ref_type}")
 
-        datamodel["meta"] = old_meta
+        datamodel["meta"] = updated_meta
         return datamodel
     
