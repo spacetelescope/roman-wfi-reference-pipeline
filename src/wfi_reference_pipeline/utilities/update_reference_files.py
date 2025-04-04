@@ -1,7 +1,9 @@
 import os
 import asdf
 import crds
+import numpy as np
 import roman_datamodels.stnode as rds
+from astropy.units import Quantity
 
 
 class UpdateReferences:
@@ -14,7 +16,7 @@ class UpdateReferences:
     """
 
     #TODO add more reference file types to this list here.
-    ALLOWED_REF_TYPES = {"DARK", "GAIN", "READNOISE", "SATURATION"}
+    ALLOWED_REF_TYPES = {"DARK", "GAIN", "READNOISE", "SATURATION", "PHOTOM"}
 
     def __init__(self, ref_type, input_dir, output_dir, file_suffix="_updated"):
         """
@@ -68,7 +70,7 @@ class UpdateReferences:
         """
         old_path = os.path.join(self.input_dir, old_file)
 
-        with asdf.open(old_path, copy_arrays=True) as old_af:
+        with asdf.open(old_path) as old_af:
             old_meta = old_af.tree['roman']['meta']
             
             # Ensure appended_description is a string.
@@ -131,6 +133,22 @@ class UpdateReferences:
             datamodel = rds.SaturationRef()
             datamodel["data"] = old_af.tree['roman']['data'].value
             datamodel["dq"] = old_af.tree['roman']['dq']
+        elif self.ref_type == "PHOTOM":
+            datamodel = rds.WfiImgPhotomRef()
+            phot_table = old_af.tree['roman']['phot_table']
+            new_dict = {}
+            for filt, phot_values in phot_table.items():
+                # Create an inner dictionary for each filter
+                new_dict[filt] = {}
+                for key, val in phot_values.items():
+                    # Check if the value is a Quantity object
+                    if isinstance(val, Quantity):
+                        new_dict[filt][key] = float(val.value)  # Extract the numeric value from the Quantity
+                    elif isinstance(val, np.float64):
+                        new_dict[filt][key] = float(val)  # Convert np.float64 to a plain float
+                    else:
+                        new_dict[filt][key] = val  # Keep other values as they are
+            datamodel['phot_table'] = new_dict
         else:
             raise ValueError(f"Unhandled reference type: {self.ref_type}")
 
