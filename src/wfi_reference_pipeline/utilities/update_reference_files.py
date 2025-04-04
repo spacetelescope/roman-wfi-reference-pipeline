@@ -18,7 +18,7 @@ class UpdateReferences:
     #TODO add more reference file types to this list here.
     ALLOWED_REF_TYPES = {"DARK", "GAIN", "READNOISE", "SATURATION", "PHOTOM"}
 
-    def __init__(self, ref_type, input_dir, output_dir, file_suffix="_updated"):
+    def __init__(self, input_dir, output_dir, file_suffix="_updated"):
         """
         Initialize the UpdateReferences class.
 
@@ -26,15 +26,13 @@ class UpdateReferences:
             Type of reference file to update (e.g., DARK, GAIN, etc.). All caps.
         input_dir: str;
             Directory where the old reference files are located.
-        output_dir: str; 
+        output_dir: str;
             Directory where updated files will be saved.
         file_suffix: str, default = "_updated";
             Suffix to append to updated file names.
         """
-        if ref_type not in self.ALLOWED_REF_TYPES:
-            raise ValueError(f"Invalid ref_type '{ref_type}'. Must be one of {self.ALLOWED_REF_TYPES}.")
 
-        self.ref_type = ref_type
+        self.ref_type = None
         self.input_dir = input_dir.rstrip("/") + "/"
         self.output_dir = output_dir.rstrip("/") + "/"
         self.file_suffix = file_suffix
@@ -43,21 +41,31 @@ class UpdateReferences:
         self.context = crds.get_default_context()
         self.pmap = crds.rmap.asmapping(self.context)
 
+    def update_reference_types(self, update_message):
+        for ref_type in self.ALLOWED_REF_TYPES:
+            self.process_files(ref_type, appended_description=update_message)
+
+
     def get_old_files(self):
         """Retrieve the list of old reference files from CRDS."""
         ref_map = self.pmap.get_imap('wfi').get_rmap(self.ref_type.lower())
         return ref_map.reference_names()
 
-    def process_files(self, appended_description=None):
+    def process_files(self, ref_type, appended_description=None):
         """
         Process and update all reference files of the specified type.
 
-        appended_description: str, default=None; 
+        appended_description: str, default=None;
             Custom string to append to the description metadata.
         """
+        print(f"Processing reference type: {ref_type}")
+        if ref_type not in self.ALLOWED_REF_TYPES:
+            raise ValueError(f"Invalid ref_type '{ref_type}'. Must be one of {self.ALLOWED_REF_TYPES}.")
+        self.ref_type = ref_type
         old_files = self.get_old_files()
         for old_file in old_files:
             self.generate_updated_file(old_file, appended_description)
+        print(f"Finished updating {ref_type} reference files.\n")
 
     def generate_updated_file(self, old_file, appended_description=" Updated to latest roman data model."):
         """
@@ -72,7 +80,7 @@ class UpdateReferences:
 
         with asdf.open(old_path) as old_af:
             old_meta = old_af.tree['roman']['meta']
-            
+
             # Ensure appended_description is a string.
             if not isinstance(appended_description, str):
                 appended_description = " Updated to latest roman data model."
@@ -106,7 +114,7 @@ class UpdateReferences:
             ASDF file object of the old reference file.
         updated_meta: dict;
             Updated metadata for the new file.
-        
+
         return: New reference data model tree.
 
         NOTE: This method extracts `.value` to remove units from arrays for Build 17 compatibility.
@@ -114,9 +122,9 @@ class UpdateReferences:
         updating the reference file, such as populating a new array, renaming an existing tree
         element.
         """
-        #TODO add additional reference file types here. All have meta data, but the use of data, 
+        #TODO add additional reference file types here. All have meta data, but the use of data,
         # coefficients, etc. are reference file type specific and set in the schema from Roman
-        # attribute dictionary. 
+        # attribute dictionary.
         if self.ref_type == "DARK":
             datamodel = rds.DarkRef()
             datamodel["data"] = old_af.tree['roman']['data'].value
@@ -154,4 +162,3 @@ class UpdateReferences:
 
         datamodel["meta"] = updated_meta
         return datamodel
-    
