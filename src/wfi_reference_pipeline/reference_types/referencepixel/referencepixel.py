@@ -4,6 +4,7 @@ import shutil
 import numpy as np
 import time
 from astropy import units as u
+from pathlib import Path
 
 import roman_datamodels as rdm
 import roman_datamodels.stnode as rds
@@ -89,9 +90,10 @@ class ReferencePixel(ReferenceType):
         # Module flow creating reference file
         # This can be 1+ files in list
         if self.file_list:
-            # play in list if only one file
+            # place in list if only one file
             if isinstance(self.file_list, str):
                 self.file_list = [self.file_list]
+
             # Display the directory name where the dark calibration files are located to make the reference pixel reference file
             logging.info(f"Using files from {os.path.dirname(self.file_list[0])} to construct reference coeffienct object.")
         
@@ -140,15 +142,18 @@ class ReferencePixel(ReferenceType):
         dset.astype(np.float64): np.ndarray
             The concatenated data and amp33 exposure as one dataset with type np.float64
         """
+        if not isinstance(file_name, Path):
+            file_name = Path(file_name)
+   
         # confirm file exisits
-        if not os.path.exists(file_name):
-            mesg = f'Input file {file_name} does not exist. Terminating.'
+        if not file_name.exists():
+            mesg = f'Input file {str(file_name)} does not exist. Terminating.'
             logging.fatal(mesg)
             raise FileNotFoundError(mesg)
         
         # open file using roman_datamodels
-        logging.info("OPENING - " + file_name)
-        if '.asdf' not in file_name:
+        logging.info("OPENING - " + str(file_name))
+        if '.asdf' not in file_name.name:
             raise ValueError('can only read in .asdf format')
         fil = rdm.open(file_name)
 
@@ -184,14 +189,18 @@ class ReferencePixel(ReferenceType):
         file_name: str
             Path string. Full path to dark data file
         """
-        if not os.path.exists(file_name):
-            mesg = f'Input file {file_name} does not exist. Terminating.'
+        if not isinstance(file_name, Path):
+            file_name = Path(file_name)
+ 
+        if not file_name.exists():
+            mesg = f'Input file {str(file_name)} does not exist. Terminating.'
             logging.fatal(mesg)
             raise FileNotFoundError(mesg)
         
-        if '.asdf' not in file_name:
+        if '.asdf' not in file_name.name:
             raise ValueError('can only read in .asdf format')
         fil = rdm.open(file_name)
+        
         # get detector
         detector = fil['meta']['instrument']['detector']
         # update detector name in meta
@@ -229,14 +238,14 @@ class ReferencePixel(ReferenceType):
 
         # create name of folder to save the exposure weight .h5 files
         if tmppath is None:
-            tmpdir = f'./tmp_IRRC_{self.meta_data.instrument_detector}'
+            tmpdir = Path(f'./tmp_IRRC_{self.meta_data.instrument_detector}')
         else:
-            tmpdir = os.path.join(tmppath, f'tmp_IRRC_{self.meta_data.instrument_detector}')
+            tmpdir = Path(tmppath, f'tmp_IRRC_{self.meta_data.instrument_detector}')
 
         # if tmpdir does not exist, create it
-        if not os.path.exists(tmpdir):
-            logging.info(f'creating temporary folder to save individual exposure sums at : {tmpdir}')
-            os.mkdir(tmpdir)
+        if not tmpdir.exists():
+            logging.info(f'creating temporary folder to save individual exposure sums at : {str(tmpdir)}')
+            tmpdir.mkdir()
 
         # Compute IRRC sums for individaul ramps 
         logging.info('*** Compute IRRC sums for individual ramps...')
@@ -246,7 +255,8 @@ class ReferencePixel(ReferenceType):
             for file in self.file_list:
                 # extract data from cube
                 data = self.get_data_cube_from_dark_file(file, skip_first_frame=skip_first_frame)
-                out_file_name = os.path.join(tmpdir, os.path.basename(file) + '_sums.h5')
+                out_file_name = Path(tmpdir, os.path.basename(file) + '_sums.h5')
+             
                 logging.info(f"*** Processing ramp for file: {file}")
                 extract(data, out_file_name)
         # loop through each data array and extract IRRC sums
@@ -257,12 +267,12 @@ class ReferencePixel(ReferenceType):
                 logging.info(f"*** Processing ramp for exposure: {exp+1}")
                 # create temporary out_file_name based on timestamp 
                 timestr = time.strftime("%Y%m%d-%H%M%S")
-                out_file_name = os.path.join(tmpdir, f'exposure{exp+1}_{timestr}_sums.h5')
+                out_file_name = Path(tmpdir, f'exposure{exp+1}_{timestr}_sums.h5')
                 extract(data, out_file_name)
 
         # Compute IRRC frequency dependent weights 
         logging.info('*** Generate IRRC calibration file...')
-        glob_pattern = tmpdir + '/*_sums.h5'
+        glob_pattern = str(tmpdir) + '/*_sums.h5'
 
         # Generate frequency dependent weights
         alpha, gamma, zeta = generate(glob_pattern)
