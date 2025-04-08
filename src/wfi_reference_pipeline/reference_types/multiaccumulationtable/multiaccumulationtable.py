@@ -75,7 +75,7 @@ class MultiAccumulationTable(ReferenceType):
         """
         Create data model from DMS and populate tree.
         """
-        # TODO: THis will need to be updated when we have rad model updated
+        # TODO: This will need to be updated when we have rad/datamodel implemented
 
         # Construct the dark object from the data model.
         matable_datamodel_tree = rds.SaturationRef()
@@ -90,6 +90,7 @@ class MultiAccumulationTable(ReferenceType):
         The method save_aperture_correction writes the reference file object to the specified asdf outfile.
         """
 
+        # TODO: With the next RAD and roman_datamodels release, this should only use the datamodel, not an asdf tree
         # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
         if datamodel_tree:
