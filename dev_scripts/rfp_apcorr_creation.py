@@ -18,7 +18,7 @@ tmp.meta_aperturecorrection.pedigree = "SIMULATION"
 #TODO update webbpsf to stpsf going forward
 tmp.meta_aperturecorrection.description = \
 """Aperture Correction Reference File
-Intended for romancal version: >0.17.0
+Intended for romancal version: >0.17.0  
 roman_datamodels version: 0.23.1
 Software versions: 
     webbpsf: 1.3.0
