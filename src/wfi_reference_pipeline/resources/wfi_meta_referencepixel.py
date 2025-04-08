@@ -1,7 +1,6 @@
 from dataclasses import dataclass, InitVar
 from typing import Optional
 import wfi_reference_pipeline.constants as constants
-import logging
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
@@ -27,7 +26,7 @@ class WFIMetaReferencePixel(WFIMetadata):
 
     def __post_init__(self, mode, type):
         super().__post_init__()
-        self.reference_type = constants.REF_TYPE_READNOISE
+        self.reference_type = constants.REF_TYPE_REFPIX
         if mode in constants.WFI_MODES:
             self.mode = mode
             if mode == constants.WFI_MODE_WIM:

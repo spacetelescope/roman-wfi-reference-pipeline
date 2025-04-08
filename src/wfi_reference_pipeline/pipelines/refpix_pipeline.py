@@ -1,5 +1,3 @@
-import os
-import glob
 import logging
 from pathlib import Path
 
@@ -8,7 +6,6 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 from wfi_reference_pipeline.constants import REF_TYPE_REFPIX
-from wfi_reference_pipeline.constants import WFI_DETECTORS
 
 class RefPixPipeline(Pipeline):
     """
@@ -45,7 +42,7 @@ class RefPixPipeline(Pipeline):
         self.uncal_files.clear()
 
         # TODO: note...this does not check to make sure all files are from the same detector! 
-        file_list = list(self.ingest_path.glob(f"*_uncal.asdf"))
+        file_list = list(self.ingest_path.glob("*_uncal.asdf"))
 
         self.uncal_files = file_list
 
