@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
+from typing import Optional
 import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
@@ -15,9 +16,30 @@ class WFIMetaReferencePixel(WFIMetadata):
     input_units: str
     output_units: str
 
-    def __post_init__(self):
+    # def __post_init__(self):
+    #     super().__post_init__()
+    #     self.reference_type = constants.REF_TYPE_REFPIX
+
+
+    mode: InitVar[Optional[str]] = ""
+    type: InitVar[Optional[str]] = ""
+
+    def __post_init__(self, mode, type):
         super().__post_init__()
         self.reference_type = constants.REF_TYPE_REFPIX
+        if mode in constants.WFI_MODES:
+            self.mode = mode
+            if mode == constants.WFI_MODE_WIM:
+                self.p_exptype = constants.WFI_P_EXPTYPE_IMAGE
+            elif mode == constants.WFI_MODE_WSM:
+                self.p_exptype = constants.WFI_P_EXPTYPE_GRISM + constants.WFI_P_EXPTYPE_PRISM
+        elif len(mode):
+            raise ValueError(f"Invalid `mode: {mode}` for {self.reference_type}")
+
+        if type in constants.WFI_TYPES:
+            self.type = type  # TODO follow up on type and cross referencing reftype
+        elif len(type):
+            raise ValueError(f"Invalid `type: {type}` for {self.reference_type}")
 
     def export_asdf_meta(self):
         asdf_meta = {
