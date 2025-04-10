@@ -12,23 +12,19 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "astropy>=6.1.0,<7.1.0",
-    "crds>=12.0.0,<12.2.0",
+    "astropy>=7.0.0,<7.1.0",
+    "crds>=12.0.0",
     "h5py",
-    "matplotlib>=3.9.0,<3.11.0",
-    "numpy>=1.25.0,<2.2.0",
+    "matplotlib>=3.10.0,<3.11.0",
+    "numpy>=2.1.0,<2.2.0",
     "pandas>=2.2.1,<2.3.0",
     "photutils>=2.2.0,<2.3.0",
     "psutil",
-    "pytest-cov",
-    "pytest",
-    "pysiaf>=0.22.0,<0.25.0",
+    "pysiaf>=0.24.0,<0.25.0",
     "PyYAML>=6.0.1,<6.1.0",
-    "rad>=0.23.0,<0.24.0",
-    "requests>=2.31.0,<2.33.0",
-    "romancal>=0.18.0",
-    "roman-datamodels>=0.23.0,<0.24.0",
-    "scipy>=1.12.0,<1.16.0",
+    "requests>=2.32.0,<2.33.0",
+    "romancal>=0.17.0",
+    "scipy>=1.15.0,<1.16.0",
     "soc_roman_tools>=0.1.0,<0.2.0",
     "stpsf>=2.0.0,<2.1.0",
 ]
@@ -41,6 +37,10 @@ docs = [
     "sphinx",
     "stsci_rtd_theme",
     "sphinx_automodapi",
+]
+test = [
+    "pytest-cov",
+    "pytest",
 ]
 
 [project.readme]
