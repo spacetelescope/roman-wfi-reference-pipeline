@@ -30,7 +30,7 @@ dependencies = [
     "roman-datamodels>=0.23.0,<0.24.0",
     "scipy>=1.12.0,<1.16.0",
     "soc_roman_tools>=0.1.0,<0.2.0",
-    "stpsf>=2.0.0",
+    "stpsf>=2.0.0,<2.1.0",
 ]
 dynamic = [
     "version",
