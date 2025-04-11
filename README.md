@@ -6,9 +6,14 @@ It is recommended to begin with a clean environment, such as:
 ```buildoutcfg
 conda create -n wfirefpipe python=3.12
 ```
-To install the package, run:
+To install the package for general usage:
 ```buildoutcfg
 pip install .
+```
+OR
+To install the package for development and testing:
+```buildoutcfg
+pip install -e .[docs,test]
 ```
 This will also install all of the dependencies.
 
@@ -66,10 +71,7 @@ Now sync crds to get all of the mappings updated.
 crds sync --all
 ```
 
-See the update_reference_files.py script in examples that was done for Build 17 in April 2025. Also see 
+See the update_reference_files.py script in examples that was done for Build 17 in April 2025. Also see
 ```buildoutcfg
 /grp/roman/RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```
-### Miscellaneous
-
-<div>Project icon made by <a href="" title="Good Ware">Good Ware</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
