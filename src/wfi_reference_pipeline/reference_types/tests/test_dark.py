@@ -1,3 +1,4 @@
+import os
 import pytest
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
@@ -7,6 +8,10 @@ from unittest.mock import MagicMock
 import numpy as np
 from romancal.lib import dqflags
 
+skip_on_github = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skip this test on GitHub Actions, too big"
+)
 
 @pytest.fixture
 def valid_meta_data():
@@ -117,6 +122,7 @@ class TestDark:
         assert np.array_equal(dark_object_with_data_cube.dark_rate_image,
                               mock_return_image)  # Check the populated image
 
+    @skip_on_github
     def test_make_ma_table_resampled_data_with_read_pattern(self, dark_object_with_data_cube):
         """
         Test the make_ma_table_resampled_data method with a valid read pattern.
@@ -134,6 +140,7 @@ class TestDark:
             expected_data = np.mean(dark_object_with_data_cube.data_cube.data[np.array(read_frames) - 1], axis=0)
             np.testing.assert_array_almost_equal(dark_object_with_data_cube.resampled_data[resultant_i], expected_data)
 
+    @skip_on_github
     def test_make_ma_table_resampled_data_even_spacing(self, dark_object_with_data_cube):
         """
         Test the make_ma_table_resampled_data method with num_resultants and num_reads_per_resultant.
@@ -196,6 +203,7 @@ class TestDark:
         np.testing.assert_array_equal(dark_obj.mask, expected_mask,
                                       err_msg="DQ array was not updated as expected.")
 
+    @skip_on_github
     def test_populate_datamodel_tree(self, dark_object_with_data_cube,
                                      valid_ref_type_data_cube,
                                      dark_rate_image_3_by_3):

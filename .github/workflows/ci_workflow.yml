@@ -29,11 +29,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install ruff pytest
         pip install .[test]
     - name: Ruff Test
       run: |
         ruff check ./src
-    # - name: Test with pytest
-    #   run: |
-    #     pytest
+    - name: Pytest with coverage
+      run: |
+        pytest --cov=wfi_reference_pipeline --cov-report=xml

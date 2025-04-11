@@ -1,4 +1,5 @@
 import asdf
+import os
 import unittest
 import numpy as np
 import pytest
@@ -14,6 +15,10 @@ from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 
+skip_on_github = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skip this test on GitHub Actions, too big"
+)
 
 class TestSchema(unittest.TestCase):
     """
@@ -206,6 +211,7 @@ class TestSchema(unittest.TestCase):
         assert tf.validate() is None
 
     # @pytest.mark.skip(reason="Temporarily disabled test")
+    @skip_on_github
     def test_rfp_referencepixel_schema(self):
         """
         Use the WFI reference file pipeline ReferencePixel() module to build

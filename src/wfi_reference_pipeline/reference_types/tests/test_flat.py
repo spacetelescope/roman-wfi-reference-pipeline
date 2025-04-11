@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
@@ -5,6 +6,10 @@ from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.constants import REF_TYPE_DARK, REF_TYPE_FLAT
 
+skip_on_github = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skip this test on GitHub Actions, too big"
+)
 
 @pytest.fixture
 def valid_meta_data():
@@ -113,6 +118,7 @@ class TestFlat:
         assert flat_object_with_data_cube.flat_error is not None
         assert flat_object_with_data_cube.flat_error.shape == (4088, 4088)
 
+    @skip_on_github
     def test_calculate_error_with_individual_images(self, flat_object_with_data_cube):
         """
         Test calculate_error with a user-supplied error array.
