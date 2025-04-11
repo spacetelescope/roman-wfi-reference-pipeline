@@ -26,6 +26,9 @@ Users must create a config.yml living at:
 ```/wfi_reference_pipeline/src/wfi_reference_pipeline/config/config.yml```
 Use example_config.yml in the same directory as a template.
 
+## Contributing
+To contribute to this project, please become familiar with our [Contributing Guide](https://github.com/spacetelescope/roman-wfi-reference-pipeline/blob/main/CONTRIBUTING.md)
+
 ## Documentation
 
 To get the full documentation, install the package as described above, then go to the /src/docs/ directory and run:
