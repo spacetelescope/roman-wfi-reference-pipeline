@@ -1,8 +1,10 @@
 import logging
 import os
+
 import psutil
 
 from wfi_reference_pipeline.constants import GB
+
 
 def get_mem_usage_gb():
     """

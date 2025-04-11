@@ -5,16 +5,16 @@ import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
 from romancal.saturation import SaturationStep
 
+from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
     DARK_LONG_IDENTIFIER,
     DARK_LONG_NUM_READS,
     DARK_SHORT_IDENTIFIER,
     DARK_SHORT_NUM_READS,
-    DARK_SIGMA_CLIP_SD_LOW,
     DARK_SIGMA_CLIP_SD_HIGH,
+    DARK_SIGMA_CLIP_SD_LOW,
     REF_TYPE_DARK,
 )
-from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (

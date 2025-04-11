@@ -4,8 +4,10 @@ reference pixel subtraction and zero read subtraction.
 """
 
 import logging
+
 import numpy as np
 from astropy import units
+
 from ..utilities import dcl
 
 

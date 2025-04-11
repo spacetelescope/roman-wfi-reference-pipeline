@@ -1,6 +1,8 @@
-import pytest
-import tempfile
 import os
+import tempfile
+
+import pytest
+
 from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 
 skip_on_github = pytest.mark.skipif(

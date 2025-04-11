@@ -1,27 +1,29 @@
 #import logging #uncomment if ever used
 
+from pathlib import Path
+
 import asdf
 import numpy as np
-from astropy import units as u
 import roman_datamodels.stnode as rds
+from astropy import units as u
 from astropy.io import ascii
-from pathlib import Path
-from synphot import SpectralElement
+from synphot import SourceSpectrum, SpectralElement
 from synphot.models import Empirical1D
-from synphot import SourceSpectrum
 from synphot.observation import Observation
 
-
-from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import WFIMetaABVegaMagnitudeOffset
 import wfi_reference_pipeline.resources.data as rfp_data_module
 from wfi_reference_pipeline.constants import (
-    WFI_REF_OPTICAL_ELEMENTS, 
     WFI_REF_OPTICAL_ELEMENT_DARK,
     WFI_REF_OPTICAL_ELEMENT_GRISM,
-    WFI_REF_OPTICAL_ELEMENT_PRISM
+    WFI_REF_OPTICAL_ELEMENT_PRISM,
+    WFI_REF_OPTICAL_ELEMENTS,
+)
+from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
+    WFIMetaABVegaMagnitudeOffset,
 )
 
 from ..reference_type import ReferenceType
+
 
 class ABVegaMagnitudeOffset(ReferenceType):
     """

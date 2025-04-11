@@ -2,17 +2,16 @@ import logging
 from pathlib import Path
 
 import roman_datamodels as rdm
-from romancal.dq_init import DQInitStep
-from romancal.saturation import SaturationStep
-from romancal.refpix import RefPixStep
-from romancal.linearity import LinearityStep
 from romancal.dark_current import DarkCurrentStep
+from romancal.dq_init import DQInitStep
+from romancal.linearity import LinearityStep
 from romancal.ramp_fitting import RampFitStep
+from romancal.refpix import RefPixStep
+from romancal.saturation import SaturationStep
 
-
+from wfi_reference_pipeline.constants import REF_TYPE_FLAT
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
-from wfi_reference_pipeline.constants import REF_TYPE_FLAT
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.logging_functions import log_info
 

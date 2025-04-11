@@ -1,8 +1,9 @@
-import pytest
 import numpy as np
+import pytest
+
+from wfi_reference_pipeline.constants import REF_TYPE_READNOISE, REF_TYPE_SATURATION
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
-from wfi_reference_pipeline.constants import REF_TYPE_SATURATION, REF_TYPE_READNOISE
 
 
 @pytest.fixture

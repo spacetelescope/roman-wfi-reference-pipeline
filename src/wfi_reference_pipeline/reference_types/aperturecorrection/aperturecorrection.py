@@ -1,19 +1,23 @@
 #import logging #uncomment if ever used
 
 import asdf
-import stpsf
 import numpy as np
 import roman_datamodels.stnode as rds
+import stpsf
 from photutils.aperture import CircularAperture, aperture_photometry
-from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import WFIMetaApertureCorrection
+
 from wfi_reference_pipeline.constants import (
-    WFI_REF_OPTICAL_ELEMENTS,
     WFI_REF_OPTICAL_ELEMENT_DARK,
     WFI_REF_OPTICAL_ELEMENT_GRISM,
-    WFI_REF_OPTICAL_ELEMENT_PRISM
+    WFI_REF_OPTICAL_ELEMENT_PRISM,
+    WFI_REF_OPTICAL_ELEMENTS,
+)
+from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
+    WFIMetaApertureCorrection,
 )
 
 from ..reference_type import ReferenceType
+
 
 class ApertureCorrection(ReferenceType):
     """

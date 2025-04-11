@@ -1,7 +1,9 @@
 import logging
+
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
+
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 
 from ..reference_type import ReferenceType

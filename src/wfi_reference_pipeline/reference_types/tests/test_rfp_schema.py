@@ -1,19 +1,27 @@
-import asdf
 import os
 import unittest
+
+import asdf
 import numpy as np
 import pytest
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.reference_types.gain.gain import Gain
-from wfi_reference_pipeline.reference_types.interpixelcapacitance.interpixelcapacitance import InterPixelCapacitance
-from wfi_reference_pipeline.reference_types.inverselinearity.inverselinearity import InverseLinearity
+from wfi_reference_pipeline.reference_types.interpixelcapacitance.interpixelcapacitance import (
+    InterPixelCapacitance,
+)
+from wfi_reference_pipeline.reference_types.inverselinearity.inverselinearity import (
+    InverseLinearity,
+)
 from wfi_reference_pipeline.reference_types.linearity.linearity import Linearity
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
+from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
+    ReferencePixel,
+)
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
+from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 
 skip_on_github = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",

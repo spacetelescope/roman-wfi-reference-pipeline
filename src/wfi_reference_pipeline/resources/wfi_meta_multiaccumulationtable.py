@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 

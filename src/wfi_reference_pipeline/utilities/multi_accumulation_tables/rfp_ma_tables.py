@@ -1,6 +1,10 @@
-import yaml
 import os
-from wfi_reference_pipeline.utilities.multi_accumulation_tables.ma_table_xml_reader import MATableReader
+
+import yaml
+
+from wfi_reference_pipeline.utilities.multi_accumulation_tables.ma_table_xml_reader import (
+    MATableReader,
+)
 
 
 class RefPipeMATableConfig:

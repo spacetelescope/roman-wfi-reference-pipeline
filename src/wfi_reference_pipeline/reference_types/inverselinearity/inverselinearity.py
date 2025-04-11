@@ -1,9 +1,13 @@
 import logging
+
 import numpy as np
 import roman_datamodels.stnode as rds
-from astropy.io import fits
 from astropy import units as u
-from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import WFIMetaInverseLinearity
+from astropy.io import fits
+
+from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
+    WFIMetaInverseLinearity,
+)
 
 from ..reference_type import ReferenceType
 

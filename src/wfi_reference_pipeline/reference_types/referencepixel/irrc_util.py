@@ -6,16 +6,22 @@ Written by (Rauscher et al., in prep):
     - R. Arendt
 '''
 
+import logging
 import threading
 
 import numpy as np
 import scipy.fft as spfft
 
-from .irrc_constants import NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS, \
-    ALL_CHAN_RANGE, REFERENCE_ROWS, \
-    NUM_COLS, NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN
+from .irrc_constants import (
+    ALL_CHAN_RANGE,
+    NUM_COLS,
+    NUM_COLS_PER_OUTPUT_CHAN,
+    NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD,
+    NUM_OUTPUT_CHANS,
+    NUM_ROWS,
+    REFERENCE_ROWS,
+)
 
-import logging
 logger = logging.getLogger('ReferencePixel util')
 
     

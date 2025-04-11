@@ -1,15 +1,21 @@
-import unittest
-import numpy as np
-import numpy.testing as testing
-import tempfile
-from wfi_reference_pipeline.reference_types.linearity.linearity import Linearity
-from wfi_reference_pipeline.reference_types.linearity.linearity import get_fit_length, make_linearity_multi
 import os
 import shutil
+import tempfile
+import unittest
+
+import numpy as np
+import numpy.testing as testing
 import pytest
 from romancal.lib import dqflags
+
+from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
+from wfi_reference_pipeline.reference_types.linearity.linearity import (
+    Linearity,
+    get_fit_length,
+    make_linearity_multi,
+)
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_FRAME_TIME
+
 
 # TODO - re-implement tests after linearity pipeline is re-worked
 # TODO -  CHANGE TO USE PYTEST

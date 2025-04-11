@@ -1,23 +1,18 @@
-import roman_datamodels as rdm
-
-import logging
-
-import os
 import glob
+import logging
+import os
+from multiprocessing import Pool
 
-from romancal.refpix import RefPixStep
+import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
+from romancal.refpix import RefPixStep
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_MASK,
 )
-
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
-
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
-
-from multiprocessing import Pool
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # TODO: FilenameParser will be useful when making files for different detectors since can split by SCA
 # from wfi_reference_pipeline.utilities.filename_parser import FilenameParser

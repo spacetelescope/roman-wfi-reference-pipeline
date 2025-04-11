@@ -1,6 +1,8 @@
-import numpy as np
-import random
 import logging
+import random
+
+import numpy as np
+
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
 
 

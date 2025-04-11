@@ -1,17 +1,24 @@
-import roman_datamodels.stnode as rds
-from ..reference_type import ReferenceType
-import asdf
-import numpy as np
-from astropy.stats import sigma_clipped_stats
+import logging
 import warnings
 from collections.abc import Iterable
-import logging
-from romancal.lib import dqflags
+
+import asdf
 import astropy.units as u
-from wfi_reference_pipeline.constants import WFI_MODE_WIM, WFI_REF_OPTICAL_ELEMENTS
-from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_DARK, WFI_FRAME_TIME
-from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_GRISM
-from wfi_reference_pipeline.constants import WFI_REF_OPTICAL_ELEMENT_PRISM
+import numpy as np
+import roman_datamodels.stnode as rds
+from astropy.stats import sigma_clipped_stats
+from romancal.lib import dqflags
+
+from wfi_reference_pipeline.constants import (
+    WFI_FRAME_TIME,
+    WFI_MODE_WIM,
+    WFI_REF_OPTICAL_ELEMENT_DARK,
+    WFI_REF_OPTICAL_ELEMENT_GRISM,
+    WFI_REF_OPTICAL_ELEMENT_PRISM,
+    WFI_REF_OPTICAL_ELEMENTS,
+)
+
+from ..reference_type import ReferenceType
 
 # logging.getLogger('stpipe').setLevel(logging.WARNING)
 # log_file_str = 'linearity_dev.log'

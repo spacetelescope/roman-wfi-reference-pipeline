@@ -1,10 +1,13 @@
-import asdf
 import os
+from datetime import date, datetime
 from pathlib import Path
-from datetime import datetime, date
-from romancal import step as rcal_steps
+
+import asdf
 import romancal.pipeline as rcal_pipes
+from romancal import step as rcal_steps
+
 from ..constants import WFI_DETECTORS, WFI_REF_OPTICAL_ELEMENTS, WFI_TYPES
+
 
 class ParameterFile():
     """

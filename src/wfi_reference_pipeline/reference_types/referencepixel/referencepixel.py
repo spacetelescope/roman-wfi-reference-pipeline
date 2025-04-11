@@ -1,19 +1,22 @@
 import logging
-import os                       
+import os
 import shutil
-import numpy as np
 import time
-from astropy import units as u
 from pathlib import Path
 
+import numpy as np
 import roman_datamodels as rdm
 import roman_datamodels.stnode as rds
-from wfi_reference_pipeline.resources.wfi_meta_referencepixel import WFIMetaReferencePixel
-from ..reference_type import ReferenceType
+from astropy import units as u
 
+from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
+    WFIMetaReferencePixel,
+)
+
+from ..reference_type import ReferenceType
+from .irrc_constants import NUM_COLS, NUM_ROWS
 from .irrc_extract_ramp_sums import extract
 from .irrc_generate_weights import generate
-from .irrc_constants import NUM_COLS, NUM_ROWS
 
 logging = logging.getLogger('ReferencePixel')
 

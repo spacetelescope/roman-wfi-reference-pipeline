@@ -1,14 +1,15 @@
-import numpy as np
-
 import asdf
-from astropy.modeling.models import Polynomial2D, Mapping, Shift
+import numpy as np
+import roman_datamodels.stnode as rds
+
 # from astropy.modeling import fitting  TODO- uncomment when needed
 # from astropy.stats import sigma_clip  TODO - uncomment when needed
 from astropy import units as u
-import roman_datamodels.stnode as rds
+from astropy.modeling.models import Mapping, Polynomial2D, Shift
 from soc_roman_tools.siaf import siaf
 
 from ..reference_type import ReferenceType
+
 # from ..utilities.reference_catalog import ReferenceCatalog  TODO - Verify Existence
 
 
