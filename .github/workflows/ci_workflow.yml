@@ -36,4 +36,4 @@ jobs:
         ruff check ./src
     - name: Test with pytest
       run: |
-        pytest -m "not huge"
+        pytest

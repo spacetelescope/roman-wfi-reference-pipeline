@@ -89,13 +89,6 @@ write_to = "src/wfi_reference_pipeline/version.py"
 select = ["E", "F", "N"]
 ignore = ["E501"]
 
-[tool.pytest.ini_options]
-markers = [
-    "huge: marks tests as huge (deselect with '-m \"not huge\"')",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-]
-
 [tool.coverage.run]
 source = ["wfi_reference_pipeline"]
 omit = [

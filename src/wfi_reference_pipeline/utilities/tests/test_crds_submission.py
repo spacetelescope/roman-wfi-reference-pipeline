@@ -3,6 +3,11 @@ import tempfile
 import os
 from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 
+skip_on_github = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skip this test on GitHub Actions, no crds access"
+)
+
 
 @pytest.fixture
 def temp_file():
@@ -15,7 +20,7 @@ def temp_file():
     yield tmp_file_path
     os.remove(tmp_file_path)  # Clean up the temporary file after the test
 
-
+@skip_on_github
 def test_with_temp_file(temp_file):
     """
     Test WFISubmit with a valid temporary file.
