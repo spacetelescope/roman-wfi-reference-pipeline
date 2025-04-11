@@ -1,11 +1,13 @@
 import logging
 import math
 import os
+
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 from astropy.stats import sigma_clip
+
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 

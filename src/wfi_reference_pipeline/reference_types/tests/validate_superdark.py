@@ -1,15 +1,16 @@
 import argparse
 from pathlib import Path
-from wfi_reference_pipeline.utilities.data_functions import get_science_pixels_cube
-from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
+
+import asdf
+import numpy as np
+from astropy.time import Time
+
+from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_FRAME_TIME, WFI_MODE_WIM
 from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-import asdf
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
-from wfi_reference_pipeline.constants import REF_TYPE_DARK
-from astropy.time import Time
-import numpy as np
-from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
+from wfi_reference_pipeline.utilities.data_functions import get_science_pixels_cube
+from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 # TODO edit below if needed and add extra meta for testing/validation
 # Define your metadata, including only the 'exposure' information

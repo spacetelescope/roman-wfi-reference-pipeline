@@ -8,15 +8,21 @@ Written by (Rauscher et al., in prep):
 '''
 
 import glob
-import h5py
-import numpy as np
-import time
-
-from .irrc_constants import NUM_ROWS, NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_OUTPUT_CHANS
-from .irrc_util import exec_channel_func_threads
 
 # Allocate singleton logger
 import logging
+import time
+
+import h5py
+import numpy as np
+
+from .irrc_constants import (
+    NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD,
+    NUM_OUTPUT_CHANS,
+    NUM_ROWS,
+)
+from .irrc_util import exec_channel_func_threads
+
 logger = logging.getLogger('ReferencePixel Weights')
 
 # Type used for storing weights (alpha, gamma, zeta)

@@ -4,10 +4,10 @@ import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from wfi_reference_pipeline.constants import VIRTUAL_PIXEL_DEPTH, WFI_DETECTORS
-
 import asdf
 from astropy.time import Time
+
+from wfi_reference_pipeline.constants import VIRTUAL_PIXEL_DEPTH, WFI_DETECTORS
 
 
 class SuperDark(ABC):

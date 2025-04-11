@@ -1,11 +1,15 @@
 #import logging #uncomment if ever used
 
 import asdf
-import yaml
 import roman_datamodels.stnode as rds
-from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import WFIMetaMultiAccumulationTable
+import yaml
+
+from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
+    WFIMetaMultiAccumulationTable,
+)
 
 from ..reference_type import ReferenceType
+
 
 class MultiAccumulationTable(ReferenceType):
     """

@@ -2,6 +2,7 @@ import logging
 from abc import ABC
 
 import numpy as np
+
 from wfi_reference_pipeline.constants import (
     WFI_FRAME_TIME,
     WFI_MODE_WIM,

@@ -1,19 +1,18 @@
 import logging
-import numpy as np
+import os
+from multiprocessing import Pool
 
+import numpy as np
+import roman_datamodels as rdm
 import roman_datamodels.stnode as rds
+from astropy.convolution import Box2DKernel, convolve
+from astropy.io import fits
+from roman_datamodels.dqflags import pixel as dqflags
+
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 
 from ..reference_type import ReferenceType
 
-import roman_datamodels as rdm
-from roman_datamodels.dqflags import pixel as dqflags
-
-from astropy.io import fits
-from astropy.convolution import convolve, Box2DKernel
-
-from multiprocessing import Pool
-import os
 
 class Mask(ReferenceType):
     """

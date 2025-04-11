@@ -10,8 +10,8 @@ import asdf
 import numpy as np
 import psutil
 from astropy import units as u
-
 from astropy.stats import sigma_clip
+
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,

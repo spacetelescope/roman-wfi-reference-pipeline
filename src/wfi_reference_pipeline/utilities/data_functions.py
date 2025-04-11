@@ -1,5 +1,7 @@
 import numpy as np
+
 from wfi_reference_pipeline.constants import VIRTUAL_PIXEL_DEPTH
+
 
 def get_science_pixels_cube(data_cube, border=VIRTUAL_PIXEL_DEPTH):
     num_reads, num_i_pixels, num_j_pixels = np.shape(data_cube)

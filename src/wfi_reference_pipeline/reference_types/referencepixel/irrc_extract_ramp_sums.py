@@ -24,20 +24,27 @@ Written by (Rauscher et al., in prep):
     - S. Maher
 '''
 
+import logging
 import time
 
-from astropy import stats
 import h5py
 import numpy as np
 import scipy.fft as spfft
+from astropy import stats
 
 from . import irrc_util as util
+from .irrc_constants import (
+    END_OF_ROW_PIXEL_PAD,
+    NUM_COLS,
+    NUM_COLS_PER_OUTPUT_CHAN,
+    NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD,
+    NUM_OUTPUT_CHANS,
+    NUM_ROWS,
+    PIXEL_READ_FREQ_HZ,
+    REFPIX_NORM,
+)
 from .irrc_util import exec_channel_func_threads
-from .irrc_constants import NUM_OUTPUT_CHANS, END_OF_ROW_PIXEL_PAD, \
-    NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD, NUM_COLS_PER_OUTPUT_CHAN, NUM_ROWS, \
-    NUM_COLS, REFPIX_NORM, PIXEL_READ_FREQ_HZ
 
-import logging
 logger = logging.getLogger('ReferencePixel Sums')
 
 

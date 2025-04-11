@@ -5,8 +5,8 @@ This module contains the class structure to extract a given MA table from a give
 From WFI_Tools repo package developed by W. Schultz and modified and expanded for the RFP by R. Cosentino.
 
 """
-from xml.etree import ElementTree
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 class MATableReader:

@@ -1,12 +1,14 @@
-import pytest
 import os
-import numpy as np
 from pathlib import Path
-from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
+
+import numpy as np
+import pytest
+
 from wfi_reference_pipeline.constants import (
-    DARK_SHORT_NUM_READS,
     DARK_LONG_NUM_READS,
-    )
+    DARK_SHORT_NUM_READS,
+)
+from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
 
 
 # Temporary subclass to test the abstract SuperDark class

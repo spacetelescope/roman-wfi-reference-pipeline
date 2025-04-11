@@ -1,7 +1,8 @@
-import roman_datamodels.stnode as rds
-from ..reference_type import ReferenceType
 import asdf
 import numpy as np
+import roman_datamodels.stnode as rds
+
+from ..reference_type import ReferenceType
 
 
 class InterPixelCapacitance(ReferenceType):

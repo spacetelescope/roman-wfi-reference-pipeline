@@ -2,8 +2,8 @@
 Tools for working with DCL data. Mainly FITS handling.
 """
 
-from astropy.io import fits
 import numpy as np
+from astropy.io import fits
 
 
 def read_dcl_data(file):

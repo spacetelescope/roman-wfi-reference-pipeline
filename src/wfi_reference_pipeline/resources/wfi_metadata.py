@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Union
 
 from astropy.time import Time
+
 from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_PEDIGREE
 
 

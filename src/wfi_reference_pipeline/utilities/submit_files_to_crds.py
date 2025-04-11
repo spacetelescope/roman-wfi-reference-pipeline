@@ -3,18 +3,20 @@ Module for submitting reference files to CRDS. This will auto-populate
 the information for the reference file submission.
 """
 
+import logging
 import os
 import subprocess
-import logging
-from typing import Union
 from dataclasses import dataclass, field
-from crds.submit import Submission
+from typing import Union
+
 from crds.certify import certify_files
 from crds.core import heavy_client
+from crds.submit import Submission
 
-from .notifications import send_slack_message
-from ..config.config_access import get_crds_submission_config
 from wfi_reference_pipeline.constants import WFI_REF_TYPES
+
+from ..config.config_access import get_crds_submission_config
+from .notifications import send_slack_message
 
 
 @dataclass(init=True, repr=True)
