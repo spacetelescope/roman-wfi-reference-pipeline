@@ -113,6 +113,7 @@ class TestFlat:
         assert flat_object_with_data_cube.flat_error is not None
         assert flat_object_with_data_cube.flat_error.shape == (4088, 4088)
 
+    @pytest.mark.huge(reason="too large for consistent github checks")
     def test_calculate_error_with_individual_images(self, flat_object_with_data_cube):
         """
         Test calculate_error with a user-supplied error array.

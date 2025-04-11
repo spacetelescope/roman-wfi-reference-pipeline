@@ -206,6 +206,7 @@ class TestSchema(unittest.TestCase):
         assert tf.validate() is None
 
     # @pytest.mark.skip(reason="Temporarily disabled test")
+    @pytest.mark.huge(reason="too large for consistent github checks")
     def test_rfp_referencepixel_schema(self):
         """
         Use the WFI reference file pipeline ReferencePixel() module to build
