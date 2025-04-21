@@ -19,21 +19,29 @@ See the instructions below for how to contribute to this repository using a fork
        2. `git add <new or changed files you want to commit>`
        3. `git commit -m 'Explanation of changes you've done with these files'`
 
-5. Push the branch to the GitHub repository for the personal fork with `git push origin <branchname>`.
+5. Remember all changes must have appropriate test and documentation updates.
 
-6. In the `roman-wfi-reference-pipeline` repository, create a pull request for the recently pushed branch.  You will want to set the base fork pointing to `roman-wfi-reference-pipeline:main` and the `head` fork pointing to the branch on your personal fork (i.e. `username:branchname`).  Note that if the branch is still under development, you can use the GitHub "Draft" feature (under the "Reviewers" section) to tag the pull request as a draft. Not until the "Ready for review" button at the bottom of the pull request is explicitly pushed is the pull request 'mergeable'.
+6. Push the branch to the GitHub repository for the personal fork with `git push origin <branchname>`.
 
-7. Assign the pull request a reviewer, selecting a maintainer of the `roman-wfi-reference-pipeline` repository.  They will review your pull request and either accept the request and merge, or ask for additional changes.
+7. In the `roman-wfi-reference-pipeline` repository, create a pull request for the recently pushed branch.  You will want to set the base fork pointing to `roman-wfi-reference-pipeline:main` and the `head` fork pointing to the branch on your personal fork (i.e. `username:branchname`).  Note that if the branch is still under development, you can use the GitHub "Draft" feature (under the "Reviewers" section) to tag the pull request as a draft. Not until the "Ready for review" button at the bottom of the pull request is explicitly pushed is the pull request 'mergeable'.
 
-8. Iterate with your reviewer(s) on additional changes if necessary, addressing any comments on your pull request.  If changes are required, you may end up iterating over steps 4.iii and 5 several times while working with your reviewer.
+8. Assign the pull request a reviewer, selecting a maintainer of the `roman-wfi-reference-pipeline` repository.  They will review your pull request and either accept the request and merge, or ask for additional changes.
 
-9. Once the pull request has been accepted and merged, you can delete your local branch with `git branch -d <branchname>`.
+9. Iterate with your reviewer(s) on additional changes if necessary, addressing any comments on your pull request.  If changes are required, you may end up iterating over steps 4.iii and 5 several times while working with your reviewer.
+
+10. Once the pull request has been accepted and merged, you can delete your local branch with `git branch -d <branchname>`.
 
 #### Keeping your fork updated
-If you wish to, you can keep a personal fork up-to-date with the `roman-wfi-reference-pipeline` repository by fetching and rebasing with the `upstream` remote.
+If you wish to, you can keep a personal fork up-to-date with the `roman-wfi-reference-pipeline` repository by fetching and rebasing with the `upstream` remote, remember to update your github repo's main after doing this.
 1. `git checkout main`
 2. `git fetch upstream main`
 3. `git rebase upstream/main`
+4. `git push origin main`
+
+Alternatively, you can use the `sync fork` button on the main page of your github fork.  Remember once synced you will need to pull your main down to your machine
+1. `git checkout main`
+2. `git fetch origin main`
+3. `git pull origin main`
 
 #### Collaborating on someone else's fork
 Users can contribute to another user's personal fork by adding a `remote` that points to their fork and using the nominal forking workflow, e.g.:
