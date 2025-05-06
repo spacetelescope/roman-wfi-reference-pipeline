@@ -22,7 +22,7 @@ class RefPixPipeline(Pipeline):
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-    refpix_pipeline = RefPixPipeline()
+    refpix_pipeline = RefPixPipeline("<detector string>")
     refpix_pipeline.select_uncal_files()
     refpix_pipeline.prep_pipeline(refpix_pipeline.uncal_files)
     refpix_pipeline.run_pipeline(refpix_pipeline.prepped_files)
@@ -33,10 +33,10 @@ class RefPixPipeline(Pipeline):
 
     """
 
-    def __init__(self):
+    def __init__(self, detector):
 
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_REFPIX)
+        super().__init__(REF_TYPE_REFPIX, detector)
         self.refpix_file = None
 
     @log_info
@@ -44,7 +44,7 @@ class RefPixPipeline(Pipeline):
         # Clearing from previous run
         self.uncal_files.clear()
 
-        # TODO: note...this does not check to make sure all files are from the same detector! 
+        # TODO: note...this does not check to make sure all files are from the same detector!
         file_list = list(self.ingest_path.glob("*_uncal.asdf"))
 
         self.uncal_files = file_list
@@ -65,9 +65,9 @@ class RefPixPipeline(Pipeline):
             file_list = list(map(Path, file_list))
         else:
             file_list = self.uncal_files
-        
-        # only select files that have not been run through step 1 of the IRRC.  
-        # Step 2 will automatically grab all of the files, including the ones that have been previously run.  
+
+        # only select files that have not been run through step 1 of the IRRC.
+        # Step 2 will automatically grab all of the files, including the ones that have been previously run.
         for file in file_list:
             name = file.name + '_sums.h5'
             irrcsum_file = list((self.prep_path).glob(f'*/{name}'))
@@ -89,11 +89,11 @@ class RefPixPipeline(Pipeline):
         else:
             file_list = self.prepped_files
 
-        tmp = MakeDevMeta(ref_type=self.ref_type) 
+        tmp = MakeDevMeta(ref_type=self.ref_type)
 
-        # TODO: how do we make sure that the WFI name is correct in the out_file_path? 
+        # TODO: how do we make sure that the WFI name is correct in the out_file_path?
         out_file_path = self.file_handler.format_pipeline_output_file_path('WIM', tmp.meta_referencepixel.instrument_detector)
-        
+
         rfp_refpix = ReferencePixel(meta_data=tmp.meta_referencepixel,
                                                 file_list=file_list,
                                                 ref_type_data=None,
@@ -102,7 +102,7 @@ class RefPixPipeline(Pipeline):
 
         rfp_refpix.make_referencepixel_image(tmppath=self.prep_path)
 
-        # TODO: remove if we can figure out how to get the correct instrument detctor above for the out_file_path. 
+        # TODO: remove if we can figure out how to get the correct instrument detctor above for the out_file_path.
         rfp_refpix.outfile = self.file_handler.format_pipeline_output_file_path('WIM', rfp_refpix.meta_data.instrument_detector)
         rfp_refpix.generate_outfile()
 

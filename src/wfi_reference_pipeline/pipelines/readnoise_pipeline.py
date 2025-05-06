@@ -25,7 +25,7 @@ class ReadnoisePipeline(Pipeline):
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline = ReadnoisePipeline("<detector string>")
     readnoise_pipeline.select_uncal_files()
     readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
     readnoise_pipeline.run_pipeline(readnoise_pipeline.prepped_files)
@@ -36,9 +36,9 @@ class ReadnoisePipeline(Pipeline):
 
     """
 
-    def __init__(self):
+    def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_READNOISE)
+        super().__init__(REF_TYPE_READNOISE, detector)
 
     @log_info
     def select_uncal_files(self):
@@ -46,6 +46,7 @@ class ReadnoisePipeline(Pipeline):
         logging.info("READNOISE SELECT_UNCAL_FILES")
 
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
+
         # Get files from input directory
         files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         # files = [str(file) for file in self.ingest_path.glob("*_WFI01_uncal.asdf")]

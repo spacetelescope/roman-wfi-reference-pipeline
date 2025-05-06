@@ -41,7 +41,7 @@ class DarkPipeline(Pipeline):
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-    dark_pipeline = DarkPipeline()
+    dark_pipeline = DarkPipeline("<detector string>")
     dark_pipeline.select_uncal_files()
     dark_pipeline.prep_pipeline()
     dark_pipeline.prep_superdark()
@@ -53,9 +53,9 @@ class DarkPipeline(Pipeline):
 
     """
 
-    def __init__(self):
+    def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_DARK)
+        super().__init__(REF_TYPE_DARK, detector)
         self.superdark_file = None
         self.config = get_pipelines_config(REF_TYPE_DARK)
 
@@ -121,6 +121,7 @@ class DarkPipeline(Pipeline):
         sig_clip_sd_high=DARK_SIGMA_CLIP_SD_HIGH,
         outfile=None
     ):
+        # SAPP TODO - NOW THAT DETECTOR IS PART OF PIPELINE - INSTEAD OF WFI_DETECTOR_STR, SEND IN IGNORE DETECTOR FLAG
         f"""
         Prepares the superdark data file from an existing file list to be used as input for the `run_pipeline` method
 

@@ -19,14 +19,14 @@ if rfp_refpix_pipe_all == 1:
     # Step 2 - Update RFP DB with new files.
     # Step 3 - Check if criteria to make specific reference file is met
 
-    refpix_pipeline = RefPixPipeline()
+    refpix_pipeline = RefPixPipeline("WFI01")
     refpix_pipeline.restart_pipeline()
 
 
 rfp_refpix_ingest_prep_only = 0
 if rfp_refpix_ingest_prep_only == 1:
     # REFTYPE_PIPE.REFPIX
-    refpix_pipeline = RefPixPipeline()
+    refpix_pipeline = RefPixPipeline("WFI01")
     refpix_pipeline.select_uncal_files()
     refpix_pipeline.prep_pipeline(refpix_pipeline.uncal_files)
 
@@ -35,7 +35,7 @@ rfp_tvac_list_run_prep = 1
 if rfp_tvac_list_run_prep == 1:
 
     files = glob.glob('/grp/roman/GROUND_TESTS/TVAC2/ASDF/NOM_OPS/OTP00639_TotalNoiseNoEWA_TV2a_R1_MCEB/Activity_1/*WFI03*.asdf')[0:2]
-    refpix_pipeline = RefPixPipeline()
+    refpix_pipeline = RefPixPipeline("WFI01")
     refpix_pipeline.prep_pipeline(file_list=files)
     print(f"pipeline prepped!!")
 

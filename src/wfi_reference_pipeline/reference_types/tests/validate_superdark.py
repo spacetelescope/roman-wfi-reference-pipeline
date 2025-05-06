@@ -186,7 +186,7 @@ def test_validate_superdark_sigma_clip_short_only_values_pass(short_files):
     sigma_clip_high_bound = 1
 
     # Generate superdark from only short darks
-    dark_pipeline = DarkPipeline()
+    dark_pipeline = DarkPipeline("WFI01")
     dark_pipeline.prep_superdark_file(short_file_list=short_files, short_dark_num_reads=10, long_dark_num_reads=0, sig_clip_sd_low=sigma_clip_low_bound, sig_clip_sd_high=sigma_clip_high_bound, outfile="validate_superdark_test_prepped_superdark_short.asdf")
     # Check 1-sigma rejection and dark rates.
     # Use the Dark() to compute the mean dark rate from the generated superdark.asdf file.
@@ -216,7 +216,7 @@ def test_validate_superdark_sigma_clip_values_pass(short_files, long_files):
     sigma_clip_high_bound = 3
 
     # Generate superdark from only short darks
-    dark_pipeline = DarkPipeline()
+    dark_pipeline = DarkPipeline("WFI01")
     dark_pipeline.prep_superdark_file(short_file_list=short_files, long_file_list=long_files, short_dark_num_reads=10, long_dark_num_reads=20, sig_clip_sd_low=sigma_clip_low_bound, sig_clip_sd_high=sigma_clip_high_bound, outfile="validate_superdark_test_prepped_superdark.asdf")
 
     # Generate dark ref_type to get data
