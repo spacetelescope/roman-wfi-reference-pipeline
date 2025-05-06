@@ -69,7 +69,7 @@ class DarkPipeline(Pipeline):
         # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(
             # self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
-            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")
+            self.ingest_path.glob(f"r00444*_{self.detector}_uncal.asdf")
         )
 
         self.uncal_files = files
