@@ -2,6 +2,8 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from constants import WFI_DETECTORS
+
 from wfi_reference_pipeline.config.config_access import get_data_files_config
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
@@ -21,10 +23,16 @@ class Pipeline(ABC):
 
     """
 
-    def __init__(self, ref_type):
+    def __init__(self, ref_type, detector):
         self.uncal_files = []
         self.prepped_files = []
         self.ref_type = ref_type
+
+        if detector.upper() in WFI_DETECTORS:
+            self.detector = detector.upper()
+        else:
+            raise KeyError (f"Invalid Detector {detector} - choose from {WFI_DETECTORS}")
+
         try:
             # Initialize logging named for the derived class
             configure_logging(f"{self.__class__.__name__}")
