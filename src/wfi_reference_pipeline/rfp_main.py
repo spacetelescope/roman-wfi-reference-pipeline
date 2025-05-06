@@ -1,7 +1,31 @@
 import argparse
 import sys
 
-from constants import WFI_DETECTORS, WFI_DETECTORS_ALL, WFI_REF_TYPES
+from constants import (
+    REF_TYPE_ABVEGAMAGNITUDEOFFSET,
+    REF_TYPE_APERTURECORRECTION,
+    REF_TYPE_DARK,
+    REF_TYPE_DISTORTION,
+    REF_TYPE_FLAT,
+    REF_TYPE_GAIN,
+    REF_TYPE_INVERSELINEARITY,
+    REF_TYPE_IPC,
+    REF_TYPE_LINEARITY,
+    REF_TYPE_MASK,
+    REF_TYPE_MULTIACCUMULATIONTABLE,
+    REF_TYPE_PIXELAREA,
+    REF_TYPE_READNOISE,
+    REF_TYPE_REF_COMMON,
+    REF_TYPE_REF_EXPOSURE_TYPE,
+    REF_TYPE_REF_OPTICAL_ELEMENT,
+    REF_TYPE_REFPIX,
+    REF_TYPE_SATURATION,
+    REF_TYPE_SUPERBIAS,
+    REF_TYPE_WFI_IMG_PHOTOM,
+    WFI_DETECTORS,
+    WFI_DETECTORS_ALL,
+    WFI_REF_TYPES,
+)
 
 from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
 from wfi_reference_pipeline.pipelines.flat_pipeline import FlatPipeline
@@ -23,14 +47,14 @@ def main(arguments):
     )
     parser.add_argument(
         "reference_type",
-        type=str,
+        type=str.upper,
         choices=list(sorted(WFI_REF_TYPES)),
         help="Reference Type to process",
     )
     parser.add_argument(
         "-d",
         "--detector",
-        type=str,
+        type=str.upper,
         choices=list(sorted(WFI_DETECTORS)),
         help="WFI Detector Name to process",
         default=WFI_DETECTORS_ALL,
@@ -61,45 +85,45 @@ def main(arguments):
 
     pipeline = None
     for detector in detectors:
-        if ref_type == WFI_REF_TYPES.REF_TYPE_ABVEGAMAGNITUDEOFFSET:
+        if ref_type == REF_TYPE_ABVEGAMAGNITUDEOFFSET:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_APERTURECORRECTION:
+        elif ref_type == REF_TYPE_APERTURECORRECTION:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_DARK:
+        elif ref_type == REF_TYPE_DARK:
             pipeline = DarkPipeline(detector)
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_DISTORTION:
+        elif ref_type == REF_TYPE_DISTORTION:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_FLAT:
+        elif ref_type == REF_TYPE_FLAT:
             pipeline = FlatPipeline(detector)
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_GAIN:
+        elif ref_type == REF_TYPE_GAIN:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_INVERSELINEARITY:
+        elif ref_type == REF_TYPE_INVERSELINEARITY:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_IPC:
+        elif ref_type == REF_TYPE_IPC:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_LINEARITY:
+        elif ref_type == REF_TYPE_LINEARITY:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_MASK:
+        elif ref_type == REF_TYPE_MASK:
             pipeline = MaskPipeline(detector)
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_MULTIACCUMULATIONTABLE:
+        elif ref_type == REF_TYPE_MULTIACCUMULATIONTABLE:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_PIXELAREA:
+        elif ref_type == REF_TYPE_PIXELAREA:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_READNOISE:
+        elif ref_type == REF_TYPE_READNOISE:
             pipeline = ReadnoisePipeline(detector)
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_REF_COMMON:
+        elif ref_type == REF_TYPE_REF_COMMON:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_REF_EXPOSURE_TYPE:
+        elif ref_type == REF_TYPE_REF_EXPOSURE_TYPE:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_REF_OPTICAL_ELEMENT:
+        elif ref_type == REF_TYPE_REF_OPTICAL_ELEMENT:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_REFPIX:
+        elif ref_type == REF_TYPE_REFPIX:
             pipeline = RefPixPipeline(detector)
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_SATURATION:
+        elif ref_type == REF_TYPE_SATURATION:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_SUPERBIAS:
+        elif ref_type == REF_TYPE_SUPERBIAS:
             pass
-        elif ref_type == WFI_REF_TYPES.REF_TYPE_WFI_IMG_PHOTOM:
+        elif ref_type == REF_TYPE_WFI_IMG_PHOTOM:
             pass
         else:
             raise KeyError(f"ref_type {ref_type} not valid - try {WFI_REF_TYPES}")
