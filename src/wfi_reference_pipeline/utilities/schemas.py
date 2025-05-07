@@ -118,11 +118,67 @@ QC_CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
 
-        # Dark Control Settings
-        "dark_control": {
+        # Dark Quality Control Settings
+        "dark_quality_control": {
             "type": "object",
             "properties": {
-                "checks": {
+                # Prep pipeline checks for romancal steps
+                "prep_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step": {"type": "boolean"},
+                        "saturation_step": {"type": "boolean"},
+                        "refpix_step": {"type": "boolean"},
+                        # Final check of prep pipeline
+                        "prep_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["dqinit_step", "saturation_step", "refpix_step", "prep_pipeline_step"]
+                },
+                "prep_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step_status": {
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"]
+                        },
+                        "saturation_step_status": {
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"]
+                        },
+                        "refpix_step_status": {
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"]
+                        },
+                        "prep_pipeline_status": {
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"]
+                            #  Only set prep pipeline status to Complete if all step status
+                            #  above are Complete
+                        },
+                    },
+                    "required": ["dqinit_step_status", "saturation_step_status", "refpix_step_status", 
+                                 "prep_pipeline_status"]
+                },
+                # Superdark checks
+                "superdark_checks": {
+                    "type": "object",
+                    "properties": {
+                        "superdark_step": {"type": "boolean"},
+                    },
+                    "required": ["superdark_step"]
+                },
+                "superdark_values": {
+                    "type": "object",
+                    "properties": {
+                        "superdark_step_status": {
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"]
+                        },
+                    },
+                    "required": ["superdark_step_status"]
+                },
+                # Dark pipeline checks
+                "dark_pipeline_checks": {
                     "type": "object",
                     "properties": {
                         "check_mean_dark_rate": {"type": "boolean"},
@@ -132,6 +188,8 @@ QC_CONFIG_SCHEMA = {
                         "check_num_dead_pix": {"type": "boolean"},
                         "check_num_unreliable_pix": {"type": "boolean"},
                         "check_num_warm_pix": {"type": "boolean"},
+                        # Final check of ref_type pipeline
+                        "dark_pipeline_step": { "type": "boolean" },
                     },
                     "required": [
                         "check_mean_dark_rate",
@@ -141,9 +199,10 @@ QC_CONFIG_SCHEMA = {
                         "check_num_dead_pix",
                         "check_num_unreliable_pix",
                         "check_num_warm_pix",
+                        "dark_pipeline_step",  
                     ],
                 },
-                "values": {
+                "dark_pipeline_values": {
                     "type": "object",
                     "properties": {
                         "max_mean_dark_rate_reference_value": {"type": "number"},
@@ -153,6 +212,12 @@ QC_CONFIG_SCHEMA = {
                         "max_num_dead_pix_reference_value": {"type": "number"},
                         "max_num_unreliable_pix_reference_value": {"type": "number"},
                         "max_num_warm_pix_reference_value": {"type": "number"},
+                        "dark_pipeline_status": {                            
+                            "type": "string",
+                            "enum": ["Incomplete", "Complete", "N/A"],  
+                            #  Only set ref_type pipeline status to Complete if all checks
+                            #  above are True or Ignored.
+                        },
                     },
                     "required": [
                         "max_mean_dark_rate_reference_value",
@@ -162,9 +227,18 @@ QC_CONFIG_SCHEMA = {
                         "max_num_dead_pix_reference_value",
                         "max_num_unreliable_pix_reference_value",
                         "max_num_warm_pix_reference_value",
+                        "dark_pipeline_status",
                     ],
                 },
             },
+            "required": [
+                "prep_pipeline_checks",
+                "prep_pipeline_values",
+                "superdark_checks",
+                "superdark_values",
+                "dark_pipeline_checks",
+                "dark_pipeline_values",
+            ]
         },
 
         # Readnoise Settings
