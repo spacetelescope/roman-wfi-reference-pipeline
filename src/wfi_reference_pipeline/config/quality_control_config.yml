@@ -53,7 +53,7 @@ flat_quality_control:
     dq_init_step_status: 'N/A'
     refpix_step_status: 'N/A'  # Confirm order of Saturation and RefPix steps for Flat
     saturation_step_status: 'N/A'
-    lienarity_step_status: 'N/A'
+    linearity_step_status: 'N/A'
     darkcurrent_step_status: 'N/A'
     rampfit_step_status: 'N/A'
     prep_pipeline_status: 'Incomplete'
@@ -81,7 +81,7 @@ readnoise_quality_control:
     dq_init_step_status: 'N/A'
     saturation_step_status: 'N/A'
     refpix_step_status: 'N/A'
-    lienarity_step_status: 'N/A'
+    linearity_step_status: 'N/A'
     prep_pipeline_status: 'Incomplete'
   readnoise_pipeline_checks:
     check_mean_readnoise: true
@@ -104,12 +104,8 @@ refpix_quality_control:
     saturation_step_status: 'N/A'
     prep_pipeline_status: 'Incomplete'
   refpix_pipeline_checks:
-    check_mean_readnoise: true
-    check_med_readnoise: true
-    check_std_readnoise: true
+    check_refpix_spectral_slop: true
     refpix_pipeline_step: true
-  readnoise_pipeline_values:
-    max_mean_readnoise_reference_value: 25.0
-    max_med_readnoise_reference_value: 25.0
-    max_std_readnoise_reference_value: 15.0
+  refpix_pipeline_values:
+    refpix_spectral_slope: -1.0
     refpix_pipeline_status: 'Incomplete'

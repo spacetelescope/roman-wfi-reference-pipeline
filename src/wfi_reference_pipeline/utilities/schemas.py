@@ -137,21 +137,10 @@ QC_CONFIG_SCHEMA = {
                 "prep_pipeline_values": {
                     "type": "object",
                     "properties": {
-                        "dqinit_step_status": {
-                            "type": "string",
-                            "enum": ["Incomplete", "Complete", "N/A"]
-                        },
-                        "saturation_step_status": {
-                            "type": "string",
-                            "enum": ["Incomplete", "Complete", "N/A"]
-                        },
-                        "refpix_step_status": {
-                            "type": "string",
-                            "enum": ["Incomplete", "Complete", "N/A"]
-                        },
-                        "prep_pipeline_status": {
-                            "type": "string",
-                            "enum": ["Incomplete", "Complete", "N/A"]
+                        "dqinit_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "saturation_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "refpix_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "prep_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]
                             #  Only set prep pipeline status to Complete if all step status
                             #  above are Complete
                         },
@@ -170,10 +159,7 @@ QC_CONFIG_SCHEMA = {
                 "superdark_values": {
                     "type": "object",
                     "properties": {
-                        "superdark_step_status": {
-                            "type": "string",
-                            "enum": ["Incomplete", "Complete", "N/A"]
-                        },
+                        "superdark_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
                     },
                     "required": ["superdark_step_status"]
                 },
@@ -241,41 +227,171 @@ QC_CONFIG_SCHEMA = {
             ]
         },
 
-        # Readnoise Settings
-        "readnoise_control": {
+        # FLAT QUALITY CONTROL
+        "flat_quality_control": {
             "type": "object",
             "properties": {
-                "checks": {
+                "prep_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step": {"type": "boolean"},
+                        "saturation_step": {"type": "boolean"},
+                        "refpix_step": {"type": "boolean"},
+                        "prep_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["dqinit_step", "saturation_step", "refpix_step", "prep_pipeline_step"]
+                },
+                "prep_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "saturation_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "refpix_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "prep_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["dqinit_step_status", "saturation_step_status", "refpix_step_status", "prep_pipeline_status"]
+                },
+                "flat_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "check_mean_flat": {"type": "boolean"},
+                        "check_std_flat": {"type": "boolean"},
+                        "linearity_step": {"type": "boolean"},
+                        "flat_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["check_mean_flat", "check_std_flat","linearity_step", "flat_pipeline_step"],
+                },
+                "flat_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "mean_flat_reference_value": {"type": "number"},
+                        "med_flat_reference_value": {"type": "number"},
+                        "std_flat_reference_value": {"type": "number"},
+                        "max_num_lowqe_pix": {"type": "number"},
+                        "flat_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["mean_flat_reference_value", "med_flat_reference_value", "std_flat_reference_value",
+                                 "max_num_lowqe_pix", "flat_pipeline_status"],
+                }
+            },
+            "required": [
+                "prep_pipeline_checks", "prep_pipeline_values",
+                "flat_pipeline_checks", "flat_pipeline_values"
+            ]
+        },
+
+        # READNOISE QUALITY CONTROL
+        "readnoise_quality_control": {
+            "type": "object",
+            "properties": {
+                "prep_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step": {"type": "boolean"},
+                        "saturation_step": {"type": "boolean"},
+                        "refpix_step": {"type": "boolean"},
+                        "prep_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["dqinit_step", "saturation_step", "refpix_step", "prep_pipeline_step"]
+                },
+                "prep_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "saturation_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "refpix_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "prep_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["dqinit_step_status", "saturation_step_status", "refpix_step_status", "prep_pipeline_status"]
+                },
+                "readnoise_pipeline_checks": {
                     "type": "object",
                     "properties": {
                         "check_mean_readnoise": {"type": "boolean"},
                         "check_med_readnoise": {"type": "boolean"},
                         "check_std_readnoise": {"type": "boolean"},
+                        "readnoise_pipeline_step": {"type": "boolean"},
                     },
                     "required": [
-                        "check_mean_readnoise",
-                        "check_med_readnoise",
-                        "check_std_readnoise",
-                    ],
+                        "check_mean_readnoise", "check_med_readnoise",
+                        "check_std_readnoise", "readnoise_pipeline_step"
+                    ]
                 },
-                "values": {
+                "readnoise_pipeline_values": {
                     "type": "object",
                     "properties": {
-                        "max_mean_dark_rate_reference_value": {"type": "number"},
-                        "max_med_dark_rate_reference_value": {"type": "number"},
-                        "max_std_dark_rate_reference_value": {"type": "number"},
+                        "max_mean_readnoise_reference_value": {"type": "number"},
+                        "max_med_readnoise_reference_value": {"type": "number"},
+                        "max_std_readnoise_reference_value": {"type": "number"},
+                        "readnoise_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
                     },
                     "required": [
-                        "max_mean_dark_rate_reference_value",
-                        "max_med_dark_rate_reference_value",
-                        "max_std_dark_rate_reference_value",
-                    ],
-                },
+                        "max_mean_readnoise_reference_value", "max_med_readnoise_reference_value",
+                        "max_std_readnoise_reference_value", "readnoise_pipeline_status"
+                    ]
+                }
             },
+            "required": [
+                "prep_pipeline_checks", "prep_pipeline_values",
+                "readnoise_pipeline_checks", "readnoise_pipeline_values"
+            ]
+        },
+
+        # REFPIX QUALITY CONTROL
+        "refpix_quality_control": {
+            "type": "object",
+            "properties": {
+                "prep_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step": {"type": "boolean"},
+                        "saturation_step": {"type": "boolean"},
+                        "refpix_step": {"type": "boolean"},
+                        "prep_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["dqinit_step", "saturation_step", "refpix_step", "prep_pipeline_step"]
+                },
+                "prep_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "dqinit_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "saturation_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "refpix_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                        "prep_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["dqinit_step_status", "saturation_step_status", "refpix_step_status", "prep_pipeline_status"]
+                },
+                "refpix_pipeline_checks": {
+                    "type": "object",
+                    "properties": {
+                        "check_mean_refpix": {"type": "boolean"},
+                        "check_std_refpix": {"type": "boolean"},
+                        "refpix_pipeline_step": {"type": "boolean"},
+                    },
+                    "required": ["check_mean_refpix", "check_std_refpix", "refpix_pipeline_step"]
+                },
+                "refpix_pipeline_values": {
+                    "type": "object",
+                    "properties": {
+                        "max_mean_refpix_reference_value": {"type": "number"},
+                        "max_std_refpix_reference_value": {"type": "number"},
+                        "refpix_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": [
+                        "max_mean_refpix_reference_value", "max_std_refpix_reference_value",
+                        "refpix_pipeline_status"
+                    ]
+                }
+            },
+            "required": ["prep_pipeline_checks", "prep_pipeline_values", 
+                         "refpix_pipeline_checks", "refpix_pipeline_values"
+            ]
         },
     },
     "required": [
-        "dark_control",
-        "readnoise_control",
+        "dark_quality_control",
+        "flat_quality_control",
+        "readnoise_quality_control",
+        "refpix_quality_control"
     ],
 }
