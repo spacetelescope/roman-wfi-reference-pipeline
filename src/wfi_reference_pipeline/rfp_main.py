@@ -41,6 +41,12 @@ def main(arguments):
     Runs all steps of the wfi_reference_pipeline process for ref_type / detector combination.
     """
 
+    # When running from command line this routine can take arguments.
+    # `reference_type` is a mandatory positional argument
+    # `-d or --detector` is not required as omitting it will assume `ALL`
+    # Example run with these parameters:
+    #       $ python rfp_main.py DARK -d WFI01
+
     parser = argparse.ArgumentParser(
         description="Roman Space Telescope - Reference File Pipeline main access point",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
