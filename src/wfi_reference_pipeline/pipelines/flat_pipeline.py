@@ -53,7 +53,7 @@ class FlatPipeline(Pipeline):
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
         files = list(
-            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")  # Change this
+            self.ingest_path.glob("*_uncal.asdf")  # Change this
         )
 
         self.uncal_files = files
@@ -79,20 +79,26 @@ class FlatPipeline(Pipeline):
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
-            result = DQInitStep.call(in_file, save_results=False)
-            result = RefPixStep.call(result, save_results=False)
-            result = SaturationStep.call(result, save_results=False)
-            result = LinearityStep.call(result, save_results=False)
-            result = DarkCurrentStep.call(result, save_results=False)
-            result = RampFitStep.call(result, save_results=False)
-            # TODO Need to confirm steps from romancal and their functionality
+            if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
+                result = DQInitStep.call(in_file, save_results=False)
+            if in_file["meta"]["cal_step"]["refpix"] == "INCOMPLETE":
+                result = RefPixStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["saturation"] == "INCOMPLETE":
+                result = SaturationStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["linearity"] == "INCOMPLETE":
+                result = LinearityStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
+                result = DarkCurrentStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["ramp_fil"] == "INCOMPLETE"
+                result = RampFitStep.call(result, save_results=False)
+            # Make sure to only use files that have not been flat-fielded
+            if in_file["meta"]["cal_step"]["flat_field"] == "INCOMPLETE":
+                prep_output_file_path = self.file_handler.format_prep_output_file_path(
+                    result.meta.filename
+                )
+                result.save(path=prep_output_file_path)
 
-            prep_output_file_path = self.file_handler.format_prep_output_file_path(
-                result.meta.filename
-            )
-            result.save(path=prep_output_file_path)
-
-            self.prepped_files.append(prep_output_file_path)
+                self.prepped_files.append(prep_output_file_path)
 
         logging.info(
             "Finished PREPPING files to make FLAT reference file from RFP")
