@@ -50,7 +50,7 @@ flat_quality_control:
     rampfit_step: true
     prep_pipeline_step: true
   pre_pipeline_values:
-    dq_init_step_status: 'N/A'
+    dqinit_step_status: 'N/A'
     refpix_step_status: 'N/A'  # Confirm order of Saturation and RefPix steps for Flat
     saturation_step_status: 'N/A'
     linearity_step_status: 'N/A'
