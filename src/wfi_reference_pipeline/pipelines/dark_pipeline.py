@@ -254,8 +254,8 @@ class DarkPipeline(Pipeline):
         )
         # ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)  # TODO currently not used
         read_pattern = [[1], [2, 3], [5, 6, 7], [10]]
-        rfp_dark.make_ma_table_resampled_cube(read_pattern=read_pattern)
-        rfp_dark.make_dark_rate_image()
+        rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
+        rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.generate_outfile()
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")

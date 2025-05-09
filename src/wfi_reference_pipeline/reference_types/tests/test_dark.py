@@ -82,7 +82,7 @@ class TestDark:
         with pytest.raises(TypeError):
             Dark(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
-    def test_make_dark_rate_image_default_fit_order(self, dark_object_with_data_cube):
+    def test_make_rate_image_from_data_cube_default_fit_order(self, dark_object_with_data_cube):
         """
         Test that the method make_rate_image_from_data_cube works with default fit_order.
         """
@@ -105,7 +105,7 @@ class TestDark:
         assert dark_object_with_data_cube.dark_rate_image.shape == mock_return_image.shape
         assert dark_object_with_data_cube.dark_rate_image_error.shape == mock_return_error_image.shape
 
-    def test_make_dark_rate_image_custom_fit_order(self, dark_object_with_data_cube):
+    def test_make_rate_image_from_data_cube_custom_fit_order(self, dark_object_with_data_cube):
         """
         Test that the method make_rate_image_from_data_cube works with a custom fit_order.
         """
