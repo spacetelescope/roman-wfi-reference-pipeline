@@ -9,7 +9,6 @@ from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
     DARK_LONG_IDENTIFIER,
     DARK_LONG_NUM_READS,
-    DARK_SHORT_IDENTIFIER,
     DARK_SHORT_NUM_READS,
     DARK_SIGMA_CLIP_SD_HIGH,
     DARK_SIGMA_CLIP_SD_LOW,
