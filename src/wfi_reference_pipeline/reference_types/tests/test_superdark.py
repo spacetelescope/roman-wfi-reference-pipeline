@@ -95,6 +95,7 @@ class TestSuperDark:
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
+                         "WFI01"
                          )
 
     def test_superdark_mismatched_short_detectors(self):
@@ -108,6 +109,7 @@ class TestSuperDark:
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
+                         "WFI01"
                          )
 
     def test_generate_outfile_permissions(self, tmp_path):

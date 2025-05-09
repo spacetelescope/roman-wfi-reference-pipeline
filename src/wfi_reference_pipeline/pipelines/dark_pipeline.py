@@ -237,7 +237,7 @@ class DarkPipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = self.superdark_file
+            file_list = [self.superdark_file]
 
         tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
