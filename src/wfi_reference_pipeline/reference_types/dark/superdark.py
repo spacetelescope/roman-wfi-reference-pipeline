@@ -36,7 +36,7 @@ class SuperDark(ABC):
         long_dark_num_reads: int
             Number of reads in the short dark data cubes.
         wfi_detector_str: str
-            The FPA detector assigned number 01-18
+            The WFI detector assigned number 01-18
         outfile: str, default = None
             File name written to disk.
         """

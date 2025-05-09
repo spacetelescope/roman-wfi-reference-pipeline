@@ -4,6 +4,7 @@ from pathlib import Path
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
 from romancal.saturation import SaturationStep
+from romancal.refpix import RefPixStep
 
 from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
@@ -97,8 +98,7 @@ class DarkPipeline(Pipeline):
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
-
-            # TODO Need to confirm steps from romancal and their functionality
+            result = RefPixStep.call(result, save_results=False)
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
