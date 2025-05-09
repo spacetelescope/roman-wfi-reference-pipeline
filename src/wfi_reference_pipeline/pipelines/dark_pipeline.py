@@ -3,9 +3,8 @@ from pathlib import Path
 
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
-from romancal.saturation import SaturationStep
 from romancal.refpix import RefPixStep
-
+from romancal.saturation import SaturationStep
 from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
     DARK_LONG_IDENTIFIER,
