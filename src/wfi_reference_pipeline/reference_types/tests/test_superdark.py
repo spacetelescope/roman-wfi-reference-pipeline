@@ -41,7 +41,7 @@ def superdark_object(tmp_path_factory):
                        long_dark_files,
                        DARK_SHORT_NUM_READS,
                        DARK_LONG_NUM_READS,
-                       wfi_detector_str="WFI01"
+                       "WFI01"
                        )
     obj.generate_superdark()
     yield obj
@@ -60,7 +60,7 @@ class TestSuperDark:
                            long_dark_files,
                            DARK_SHORT_NUM_READS,
                            DARK_LONG_NUM_READS,
-                           wfi_detector_str="WFI01"
+                           "WFI01"
                            )
 
         assert obj.wfi_detector_str == "WFI01"
@@ -80,7 +80,7 @@ class TestSuperDark:
                          short_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
-                         wfi_detector_str="WFI99"
+                         "WFI99"
                          )
 
     def test_superdark_mismatched_short_long_detectors(self):
@@ -122,7 +122,7 @@ class TestSuperDark:
                            long_dark_files,
                            DARK_SHORT_NUM_READS,
                            DARK_LONG_NUM_READS,
-                           wfi_detector_str="WFI01"
+                           "WFI01"
                            )
 
         # Mock the superdark data for the test
