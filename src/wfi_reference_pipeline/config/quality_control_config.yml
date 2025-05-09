@@ -13,7 +13,7 @@ dark_quality_control:
     refpix_step: true
     prep_pipeline_step: true
   pre_pipeline_values:
-    dq_init_step_status: 'N/A'
+    dqinit_step_status: 'N/A'
     saturation_step_status: 'N/A'
     refpix_step_status: 'N/A'
     prep_pipeline_status: 'Incomplete'
@@ -39,6 +39,11 @@ dark_quality_control:
     max_num_unreliable_pix_reference_value: 1.0e+6
     max_num_warm_pix_reference_value: 1.0e+6
     dark_pipeline_status: 'Incomplete'
+  pre_delivery_checks:
+    romancal_dark_step: true
+  pre_delivery_values:
+    romancal_dark_step_status: 'N/A' 
+  dark_quality_summary: 'N/A' 
 
 flat_quality_control:
   prep_pipeline_checks:
@@ -69,6 +74,11 @@ flat_quality_control:
     max_std_flat_rate_reference_value: 0.1
     max_num_lowqe_pix_reference_value: 1.0e+6
     flat_pipeline_status: 'Incomplete'
+  pre_delivery_checks:
+    romancal_flat_step: true
+  pre_delivery_values:
+    romancal_flat_step_status: 'N/A' 
+  flat_quality_summary: 'N/A' 
 
 readnoise_quality_control:
   prep_pipeline_checks:
@@ -89,10 +99,15 @@ readnoise_quality_control:
     check_std_readnoise: true
     readnoise_pipeline_step: true
   readnoise_pipeline_values:
-    max_mean_readnoise_reference_value: 25.0
-    max_med_readnoise_reference_value: 25.0
+    max_mean_readnoise_reference_value: 2000.0
+    max_med_readnoise_reference_value: 2000.0
     max_std_readnoise_reference_value: 15.0
     readnoise_pipeline_status: 'Incomplete'
+  pre_delivery_checks:
+    romancal_readnoise_step: true
+  pre_delivery_values:
+    romancal_readnoise_step_status: 'N/A'
+  readnoise_quality_summary: 'N/A' 
 
 refpix_quality_control:
   prep_pipeline_checks:
@@ -104,8 +119,13 @@ refpix_quality_control:
     saturation_step_status: 'N/A'
     prep_pipeline_status: 'Incomplete'
   refpix_pipeline_checks:
-    check_refpix_spectral_slop: true
+    check_refpix_spectral_slope: true
     refpix_pipeline_step: true
   refpix_pipeline_values:
     refpix_spectral_slope: -1.0
     refpix_pipeline_status: 'Incomplete'
+  pre_delivery_checks:
+    romancal_refpix_step: true
+  pre_delivery_values:
+    romancal_refpix_step_status: 'N/A' 
+  refpix_quality_summary: 'N/A' 

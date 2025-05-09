@@ -216,14 +216,27 @@ QC_CONFIG_SCHEMA = {
                         "dark_pipeline_status",
                     ],
                 },
+                # Pre delivery checks
+                "pre_delivery_checks": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_dark_step": {"type": "boolean"},
+                    },
+                    "required": ["romancal_dark_step"]
+                },
+                "pre_delivery_values": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_dark_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["romancal_dark_step_status"]
+                },
             },
             "required": [
-                "prep_pipeline_checks",
-                "prep_pipeline_values",
-                "superdark_checks",
-                "superdark_values",
-                "dark_pipeline_checks",
-                "dark_pipeline_values",
+                "prep_pipeline_checks", "prep_pipeline_values",
+                "superdark_checks", "superdark_values",
+                "dark_pipeline_checks", "dark_pipeline_values",
+                "pre_delivery_checks", "pre_delivery_values"
             ]
         },
 
@@ -272,11 +285,27 @@ QC_CONFIG_SCHEMA = {
                     },
                     "required": ["mean_flat_reference_value", "med_flat_reference_value", "std_flat_reference_value",
                                  "max_num_lowqe_pix", "flat_pipeline_status"],
-                }
+                },
+                # Pre delivery checks
+                "pre_delivery_checks": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_flat_step": {"type": "boolean"},
+                    },
+                    "required": ["romancal_flat_step"]
+                },
+                "pre_delivery_values": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_flat_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["romancal_flat_step_status"]
+                },
             },
             "required": [
                 "prep_pipeline_checks", "prep_pipeline_values",
-                "flat_pipeline_checks", "flat_pipeline_values"
+                "flat_pipeline_checks", "flat_pipeline_values",                
+                "pre_delivery_checks", "pre_delivery_values"
             ]
         },
 
@@ -329,11 +358,27 @@ QC_CONFIG_SCHEMA = {
                         "max_mean_readnoise_reference_value", "max_med_readnoise_reference_value",
                         "max_std_readnoise_reference_value", "readnoise_pipeline_status"
                     ]
-                }
+                },
+                # Pre delivery checks
+                "pre_delivery_checks": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_readnoise_step": {"type": "boolean"},
+                    },
+                    "required": ["romancal_readnoise_step"]
+                },
+                "pre_delivery_values": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_readnoise_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["romancal_readnoise_step_status"]
+                },
             },
             "required": [
                 "prep_pipeline_checks", "prep_pipeline_values",
-                "readnoise_pipeline_checks", "readnoise_pipeline_values"
+                "readnoise_pipeline_checks", "readnoise_pipeline_values",
+                "pre_delivery_checks", "pre_delivery_values"
             ]
         },
 
@@ -364,27 +409,39 @@ QC_CONFIG_SCHEMA = {
                 "refpix_pipeline_checks": {
                     "type": "object",
                     "properties": {
-                        "check_mean_refpix": {"type": "boolean"},
-                        "check_std_refpix": {"type": "boolean"},
+                        "check_refpix_spectral_slope": {"type": "boolean"},
                         "refpix_pipeline_step": {"type": "boolean"},
                     },
-                    "required": ["check_mean_refpix", "check_std_refpix", "refpix_pipeline_step"]
+                    "required": ["check_refpix_spectral_slope", "refpix_pipeline_step"]
                 },
                 "refpix_pipeline_values": {
                     "type": "object",
                     "properties": {
-                        "max_mean_refpix_reference_value": {"type": "number"},
-                        "max_std_refpix_reference_value": {"type": "number"},
+                        "refpix_spectral_slope": {"type": "number"},
                         "refpix_pipeline_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
                     },
                     "required": [
-                        "max_mean_refpix_reference_value", "max_std_refpix_reference_value",
-                        "refpix_pipeline_status"
-                    ]
-                }
+                        "refpix_spectral_slope", "refpix_pipeline_status"]
+                },
+                # Pre delivery checks
+                "pre_delivery_checks": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_refpix_step": {"type": "boolean"},
+                    },
+                    "required": ["romancal_refpix_step"]
+                },
+                "pre_delivery_values": {
+                    "type": "object",
+                    "properties": {
+                        "romancal_refpix_step_status": {"type": "string", "enum": ["Incomplete", "Complete", "N/A"]},
+                    },
+                    "required": ["romancal_refpix_step_status"]
+                },
             },
             "required": ["prep_pipeline_checks", "prep_pipeline_values", 
-                         "refpix_pipeline_checks", "refpix_pipeline_values"
+                         "refpix_pipeline_checks", "refpix_pipeline_values",
+                         "pre_delivery_checks", "pre_delivery_values"
             ]
         },
     },
