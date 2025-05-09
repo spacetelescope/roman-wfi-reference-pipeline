@@ -81,15 +81,10 @@ class SuperDark(ABC):
         self.file_list = short_dark_file_list + long_dark_file_list
         self.wfi_detector_str = wfi_detector_str
 
-
-
         # Verify all files are of the correct detector type
         for file in self.file_list:
             if self.wfi_detector_str not in file:
-                raise ValueError(f"Invalid WFI detector ID found in file list provided for {file.name}.")
-
-
-
+                raise ValueError(f"Invalid WFI detector ID found in file list provided for {file}.")
 
         if self.wfi_detector_str not in WFI_DETECTORS:
             raise ValueError(

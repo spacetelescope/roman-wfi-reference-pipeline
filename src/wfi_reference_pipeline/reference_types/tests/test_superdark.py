@@ -90,7 +90,7 @@ class TestSuperDark:
         short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI01_short2.asdf"]
         long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
 
-        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for file_WFI02_long.asdf"):
+        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for /mock/input/path/file_WFI02_long.asdf"):
             TmpSuperDark(short_dark_files,
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
@@ -104,7 +104,7 @@ class TestSuperDark:
         """
         short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI02_short2.asdf"]
         long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
-        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for file_WFI02_short2.asdf"):
+        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for /mock/input/path/file_WFI02_short2.asdf"):
             TmpSuperDark(short_dark_files,
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
