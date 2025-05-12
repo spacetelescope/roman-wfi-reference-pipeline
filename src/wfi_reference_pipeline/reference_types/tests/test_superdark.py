@@ -41,7 +41,7 @@ def superdark_object(tmp_path_factory):
                        long_dark_files,
                        DARK_SHORT_NUM_READS,
                        DARK_LONG_NUM_READS,
-                       wfi_detector_str="WFI01"
+                       "WFI01"
                        )
     obj.generate_superdark()
     yield obj
@@ -60,7 +60,7 @@ class TestSuperDark:
                            long_dark_files,
                            DARK_SHORT_NUM_READS,
                            DARK_LONG_NUM_READS,
-                           wfi_detector_str="WFI01"
+                           "WFI01"
                            )
 
         assert obj.wfi_detector_str == "WFI01"
@@ -80,7 +80,7 @@ class TestSuperDark:
                          short_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
-                         wfi_detector_str="WFI99"
+                         "WFI99"
                          )
 
     def test_superdark_mismatched_short_long_detectors(self):
@@ -90,11 +90,12 @@ class TestSuperDark:
         short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI01_short2.asdf"]
         long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
 
-        with pytest.raises(ValueError, match="More than one WFI detector ID found"):
+        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for /mock/input/path/file_WFI02_long.asdf"):
             TmpSuperDark(short_dark_files,
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
+                         "WFI01"
                          )
 
     def test_superdark_mismatched_short_detectors(self):
@@ -103,11 +104,12 @@ class TestSuperDark:
         """
         short_dark_files = ["/mock/input/path/file_WFI01_short.asdf", "/mock/input/path/file_WFI02_short2.asdf"]
         long_dark_files = ["/mock/input/path/file_WFI02_long.asdf"]
-        with pytest.raises(ValueError, match="More than one WFI detector ID found"):
+        with pytest.raises(ValueError, match="Invalid WFI detector ID found in file list provided for /mock/input/path/file_WFI02_short2.asdf"):
             TmpSuperDark(short_dark_files,
                          long_dark_files,
                          DARK_SHORT_NUM_READS,
                          DARK_LONG_NUM_READS,
+                         "WFI01"
                          )
 
     def test_generate_outfile_permissions(self, tmp_path):
@@ -122,7 +124,7 @@ class TestSuperDark:
                            long_dark_files,
                            DARK_SHORT_NUM_READS,
                            DARK_LONG_NUM_READS,
-                           wfi_detector_str="WFI01"
+                           "WFI01"
                            )
 
         # Mock the superdark data for the test

@@ -29,9 +29,9 @@ class SuperDarkBatches(SuperDark):
         self,
         short_dark_file_list,
         long_dark_file_list,
+        wfi_detector_str,
         short_dark_num_reads=DARK_SHORT_NUM_READS,
         long_dark_num_reads=DARK_LONG_NUM_READS,
-        wfi_detector_str=None,
         outfile=None,
     ):
         f"""
@@ -55,7 +55,7 @@ class SuperDarkBatches(SuperDark):
             long_dark_file_list,
             short_dark_num_reads,
             long_dark_num_reads,
-            wfi_detector_str=wfi_detector_str,
+            wfi_detector_str,
             outfile=outfile,
         )
 
