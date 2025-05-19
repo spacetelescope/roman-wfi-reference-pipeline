@@ -6,126 +6,139 @@
 # should always reflect what displayed here: https://innerspace.stsci.edu/display/RI/RFP+Database+Tables
 #
 
-dark_quality_control:
-  prep_pipeline_checks:
-    dqinit_step: true
-    saturation_step: true
-    refpix_step: true
-    prep_pipeline_step: true
-  pre_pipeline_values:
-    dqinit_step_status: 'N/A'
-    saturation_step_status: 'N/A'
-    refpix_step_status: 'N/A'
-    prep_pipeline_status: 'Incomplete'
-  superdark_checks:
-    superdark_step: true
-  superdark_values:
-    superdark_step_status: 'Incomplete'
-  dark_pipeline_checks:
-    check_mean_dark_rate: true
-    check_med_dark_rate: true
-    check_std_dark_rate: true
-    check_num_hot_pix: true
-    check_num_dead_pix: true
-    check_num_unreliable_pix: true
-    check_num_warm_pix: true
-    dark_pipeline_status: true
-  dark_pipeline_values:
-    max_mean_dark_rate_reference_value: 0.01
-    max_med_dark_rate_reference_value: 0.01
-    max_std_dark_rate_reference_value: 0.01
-    max_num_hot_pix_reference_value: 1.0e+6
-    max_num_dead_pix_reference_value: 1.0e+6
-    max_num_unreliable_pix_reference_value: 1.0e+6
-    max_num_warm_pix_reference_value: 1.0e+6
-    dark_pipeline_status: 'Incomplete'
-  pre_delivery_checks:
-    romancal_dark_step: true
-  pre_delivery_values:
-    romancal_dark_step_status: 'N/A' 
+dark:
+  prep_pipeline:
+    checks:
+      dqinit_step: true
+      saturation_step: true
+      refpix_step: true
+      prep_pipeline_step: true
+    values:
+      dqinit_step_status: 'N/A'
+      saturation_step_status: 'N/A'
+      refpix_step_status: 'N/A'
+      prep_pipeline_step_status: 'Incomplete'
+  superdark:
+    checks:
+      superdark_step: true
+    values:
+      superdark_step_status: 'Incomplete'
+  pipeline:
+    checks:
+      check_mean_dark_rate: true
+      check_med_dark_rate: true
+      check_std_dark_rate: true
+      check_num_hot_pix: true
+      check_num_dead_pix: true
+      check_num_unreliable_pix: true
+      check_num_warm_pix: true
+      pipeline_step: true
+    values:
+      max_mean_dark_rate_reference_value: 0.01
+      max_med_dark_rate_reference_value: 0.01
+      max_std_dark_rate_reference_value: 0.01
+      max_num_hot_pix_reference_value: 1.0e+6
+      max_num_dead_pix_reference_value: 1.0e+6
+      max_num_unreliable_pix_reference_value: 1.0e+6
+      max_num_warm_pix_reference_value: 1.0e+6
+      pipeline_step_status: 'Incomplete'
+  pre_delivery:
+    checks:
+      romancal_dark_step: true
+    values:
+      romancal_dark_step_status: 'Incomplete' 
   dark_quality_summary: 'N/A' 
 
-flat_quality_control:
-  prep_pipeline_checks:
-    dqinit_step: true
-    refpix_step: true   # Confirm order of Saturation and RefPix steps for Flat
-    saturation_step: true
-    linearity_step: true
-    darkcurrent_step: true
-    rampfit_step: true
-    prep_pipeline_step: true
-  pre_pipeline_values:
-    dqinit_step_status: 'N/A'
-    refpix_step_status: 'N/A'  # Confirm order of Saturation and RefPix steps for Flat
-    saturation_step_status: 'N/A'
-    linearity_step_status: 'N/A'
-    darkcurrent_step_status: 'N/A'
-    rampfit_step_status: 'N/A'
-    prep_pipeline_status: 'Incomplete'
-  flat_pipeline_checks:
-    check_mean_flat_rate: true
-    check_med_flat_rate: true
-    check_std_flat_rate: true
-    check_num_lowqe_pix: true
-    flat_pipeline_step: true
-  flat_pipeline_values:
-    mean_flat_rate_reference_value: 1.00
-    med_flat_rate_reference_value: 1.00
-    max_std_flat_rate_reference_value: 0.1
-    max_num_lowqe_pix_reference_value: 1.0e+6
-    flat_pipeline_status: 'Incomplete'
-  pre_delivery_checks:
-    romancal_flat_step: true
-  pre_delivery_values:
-    romancal_flat_step_status: 'N/A' 
+flat:
+  prep_pipeline:
+    checks:
+      dqinit_step: true
+      refpix_step: true   # Confirm order of Saturation and RefPix steps for Flat
+      saturation_step: true
+      linearity_step: true
+      darkcurrent_step: true
+      rampfit_step: true
+      prep_pipeline_step: true
+    values:
+      dqinit_step_status: 'N/A'
+      refpix_step_status: 'N/A'  # Confirm order of Saturation and RefPix steps for Flat
+      saturation_step_status: 'N/A'
+      linearity_step_status: 'N/A'
+      darkcurrent_step_status: 'N/A'
+      rampfit_step_status: 'N/A'
+      prep_pipeline_step_status: 'Incomplete'
+  pipeline:
+    checks:
+      check_mean_flat_rate: true
+      check_med_flat_rate: true
+      check_std_flat_rate: true
+      check_num_lowqe_pix: true
+      pipeline_step: true
+    values:
+      mean_flat_rate_reference_value: 1.00
+      med_flat_rate_reference_value: 1.00
+      max_std_flat_rate_reference_value: 0.1
+      max_num_lowqe_pix_reference_value: 1.0e+6
+      pipeline_step_status: 'Incomplete'
+  pre_delivery:
+    checks:
+      romancal_flat_step: true
+    values:
+      romancal_flat_step_status: 'Incomplete' 
   flat_quality_summary: 'N/A' 
 
-readnoise_quality_control:
-  prep_pipeline_checks:
-    dqinit_step: true
-    saturation_step: true
-    refpix_step: true
-    linearity_step: true
-    prep_pipeline_step: true
-  pre_pipeline_values:
-    dq_init_step_status: 'N/A'
-    saturation_step_status: 'N/A'
-    refpix_step_status: 'N/A'
-    linearity_step_status: 'N/A'
-    prep_pipeline_status: 'Incomplete'
-  readnoise_pipeline_checks:
-    check_mean_readnoise: true
-    check_med_readnoise: true
-    check_std_readnoise: true
-    readnoise_pipeline_step: true
-  readnoise_pipeline_values:
-    max_mean_readnoise_reference_value: 2000.0
-    max_med_readnoise_reference_value: 2000.0
-    max_std_readnoise_reference_value: 15.0
-    readnoise_pipeline_status: 'Incomplete'
-  pre_delivery_checks:
-    romancal_readnoise_step: true
-  pre_delivery_values:
-    romancal_readnoise_step_status: 'N/A'
+readnoise:
+  prep_pipeline:
+    checks:
+      dqinit_step: true
+      saturation_step: true
+      refpix_step: true
+      linearity_step: true
+      prep_pipeline_step: true
+    values:
+      dqinit_step_status: 'N/A'
+      saturation_step_status: 'N/A'
+      refpix_step_status: 'N/A'
+      linearity_step_status: 'N/A'
+      prep_pipeline_step_status: 'Incomplete'
+  pipeline:
+    checks:
+      check_mean_readnoise: true
+      check_med_readnoise: true
+      check_std_readnoise: true
+      pipeline_step: true
+    values:
+      max_mean_readnoise_reference_value: 2000.0
+      max_med_readnoise_reference_value: 2000.0
+      max_std_readnoise_reference_value: 15.0
+      pipeline_step_status: 'Incomplete'
+  pre_delivery:
+    checks:
+      romancal_rampfit_step: true
+    values:
+      romancal_rampfit_step_status: 'Incomplete'
   readnoise_quality_summary: 'N/A' 
 
-refpix_quality_control:
-  prep_pipeline_checks:
-    dqinit_step: true
-    saturation_step: true
-    prep_pipeline_step: true
-  pre_pipeline_values:
-    dq_init_step_status: 'N/A'
-    saturation_step_status: 'N/A'
-    prep_pipeline_status: 'Incomplete'
-  refpix_pipeline_checks:
-    check_refpix_spectral_slope: true
-    refpix_pipeline_step: true
-  refpix_pipeline_values:
-    refpix_spectral_slope: -1.0
-    refpix_pipeline_status: 'Incomplete'
-  pre_delivery_checks:
-    romancal_refpix_step: true
-  pre_delivery_values:
-    romancal_refpix_step_status: 'N/A' 
+refpix:
+  prep_pipeline:
+    checks:
+      dqinit_step: true
+      saturation_step: true
+      prep_pipeline_step: true
+    values:
+      dqinit_step_status: 'N/A'
+      saturation_step_status: 'N/A'
+      prep_pipeline_step_status: 'Incomplete'
+  pipeline:
+    checks:
+      check_refpix_spectral_slope: true
+      pipeline_step: true
+    values:
+      refpix_spectral_slope: -1.0
+      pipeline_step_status: 'Incomplete'
+  pre_delivery:
+    checks:
+      romancal_refpix_step: true
+    values:
+      romancal_refpix_step_status: 'Incomplete' 
   refpix_quality_summary: 'N/A' 
