@@ -25,17 +25,18 @@ class FilenameParser:
     """
 
     def __init__(self, filename):
-        self.program_id = filename.slice(1, 6)
-        self.execution_plan = filename.slice(6, 8)
-        self.pass_num = filename.slice(8, 11)
-        self.segment = filename.slice(11, 14)
-        self.observation = filename.slice(14, 17)
-        self.visit_id_number = filename.slice(17, 20)
+        filename = str(filename)
+        self.program_id = filename[1:6]
+        self.execution_plan = filename[6:8]
+        self.pass_num = filename[8:11]
+        self.segment = filename[11:14]
+        self.observation = filename[14:17]
+        self.visit_id_number = filename[17:20]
         # '_' changes index
-        self.visit_file_group = filename.slice(21, 23)
-        self.visit_file_sequence = filename.slice(23, 24)
-        self.visit_file_activity = filename.slice(24, 26)
+        self.visit_file_group = filename[21:23]
+        self.visit_file_sequence = filename[23:24]
+        self.visit_file_activity = filename[24:26]
         # '_' changes index
-        self.exposure_number = filename.slice(27, 31)
+        self.exposure_number = filename[27:31]
         # '_WFI' changes index
-        self.wfi_sci_number = filename.slice(35, 37)
+        self.wfi_sci_number = filename[35:37]

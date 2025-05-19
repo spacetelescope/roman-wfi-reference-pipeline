@@ -39,13 +39,13 @@ if rfp_readnoise_pipe_all == 1:
         # continues depending on ref type criteria - e.g. number of files per detector
     # Step 3 - Check if criteria to make specific reference file is met
 
-    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline = ReadnoisePipeline("WFI01")
     readnoise_pipeline.restart_pipeline()
 
 rfp_readnoise_ingest_prep_only = 0
 if rfp_readnoise_ingest_prep_only == 1:
     # REFTYPE_PIPE.READNOISE
-    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline = ReadnoisePipeline("WFI01")
     readnoise_pipeline.select_uncal_files()
     readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
 
@@ -62,5 +62,5 @@ if rfp_readnoise_pipe_only == 1:
     # Convert the generator to a list if needed
     file_list = list(prepped_asdf_files)
 
-    readnoise_pipeline = ReadnoisePipeline()
+    readnoise_pipeline = ReadnoisePipeline("WFI01")
     readnoise_pipeline.run_pipeline(file_list)

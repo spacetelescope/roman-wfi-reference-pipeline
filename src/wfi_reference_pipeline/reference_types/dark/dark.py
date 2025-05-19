@@ -133,10 +133,10 @@ class Dark(ReferenceType):
             else:
                 self._get_data_cube_from_superdark_file()
 
-            # Must make_ma_table_resampled_cube to create data for dark data model.
+            # Must make_ma_table_resampled_data to create data for dark data model.
             logging.info(
                 "Must call make_rate_image_from_data_cube and"
-                " make_ma_table_resampled_cube to finish creating reference file."
+                " make_ma_table_resampled_data to finish creating reference file."
             )
         else:
             if not isinstance(ref_type_data,
@@ -152,10 +152,10 @@ class Dark(ReferenceType):
             if len(dim) == 3:
                 logging.info("User supplied 3D data cube to make dark reference file.")
                 self.data_cube = self.DarkDataCube(ref_type_data, self.meta_data.type)
-                # Must make_ma_table_resampled_cube to create data for dark data model.
+                # Must make_ma_table_resampled_data to create data for dark data model.
                 logging.info(
                     "Must call make_rate_image_from_data_cube and"
-                    " make_ma_table_resampled_cube to finish creating reference file."
+                    " make_ma_table_resampled_data to finish creating reference file."
                 )
             else:
                 raise ValueError(
@@ -202,7 +202,7 @@ class Dark(ReferenceType):
                                      num_reads_per_resultant=None,
                                      read_pattern=None):
         """
-        The method make_ma_table_resampled_cube() uses the input read_pattern, which is a nested list of lists,
+        The method make_ma_table_resampled_data() uses the input read_pattern, which is a nested list of lists,
         or the number of resultants and reads per resultant to average reads into resultants. If read_pattern
         is supplied, the even spacing parameters will be ignored.
 

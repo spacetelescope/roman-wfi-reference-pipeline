@@ -29,7 +29,7 @@ class MaskPipeline(Pipeline):
     restart_pipeline : Run all steps from scratch (derived from Pipeline)
 
     Usage:
-    mask_pipeline = MaskPipeline()
+    mask_pipeline = MaskPipeline("<detector string>")
     mask_pipeline.select_uncal_files()
     mask_pipeline.prep_pipeline()
     mask_pipeline.run_pipeline()
@@ -38,10 +38,10 @@ class MaskPipeline(Pipeline):
 
     mask_pipeline.restart_pipeline()
     """
-    def __init__(self):
+    def __init__(self, detector):
 
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_MASK)
+        super().__init__(REF_TYPE_MASK, detector)
 
         self.mask_file = None
 

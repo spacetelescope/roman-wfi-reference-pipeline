@@ -24,12 +24,11 @@ class FlatPipeline(Pipeline):
     Gives user access to:
     select_uncal_files : Selecting level 1 uncalibrated asdf files with input generated from config
     prep_pipeline : Preparing the pipeline using romancal routines and save outputs to go into superdark
-    prep_superdark_file: Prepares the superdark file input to be used as input for run_pipeline
     run_pipeline: Process the data and create new calibration asdf file for CRDS delivery
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-    flat_pipeline = FlatPipeline()
+    flat_pipeline = FlatPipeline("<detector string>")
     flat_pipeline.select_uncal_files()
     flat_pipeline.prep_pipeline()
     flat_pipeline.run_pipeline()
@@ -40,9 +39,9 @@ class FlatPipeline(Pipeline):
 
     """
 
-    def __init__(self):
+    def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_FLAT)
+        super().__init__(REF_TYPE_FLAT, detector)
         self.flat_file = None
 
     @log_info
