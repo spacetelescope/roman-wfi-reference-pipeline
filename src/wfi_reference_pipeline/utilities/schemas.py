@@ -119,7 +119,7 @@ from .quality_control.schema.flat_qc_schema import QC_CONFIG_SCHEMA_FLAT
 from .quality_control.schema.readnoise_qc_schema import QC_CONFIG_SCHEMA_READNOISE
 from .quality_control.schema.refpix_qc_schema import QC_CONFIG_SCHEMA_REFPIX
 
-qc_config_schema = {
+QC_CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
         "dark": QC_CONFIG_SCHEMA_DARK,
