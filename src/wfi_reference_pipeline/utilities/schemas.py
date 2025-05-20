@@ -1,3 +1,8 @@
+from .quality_control.schema.dark_qc_schema import QC_CONFIG_SCHEMA_DARK
+from .quality_control.schema.flat_qc_schema import QC_CONFIG_SCHEMA_FLAT
+from .quality_control.schema.readnoise_qc_schema import QC_CONFIG_SCHEMA_READNOISE
+from .quality_control.schema.refpix_qc_schema import QC_CONFIG_SCHEMA_REFPIX
+
 # Define the schema for config.yml
 CONFIG_SCHEMA = {
     "type": "object",
@@ -110,14 +115,6 @@ PIPELINES_CONFIG_SCHEMA = {
     # List which entries are needed (all of them)
     "required": ["dark"],
 }
-
-
-# Consider re-organizing schemas.py
-# I created separate schema for each ref type in the quality_control/
-from .quality_control.schema.dark_qc_schema import QC_CONFIG_SCHEMA_DARK
-from .quality_control.schema.flat_qc_schema import QC_CONFIG_SCHEMA_FLAT
-from .quality_control.schema.readnoise_qc_schema import QC_CONFIG_SCHEMA_READNOISE
-from .quality_control.schema.refpix_qc_schema import QC_CONFIG_SCHEMA_REFPIX
 
 QC_CONFIG_SCHEMA = {
     "type": "object",
