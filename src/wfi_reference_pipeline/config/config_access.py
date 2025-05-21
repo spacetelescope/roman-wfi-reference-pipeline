@@ -136,16 +136,16 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
 
     Raises
     ------
-    ValueError
+    KeyError
         If the ref_type hasn't been implemented yet
     """
     settings = _get_config(config_file)
     _validate_config(settings, PIPELINES_CONFIG_SCHEMA)
-    if ref_type == REF_TYPE_DARK:
-        settings_type = "dark"
-    else:
-        raise ValueError(f"{ref_type} has not yet been implemented for configuration.")
-    return settings[settings_type]
+    try:
+        ref_type_config = settings[ref_type.lower()]
+    except KeyError:
+        raise KeyError(f"{ref_type.lower()} has not yet been implemented in {config_file}.")
+    return ref_type_config
 
 
 def get_quality_control_config(ref_type, config_file="quality_control_config.yml"):
@@ -171,23 +171,13 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
     KeyError
         If the configuration can't find your ref type.
     """
-    setting_type = ""
-    try:
-        if ref_type == REF_TYPE_DARK:
-            settings = _get_config(config_file)
-            setting_type = "dark_control"
-        elif ref_type == REF_TYPE_READNOISE:
-            settings = _get_config(config_file)["readnoise_control"]
-            setting_type = "readnoise_control"
-        else:
-            raise ValueError(
-                f"{ref_type} not a valid parameter.  Use one of the following: {list(WFI_REF_TYPES)}"
-            )
-    except KeyError as e:
-        raise KeyError(f"Invalid schema index for ref_type: {ref_type} -- {e}")
-
+    settings = _get_config(config_file)
     _validate_config(settings, QC_CONFIG_SCHEMA)
-    return settings[setting_type]
+    try:
+        ref_type_config = settings[ref_type.lower()]
+    except KeyError:
+        raise KeyError(f"{ref_type.lower()} has not yet been implemented in {config_file}.")
+    return ref_type_config
 
 
 def get_crds_submission_config(config_file="crds_submission_config.yml"):
