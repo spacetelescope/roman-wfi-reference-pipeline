@@ -26,6 +26,8 @@ class RefPixPipeline(Pipeline):
     refpix_pipeline.select_uncal_files()
     refpix_pipeline.prep_pipeline(refpix_pipeline.uncal_files)
     refpix_pipeline.run_pipeline(refpix_pipeline.prepped_files)
+    refpix_pipeline.pre_deliver()
+    refpix_pipeline.deliver()
 
     or
 
@@ -113,3 +115,5 @@ class RefPixPipeline(Pipeline):
         self.select_uncal_files()
         self.prep_pipeline()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()

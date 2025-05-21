@@ -33,6 +33,8 @@ class MaskPipeline(Pipeline):
     mask_pipeline.select_uncal_files()
     mask_pipeline.prep_pipeline()
     mask_pipeline.run_pipeline()
+    mask_pipeline.pre_deliver()
+    mask_pipeline.deliver()
 
     or
 
@@ -109,3 +111,5 @@ class MaskPipeline(Pipeline):
         self.select_uncal_files()
         self.prep_pipeline()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()

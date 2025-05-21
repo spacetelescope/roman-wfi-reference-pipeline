@@ -46,6 +46,8 @@ class DarkPipeline(Pipeline):
     dark_pipeline.prep_pipeline()
     dark_pipeline.prep_superdark()
     dark_pipeline.run_pipeline()
+    dark_pipeline.pre_deliver()
+    dark_pipeline.deliver()
 
     or
 
@@ -269,6 +271,8 @@ class DarkPipeline(Pipeline):
         self.prep_pipeline()
         self.prep_superdark_file()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()
 
     @staticmethod
     def extract_short_and_long_file_lists(file_list):

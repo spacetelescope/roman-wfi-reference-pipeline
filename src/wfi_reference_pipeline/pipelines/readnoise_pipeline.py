@@ -29,6 +29,8 @@ class ReadnoisePipeline(Pipeline):
     readnoise_pipeline.select_uncal_files()
     readnoise_pipeline.prep_pipeline(readnoise_pipeline.uncal_files)
     readnoise_pipeline.run_pipeline(readnoise_pipeline.prepped_files)
+    readnoise_pipeline.pre_deliver()
+    readnoise_pipeline.deliver()
 
     or
 

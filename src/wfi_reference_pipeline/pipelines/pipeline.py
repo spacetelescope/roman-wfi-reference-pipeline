@@ -19,6 +19,8 @@ class Pipeline(ABC):
     abstractmethod - Selecting level 1 uncalibrated asdf files
     abstractmethod - Preparing the pipeline using romancal routines
     abstractmethod - Running the pipeline to calibrate the data in the reference type specific pipeline
+    abstractmethod - Running any actions/checks needed before delivering final product to CRDS
+    abstractmethod - Deliver final product and do any post delivery work
     Restart_pipeline general functionality (run from scratch)
 
     """
@@ -67,8 +69,25 @@ class Pipeline(ABC):
         """
         pass
 
+    @abstractmethod
+    def pre_deliver(self):
+        """
+        Perform all tasks and checks before delivering the final product
+        """
+        pass
+
+    @abstractmethod
+    def deliver(self):
+        """
+        Deliver the final product to the end user.
+        Perform any actions dependent upon delivery.
+        """
+        pass
+
     def restart_pipeline(self):
         self.select_uncal_files()
         self.prep_pipeline()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()
 

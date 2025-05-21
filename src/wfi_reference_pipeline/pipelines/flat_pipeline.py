@@ -32,6 +32,8 @@ class FlatPipeline(Pipeline):
     flat_pipeline.select_uncal_files()
     flat_pipeline.prep_pipeline()
     flat_pipeline.run_pipeline()
+    flat_pipeline.pre_deliver()
+    flat_pipeline.deliver()
 
     or
 
@@ -137,3 +139,5 @@ class FlatPipeline(Pipeline):
         self.select_uncal_files()
         self.prep_pipeline()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()
