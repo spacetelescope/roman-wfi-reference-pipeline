@@ -111,9 +111,3 @@ class RefPixPipeline(Pipeline):
         logging.info("Finished RFP to make REFPIX")
         print("Finished RFP to make REFPIX")
 
-    def restart_pipeline(self):
-        self.select_uncal_files()
-        self.prep_pipeline()
-        self.run_pipeline()
-        self.pre_deliver()
-        self.deliver()

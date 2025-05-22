@@ -131,13 +131,3 @@ class FlatPipeline(Pipeline):
         rfp_flat.generate_outfile()
         logging.info("Finished RFP to make FLAT")
         print("Finished RFP to make FLAT")
-
-    def restart_pipeline(self):
-        """
-        Run all steps of the pipeline.
-        """
-        self.select_uncal_files()
-        self.prep_pipeline()
-        self.run_pipeline()
-        self.pre_deliver()
-        self.deliver()

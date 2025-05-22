@@ -85,6 +85,9 @@ class Pipeline(ABC):
         pass
 
     def restart_pipeline(self):
+        """
+        Run all steps of the pipeline.
+        """
         self.select_uncal_files()
         self.prep_pipeline()
         self.run_pipeline()

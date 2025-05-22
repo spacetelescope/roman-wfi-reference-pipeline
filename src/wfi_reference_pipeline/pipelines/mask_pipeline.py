@@ -106,10 +106,3 @@ class MaskPipeline(Pipeline):
         rfp_mask.make_mask_image()
         rfp_mask.generate_outfile()
 
-    def restart_pipeline(self):
-
-        self.select_uncal_files()
-        self.prep_pipeline()
-        self.run_pipeline()
-        self.pre_deliver()
-        self.deliver()
