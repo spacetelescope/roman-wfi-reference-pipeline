@@ -25,7 +25,7 @@ def _validate_config(config_file_dict, schema):
     See here for more information on JSON schemas:
         https://json-schema.org/learn/getting-started-step-by-step.html
     """
-
+    #TODO - Schema check not currently working (as in everything passes. BAD!)
     # Test that the provided config file dict matches the schema
     try:
         # Validate YAML data against the schema
