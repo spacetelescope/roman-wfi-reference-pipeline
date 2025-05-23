@@ -2,11 +2,14 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from constants import WFI_DETECTORS
+from constants import REF_TYPE_DARK, WFI_DETECTORS
 
 from wfi_reference_pipeline.config.config_access import get_data_files_config
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
+from wfi_reference_pipeline.utilities.quality_control.dark_quality_control import (
+    DarkQualityControl,
+)
 
 
 class Pipeline(ABC):
@@ -84,11 +87,24 @@ class Pipeline(ABC):
         """
         pass
 
+    def init_quality_control(self):
+        if self.ref_type == REF_TYPE_DARK:
+            self.qc = DarkQualityControl(pre_pipeline_file_list=self.uncal_files)
+        # elif self.ref_type == REF_TYPE_FLAT:
+        # elif self.ref_type == REF_TYPE_MASK:
+        # elif self.ref_type == REF_TYPE_READNOISE:
+        # elif self.ref_type == REF_TYPE_REFPIX:
+        else:
+            raise ValueError(f"Reference Type {self.ref_type} does not yet have quality control established")
+
     def restart_pipeline(self):
         """
         Run all steps of the pipeline.
+
+        Note: if updating, remember to also update DarkPipeline.restart_pipeline
         """
         self.select_uncal_files()
+        self.init_quality_control()
         self.prep_pipeline()
         self.run_pipeline()
         self.pre_deliver()
