@@ -43,6 +43,7 @@ class DarkPipeline(Pipeline):
     Usage:
     dark_pipeline = DarkPipeline("<detector string>")
     dark_pipeline.select_uncal_files()
+    dark_pipeline.init_quality_control()
     dark_pipeline.prep_pipeline()
     dark_pipeline.prep_superdark()
     dark_pipeline.run_pipeline()
@@ -100,6 +101,7 @@ class DarkPipeline(Pipeline):
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
+            
             result = SaturationStep.call(result, save_results=False)
             result = RefPixStep.call(result, save_results=False)
 

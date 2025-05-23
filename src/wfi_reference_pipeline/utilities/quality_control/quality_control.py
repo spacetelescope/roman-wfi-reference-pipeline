@@ -3,9 +3,12 @@ from pathlib import Path
 from wfi_reference_pipeline.config.config_access import get_quality_control_config
 from wfi_reference_pipeline.constants import (
     QC_CHECK_FAIL,
-    QC_CHECK_SKIP,
+    QC_CHECK_SUCCEED,
+    QC_CHECK_CAUTION,
+    QC_CHECK_INCOMPLETE
 )
 
+VALID_QC_STATUS = [QC_CHECK_CAUTION, QC_CHECK_FAIL, QC_CHECK_INCOMPLETE, QC_CHECK_SUCCEED]
 
 class _ObjectConfig:
     def __init__(self, dictionary):
@@ -44,8 +47,8 @@ class QualityControl(_ObjectConfig):
         for file in self.pre_pipeline_file_stems:
             if file not in self.status_check_prep_pipeline:
                 self.status_check_prep_pipeline[file]={}
-            for prep_method, do_check in vars(self.prep_pipeline.checks).items():
-                self.update_prep_pipeline_file_status(file, prep_method, QC_CHECK_FAIL if do_check else QC_CHECK_SKIP)
+            for prep_method, _ in vars(self.prep_pipeline.checks).items():
+                self.update_prep_pipeline_file_status(file, prep_method, QC_CHECK_INCOMPLETE)
 
     def update_prep_pipeline_file_status(self, file, method, status):
         """
@@ -53,5 +56,8 @@ class QualityControl(_ObjectConfig):
 
         IMPORTANT: All methods saved in this list must be indexed using the same naming convention as quality_control_config.yml
         """
-        self.status_check_prep_pipeline[file][method] =  status
+        if status in VALID_QC_STATUS:
+            self.status_check_prep_pipeline[file][method] =  status
+        else:
+            raise ValueError(f"Invalid status {status}, use defined - QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_CAUTION, QC_CHECK_INCOMPLETE")
 

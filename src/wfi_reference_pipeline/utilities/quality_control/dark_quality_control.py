@@ -4,7 +4,7 @@ import numpy as np
 
 from wfi_reference_pipeline.constants import (
     QC_CHECK_FAIL,
-    QC_CHECK_SKIP,
+    QC_CHECK_INCOMPLETE,
     QC_CHECK_SUCCEED,
     REF_TYPE_DARK,
 )
@@ -55,8 +55,6 @@ class DarkQualityControl(QualityControl):
             if callable(method):
                 if do_check:
                     self.check_pipeline_results[qc_method] = method()
-                else:
-                    self.check_pipeline_results[qc_method] = QC_CHECK_SKIP
             else:
                 # This should never be hit as we imlpement a scheme check
                 raise ValueError(f"{qc_method} is not valid check.  Assess validity of quality control config file")
@@ -118,15 +116,16 @@ class DarkQualityControl(QualityControl):
     def qc_checks_notifications(self):
         """
         There are four potential results for each test.
-        QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_WARNING, QC_CHECK_SKIP
+        QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_WARNING, QC_CHECK_INCOMPLETE
 
-        Any Checks resulting with QC_CHECK_SKIP not not affect the delivery status in any way and can be interpreted as
-        QC_CHECK_SUCCEED for the below description.
+        Any Checks skipped in the schema may still have a QC_CHECK_INCOMPLETE.  This does not affect the delivery status in any way and can be interpreted as
+        QC_CHECK_SUCCEED for the below description.  If the check is NOT skipped and has QC_CHECK_INCOMPLETE, it will be interpreted as QC_CHECK_FAIL.
 
         If all checks in passed with QC_CHECK_SUCCEED, then ok to deliver in automated pipeline
         We should get a logging statement confirming everything and a slack notification that all is good
 
-        If any check fails with QC_CHECK_FAIL, then halt or pause delivery
+
+        If any check fails with QC_CHECK_INCOMPLETE or QC_CHECK_FAIL, then halt or pause delivery
         We should get error statements and logging statements saying that something failed with specific details on failure.
         Failure should include additional information like which test, detector, and values failed.
         In addition, an email to RFP points of contact and a slack notification
