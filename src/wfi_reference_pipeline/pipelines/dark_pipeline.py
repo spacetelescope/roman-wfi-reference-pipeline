@@ -78,6 +78,7 @@ class DarkPipeline(Pipeline):
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
+
     @log_info
     def prep_pipeline(self, file_list=None):
         logging.info("DARK PREP")
@@ -262,12 +263,19 @@ class DarkPipeline(Pipeline):
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
+    def pre_deliver(self):
+        pass
+
+    def deliver(self):
+        pass
+
     def restart_pipeline(self):
         """
         Run all steps of the pipeline.
-        Redefines base class method and includes `prep_superdark`
+        Redefines base class method and includes `prep_superdark_file`
         """
         self.select_uncal_files()
+        self.init_quality_control()
         self.prep_pipeline()
         self.prep_superdark_file()
         self.run_pipeline()
