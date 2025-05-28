@@ -9,22 +9,22 @@ from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_M
 def simulate_dark_reads(n_reads,
                         ni=4096,
                         exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
-                        dark_rate=0.005,
+                        dark_rate=0.01,
                         dark_rate_var=0.001,
-                        hot_pix_rate=0.015,
-                        hot_pix_rate_var=0.010,
+                        hot_pix_rate=5.,
+                        hot_pix_rate_var=0.10,
                         num_hot_pix=2000,
                         num_hot_pix_var=0,
-                        warm_pix_rate=0.050,
-                        warm_pix_rate_var=0.010,
+                        warm_pix_rate=1.0,
+                        warm_pix_rate_var=0.10,
                         num_warm_pix=1000,
                         num_warm_pix_var=0,
                         dead_pix_rate=0.0001,
                         dead_pix_rate_var=0.00001,
                         num_dead_pix=500,
                         num_dead_pix_var=0,
-                        noise_mean=0.001,
-                        noise_std=0.0005):
+                        noise_mean=0.0,
+                        noise_std=0.0):
     """
     Function to create a dark read cube with random number of hot, warm, and dead pixels.
 
