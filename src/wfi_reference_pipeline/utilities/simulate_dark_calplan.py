@@ -53,8 +53,8 @@ for det in range(1, 3):
     # Reset time for this detector
     current_time = obs_time_shortdarks.copy()
 
-    for exp in range(1, 7):  # Exposures increment
-    #for exp in range(1, num_exp_shortdarks):  # Exposures increment
+    # for exp in range(1, 7):  # Exposures increment
+    for exp in range(1, num_exp_shortdarks):  # Exposures increment
         exp_str = f"{exp:04d}"
         sca_str = f"wfi{sca:02d}"
         
@@ -99,6 +99,7 @@ for det in range(1, 3):
             #data_cube_new = af.tree["roman"]["data"].copy()
             af.update()
 
+        # Brad or anyone else look here and try to help me figure out ways to update data from romanisim after file creation
         # When there are at least 36 read resultants none of this works below
         #with asdf.open(filename, mode='rw') as af:
             #meta = af.tree["roman"]["meta"]
