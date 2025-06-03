@@ -2,10 +2,10 @@ from pathlib import Path
 
 from wfi_reference_pipeline.config.config_access import get_quality_control_config
 from wfi_reference_pipeline.constants import (
-    QC_CHECK_FAIL,
-    QC_CHECK_SUCCEED,
     QC_CHECK_CAUTION,
-    QC_CHECK_INCOMPLETE
+    QC_CHECK_FAIL,
+    QC_CHECK_INCOMPLETE,
+    QC_CHECK_SUCCEED,
 )
 
 VALID_QC_STATUS = [QC_CHECK_CAUTION, QC_CHECK_FAIL, QC_CHECK_INCOMPLETE, QC_CHECK_SUCCEED]
@@ -22,10 +22,11 @@ class _ObjectConfig:
 
 class QualityControl(_ObjectConfig):
 
-    def __init__(self, ref_type, pre_pipeline_file_list=None):
+    def __init__(self, ref_type, detector, pre_pipeline_file_list=None):
 
         self.ref_type = ref_type
-        quality_control = get_quality_control_config(ref_type)
+        self.detector = detector
+        quality_control = get_quality_control_config(ref_type, detector)
         super().__init__(quality_control)
 
         # TODO - Consider utilizing restart marker to know if this quality control object was initiated during pipeline restart or manually

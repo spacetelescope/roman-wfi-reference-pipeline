@@ -1,0 +1,104 @@
+#
+# This configuration file determines which quality control checks are executed after a reference file object
+# with a complete and valid data model tree is populated.  The check names DIRECTLY reflect the names in our
+# quality control files (ie. dark_quality_control.py, readnoise_quality_control.py etc)
+# The values for each check can be locally changed for personal preference, however the source controled values
+# should always reflect what displayed here: https://innerspace.stsci.edu/display/RI/RFP+Database+Tables
+#
+
+dark:
+  prep_pipeline:
+    checks:
+      dqinit: true
+      saturation: true
+      refpix: true
+  pipeline:
+    checks:
+      mean_dark_rate: true
+      med_dark_rate: true
+      std_dark_rate: true
+      num_hot_pix: true
+      num_dead_pix: true
+      num_unreliable_pix: true
+      num_warm_pix: true
+    values:
+      max_mean_dark_rate: 0.01
+      max_med_dark_rate: 0.01
+      max_std_dark_rate: 0.01
+      max_num_hot_pix: 1.0e+6
+      max_num_dead_pix: 1.0e+6
+      max_num_unreliable_pix: 1.0e+6
+      max_num_warm_pix: 1.0e+6
+  pre_delivery:
+    checks:
+      romancal_dark: true
+  delivery:
+    checks:
+      quality_summary: true
+
+flat:
+  prep_pipeline:
+    checks:
+      dqinit: true
+      refpix: true   # Confirm order of Saturation and RefPix steps for Flat
+      saturation: true
+      linearity: true
+      darkcurrent: true
+      rampfit: true
+  pipeline:
+    checks:
+      mean_flat_rate: true
+      med_flat_rate: true
+      std_flat_rate: true
+      num_lowqe_pix: true
+    values:
+      mean_flat_rate: 1.00
+      med_flat_rate: 1.00
+      max_std_flat_rate: 0.1
+      max_num_lowqe_pix: 1.0e+6
+  pre_delivery:
+    checks:
+      romancal_flat: true
+  delivery:
+    checks:
+      quality_summary: true
+
+readnoise:
+  prep_pipeline:
+    checks:
+      dqinit: true
+      saturation: true
+      refpix: true
+      linearity: true
+  pipeline:
+    checks:
+      mean_readnoise: true
+      med_readnoise: true
+      std_readnoise: true
+    values:
+      max_mean_readnoise: 2000.0
+      max_med_readnoise: 2000.0
+      max_std_readnoise: 15.0
+  pre_delivery:
+    checks:
+      romancal_rampfit: true
+  delivery:
+    checks:
+      quality_summary: true
+
+refpix:
+  prep_pipeline:
+    checks:
+      dqinit: true
+      saturation: true
+  pipeline:
+    checks:
+      refpix_spectral_slope: true
+    values:
+      refpix_spectral_slope: -1.0
+  pre_delivery:
+    checks:
+      romancal_refpix: true
+  delivery:
+    checks:
+      quality_summary: true

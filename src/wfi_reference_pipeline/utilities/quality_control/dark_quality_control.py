@@ -13,7 +13,7 @@ from .quality_control import QualityControl
 
 
 class DarkQualityControl(QualityControl):
-    def __init__(self, pre_pipeline_file_list=None):
+    def __init__(self, detector, pre_pipeline_file_list=None):
         """
         Dark Quality Control (QC) class will be attached to a Reference File Pipeline (RFP) dark object
         and import QC Reference Values from a QC yaml file. Various statistics or metrics on
@@ -25,7 +25,7 @@ class DarkQualityControl(QualityControl):
         pre_pipeline_file_list: list of strings or paths
             All files used for the prep_pipeline stage that must be tracked.
         """
-        super().__init__(REF_TYPE_DARK, pre_pipeline_file_list=pre_pipeline_file_list)
+        super().__init__(REF_TYPE_DARK, detector, pre_pipeline_file_list=pre_pipeline_file_list)
 
 
     def check_prep_pipeline(self):

@@ -143,7 +143,7 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     return ref_type_config
 
 
-def get_quality_control_config(ref_type, config_file="quality_control_config.yml"):
+def get_quality_control_config(ref_type, detector=None, config_file=None):
     """Get configuration settings from quality_control_config.yml for any reference type
     Validate that the settings are in the correct format before returning
 
@@ -166,6 +166,10 @@ def get_quality_control_config(ref_type, config_file="quality_control_config.yml
     KeyError
         If the configuration can't find your ref type.
     """
+    if config_file is None:
+        if detector is None:
+            raise ValueError("Must send in detector or config_file for Quality Control")
+        config_file = f"quality_control_config_{detector}.yml"
     settings = _get_config(config_file)
     _validate_config(settings, QC_CONFIG_SCHEMA)
     try:
