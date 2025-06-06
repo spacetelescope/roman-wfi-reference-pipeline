@@ -15,12 +15,13 @@ class DarkQualityControl(QualityControl):
     def __init__(self, detector, pre_pipeline_file_list=None):
         """
         Dark Quality Control (QC) class will be attached to a Reference File Pipeline (RFP) dark object
-        and import QC Reference Values from a QC yaml file. Various statistics or metrics on
+        and import QC Reference Values from a QC config file. Various statistics or metrics on
         the data or data quality flags determined by the RFP are compared to the reference values that
         were written to the configuration file from the Roman Telescope Branch Data Base (RTBDB).
 
-        IMPORTANT: Some attributes in this class are assigned directly from the quality_control_config.yml schema and must be accessed accordingly.
+        IMPORTANT: Some attributes in this class are assigned directly from the quality_control_config_<DETECTOR>.yml schema and must be accessed accordingly.
 
+        detector: detector string unique to this pipeline run
         pre_pipeline_file_list: list of strings or paths
             All files used for the prep_pipeline stage that must be tracked.
         """

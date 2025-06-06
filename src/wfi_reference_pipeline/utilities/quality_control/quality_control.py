@@ -21,6 +21,30 @@ class _ObjectConfig:
         return getattr(self, key)
 
 class QualityControl(_ObjectConfig):
+    """
+    QualityControl(QC) class will be utilized as a base class for reference type specific Quality Control classes.
+    Its main purpose is to hold the ref type, detector, and extract all elements of the quality control config files and assign
+    them as actual attributes within the class.
+
+    This means that every element in the quality_control_config_<DETECTOR>.yml will become an attribute of the QC object.
+        For example if quality_control_config_WFI01.yml contains:
+            prep_pipeline:
+                checks:
+                    dqinit: true
+                    saturation: true
+                    refpix: true
+        Then our QC object will generate:
+            qc.prep_pipeline.checks.dqinit == true
+            qc.prep_pipeline.checks.saturation == true
+            qc.prep_pipeline.checks.refpix == true
+
+    Input Parameters:
+        ref_type: reference type from constants.py
+        detector: detector string unique to this pipeline run
+        pre_pipeline_file_list: list of strings or paths
+            All files used for the prep_pipeline stage that must be tracked.
+
+    """
 
     def __init__(self, ref_type, detector, pre_pipeline_file_list=None):
 
@@ -45,8 +69,11 @@ class QualityControl(_ObjectConfig):
         self._init_prep_pipeline()
 
     def _init_prep_pipeline(self):
+        """
+        Initialize all prep files to be marked INCOMPLETE for every method in prep_pipeline using nested dicts
+        """
         self.status_check_prep_pipeline = {}
-        #initialize all prep files to be either FAIL or SKIP for every method in prep_pipeline using nested dicts
+
         for file in self.pre_pipeline_file_stems:
             if file not in self.status_check_prep_pipeline:
                 # If we dont have this file yet, make a new dict for it

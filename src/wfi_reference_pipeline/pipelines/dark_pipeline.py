@@ -64,6 +64,9 @@ class DarkPipeline(Pipeline):
 
     @log_info
     def select_uncal_files(self):
+        """
+            Determine what files will be used to run through the roman steps during prep_pipeline stages
+        """
         self.uncal_files.clear()
         logging.info("DARK SELECT_UNCAL_FILES")
 
@@ -82,6 +85,9 @@ class DarkPipeline(Pipeline):
 
     @log_info
     def prep_pipeline(self, file_list=None):
+        """
+            Prepare for the pipeline by running through romancal steps
+        """
         logging.info("DARK PREP")
 
         # Clean up previous runs
