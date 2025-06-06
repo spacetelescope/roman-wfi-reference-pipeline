@@ -89,7 +89,7 @@ class Pipeline(ABC):
 
     def init_quality_control(self):
         if self.ref_type == REF_TYPE_DARK:
-            self.qc = DarkQualityControl(pre_pipeline_file_list=self.uncal_files)
+            self.qc = DarkQualityControl(self.detector, pre_pipeline_file_list=self.uncal_files)
         # elif self.ref_type == REF_TYPE_FLAT:
         # elif self.ref_type == REF_TYPE_MASK:
         # elif self.ref_type == REF_TYPE_READNOISE:

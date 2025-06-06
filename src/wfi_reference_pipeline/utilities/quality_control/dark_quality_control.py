@@ -4,7 +4,6 @@ import numpy as np
 
 from wfi_reference_pipeline.constants import (
     QC_CHECK_FAIL,
-    QC_CHECK_INCOMPLETE,
     QC_CHECK_SUCCEED,
     REF_TYPE_DARK,
 )
@@ -25,23 +24,37 @@ class DarkQualityControl(QualityControl):
         pre_pipeline_file_list: list of strings or paths
             All files used for the prep_pipeline stage that must be tracked.
         """
-        super().__init__(REF_TYPE_DARK, detector, pre_pipeline_file_list=pre_pipeline_file_list)
-
+        super().__init__(
+            REF_TYPE_DARK, detector, pre_pipeline_file_list=pre_pipeline_file_list
+        )
 
     def check_prep_pipeline(self):
         """
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        passed = True
-        for prep_method, do_check in vars(self.prep_pipeline.checks):
-            try:
-                if do_check and self.status_check_prep_pipeline[prep_method] == QC_CHECK_FAIL:
-                    passed = False
-            except KeyError:
-                # This should never be hit as we imlpement a schema check
-                raise KeyError(f"{prep_method} is not valid check.  Assess validity of quality control config file")
-        return passed
+        # SAPP TODO - Evaluate once more get created if this should be moved to the QaulityContorl Base class
+        # For now assume each ref type check will be unique although it doesn't look like it.
+        failed_checks = []
+        all_checks_passed = True
+        for prep_method, do_check in vars(self.prep_pipeline.checks).items():
+            for file in self.pre_pipeline_file_stems:
+                try:
+                    if (
+                        do_check
+                        and self.status_check_prep_pipeline[file][prep_method] != QC_CHECK_SUCCEED
+                    ):
+                        all_checks_passed = False
+                        failed_checks.append(prep_method)
+                except KeyError:
+                    # This should never be hit as we imlpement a schema check
+                    raise KeyError(
+                        f"{prep_method} is not valid check.  Assess validity of quality control config file"
+                    )
+        if not all_checks_passed:
+            raise ValueError(
+                f"The following QC checks failed in prep_pipeline: {*failed_checks}"
+            )
 
 
     def check_pipeline(self):
@@ -57,9 +70,9 @@ class DarkQualityControl(QualityControl):
                     self.check_pipeline_results[qc_method] = method()
             else:
                 # This should never be hit as we imlpement a scheme check
-                raise ValueError(f"{qc_method} is not valid check.  Assess validity of quality control config file")
-
-
+                raise ValueError(
+                    f"{qc_method} is not valid check.  Assess validity of quality control config file"
+                )
 
     def check_mean_dark_rate(self):
         """
@@ -70,19 +83,22 @@ class DarkQualityControl(QualityControl):
         """
         print("Executing check_mean_dark_rate")
         return
-        rfp_dark_mean_rate = np.mean(self.rfp_dark.ref_type_data)  # Assuming rfp_dark_data is a numpy array
+        rfp_dark_mean_rate = np.mean(
+            self.rfp_dark.ref_type_data
+        )  # Assuming rfp_dark_data is a numpy array
         logging.info(
-            f"Mean dark rate for detector {self.rfp_dark.meta_data['detector']} mode {self.rfp_dark.meta_data['mode']} is {rfp_dark_mean_rate:.3f} dn/s")
+            f"Mean dark rate for detector {self.rfp_dark.meta_data['detector']} mode {self.rfp_dark.meta_data['mode']} is {rfp_dark_mean_rate:.3f} dn/s"
+        )
 
-        ref_value = self.dark_qc_reference_dict['max_mean_dark_rate_reference_value']
-        logging.info(f"Compared to reference value {ref_value} for detector {self.rfp_dark_meta['detector']}")
+        ref_value = self.dark_qc_reference_dict["max_mean_dark_rate_reference_value"]
+        logging.info(
+            f"Compared to reference value {ref_value} for detector {self.rfp_dark_meta['detector']}"
+        )
 
         if rfp_dark_mean_rate < ref_value:
             return QC_CHECK_SUCCEED
         else:
             return QC_CHECK_FAIL
-
-
 
     def check_med_dark_rate(self):
         print("Executing check_med_dark_rate")
@@ -108,11 +124,6 @@ class DarkQualityControl(QualityControl):
         print("Executing check_num_warm_pix")
         return QC_CHECK_SUCCEED
 
-
-
-
-
-
     def qc_checks_notifications(self):
         """
         There are four potential results for each test.
@@ -135,7 +146,6 @@ class DarkQualityControl(QualityControl):
 
         """
 
-
         # qc_checks_all = True  # TODO not used
         return True
 
@@ -145,10 +155,8 @@ class DarkQualityControl(QualityControl):
 
         """
 
-    def update_reference_table_in_rtbdb(self):
+    def _update_reference_table_in_rtbdb(self):
         """
         Need method to update reference values in rtbdb at some point if desired
         :return:
         """
-
-
