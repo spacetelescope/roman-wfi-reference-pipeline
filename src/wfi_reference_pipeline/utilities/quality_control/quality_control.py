@@ -40,6 +40,8 @@ class QualityControl(_ObjectConfig):
             # Populate pre_pipeline_file_list from the database - TODO
             raise KeyError("Must send in pre_pipeline_file_list until database is implemented")
 
+        self.pre_pipeline_methods = [prep_method for prep_method, _ in vars(self.prep_pipeline.checks).items()]
+
         self._init_prep_pipeline()
 
     def _init_prep_pipeline(self):
@@ -47,18 +49,48 @@ class QualityControl(_ObjectConfig):
         #initialize all prep files to be either FAIL or SKIP for every method in prep_pipeline using nested dicts
         for file in self.pre_pipeline_file_stems:
             if file not in self.status_check_prep_pipeline:
+                # If we dont have this file yet, make a new dict for it
                 self.status_check_prep_pipeline[file]={}
-            for prep_method, _ in vars(self.prep_pipeline.checks).items():
-                self.update_prep_pipeline_file_status(file, prep_method, QC_CHECK_INCOMPLETE)
+            for method_key in self.pre_pipeline_methods:
+                self.update_prep_pipeline_file_status(file, method_key, QC_CHECK_INCOMPLETE)
 
-    def update_prep_pipeline_file_status(self, file, method, status):
+    def _get_qc_status_from_string(self, status):
         """
-        Update status list for each file and the respective prep pipeline method
-
+        Take a status and return the corresponding qc_status for internal tracking
         IMPORTANT: All methods saved in this list must be indexed using the same naming convention as quality_control_config.yml
         """
-        if status in VALID_QC_STATUS:
-            self.status_check_prep_pipeline[file][method] =  status
+
+        if type(status) is str:
+            if status == "SKIPPED":
+                qc_status = QC_CHECK_INCOMPLETE
+            elif status == "INCOMPLETE":
+                qc_status = QC_CHECK_INCOMPLETE
+            elif status == "COMPLETE":
+                qc_status = QC_CHECK_SUCCEED
+            else:
+                raise ValueError(f"QC Status {status} is invalid")
+        elif type(status) is int:
+            qc_status = status
         else:
-            raise ValueError(f"Invalid status {status}, use defined - QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_CAUTION, QC_CHECK_INCOMPLETE")
+            raise TypeError(f"Invalid qc status type: {type(status)}")
+        return qc_status
+
+
+    def update_prep_pipeline_file_status(self, file_name, method, status):
+        """
+        Update status list for each file and the respective prep pipeline method
+        IMPORTANT: All methods saved in this list must be indexed using the same naming convention as quality_control_config.yml
+
+        """
+        # Method should be the same as the attributes in the config file
+        if method in self.pre_pipeline_methods:
+            file_key = Path(file_name).stem
+            qc_status = self._get_qc_status_from_string(status)
+            if qc_status in VALID_QC_STATUS:
+                self.status_check_prep_pipeline[file_key][method] =  qc_status
+            else:
+                raise ValueError(f"Invalid status {qc_status}, use defined - QC_CHECK_FAIL, QC_CHECK_SUCCEED, QC_CHECK_CAUTION, QC_CHECK_INCOMPLETE")
+        else:
+            raise ValueError(f"Invalid method {method}, use {self.pre_pipeline_methods}")
+
 
