@@ -52,8 +52,9 @@ class DarkQualityControl(QualityControl):
                         f"{prep_method} is not valid check.  Assess validity of quality control config file"
                     )
         if not all_checks_passed:
+            failed_checks = set(failed_checks)
             raise ValueError(
-                f"The following QC checks failed in prep_pipeline: {*failed_checks}"
+                f"The following QC checks failed in prep_pipeline: {failed_checks}"
             )
 
 
