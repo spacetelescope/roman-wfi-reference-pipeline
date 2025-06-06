@@ -33,6 +33,8 @@ class MaskPipeline(Pipeline):
     mask_pipeline.select_uncal_files()
     mask_pipeline.prep_pipeline()
     mask_pipeline.run_pipeline()
+    mask_pipeline.pre_deliver()
+    mask_pipeline.deliver()
 
     or
 
@@ -104,8 +106,3 @@ class MaskPipeline(Pipeline):
         rfp_mask.make_mask_image()
         rfp_mask.generate_outfile()
 
-    def restart_pipeline(self):
-
-        self.select_uncal_files()
-        self.prep_pipeline()
-        self.run_pipeline()

@@ -32,6 +32,8 @@ class FlatPipeline(Pipeline):
     flat_pipeline.select_uncal_files()
     flat_pipeline.prep_pipeline()
     flat_pipeline.run_pipeline()
+    flat_pipeline.pre_deliver()
+    flat_pipeline.deliver()
 
     or
 
@@ -129,11 +131,3 @@ class FlatPipeline(Pipeline):
         rfp_flat.generate_outfile()
         logging.info("Finished RFP to make FLAT")
         print("Finished RFP to make FLAT")
-
-    def restart_pipeline(self):
-        """
-        Run all steps of the pipeline.
-        """
-        self.select_uncal_files()
-        self.prep_pipeline()
-        self.run_pipeline()

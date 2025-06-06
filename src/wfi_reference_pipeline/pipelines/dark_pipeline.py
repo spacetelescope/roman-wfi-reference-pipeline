@@ -43,9 +43,12 @@ class DarkPipeline(Pipeline):
     Usage:
     dark_pipeline = DarkPipeline("<detector string>")
     dark_pipeline.select_uncal_files()
+    dark_pipeline.init_quality_control()
     dark_pipeline.prep_pipeline()
     dark_pipeline.prep_superdark()
     dark_pipeline.run_pipeline()
+    dark_pipeline.pre_deliver()
+    dark_pipeline.deliver()
 
     or
 
@@ -61,6 +64,9 @@ class DarkPipeline(Pipeline):
 
     @log_info
     def select_uncal_files(self):
+        """
+            Determine what files will be used to run through the roman steps during prep_pipeline stages
+        """
         self.uncal_files.clear()
         logging.info("DARK SELECT_UNCAL_FILES")
 
@@ -70,14 +76,18 @@ class DarkPipeline(Pipeline):
         files = list(
             #self.ingest_path.glob(f"r0044401001001001001_01101_0001_{self.detector}_uncal.asdf")
             #self.ingest_path.glob(f"r00444*_{self.detector}_uncal.asdf")
-            self.ingest_path.glob(f"TVAC2_NOMOPS_WFIRCS_2024042501*{self.detector}_uncal.asdf")
+            self.ingest_path.glob(f"r0044501001001001004*{(self.detector).lower()}*_uncal.asdf")
         )
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
+
     @log_info
     def prep_pipeline(self, file_list=None):
+        """
+            Prepare for the pipeline by running through romancal steps
+        """
         logging.info("DARK PREP")
 
         # Clean up previous runs
@@ -87,6 +97,7 @@ class DarkPipeline(Pipeline):
         # Convert file_list to a list of Path type files
         if file_list is not None:
             file_list = list(map(Path, file_list))
+            self.uncal_files = file_list
         else:
             file_list = self.uncal_files
 
@@ -97,8 +108,12 @@ class DarkPipeline(Pipeline):
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
+            self.qc.update_prep_pipeline_file_status(file, "dqinit", result.meta.cal_step["dq_init"])
             result = SaturationStep.call(result, save_results=False)
+            self.qc.update_prep_pipeline_file_status(file, "saturation", result.meta.cal_step["saturation"])
             result = RefPixStep.call(result, save_results=False)
+            self.qc.update_prep_pipeline_file_status(file, "refpix", result.meta.cal_step["refpix"])
+
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
@@ -106,7 +121,7 @@ class DarkPipeline(Pipeline):
             result.save(path=prep_output_file_path)
 
             self.prepped_files.append(prep_output_file_path)
-
+        self.qc.check_prep_pipeline() # SAPP TODO - speak with rick about what to do on QC Failures
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
     @log_info
@@ -260,15 +275,24 @@ class DarkPipeline(Pipeline):
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
+    def pre_deliver(self):
+        pass
+
+    def deliver(self):
+        pass
+
     def restart_pipeline(self):
         """
         Run all steps of the pipeline.
-        Redefines base class method and includes `prep_superdark`
+        Redefines base class method and includes `prep_superdark_file`
         """
         self.select_uncal_files()
+        self.init_quality_control()
         self.prep_pipeline()
         self.prep_superdark_file()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()
 
     @staticmethod
     def extract_short_and_long_file_lists(file_list):
