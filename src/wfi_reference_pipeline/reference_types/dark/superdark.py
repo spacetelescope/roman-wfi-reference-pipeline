@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 
@@ -21,7 +20,7 @@ class SuperDark(ABC):
         long_dark_file_list,
         short_dark_num_reads,
         long_dark_num_reads,
-        wfi_detector_str=None,
+        wfi_detector_str,
         outfile=None,
     ):
         """
@@ -36,8 +35,8 @@ class SuperDark(ABC):
             Number of reads in the short dark data cubes.
         long_dark_num_reads: int
             Number of reads in the short dark data cubes.
-        wfi_detector_str: str, default = None
-            The FPA detector assigned number 01-18
+        wfi_detector_str: str
+            The WFI detector assigned number 01-18
         outfile: str, default = None
             File name written to disk.
         """
@@ -80,19 +79,12 @@ class SuperDark(ABC):
         self.short_dark_file_list = sorted(short_dark_file_list)
         self.long_dark_file_list = sorted(long_dark_file_list)
         self.file_list = short_dark_file_list + long_dark_file_list
+        self.wfi_detector_str = wfi_detector_str
 
-        if wfi_detector_str is None:
-            # Get detector strings from all files
-            wfi_detector_strings = [re.search(r'(WFI\d{2})', file).group(1) for file in self.file_list if
-                             re.search(r'(WFI\d{2})', file)]
-            if len(list(set(wfi_detector_strings))) > 1:
-                raise ValueError(
-                    "More than one WFI detector ID found in file list provided.")
-            self.wfi_detector_str = list(set(wfi_detector_strings))[0]
-        else:
-            self.wfi_detector_str = wfi_detector_str
-
-        print(self.wfi_detector_str)
+        # Verify all files are of the correct detector type
+        for file in self.file_list:
+            if self.wfi_detector_str not in file:
+                raise ValueError(f"Invalid WFI detector ID found in file list provided for {file}.")
 
         if self.wfi_detector_str not in WFI_DETECTORS:
             raise ValueError(

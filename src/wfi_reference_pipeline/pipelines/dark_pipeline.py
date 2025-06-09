@@ -3,13 +3,13 @@ from pathlib import Path
 
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
+from romancal.refpix import RefPixStep
 from romancal.saturation import SaturationStep
 
 from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
     DARK_LONG_IDENTIFIER,
     DARK_LONG_NUM_READS,
-    DARK_SHORT_IDENTIFIER,
     DARK_SHORT_NUM_READS,
     DARK_SIGMA_CLIP_SD_HIGH,
     DARK_SIGMA_CLIP_SD_LOW,
@@ -41,11 +41,14 @@ class DarkPipeline(Pipeline):
     restart_pipeline: (derived from Pipeline) Run all steps from scratch
 
     Usage:
-    dark_pipeline = DarkPipeline()
+    dark_pipeline = DarkPipeline("<detector string>")
     dark_pipeline.select_uncal_files()
+    dark_pipeline.init_quality_control()
     dark_pipeline.prep_pipeline()
     dark_pipeline.prep_superdark()
     dark_pipeline.run_pipeline()
+    dark_pipeline.pre_deliver()
+    dark_pipeline.deliver()
 
     or
 
@@ -53,14 +56,17 @@ class DarkPipeline(Pipeline):
 
     """
 
-    def __init__(self):
+    def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
-        super().__init__(REF_TYPE_DARK)
+        super().__init__(REF_TYPE_DARK, detector)
         self.superdark_file = None
         self.config = get_pipelines_config(REF_TYPE_DARK)
 
     @log_info
     def select_uncal_files(self):
+        """
+            Determine what files will be used to run through the roman steps during prep_pipeline stages
+        """
         self.uncal_files.clear()
         logging.info("DARK SELECT_UNCAL_FILES")
 
@@ -68,15 +74,20 @@ class DarkPipeline(Pipeline):
         # Get files from input directory
         # files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
         files = list(
-            # self.ingest_path.glob("r0044401001001001001_01101_0001_WFI01_uncal.asdf")
-            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")
+            #self.ingest_path.glob(f"r0044401001001001001_01101_0001_{self.detector}_uncal.asdf")
+            #self.ingest_path.glob(f"r00444*_{self.detector}_uncal.asdf")
+            self.ingest_path.glob(f"r0044501001001001004*{(self.detector).lower()}*_uncal.asdf")
         )
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
+
     @log_info
     def prep_pipeline(self, file_list=None):
+        """
+            Prepare for the pipeline by running through romancal steps
+        """
         logging.info("DARK PREP")
 
         # Clean up previous runs
@@ -86,6 +97,7 @@ class DarkPipeline(Pipeline):
         # Convert file_list to a list of Path type files
         if file_list is not None:
             file_list = list(map(Path, file_list))
+            self.uncal_files = file_list
         else:
             file_list = self.uncal_files
 
@@ -96,8 +108,12 @@ class DarkPipeline(Pipeline):
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
+            self.qc.update_prep_pipeline_file_status(file, "dqinit", result.meta.cal_step["dq_init"])
             result = SaturationStep.call(result, save_results=False)
-            # TODO Need to confirm steps from romancal and their functionality
+            self.qc.update_prep_pipeline_file_status(file, "saturation", result.meta.cal_step["saturation"])
+            result = RefPixStep.call(result, save_results=False)
+            self.qc.update_prep_pipeline_file_status(file, "refpix", result.meta.cal_step["refpix"])
+
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
@@ -105,7 +121,7 @@ class DarkPipeline(Pipeline):
             result.save(path=prep_output_file_path)
 
             self.prepped_files.append(prep_output_file_path)
-
+        self.qc.check_prep_pipeline() # SAPP TODO - speak with rick about what to do on QC Failures
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
     @log_info
@@ -114,7 +130,6 @@ class DarkPipeline(Pipeline):
         full_file_list=[],
         short_file_list=[],
         long_file_list=[],
-        wfi_detector_str=None,
         short_dark_num_reads=DARK_SHORT_NUM_READS,
         long_dark_num_reads=DARK_LONG_NUM_READS,
         sig_clip_sd_low=DARK_SIGMA_CLIP_SD_LOW,
@@ -127,15 +142,15 @@ class DarkPipeline(Pipeline):
             This method is designed to be flexible with pipeline runs and user interaction which is reflected in the paramter list.
 
             FOR AUTOMATED PIPELINE RUNS:
-                No parameters are needed, however wfi_detector_str is expected
+                No parameters are needed
                 Uses self.prepped_files as file_list that gets created from `prep_pipeline` step
-                Filters prepped files with wfi_detector_str
+                Filters prepped files with detector associated with pipeline instantiation
                 Assumes system default short and long dark_num_reads unless parameters clarify otherwise
-                Assumes full list is adequate unless wfi_detector_str is provided for filtering purposes
+                Assumes full list is adequate and does not need to filter file names
 
             FOR ISOLATED RUNS:
                 If you are not interested in running other pipeline steps, you can utilize the parameters outlined below
-                If only sending in one file list, use "short_file_list" regardless of num_reads
+                If only sending in one file list, use "full_file_list" regardless of num_reads
 
         Parameters
         ----------
@@ -148,18 +163,15 @@ class DarkPipeline(Pipeline):
             A list of all short files to be processed, files do not require standardized naming conventions
             This is inteded for individual use where the user may not be working in the pipelines folder architecture.
                 (ie. validation testing, regression testing, 3rd party users)
-            If sending in only 1 list of uniformly sized files, use this parameter
-            These files will all be used and will not be filtered by wfi_detector_str
+            These files will all be used and will not be filtered by detector
             relies on accurate short_dark_num_reads parameter
             Mutually exclusive from full_file_list
         long_file_list: [str], optional
             A list of all long files to be processed, files do not require standardized naming conventions
-            These files will all be used and will not be filtered by wfi_detector_str
+            These files will all be used and will not be filtered by detector
                 (ie. validation testing, regression testing, 3rd party users)
             relies on accurate long_dark_num_reads parameter
             Mutually exclusive from full_file_list
-        wfi_detector_str: str, optional
-            Detector name used to filter full_file_list or prepped_files for processing
         short_dark_num_reads: int, optional default={DARK_SHORT_NUM_READS}
             Number of reads for every short file
         long_dark_num_reads: int, optional default={DARK_LONG_NUM_READS}
@@ -174,10 +186,6 @@ class DarkPipeline(Pipeline):
                 )
             short_dark_file_list = short_file_list
             long_dark_file_list = long_file_list
-            if len(short_dark_file_list) == 0:
-                short_dark_num_reads = 0
-            if len(long_dark_file_list) == 0:
-                long_dark_num_reads = 0
         else:
             if full_file_list:
                 file_list = full_file_list
@@ -190,11 +198,14 @@ class DarkPipeline(Pipeline):
                         "Pipeline Files have not been prepped, run `prep_pipeline` or send in desired parameters. See Documentation for more info."
                     )  # TODO - once we have documentation add link here
 
-            if wfi_detector_str:
-                # Filter list for detector
-                file_list = [file for file in file_list if FilenameParser(file).wfi_sci_number in wfi_detector_str]
-
+            # Filter list for detector
+            file_list = [file for file in file_list if self.detector in file.stem]
             short_dark_file_list, long_dark_file_list = self.extract_short_and_long_file_lists(file_list)
+
+        if len(short_dark_file_list) == 0:
+            short_dark_num_reads = 0
+        if len(long_dark_file_list) == 0:
+            long_dark_num_reads = 0
 
         # TODO - Unpack configuration
         generate_superdark_with_multiprocessing = self.config["multiprocess_superdark"]
@@ -204,6 +215,7 @@ class DarkPipeline(Pipeline):
             superdark = SuperDarkDynamic(
                 short_dark_file_list,
                 long_dark_file_list,
+                self.detector,
                 short_dark_num_reads=short_dark_num_reads,
                 long_dark_num_reads=long_dark_num_reads,
                 outfile=outfile,
@@ -217,6 +229,7 @@ class DarkPipeline(Pipeline):
             superdark = SuperDarkBatches(
                 short_dark_file_list,
                 long_dark_file_list,
+                self.detector,
                 short_dark_num_reads=short_dark_num_reads,
                 long_dark_num_reads=long_dark_num_reads,
                 outfile=outfile,
@@ -239,7 +252,7 @@ class DarkPipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = self.superdark_file
+            file_list = [self.superdark_file]
 
         tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
@@ -256,33 +269,45 @@ class DarkPipeline(Pipeline):
         )
         # ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)  # TODO currently not used
         read_pattern = [[1], [2, 3], [5, 6, 7], [10]]
-        rfp_dark.make_ma_table_resampled_cube(read_pattern=read_pattern)
-        rfp_dark.make_dark_rate_image()
+        rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
+        rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.generate_outfile()
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
+    def pre_deliver(self):
+        pass
+
+    def deliver(self):
+        pass
+
     def restart_pipeline(self):
         """
         Run all steps of the pipeline.
-        Redefines base class method and includes `prep_superdark`
+        Redefines base class method and includes `prep_superdark_file`
         """
         self.select_uncal_files()
+        self.init_quality_control()
         self.prep_pipeline()
         self.prep_superdark_file()
         self.run_pipeline()
+        self.pre_deliver()
+        self.deliver()
 
     @staticmethod
     def extract_short_and_long_file_lists(file_list):
         short_dark_file_list = []
         long_dark_file_list = []
-
+        # TODO - Find non-test way to get short and long file list sizes, the DARK_SHORT_IDENTIFIER and DARK_LONG_IDENTIFIER wont be sustainable
         for file in file_list:
-            program_id = FilenameParser(file).program_id
-            if DARK_SHORT_IDENTIFIER == program_id:
+            if "TVAC" in file.name:
                 short_dark_file_list.append(file)
-            elif DARK_LONG_IDENTIFIER == program_id:
-                long_dark_file_list.append(file)
+            else:
+                program_id = FilenameParser(file.name).program_id
+                if DARK_LONG_IDENTIFIER == program_id:
+                    long_dark_file_list.append(file)
+                else:
+                    short_dark_file_list.append(file)
 
         logging.debug("Short dark files ingested:")
         for file in short_dark_file_list:
