@@ -90,7 +90,7 @@ class FlatPipeline(Pipeline):
                 result = LinearityStep.call(result, save_results=False)
             if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
                 result = DarkCurrentStep.call(result, save_results=False)
-            if in_file["meta"]["cal_step"]["ramp_fil"] == "INCOMPLETE"
+            if in_file["meta"]["cal_step"]["ramp_fit"] == "INCOMPLETE":
                 result = RampFitStep.call(result, save_results=False)
             # Make sure to only use files that have not been flat-fielded
             if in_file["meta"]["cal_step"]["flat_field"] == "INCOMPLETE":
@@ -121,7 +121,7 @@ class FlatPipeline(Pipeline):
 
         tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
-            tmp.meta_flat.mode,
+            tmp.meta_flat.optical_element,
             tmp.meta_flat.instrument_detector,
         )
 
@@ -132,8 +132,15 @@ class FlatPipeline(Pipeline):
             outfile=out_file_path,
             clobber=True,
         )
-        rfp_flat.flat_image = rfp_flat.make_flat_from_files(file_list)
+        _, _ = rfp_flat.make_flat_from_files(calc_error=True, lo=20, hi=500)
         rfp_flat.populate_datamodel_tree()
         rfp_flat.generate_outfile()
+        self.flat_file = rfp_flat
         logging.info("Finished RFP to make FLAT")
         print("Finished RFP to make FLAT")
+
+    def deliver(self):
+        pass
+
+    def pre_deliver(self):
+        pass
