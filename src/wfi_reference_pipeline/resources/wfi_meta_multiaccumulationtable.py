@@ -27,6 +27,11 @@ class WFIMetaMultiAccumulationTable(WFIMetadata):
             'useafter': self.use_after,
             'telescope': self.telescope,
             'origin': self.origin,
-            'instrument': {'name': self.instrument},
+            'instrument': {
+                'name': self.instrument, 
+                'detector': 'WFI01', # This will not be used for any selection, but it is required in the schema
+                },
+            # specific meta
+            'prd_version': self.prd_version,
         }
         return asdf_meta
