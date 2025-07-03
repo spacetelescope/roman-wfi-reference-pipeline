@@ -29,7 +29,7 @@ class WFIMetaMultiAccumulationTable(WFIMetadata):
             'origin': self.origin,
             'instrument': {
                 'name': self.instrument, 
-                'detector': 'WFI01', # This will not be used for any selection, but it is required in the schema
+                'detector': 'WFI01', # This will not be used for any selection, but it is required in the schema to write and open a valid asdf file using roman_datamodels.
                 },
             # specific meta
             'prd_version': self.prd_version,
