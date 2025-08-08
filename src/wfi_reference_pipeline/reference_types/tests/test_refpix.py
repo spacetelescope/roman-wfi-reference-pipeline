@@ -22,31 +22,44 @@ def valid_meta_data():
     return test_meta.meta_referencepixel
 
 @pytest.fixture
+def valid_ref_type_data_cube():
+    """Fixture for generating valid ref_type_data cube (reference pixel dark cube).
+    """
+    # from test data, assume a mean and std distribution on a per frame level of 4200 DN with std of 800 DN. Must have a 4224 by 4096 pixel frame (4096+128 rows to include amp 33).  
+    random_refpix_frame = np.random.normal(4200, 800, 4224*4096) 
+    # up the ramp, assume a std of 4.5 DN per pixel.  
+    random_refpix_exp = np.array([np.random.normal(random_refpix_frame, np.ones_like(random_refpix_frame)*4.5, 4224*4096) for i in np.arange(5)]).reshape((5,4224, 4096)).astype(int)
+
+    return random_refpix_exp  # Simulate a valid refpix data cube
+
+
+
+@pytest.fixture
 def refpix_object_with_data_cube(valid_meta_data, valid_ref_type_data_cube):
-    """Fixture for initializing a Flat object with a valid data cube."""
+    """Fixture for initializing a ReferencePixel object with a valid data cube."""
     refpix_object_with_data_cube = ReferencePixel(meta_data=valid_meta_data,
                                       ref_type_data=valid_ref_type_data_cube)
     yield refpix_object_with_data_cube
 
 
 
-@pytest.fixture
-def refpix_coefficients_3_by_3():
-    """Fixture for a testable reference pixel coefficients.
+# @pytest.fixture
+# def refpix_coefficients_3_by_3():
+#     """Fixture for a testable reference pixel coefficients.
 
-    Returning array in top row that is above threshold values,
-    middle row which is equal to threshold values, and bottom
-    row that is below.
+#     Returning array in top row that is above threshold values,
+#     middle row which is equal to threshold values, and bottom
+#     row that is below.
 
-    array flags = [ hot, warm, good,
-                    hot, warm, dead,
-                    good, dead, dead]
-    """
-    return np.array([
-        [2.1, 1.1, 0.2],  # should return hot, warm, no flag set
-        [2.0, 1.0, 0.1],  # should return hot, warm, dead
-        [0.5, 0.0, -0.1],  # should return no flag set, dead, dead
-    ])
+#     array flags = [ hot, warm, good,
+#                     hot, warm, dead,
+#                     good, dead, dead]
+#     """
+#     return np.array([
+#         [2.1, 1.1, 0.2],  # should return hot, warm, no flag set
+#         [2.0, 1.0, 0.1],  # should return hot, warm, dead
+#         [0.5, 0.0, -0.1],  # should return no flag set, dead, dead
+#     ])
 
 class TestRefPix:
 
@@ -75,10 +88,73 @@ class TestRefPix:
         with pytest.raises(TypeError):
             ReferencePixel(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
+    @patch("asdf.open")
+    def test_refpix_instantiation_with_file_list(self, mock_asdf_open, valid_meta_data):
+        """
+        Test that RefPix object handles file list input correctly.
+        """
+        # Create a mock for the file content with the expected structure
+        mock_asdf_file = MagicMock()
+        mock_asdf_file.tree = {
+            "roman": {
+                "data": np.zeros((5, 10, 10))  # Mocking data
+            }
+        }
+
+        # Set the mock to return this structure when asdf.open is called
+        mock_asdf_open.return_value.__enter__.return_value = mock_asdf_file
+
+        mock_file_list = ["file1.fits", "file2.fits"]
+        refpix_obj = ReferencePixel(meta_data=valid_meta_data, file_list=mock_file_list)
+
+        assert refpix_obj.num_files == 2
+
+    def test_get_data_cube_from_dark_file(self, valid_meta_data):
+        """
+        Test open data cube from input file list
+        """
+        # Create a mock for the file content with the expected structure
+        mock_asdf_file = MagicMock()
+        mock_asdf_file.tree = {
+            "roman": {
+                "data": np.zeros((5, 4096, 4096)),  # Mocking data
+                "amp33": np.zeros((5, 128, 4096))
+            }
+        }
+
+        # Set the mock to return this structure when asdf.open is called
+        mock_asdf_open.return_value.__enter__.return_value = mock_asdf_file
+
+        mock_file_list = ["file1.fits"]
+        refpix_obj = ReferencePixel(meta_data=valid_meta_data, file_list=mock_file_list)
+        refpix_data = refpix_obj.get_data_cube_from_dark_file(mock_file_list[0], skip_first_frame=False)
+
+        assert refpix_data.shape == (5, 4224, 4096)
+        assert refpix_data.dtype == np.float64
+
+    def test_get_detector_name_from_dark_file_meta(self, valid_meta_data):
+        """
+        Test open data cube from input file list
+        """
+        # Create a mock for the file content with the expected structure
+        mock_asdf_file = MagicMock()
+        mock_asdf_file.tree = {
+            "meta":{"instrument":{"detector":'WFI01'}} }
+
+        # Set the mock to return this structure when asdf.open is called
+        mock_asdf_open.return_value.__enter__.return_value = mock_asdf_file
+
+        mock_file_list = ["file1.fits"]
+        refpix_obj = ReferencePixel(meta_data=valid_meta_data, file_list=mock_file_list)
+        refpix_obj._get_detector_name_from_dark_file_meta(mock_file_list[0])
+
+        assert refpix_obj.meta_data.instrument_detector == 'WFI01'
+
 
     def test_make_referencepixel_image(self, refpix_object_with_data_cube):
-        mock_return_image = np.random.rand(5, 10, 10)
-        refpix_object_with_data_cube.ref_type_data = mock_return_image
+        mock_return_image = valid_ref_type_data_cube()
+        # make 2 exposures
+        refpix_object_with_data_cube.ref_type_data = [mock_return_image,mock_return_image]
 
         # Assert that make_referencepixel_image was called with tmppath=None (default)
         refpix_object_with_data_cube.make_referencepixel_image.assert_called_once_with(tmppath=None)
@@ -90,8 +166,10 @@ class TestRefPix:
         assert refpix_object_with_data_cube.zeta is not None
         assert refpix_object_with_data_cube.alpha is not None
 
-        # assert refpix_object_with_data_cube.gamma.shape == mock_return_image.shape
-        # assert dark_object_with_data_cube.dark_rate_image_error.shape == mock_return_error_image.shape
+        assert refpix_object_with_data_cube.gamma.shape == (33, 286721)
+        assert refpix_object_with_data_cube.zeta.shape == (33, 286721)
+        assert refpix_object_with_data_cube.alpha.shape == (33, 286721)
+    
 
     # @skip_on_github
     # def test_populate_datamodel_tree(self, refpix_object_with_data_cube,
