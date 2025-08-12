@@ -41,26 +41,6 @@ def refpix_object_with_data_cube(valid_meta_data, valid_ref_type_data_cube):
                                       ref_type_data=valid_ref_type_data_cube)
     yield refpix_object_with_data_cube
 
-
-
-# @pytest.fixture
-# def refpix_coefficients_3_by_3():
-#     """Fixture for a testable reference pixel coefficients.
-
-#     Returning array in top row that is above threshold values,
-#     middle row which is equal to threshold values, and bottom
-#     row that is below.
-
-#     array flags = [ hot, warm, good,
-#                     hot, warm, dead,
-#                     good, dead, dead]
-#     """
-#     return np.array([
-#         [2.1, 1.1, 0.2],  # should return hot, warm, no flag set
-#         [2.0, 1.0, 0.1],  # should return hot, warm, dead
-#         [0.5, 0.0, -0.1],  # should return no flag set, dead, dead
-#     ])
-
 class TestRefPix:
 
     def test_refpix_instantiation_with_valid_ref_type_data_cube(self, refpix_object_with_data_cube):
@@ -172,36 +152,33 @@ class TestRefPix:
     
 
     # @skip_on_github
-    # def test_populate_datamodel_tree(self, refpix_object_with_data_cube,
-    #                                  valid_ref_type_data_cube,
-    #                                  dark_rate_image_3_by_3):
-    #     """
-    #     Test that the data model tree is correctly populated in the Dark object.
-    #     """
-    #     dark_object_with_data_cube.resampled_data = valid_ref_type_data_cube
-    #     dark_object_with_data_cube.dark_rate_image = dark_rate_image_3_by_3
-    #     dark_object_with_data_cube.dark_rate_image_error = dark_rate_image_3_by_3
-    #     data_model_tree = dark_object_with_data_cube.populate_datamodel_tree()
+    def test_populate_datamodel_tree(self, refpix_object_with_data_cube,
+                                     valid_ref_type_data_cube,
+                                     dark_rate_image_3_by_3):
+        """
+        Test that the data model tree is correctly populated in the Dark object.
+        """
+        refpix_object_with_data_cube.gamma = np.zeros((33, 286721), dtype=complex)
+        refpix_object_with_data_cube.zeta = np.zeros((33, 286721), dtype=complex)
+        refpix_object_with_data_cube.alpha = np.zeros((33, 286721), dtype=complex)
+        data_model_tree = refpix_object_with_data_cube.populate_datamodel_tree()
 
-    #     # Assuming the Flat data model includes:
-    #     assert 'meta' in data_model_tree
-    #     assert 'data' in data_model_tree
-    #     assert 'dark_slope' in data_model_tree
-    #     assert 'dark_slope_error' in data_model_tree
-    #     assert 'dq' in data_model_tree
+        # Assuming the RefPix data model includes:
+        assert 'meta' in data_model_tree
+        assert 'gamma' in data_model_tree
+        assert 'zeta' in data_model_tree
+        assert 'alpha' in data_model_tree
 
-    #     # Check the shape and dtype of the 'data' array
-    #     assert data_model_tree['data'].shape == (5, 4096, 4096)
-    #     assert data_model_tree['data'].dtype == np.float32
-    #     # Check the shape and dtype of the 'dark_slope' array
-    #     assert data_model_tree['dark_slope'].shape == (3, 3)
-    #     assert data_model_tree['dark_slope'].dtype == np.float32
-    #     # Check the shape and dtype of the 'dark_slope_error' array
-    #     assert data_model_tree['dark_slope_error'].shape == (3, 3)
-    #     assert data_model_tree['dark_slope_error'].dtype == np.float32
-    #     # Check the shape and dtype of the 'dq' array
-    #     assert data_model_tree['dq'].shape == (4096, 4096)
-    #     assert data_model_tree['dq'].dtype == np.uint32
+        # Check the shape and dtype of the 'gamma' array
+        assert data_model_tree['gamma'].shape == (33, 286721)
+        assert data_model_tree['gamma'].dtype == np.complex128
+        # Check the shape and dtype of the 'zeta' array
+        assert data_model_tree['zeta'].shape == (33, 286721)
+        assert data_model_tree['zeta'].dtype == np.complex128
+        # Check the shape and dtype of the 'alpha' array
+        assert data_model_tree['alpha'].shape == (33, 286721)
+        assert data_model_tree['alpha'].dtype == np.complex128
+
 
     def test_refpix_outfile_default(self, refpix_object_with_data_cube):
         """
