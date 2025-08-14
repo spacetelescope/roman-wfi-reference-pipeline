@@ -64,4 +64,4 @@ rfp_superdark_only = 1
 if rfp_superdark_only:
     file_list = glob.glob("/grp/roman/GROUND_TESTS/TVAC2_IRRCcorr/ASDF/NOM_OPS/OTP00644_Darks_TV2a_R2_MCEB/Activity_1/*_WFI01*.asdf")
     dark_pipe = DarkPipeline("WFI01")
-    dark_pipe.prep_superdark_file(full_file_list=file_list, outfile="THIS_DEFINITELY_WORKED_FIRST_TRY.asdf")
+    dark_pipe.prep_superdark_file(full_file_list=file_list, full_file_num_reads=350, outfile="THIS_DEFINITELY_WORKED_FIRST_TRY.asdf")
