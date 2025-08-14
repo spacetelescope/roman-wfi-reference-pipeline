@@ -130,6 +130,7 @@ class DarkPipeline(Pipeline):
         full_file_list=[],
         short_file_list=[],
         long_file_list=[],
+        full_file_num_reads = 0,
         short_dark_num_reads=DARK_SHORT_NUM_READS,
         long_dark_num_reads=DARK_LONG_NUM_READS,
         sig_clip_sd_low=DARK_SIGMA_CLIP_SD_LOW,
@@ -189,6 +190,12 @@ class DarkPipeline(Pipeline):
         else:
             if full_file_list:
                 file_list = full_file_list
+                if full_file_num_reads == 0:
+                    raise ValueError(
+                        "full_file_num_reads parameter must be greater than 0"
+                    )
+                # full_file_list will eventually become short list
+                short_dark_num_reads = full_file_num_reads
             else:
                 # Standard case: use the pipeline prepped files
                 if len(self.prepped_files):
@@ -199,7 +206,7 @@ class DarkPipeline(Pipeline):
                     )  # TODO - once we have documentation add link here
 
             # Filter list for detector
-            file_list = [file for file in file_list if self.detector in file.stem]
+            file_list = [Path(file) for file in file_list if self.detector in Path(file).stem]
             short_dark_file_list, long_dark_file_list = self.extract_short_and_long_file_lists(file_list)
 
         if len(short_dark_file_list) == 0:

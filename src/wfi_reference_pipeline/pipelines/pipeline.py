@@ -2,9 +2,8 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from constants import REF_TYPE_DARK, WFI_DETECTORS
-
 from wfi_reference_pipeline.config.config_access import get_data_files_config
+from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_DETECTORS
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 from wfi_reference_pipeline.utilities.quality_control.dark_quality_control import (
