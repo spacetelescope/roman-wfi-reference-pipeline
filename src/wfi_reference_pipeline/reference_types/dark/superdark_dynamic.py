@@ -133,6 +133,9 @@ class SuperDarkDynamic(SuperDark):
             f"Calculated Max Additional Processes:              {max_num_processes} "
         )
 
+        if max_num_processes < 1:
+            raise MemoryError("Not enough memory to effectively run Superdark Dynamic Processing")
+
         print(f"Begin Multiprocessing with {max_num_processes} processes")
 
         try:
