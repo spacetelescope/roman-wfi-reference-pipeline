@@ -14,25 +14,27 @@ skip_on_github = pytest.mark.skipif(
     reason="Skip this test on GitHub Actions, too big"
 )
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def valid_meta_data():
     """Fixture for generating valid meta_data for ReferencePixel class."""
     test_meta = MakeTestMeta(ref_type=REF_TYPE_REFPIX)
     return test_meta.meta_referencepixel
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def valid_ref_type_data_cube():
-    """Fixture for generating valid ref_type_data cube (reference pixel dark cube).
+    """Fixture for generating valid ref_type_data cube.
     """
-    random_refpix_exp = np.random.random((3, 4096, 4224))
-    return random_refpix_exp  # Simulate a valid refpix data cube
+    np.random.seed(42) # Fixed seed for reproducibility
 
-@pytest.fixture
+    random_refpix_exposure = np.random.random((3, 4096, 4224))
+    return random_refpix_exposure  # Simulate a valid refpix data cube
+
+@pytest.fixture(scope="module")
 def refpix_object_with_data_cube(valid_meta_data, valid_ref_type_data_cube):
     """Fixture for initializing a ReferencePixel object with two valid data cube."""
     refpix_object_with_data_cube = ReferencePixel(meta_data=valid_meta_data,
                                       ref_type_data=np.array(valid_ref_type_data_cube))
-    yield refpix_object_with_data_cube
+    return refpix_object_with_data_cube
 
 
 class TestRefPix:
@@ -74,7 +76,7 @@ class TestRefPix:
         assert len(refpix_obj.file_list) == 2
         assert isinstance(refpix_obj.file_list, list)
 
-    def test_get_data_cube_from_dark_file(self, tmp_path, valid_meta_data):
+    def test_get_data_cube_from_file(self, tmp_path, valid_meta_data):
         """
         Test open data cube from input file list
         """
@@ -87,13 +89,13 @@ class TestRefPix:
         mock_file_list = [file_path]
         refpix_obj = ReferencePixel(meta_data=valid_meta_data, file_list=mock_file_list)
         print(refpix_obj.file_list)
-        refpix_data = refpix_obj.get_data_cube_from_dark_file(refpix_obj.file_list[0], skip_first_frame=False)
+        refpix_data = refpix_obj.get_data_cube_from_file(refpix_obj.file_list[0], skip_first_frame=False)
 
         assert refpix_data.shape == (5, 4096, 4224)
         assert refpix_data.dtype == np.float64
 
 
-    def test_get_detector_name_from_dark_file_meta(self, tmp_path, valid_meta_data):
+    def test_get_detector_name_from_data_file_meta(self, tmp_path, valid_meta_data):
         """
         Test open data cube from input file list
         """
@@ -106,7 +108,7 @@ class TestRefPix:
 
         mock_file_list = [file_path]
         refpix_obj = ReferencePixel(meta_data=valid_meta_data, file_list=mock_file_list)
-        refpix_obj._get_detector_name_from_dark_file_meta(mock_file_list[0])
+        refpix_obj._get_detector_name_from_data_file_meta(mock_file_list[0])
 
         assert refpix_obj.meta_data.instrument_detector == 'WFI01'
 
@@ -115,20 +117,23 @@ class TestRefPix:
         # Assert that make_referencepixel_image was called with tmppath=None (default)
         refpix_object_with_data_cube.make_referencepixel_image(tmppath=None, detector_name='WFI01')
         
-        # Check that dark_rate_image and dark_rate_image_error are set
+        # Check that data_rate_image and data_rate_image_error are set
         assert refpix_object_with_data_cube.gamma is not None
         assert refpix_object_with_data_cube.zeta is not None
         assert refpix_object_with_data_cube.alpha is not None
 
         assert refpix_object_with_data_cube.gamma.shape == (32, 286721)
+        assert refpix_object_with_data_cube.gamma.dtype == np.complex128
         assert refpix_object_with_data_cube.zeta.shape == (32, 286721)
+        assert refpix_object_with_data_cube.zeta.dtype == np.complex128
         assert refpix_object_with_data_cube.alpha.shape == (32, 286721)
+        assert refpix_object_with_data_cube.alpha.dtype == np.complex128
     
 
     @skip_on_github
     def test_populate_datamodel_tree(self, refpix_object_with_data_cube):
         """
-        Test that the data model tree is correctly populated in the Dark object.
+        Test that the data model tree is correctly populated in the RefPix object.
         """
         refpix_object_with_data_cube.gamma = np.zeros((32, 286721), dtype=complex)
         refpix_object_with_data_cube.zeta = np.zeros((32, 286721), dtype=complex)
