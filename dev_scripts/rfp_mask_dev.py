@@ -1,6 +1,7 @@
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 import numpy as np
+import glob
 
 print('-' * 80)
 
@@ -48,3 +49,31 @@ rfp_mask2.make_mask_image()
 rfp_mask2.generate_outfile()
 print('Made reference file', rfp_mask2.outfile)
 print('Method make_mask_image() creates a mask with reference pixels and randomly located bad pixels.')
+
+print('-' * 80)
+
+print('Dev script to make Mask reference file for romancal development on CRDS using a list of flat files')
+outfile = '/grp/roman/RFP/DEV/scratch/rfp_mask_dev_file_from_filelist_WFI09_CRDS.asdf'
+
+# Use dev meta maker for MASK
+tmp3 = MakeDevMeta(ref_type='MASK')
+
+# Getting a list of (flat) files from WFI09
+flat_filelist = glob.glob("/grp/roman/GROUND_TESTS/TVAC2_IRRCcorr/ASDF/NOM_OPS/OTP00615_SmoothDarkptA_TV2a_R1_MCEB/**/*WFI09*")
+
+# Instantiate rfp mask object.
+# Need some type of ref_type_data as input to pass data check tests.
+rfp_mask3 = Mask(meta_data=tmp.meta_mask,
+                 file_list=flat_filelist,
+                 ref_type_data=None,
+                 outfile=outfile,
+                 clobber=True)
+
+# These methods are called inside the make_mask_image() method.
+# Modifying a parameter 
+rfp_mask3.make_mask_image(from_smoothed=False)
+# Now the self.mask_image has the user input plus random bad pixels and the reference pixel flags set.
+# Save file.
+rfp_mask3.generate_outfile()
+print('Made reference file', rfp_mask3.outfile)
+print('Method make_mask_image() creates a mask with filelist of flats.')
