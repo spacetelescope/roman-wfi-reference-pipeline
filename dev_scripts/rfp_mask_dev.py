@@ -62,7 +62,6 @@ tmp3 = MakeDevMeta(ref_type='MASK')
 flat_filelist = glob.glob("/grp/roman/GROUND_TESTS/TVAC2_IRRCcorr/ASDF/NOM_OPS/OTP00615_SmoothDarkptA_TV2a_R1_MCEB/**/*WFI09*")
 
 # Instantiate rfp mask object.
-# Need some type of ref_type_data as input to pass data check tests.
 rfp_mask3 = Mask(meta_data=tmp.meta_mask,
                  file_list=flat_filelist,
                  ref_type_data=None,
