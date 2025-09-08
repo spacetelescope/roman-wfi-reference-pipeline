@@ -58,7 +58,7 @@ class ApertureCorrection(ReferenceType):
                                             radii_arcsec=np.arange(0.025, 5.01, 0.025),
                                             oversample=21,
                                             pixel_position=(2048, 2048),
-                                            sky_annulus_arcsec=(0.88, 1.1),
+                                            sky_annulus_arcsec=(2.4, 2.8),
                                             pixel_scale=0.11,
                                             ):
         """
@@ -114,7 +114,7 @@ class ApertureCorrection(ReferenceType):
         background_per_pixel = annulus_flux / annulus_area
 
         # Subtract background from each aperture flux
-        aperture_fluxes_corrected = aperture_fluxes - background_per_pixel * np.array([ap.area() for ap in apertures])
+        aperture_fluxes_corrected = aperture_fluxes - background_per_pixel * np.array([ap.area for ap in apertures])
 
         # Use the largest aperture as total flux
         total_flux = aperture_fluxes_corrected[-1]
