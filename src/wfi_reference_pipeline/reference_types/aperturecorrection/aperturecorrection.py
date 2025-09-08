@@ -4,7 +4,8 @@ import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
 import stpsf
-from photutils.aperture import CircularAperture, aperture_photometry
+from photutils.aperture import CircularAperture, CircularAnnulus, aperture_photometry
+
 
 from wfi_reference_pipeline.constants import (
     WFI_REF_OPTICAL_ELEMENT_DARK,
@@ -94,20 +95,35 @@ class ApertureCorrection(ReferenceType):
         # Convert arcsec radii → oversampled pixel radii
         radii_pix_oversampled = radii_arcsec / pixel_scale * oversample
         apertures = [CircularAperture(psf_center, r) for r in radii_pix_oversampled]
-        flux_table = aperture_photometry(psf_data, apertures)
-        aperture_fluxes = np.array([flux_table[f'aperture_sum_{i}'][0] for i in range(len(apertures))])
+
+        # Sky annulus in oversampled pixels
+        sky_rin_arcsec, sky_rout_arcsec = sky_annulus_arcsec
+        rin_pix = sky_rin_arcsec / pixel_scale * oversample
+        rout_pix = sky_rout_arcsec / pixel_scale * oversample
+        annulus = CircularAnnulus(psf_center, r_in=rin_pix, r_out=rout_pix)
+
+        # Perform aperture photometry (apertures + annulus together)
+        phot_table = aperture_photometry(psf_data, apertures + [annulus])
+
+        # Extract fluxes
+        aperture_fluxes = np.array([phot_table[f'aperture_sum_{i}'][0] for i in range(len(apertures))])
+        annulus_flux = phot_table[f'aperture_sum_{len(apertures)}'][0]
+
+        # Estimate background per pixel
+        annulus_area = annulus.area
+        background_per_pixel = annulus_flux / annulus_area
+
+        # Subtract background from each aperture flux
+        aperture_fluxes_corrected = aperture_fluxes - background_per_pixel * np.array([ap.area() for ap in apertures])
 
         # Use the largest aperture as total flux
-        total_flux = aperture_fluxes[-1]
+        total_flux = aperture_fluxes_corrected[-1]
 
         # Enclosed energy fractions as a fraction of the total flux
-        ee_fractions = aperture_fluxes / total_flux
+        ee_fractions = aperture_fluxes_corrected / total_flux
 
         # Aperture corrections are inverse of EE fractions
-        aperture_corrections = total_flux / aperture_fluxes
-
-        # Sky annulus in arcsec
-        sky_rin_arcsec, sky_rout_arcsec = sky_annulus_arcsec
+        aperture_corrections = total_flux / aperture_fluxes_corrected
 
         return radii_arcsec, ee_fractions, aperture_corrections, sky_rin_arcsec, sky_rout_arcsec
     

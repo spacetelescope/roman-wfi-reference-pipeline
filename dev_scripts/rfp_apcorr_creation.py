@@ -38,14 +38,14 @@ Each filter in the file contains a dictionary with:
     - ee_fractions: enclosed energy fraction at each radius (flux / total flux)
     - ee_radii: array of aperture radii in **arcseconds**
     - ap_corrections: aperture corrections (total_flux / flux_within_radius)
-    - sky_background_rin: inner radius of background annulus (in arcseconds, default = 0.88″)
-    - sky_background_rout: outer radius of background annulus (in arcseconds, default = 1.1″)
+    - sky_background_rin: inner radius of background annulus (in arcseconds, default = 2.4″)
+    - sky_background_rout: outer radius of background annulus (in arcseconds, default = 2.8″)
 
 Only the imaging optical elements are populated. The Dark, Grism, and Prism modes are set to None.
 """
 
 # Loop over the detectors 
-for detector_index in range(18):
+for detector_index in range(1):
     detector_integer = detector_index + 1
 
     tmp.meta_aperturecorrection.instrument_detector = f'WFI{detector_integer:02d}'
