@@ -64,8 +64,9 @@ class DarkQualityControl(QualityControl):
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        for qc_method, do_check in vars(self.pipeline.checks):
-            check_method = f"verify_{qc_method}"
+        self.check_pipeline_results={}
+        for qc_method, do_check in vars(self.pipeline.checks).items(): # SAPP TODO - check if this works
+            check_method = f"_check_{qc_method}"
             method = getattr(self, check_method, None)
             if callable(method):
                 if do_check:
@@ -76,15 +77,15 @@ class DarkQualityControl(QualityControl):
                     f"{qc_method} is not valid check.  Assess validity of quality control config file"
                 )
 
-    def check_mean_dark_rate(self):
+    def _check_mean_dark_rate(self):
         """
         If this function or method is called by the flag set to true then perform this quality control check.
 
         Get the statistic or property from the RFP ref_type object and compare to the reference value for that check.
         Update the empty dictionary that has each
         """
-        print("Executing check_mean_dark_rate")
-        return
+        print("Executing _check_mean_dark_rate")
+        return QC_CHECK_SUCCEED
         rfp_dark_mean_rate = np.mean(
             self.rfp_dark.ref_type_data
         )  # Assuming rfp_dark_data is a numpy array
@@ -102,28 +103,28 @@ class DarkQualityControl(QualityControl):
         else:
             return QC_CHECK_FAIL
 
-    def check_med_dark_rate(self):
-        print("Executing check_med_dark_rate")
+    def _check_med_dark_rate(self):
+        print("Executing _check_med_dark_rate")
         return QC_CHECK_SUCCEED
 
-    def check_std_dark_rate(self):
-        print("Executing check_std_dark_rate")
+    def _check_std_dark_rate(self):
+        print("Executing _check_std_dark_rate")
         return QC_CHECK_SUCCEED
 
-    def check_num_hot_pix(self):
-        print("Executing check_num_hot_pix")
+    def _check_num_hot_pix(self):
+        print("Executing _check_num_hot_pix")
         return QC_CHECK_SUCCEED
 
-    def check_num_dead_pix(self):
-        print("Executing check_num_dead_pix")
+    def _check_num_dead_pix(self):
+        print("Executing _check_num_dead_pix")
         return QC_CHECK_SUCCEED
 
-    def check_num_unreliable_pix(self):
-        print("Executing check_num_unreliable_pix")
+    def _check_num_unreliable_pix(self):
+        print("Executing _check_num_unreliable_pix")
         return QC_CHECK_SUCCEED
 
-    def check_num_warm_pix(self):
-        print("Executing check_num_warm_pix")
+    def _check_num_warm_pix(self):
+        print("Executing _check_num_warm_pix")
         return QC_CHECK_SUCCEED
 
     def qc_checks_notifications(self):

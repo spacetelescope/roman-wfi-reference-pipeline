@@ -206,7 +206,7 @@ class DarkPipeline(Pipeline):
                     )  # TODO - once we have documentation add link here
 
             # Filter list for detector
-            file_list = [Path(file) for file in file_list if self.detector in Path(file).stem]
+            file_list = [Path(file) for file in file_list if self.detector in Path(file).stem.upper()]
             short_dark_file_list, long_dark_file_list = self.extract_short_and_long_file_lists(file_list)
 
         if len(short_dark_file_list) == 0:
@@ -279,6 +279,7 @@ class DarkPipeline(Pipeline):
         rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
         rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.generate_outfile()
+        self.qc.check_pipeline()
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
