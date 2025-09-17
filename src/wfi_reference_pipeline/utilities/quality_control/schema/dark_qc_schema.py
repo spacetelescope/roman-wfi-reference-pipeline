@@ -63,7 +63,6 @@ QC_CONFIG_SCHEMA_DARK = {
                                 "check_std_dark_rate": {"type": "boolean"},
                                 "check_num_hot_pix": {"type": "boolean"},
                                 "check_num_dead_pix": {"type": "boolean"},
-                                "check_num_unreliable_pix": {"type": "boolean"},
                                 "check_num_warm_pix": {"type": "boolean"},
                                 "dark_pipeline_step": {"type": "boolean"}
                             },
@@ -73,7 +72,6 @@ QC_CONFIG_SCHEMA_DARK = {
                                 "check_std_dark_rate",
                                 "check_num_hot_pix",
                                 "check_num_dead_pix",
-                                "check_num_unreliable_pix",
                                 "check_num_warm_pix",
                                 "dark_pipeline_step"
                             ]
@@ -86,7 +84,6 @@ QC_CONFIG_SCHEMA_DARK = {
                                 "max_std_dark_rate_reference_value": {"type": "number"},
                                 "max_num_hot_pix_reference_value": {"type": "number"},
                                 "max_num_dead_pix_reference_value": {"type": "number"},
-                                "max_num_unreliable_pix_reference_value": {"type": "number"},
                                 "max_num_warm_pix_reference_value": {"type": "number"},
                                 "pipeline_step_status": {
                                     "type": "string",
@@ -99,7 +96,6 @@ QC_CONFIG_SCHEMA_DARK = {
                                 "max_std_dark_rate_reference_value",
                                 "max_num_hot_pix_reference_value",
                                 "max_num_dead_pix_reference_value",
-                                "max_num_unreliable_pix_reference_value",
                                 "max_num_warm_pix_reference_value",
                                 "pipeline_step_status"
                             ]

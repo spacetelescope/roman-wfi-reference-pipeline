@@ -19,7 +19,6 @@ dark:
       std_dark_rate: true
       num_hot_pix: true
       num_dead_pix: true
-      num_unreliable_pix: true
       num_warm_pix: true
     values:
       max_mean_dark_rate: 0.01
@@ -27,7 +26,6 @@ dark:
       max_std_dark_rate: 0.01
       max_num_hot_pix: 1.0e+6
       max_num_dead_pix: 1.0e+6
-      max_num_unreliable_pix: 1.0e+6
       max_num_warm_pix: 1.0e+6
   pre_delivery:
     checks:
