@@ -7,7 +7,7 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
     ReferencePixel,
 )
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities.logging_functions import log_info
+#from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class RefPixPipeline(Pipeline):
@@ -41,7 +41,7 @@ class RefPixPipeline(Pipeline):
         super().__init__(REF_TYPE_REFPIX, detector)
         self.refpix_file = None
 
-    @log_info
+    #@log_info
     def select_uncal_files(self):
         # Clearing from previous run
         self.uncal_files.clear()
@@ -54,7 +54,7 @@ class RefPixPipeline(Pipeline):
         logging.info(f"Ingesting {len(file_list)} files")
 
 
-    @log_info
+    #@log_info
     def prep_pipeline(self, file_list=None):
         logging.info("REFPIX PREP")
 
@@ -83,7 +83,7 @@ class RefPixPipeline(Pipeline):
 
 
 
-    @log_info
+    #@log_info
     def run_pipeline(self, file_list=None):
 
         if file_list is not None:

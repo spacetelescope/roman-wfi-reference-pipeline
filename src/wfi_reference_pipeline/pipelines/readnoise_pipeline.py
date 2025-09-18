@@ -10,7 +10,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities.logging_functions import log_info
+#from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class ReadnoisePipeline(Pipeline):
@@ -42,7 +42,7 @@ class ReadnoisePipeline(Pipeline):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_READNOISE, detector)
 
-    @log_info
+    #@log_info
     def select_uncal_files(self):
         self.uncal_files.clear()
         logging.info("READNOISE SELECT_UNCAL_FILES")
@@ -59,7 +59,7 @@ class ReadnoisePipeline(Pipeline):
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
-    @log_info
+    #@log_info
     def prep_pipeline(self, file_list=None):
         logging.info("READNOISE PREP")
 
@@ -94,7 +94,7 @@ class ReadnoisePipeline(Pipeline):
             "Finished PREPPING files to make READNOISE reference file from RFP"
         )
 
-    @log_info
+    #@log_info
     def run_pipeline(self, file_list=None):
         # TODO load config file with defaults or other params to run pipeline
         # TODO I dont know if ReadNoise will need to be parallelized but dark might be, my thinking is that the class

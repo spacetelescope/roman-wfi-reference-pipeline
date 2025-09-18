@@ -25,7 +25,7 @@ from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import (
 )
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
-from wfi_reference_pipeline.utilities.logging_functions import log_info
+#from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class DarkPipeline(Pipeline):
@@ -62,7 +62,7 @@ class DarkPipeline(Pipeline):
         self.superdark_file = None
         self.config = get_pipelines_config(REF_TYPE_DARK)
 
-    @log_info
+    #@log_info
     def select_uncal_files(self):
         """
             Determine what files will be used to run through the roman steps during prep_pipeline stages
@@ -83,7 +83,7 @@ class DarkPipeline(Pipeline):
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
 
-    @log_info
+    #@log_info
     def prep_pipeline(self, file_list=None):
         """
             Prepare for the pipeline by running through romancal steps
@@ -124,7 +124,7 @@ class DarkPipeline(Pipeline):
         self.qc.check_prep_pipeline() # SAPP TODO - speak with rick about what to do on QC Failures
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
-    @log_info
+    #@log_info
     def prep_superdark_file(
         self,
         full_file_list=[],
@@ -252,7 +252,7 @@ class DarkPipeline(Pipeline):
         superdark.generate_outfile()
         self.superdark_file = superdark.outfile
 
-    @log_info
+    #@log_info
     def run_pipeline(self, file_list=None):
         logging.info("DARK PIPE")
 
@@ -279,7 +279,7 @@ class DarkPipeline(Pipeline):
         rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
         rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.generate_outfile()
-        self.qc.check_pipeline()
+        self.qc.check_pipeline(rfp_dark)
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 

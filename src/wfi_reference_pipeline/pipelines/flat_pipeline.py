@@ -13,7 +13,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_FLAT
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities.logging_functions import log_info
+#from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class FlatPipeline(Pipeline):
@@ -46,7 +46,7 @@ class FlatPipeline(Pipeline):
         super().__init__(REF_TYPE_FLAT, detector)
         self.flat_file = None
 
-    @log_info
+    #@log_info
     def select_uncal_files(self):
         self.uncal_files.clear()
         logging.info("FLAT SELECT_UNCAL_FILES")
@@ -60,7 +60,7 @@ class FlatPipeline(Pipeline):
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
-    @log_info
+    #@log_info
     def prep_pipeline(self, file_list=None):
         logging.info("FLAT PREP")
 
@@ -100,7 +100,7 @@ class FlatPipeline(Pipeline):
 
         logging.info("Starting to make FLAT from PREPPED FLAT asdf files")
 
-    @log_info
+    #@log_info
     def run_pipeline(self, file_list=None):
         logging.info("FLAT PIPE")
 
