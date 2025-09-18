@@ -9,12 +9,12 @@ QC_CONFIG_SCHEMA_DARK = {
                     "properties": {
                         "dqinit": {"type": "boolean"},
                         "saturation": {"type": "boolean"},
-                        "refpix": {"type": "boolean"}
+                        "refpix": {"type": "boolean"},
                     },
-                    "required": ["dqinit", "saturation", "refpix"]
+                    "required": ["dqinit", "saturation", "refpix"],
                 },
             },
-            "required": ["checks"]
+            "required": ["checks"],
         },
         "pipeline": {
             "type": "object",
@@ -27,7 +27,7 @@ QC_CONFIG_SCHEMA_DARK = {
                         "std_dark_rate": {"type": "boolean"},
                         "num_hot_pix": {"type": "boolean"},
                         "num_dead_pix": {"type": "boolean"},
-                        "num_warm_pix": {"type": "boolean"}
+                        "num_warm_pix": {"type": "boolean"},
                     },
                     "required": [
                         "mean_dark_rate",
@@ -35,8 +35,8 @@ QC_CONFIG_SCHEMA_DARK = {
                         "std_dark_rate",
                         "num_hot_pix",
                         "num_dead_pix",
-                        "num_warm_pix"
-                    ]
+                        "num_warm_pix",
+                    ],
                 },
                 "values": {
                     "type": "object",
@@ -46,7 +46,7 @@ QC_CONFIG_SCHEMA_DARK = {
                         "max_std_dark_rate": {"type": "number"},
                         "max_num_hot_pix": {"type": "number"},
                         "max_num_dead_pix": {"type": "number"},
-                        "max_num_warm_pix": {"type": "number"}
+                        "max_num_warm_pix": {"type": "number"},
                     },
                     "required": [
                         "max_mean_dark_rate",
@@ -54,43 +54,34 @@ QC_CONFIG_SCHEMA_DARK = {
                         "max_std_dark_rate",
                         "max_num_hot_pix",
                         "max_num_dead_pix",
-                        "max_num_warm_pix"
-                    ]
-                }
+                        "max_num_warm_pix",
+                    ],
+                },
             },
-            "required": ["checks", "values"]
+            "required": ["checks", "values"],
         },
         "pre_delivery": {
             "type": "object",
             "properties": {
                 "checks": {
                     "type": "object",
-                    "properties": {
-                        "romancal_dark": {"type": "boolean"}
-                    },
-                    "required": ["romancal_dark"]
+                    "properties": {"romancal_dark": {"type": "boolean"}},
+                    "required": ["romancal_dark"],
                 }
             },
-            "required": ["checks"]
+            "required": ["checks"],
         },
         "delivery": {
             "type": "object",
             "properties": {
                 "checks": {
                     "type": "object",
-                    "properties": {
-                        "quality_summary": {"type": "boolean"}
-                    },
-                    "required": ["quality_summary"]
+                    "properties": {"quality_summary": {"type": "boolean"}},
+                    "required": ["quality_summary"],
                 }
             },
-            "required": ["checks"]
-        }
+            "required": ["checks"],
+        },
     },
-    "required": [
-        "prep_pipeline",
-        "pipeline",
-        "pre_delivery",
-        "delivery"
-    ]
+    "required": ["prep_pipeline", "pipeline", "pre_delivery", "delivery"],
 }
