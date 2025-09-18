@@ -7,6 +7,7 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
     ReferencePixel,
 )
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+
 #from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 

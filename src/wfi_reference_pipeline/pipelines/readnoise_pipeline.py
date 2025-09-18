@@ -10,6 +10,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+
 #from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
