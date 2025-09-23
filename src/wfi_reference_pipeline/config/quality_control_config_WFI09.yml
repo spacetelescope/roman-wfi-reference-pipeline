@@ -38,8 +38,8 @@ flat:
   prep_pipeline:
     checks:
       dqinit: true
-      refpix: true   # Confirm order of Saturation and RefPix steps for Flat
       saturation: true
+      refpix: true
       linearity: true
       darkcurrent: true
       rampfit: true
