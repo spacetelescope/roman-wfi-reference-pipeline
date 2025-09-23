@@ -11,7 +11,7 @@ from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
-#from wfi_reference_pipeline.utilities.logging_functions import log_info
+# from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class ReadnoisePipeline(Pipeline):
@@ -43,7 +43,7 @@ class ReadnoisePipeline(Pipeline):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_READNOISE, detector)
 
-    #@log_info
+    # @log_info
     def select_uncal_files(self):
         self.uncal_files.clear()
         logging.info("READNOISE SELECT_UNCAL_FILES")
@@ -51,7 +51,12 @@ class ReadnoisePipeline(Pipeline):
         """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
 
         # Get files from input directory
-        files = [str(file) for file in self.ingest_path.glob("r0044401001001001001_01101_000*_WFI01_uncal.asdf")]
+        files = [
+            str(file)
+            for file in self.ingest_path.glob(
+                "r0044401001001001001_01101_000*_WFI01_uncal.asdf"
+            )
+        ]
         # files = [str(file) for file in self.ingest_path.glob("*_WFI01_uncal.asdf")]
         # files = list(
         #     self.ingest_path.glob("r0032101001001001001_01101_0001_WFI01_uncal.asdf")
@@ -60,8 +65,9 @@ class ReadnoisePipeline(Pipeline):
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
-    #@log_info
+    # @log_info
     def prep_pipeline(self, file_list=None):
+        """Prepare calibration data files by running data through select romancal steps"""
         logging.info("READNOISE PREP")
 
         # Clean up previous runs
@@ -72,7 +78,7 @@ class ReadnoisePipeline(Pipeline):
         if file_list is not None:
             file_list = list(map(Path, file_list))
         else:
-            file_list = list(map(Path,self.uncal_files))
+            file_list = list(map(Path, self.uncal_files))
 
         for file in file_list:
             logging.info("OPENING - " + file.name)
@@ -95,7 +101,7 @@ class ReadnoisePipeline(Pipeline):
             "Finished PREPPING files to make READNOISE reference file from RFP"
         )
 
-    #@log_info
+    # @log_info
     def run_pipeline(self, file_list=None):
         # TODO load config file with defaults or other params to run pipeline
         # TODO I dont know if ReadNoise will need to be parallelized but dark might be, my thinking is that the class
@@ -119,11 +125,12 @@ class ReadnoisePipeline(Pipeline):
             tmp.meta_readnoise.instrument_detector,
         )
 
-        rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
-                                  file_list=file_list,
-                                  ref_type_data=None,
-                                  outfile=out_file_path,
-                                  clobber=True
+        rfp_readnoise = ReadNoise(
+            meta_data=tmp.meta_readnoise,
+            file_list=file_list,
+            ref_type_data=None,
+            outfile=out_file_path,
+            clobber=True,
         )
         rfp_readnoise.make_readnoise_image()
         # TODO - QC GOES HERE

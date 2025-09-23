@@ -14,7 +14,7 @@ from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
-#from wfi_reference_pipeline.utilities.logging_functions import log_info
+# from wfi_reference_pipeline.utilities.logging_functions import log_info
 
 
 class FlatPipeline(Pipeline):
@@ -47,7 +47,7 @@ class FlatPipeline(Pipeline):
         super().__init__(REF_TYPE_FLAT, detector)
         self.flat_file = None
 
-    #@log_info
+    # @log_info
     def select_uncal_files(self):
         self.uncal_files.clear()
         logging.info("FLAT SELECT_UNCAL_FILES")
@@ -61,8 +61,9 @@ class FlatPipeline(Pipeline):
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
 
-    #@log_info
+    # @log_info
     def prep_pipeline(self, file_list=None):
+        """Prepare calibration data files by running data through select romancal steps"""
         logging.info("FLAT PREP")
 
         # Clean up previous runs
@@ -96,12 +97,11 @@ class FlatPipeline(Pipeline):
 
             self.prepped_files.append(prep_output_file_path)
 
-        logging.info(
-            "Finished PREPPING files to make FLAT reference file from RFP")
+        logging.info("Finished PREPPING files to make FLAT reference file from RFP")
 
         logging.info("Starting to make FLAT from PREPPED FLAT asdf files")
 
-    #@log_info
+    # @log_info
     def run_pipeline(self, file_list=None):
         logging.info("FLAT PIPE")
 
@@ -111,8 +111,7 @@ class FlatPipeline(Pipeline):
             if self.prepped_files is not None:
                 file_list = self.prepped_files
             else:
-                raise ValueError(
-                    'Prepare file or pass a (pre-processed) file list')
+                raise ValueError("Prepare file or pass a (pre-processed) file list")
 
         tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
