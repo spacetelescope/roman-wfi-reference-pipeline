@@ -82,8 +82,8 @@ class FlatPipeline(Pipeline):
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
-            result = RefPixStep.call(result, save_results=False)
             result = SaturationStep.call(result, save_results=False)
+            result = RefPixStep.call(result, save_results=False)
             result = LinearityStep.call(result, save_results=False)
             result = DarkCurrentStep.call(result, save_results=False)
             result = RampFitStep.call(result, save_results=False)
