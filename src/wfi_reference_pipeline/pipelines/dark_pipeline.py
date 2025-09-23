@@ -292,7 +292,7 @@ class DarkPipeline(Pipeline):
         rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
         rfp_dark.make_rate_image_from_data_cube()
         rfp_dark.generate_outfile()
-        self.qc.check_pipeline(rfp_dark)
+        self.qc.check_pipeline(rfp_dark) # TODO - discuss placement of this
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
