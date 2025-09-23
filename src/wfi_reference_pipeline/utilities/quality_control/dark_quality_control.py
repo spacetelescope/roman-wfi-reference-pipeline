@@ -130,11 +130,11 @@ class DarkQualityControl(QualityControl):
             return QC_CHECK_FAIL
 
     def _check_num_hot_pix(self):
-
+        # TODO - Change how we check this
         rfp_dark_std = np.std(
             self.rfp_dark.dark_rate_image
         )
-        rfp_dark_mean = np.std(
+        rfp_dark_mean = np.mean(
             self.rfp_dark.dark_rate_image
         )
 
@@ -153,10 +153,11 @@ class DarkQualityControl(QualityControl):
 
 
     def _check_num_dead_pix(self):
+        # TODO - Change how we check this
         rfp_dark_std = np.std(
             self.rfp_dark.dark_rate_image
         )
-        rfp_dark_mean = np.std(
+        rfp_dark_mean = np.mean(
             self.rfp_dark.dark_rate_image
         )
 
@@ -174,10 +175,11 @@ class DarkQualityControl(QualityControl):
             return QC_CHECK_FAIL
 
     def _check_num_warm_pix(self):
+        # TODO - Change how we check this
         rfp_dark_std = np.std(
             self.rfp_dark.dark_rate_image
         )
-        rfp_dark_mean = np.std(
+        rfp_dark_mean = np.mean(
             self.rfp_dark.dark_rate_image
         )
 
