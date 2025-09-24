@@ -183,7 +183,7 @@ class Mask(ReferenceType):
         self.set_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
         # Updating the Mask object with calculated mask
-        self.mask_image = self.mask
+        self.mask_image = self.dq_mask
 
     def update_mask_from_flats(self, filelist, multip, from_smoothed, boxwidth, normalized_path, dead_sigma, max_low_qe_signal, min_open_adj_signal):
         """
@@ -313,7 +313,7 @@ class Mask(ReferenceType):
 
         dead_mask[dead_mask == 1] = dqflags.DEAD.value
 
-        self.mask += dead_mask
+        self.dq_mask += dead_mask
 
         return
 
@@ -398,7 +398,7 @@ class Mask(ReferenceType):
         for x, y in zip(low_sig_x, low_sig_y):
 
             # Skip calculations if this is a DEAD pixel
-            if self.mask[y, x] & dqflags.DEAD.value == dqflags.DEAD.value:
+            if self.dq_mask[y, x] & dqflags.DEAD.value == dqflags.DEAD.value:
                 continue
 
             adj_coor = self._get_adjacent_pix(
@@ -419,9 +419,9 @@ class Mask(ReferenceType):
             else:
                 low_qe_map[y, x] = dqflags.LOW_QE.value
 
-        self.mask += low_qe_map.astype(np.uint32)
-        self.mask += open_map.astype(np.uint32)
-        self.mask += adj_map.astype(np.uint32)
+        self.dq_mask += low_qe_map.astype(np.uint32)
+        self.dq_mask += open_map.astype(np.uint32)
+        self.dq_mask += adj_map.astype(np.uint32)
 
         return
 
@@ -441,13 +441,13 @@ class Mask(ReferenceType):
             bitval = dqflags[flag].value
 
             # The indices of pixels with the current iteration's flag
-            flagged_pix = np.where((self.mask & bitval) == bitval)
+            flagged_pix = np.where((self.dq_mask & bitval) == bitval)
 
             # Setting flagged pix to DNU bitval
             dnupix_mask[flagged_pix] = dqflags.DO_NOT_USE.value
 
         # Adding to mask
-        self.mask += dnupix_mask.astype(np.uint32)
+        self.dq_mask += dnupix_mask.astype(np.uint32)
 
         return
 
@@ -468,7 +468,7 @@ class Mask(ReferenceType):
         refpix_mask[:, :4] = dqflags.REFERENCE_PIXEL.value
         refpix_mask[:, -4:] = dqflags.REFERENCE_PIXEL.value
 
-        self.mask += refpix_mask
+        self.dq_mask += refpix_mask
 
     def calculate_error(self):
         """

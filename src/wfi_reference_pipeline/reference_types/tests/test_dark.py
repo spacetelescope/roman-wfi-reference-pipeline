@@ -186,7 +186,7 @@ class TestDark:
         dark_obj.data_cube.rate_image = dark_rate_image_3_by_3
 
         # Initialize the smaller mask array to be same as test_dark_rate_image
-        dark_obj.mask = np.zeros(dark_rate_image_3_by_3.shape, dtype=np.uint32)
+        dark_obj.dq_mask = np.zeros(dark_rate_image_3_by_3.shape, dtype=np.uint32)
 
         # Put the dq flags in the dark object.
         dark_obj.dqflag_defs = dqflag_defs
@@ -202,7 +202,7 @@ class TestDark:
         ], dtype=np.uint32)
 
         # Assert that the mask array was updated correctly
-        np.testing.assert_array_equal(dark_obj.mask, expected_mask,
+        np.testing.assert_array_equal(dark_obj.dq_mask, expected_mask,
                                       err_msg="DQ array was not updated as expected.")
 
     @skip_on_github

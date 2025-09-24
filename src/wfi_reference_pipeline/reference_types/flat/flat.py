@@ -154,7 +154,7 @@ class Flat(ReferenceType):
         The flat reference file data model has:
             data = self.flat_image
             err = self.flat_error
-            dq = self.mask
+            dq = self.dq_mask
         Additional method calls must be run to populate initialized arrays:
             self.calculate_error()
             self.update_data_quality_array()
@@ -296,7 +296,7 @@ class Flat(ReferenceType):
         nsamples: int; default = 100,
            Number of samples for median bootstraping calculation.
         nboot: int; default = 10,
-           Number of bootstrap samples. 
+           Number of bootstrap samples.
         fill_random: bool; default = False,
            If `True` fill out the array with random numbers.
         """
@@ -343,14 +343,14 @@ class Flat(ReferenceType):
         logging.info(
             'Flagging unreliable flat pixels')
         # Flag bad pixels
-        self.mask[np.isnan(self.flat_image)
+        self.dq_mask[np.isnan(self.flat_image)
                   ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
-        self.mask[self.flat_image >
+        self.dq_mask[self.flat_image >
                   flat_hi_threshold] += self.dqflag_defs['UNRELIABLE_FLAT'].value
         logging.info(
             'Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
-        self.mask[self.flat_image <
+        self.dq_mask[self.flat_image <
                   low_qe_threshold] += self.dqflag_defs['LOW_QE'].value
 
     def populate_datamodel_tree(self):
@@ -363,7 +363,7 @@ class Flat(ReferenceType):
         flat_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         flat_datamodel_tree['data'] = self.flat_image.astype(np.float32)
         flat_datamodel_tree['err'] = self.flat_error.astype(np.float32)
-        flat_datamodel_tree['dq'] = self.mask
+        flat_datamodel_tree['dq'] = self.dq_mask
 
         return flat_datamodel_tree
 

@@ -140,7 +140,7 @@ class Saturation(ReferenceType):
 
         logging.info("Flagging no saturation check DQ array.")
         # Locate bad saturated pixels with no saturation check
-        self.mask[self.saturation_image > no_saturated_check_array] += self.dqflag_defs['NO_SAT_CHECK']
+        self.dq_mask[self.saturation_image > no_saturated_check_array] += self.dqflag_defs['NO_SAT_CHECK']
 
     def populate_datamodel_tree(self):
         """
@@ -151,6 +151,6 @@ class Saturation(ReferenceType):
         saturation_datamodel_tree = rds.SaturationRef()
         saturation_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
         saturation_datamodel_tree["data"] = self.saturation_image
-        saturation_datamodel_tree["dq"] = self.mask
+        saturation_datamodel_tree["dq"] = self.dq_mask
 
         return saturation_datamodel_tree

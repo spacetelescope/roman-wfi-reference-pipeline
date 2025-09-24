@@ -77,7 +77,7 @@ class ReferenceType(ABC):
         self.dqflag_defs = dqflags.pixel
 
         # Handle bit_mask initialization
-        self.mask = self._initialize_mask(bit_mask)
+        self.dq_mask = self._initialize_mask(bit_mask)
 
     def _initialize_mask(self, bit_mask):
         """

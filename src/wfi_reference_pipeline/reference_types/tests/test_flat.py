@@ -140,7 +140,7 @@ class TestFlat:
         flat_object_with_data_array.flat_image[2000, 2000] = 0.1
         flat_object_with_data_array.update_data_quality_array(
             low_qe_threshold=low_qe_threshold)
-        assert flat_object_with_data_array.mask[2000, 2000] > 0
+        assert flat_object_with_data_array.dq_mask[2000, 2000] > 0
 
     def test_populate_datamodel_tree(self, flat_object_with_data_array):
         """
