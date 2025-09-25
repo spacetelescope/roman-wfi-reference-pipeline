@@ -26,7 +26,7 @@ class FileHandler:
         """All prepped files should have the same suffix of <ref_type>_PREPPED.asdf"""
         return "_" + self.ref_type + "_PREPPED.asdf"
 
-    def remove_existing_prepped_files_for_ref_type(self):
+    def remove_existing_prepped_files_for_ref_type(self): # SAPP TODO - only delete detector specific prepped files
         """Remove previous PREPPED files for the reference type
         There should only ever be the most recent run of prepped files foreach ref_type
         """

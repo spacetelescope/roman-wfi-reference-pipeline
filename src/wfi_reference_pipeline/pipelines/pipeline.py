@@ -35,7 +35,7 @@ class Pipeline(ABC):
         if detector.upper() in WFI_DETECTORS:
             self.detector = detector.upper()
         else:
-            raise KeyError (f"Invalid Detector {detector} - choose from {WFI_DETECTORS}")
+            raise KeyError(f"Invalid Detector {detector} - choose from {WFI_DETECTORS}")
 
         try:
             # Initialize logging named for the derived class
@@ -47,8 +47,9 @@ class Pipeline(ABC):
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
             sys.exit()
-        self.file_handler = FileHandler(self.ref_type, self.prep_path, self.pipeline_out_path)
-
+        self.file_handler = FileHandler(
+            self.ref_type, self.prep_path, self.pipeline_out_path
+        )
 
     @abstractmethod
     def select_uncal_files(self):
@@ -60,7 +61,7 @@ class Pipeline(ABC):
     @abstractmethod
     def prep_pipeline(self, file_list):
         """
-        Preparing the pipeline using romancal routines
+        Prepare calibration data files by running data through select romancal steps
         """
         pass
 
@@ -88,13 +89,17 @@ class Pipeline(ABC):
 
     def init_quality_control(self):
         if self.ref_type == REF_TYPE_DARK:
-            self.qc = DarkQualityControl(self.detector, pre_pipeline_file_list=self.uncal_files)
+            self.qc = DarkQualityControl(
+                self.detector, pre_pipeline_file_list=self.uncal_files
+            )
         # elif self.ref_type == REF_TYPE_FLAT:
         # elif self.ref_type == REF_TYPE_MASK:
         # elif self.ref_type == REF_TYPE_READNOISE:
         # elif self.ref_type == REF_TYPE_REFPIX:
         else:
-            raise ValueError(f"Reference Type {self.ref_type} does not yet have quality control established")
+            raise ValueError(
+                f"Reference Type {self.ref_type} does not yet have quality control established"
+            )
 
     def restart_pipeline(self):
         """
@@ -108,4 +113,3 @@ class Pipeline(ABC):
         self.run_pipeline()
         self.pre_deliver()
         self.deliver()
-

@@ -29,7 +29,7 @@ class DarkQualityControl(QualityControl):
             REF_TYPE_DARK, detector, pre_pipeline_file_list=pre_pipeline_file_list
         )
 
-    def check_prep_pipeline(self):
+    def check_prep_pipeline(self): # TODO - write these status updates to DB when implemented
         """
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
@@ -59,13 +59,15 @@ class DarkQualityControl(QualityControl):
             )
 
 
-    def check_pipeline(self):
+    def check_pipeline(self, rfp_dark): # TODO - add results to DB when implemented
         """
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        for qc_method, do_check in vars(self.pipeline.checks):
-            check_method = f"verify_{qc_method}"
+        self.rfp_dark = rfp_dark
+        self.check_pipeline_results={}
+        for qc_method, do_check in vars(self.pipeline.checks).items():
+            check_method = f"_check_{qc_method}"
             method = getattr(self, check_method, None)
             if callable(method):
                 if do_check:
@@ -76,55 +78,124 @@ class DarkQualityControl(QualityControl):
                     f"{qc_method} is not valid check.  Assess validity of quality control config file"
                 )
 
-    def check_mean_dark_rate(self):
+    def _check_mean_dark_rate(self):
         """
-        If this function or method is called by the flag set to true then perform this quality control check.
+        Verify the mean dark rate is not greater than that in config file
+        """
 
-        Get the statistic or property from the RFP ref_type object and compare to the reference value for that check.
-        Update the empty dictionary that has each
-        """
-        print("Executing check_mean_dark_rate")
-        return
         rfp_dark_mean_rate = np.mean(
-            self.rfp_dark.ref_type_data
-        )  # Assuming rfp_dark_data is a numpy array
-        logging.info(
-            f"Mean dark rate for detector {self.rfp_dark.meta_data['detector']} mode {self.rfp_dark.meta_data['mode']} is {rfp_dark_mean_rate:.3f} dn/s"
+            self.rfp_dark.dark_rate_image
         )
+        ref_value = self.pipeline.values["max_mean_dark_rate"]
 
-        ref_value = self.dark_qc_reference_dict["max_mean_dark_rate_reference_value"]
-        logging.info(
-            f"Compared to reference value {ref_value} for detector {self.rfp_dark_meta['detector']}"
-        )
-
-        if rfp_dark_mean_rate < ref_value:
+        if rfp_dark_mean_rate <= ref_value:
+            logging.info(f"Check Mean Dark Rate passed for {self.detector}: {rfp_dark_mean_rate:.3f} <= {ref_value}")
             return QC_CHECK_SUCCEED
         else:
+            logging.warning(f"Check Mean Dark Rate failed for {self.detector}: {rfp_dark_mean_rate:.3f} <= {ref_value}")
             return QC_CHECK_FAIL
 
-    def check_med_dark_rate(self):
-        print("Executing check_med_dark_rate")
-        return QC_CHECK_SUCCEED
+    def _check_med_dark_rate(self):
+        """
+        Verify the median dark rate is not greater than that in config file
+        """
 
-    def check_std_dark_rate(self):
-        print("Executing check_std_dark_rate")
-        return QC_CHECK_SUCCEED
+        rfp_dark_median_rate = np.median(
+            self.rfp_dark.dark_rate_image
+        )
+        ref_value = self.pipeline.values["max_med_dark_rate"]
 
-    def check_num_hot_pix(self):
-        print("Executing check_num_hot_pix")
-        return QC_CHECK_SUCCEED
+        if rfp_dark_median_rate <= ref_value:
+            logging.info(f"Check Median Dark Rate passed for {self.detector}: {rfp_dark_median_rate:.3f} <= {ref_value}")
+            return QC_CHECK_SUCCEED
+        else:
+            logging.warning(f"Check Median Dark Rate failed for {self.detector}: {rfp_dark_median_rate:.3f} <= {ref_value}")
+            return QC_CHECK_FAIL
 
-    def check_num_dead_pix(self):
-        print("Executing check_num_dead_pix")
-        return QC_CHECK_SUCCEED
+    def _check_std_dark_rate(self):
+        """
+        Verify the std dark rate is not greater than that in config file
+        """
 
-    def check_num_unreliable_pix(self):
-        print("Executing check_num_unreliable_pix")
-        return QC_CHECK_SUCCEED
+        rfp_dark_std_rate = np.std(
+            self.rfp_dark.dark_rate_image
+        )
+        ref_value = self.pipeline.values["max_std_dark_rate"]
 
-    def check_num_warm_pix(self):
-        print("Executing check_num_warm_pix")
-        return QC_CHECK_SUCCEED
+        if rfp_dark_std_rate <= ref_value:
+            logging.info(f"Check STD Dark Rate passed for {self.detector}: {rfp_dark_std_rate:.3f} <= {ref_value}")
+            return QC_CHECK_SUCCEED
+        else:
+            logging.warning(f"Check STD Dark Rate failed for {self.detector}: {rfp_dark_std_rate:.3f} <= {ref_value}")
+            return QC_CHECK_FAIL
+
+    def _check_num_hot_pix(self):
+        # TODO - Change how we check this
+        rfp_dark_std = np.std(
+            self.rfp_dark.dark_rate_image
+        )
+        rfp_dark_mean = np.mean(
+            self.rfp_dark.dark_rate_image
+        )
+
+        # Define threshold for hot pixels (e.g., > 5 standard deviations above mean)
+        threshold = rfp_dark_mean + 5 * rfp_dark_std  # TODO - do we want this to be a multiplier of standard deviation?  Or a specific value?
+        hot_pixel_mask = self.rfp_dark.dark_rate_image > threshold
+        hot_pixel_count = np.sum(hot_pixel_mask)
+
+        max_num_hot_pix = self.pipeline.values["max_num_hot_pix"]
+        if hot_pixel_count <= max_num_hot_pix:
+            logging.info(f"Check Max Num Hot Pixels Dark Rate passed for {self.detector}: {hot_pixel_count} <= {max_num_hot_pix}")
+            return QC_CHECK_SUCCEED
+        else:
+            logging.warning(f"Check Max Num Hot Pixels Dark Rate failed for {self.detector}: {hot_pixel_count} <= {max_num_hot_pix}")
+            return QC_CHECK_FAIL
+
+
+    def _check_num_dead_pix(self):
+        # TODO - Change how we check this
+        rfp_dark_std = np.std(
+            self.rfp_dark.dark_rate_image
+        )
+        rfp_dark_mean = np.mean(
+            self.rfp_dark.dark_rate_image
+        )
+
+        # Define threshold for hot pixels (e.g., > 5 standard deviations above mean)
+        threshold = rfp_dark_mean - 5 * rfp_dark_std  # TODO - do we want this to be a multiplier of standard deviation?  Or a specific value?
+        dead_pixel_mask = self.rfp_dark.dark_rate_image > threshold
+        dead_pixel_count = np.sum(dead_pixel_mask)
+
+        max_num_dead_pix = self.pipeline.values["max_num_dead_pix"]
+        if dead_pixel_count <= max_num_dead_pix:
+            logging.info(f"Check Max Num Dead Pixels Dark Rate passed for {self.detector}: {dead_pixel_count} <= {max_num_dead_pix}")
+            return QC_CHECK_SUCCEED
+        else:
+            logging.warning(f"Check Max Num Dead Pixels Dark Rate failed for {self.detector}: {dead_pixel_count} <= {max_num_dead_pix}")
+            return QC_CHECK_FAIL
+
+    def _check_num_warm_pix(self):
+        # TODO - Change how we check this
+        rfp_dark_std = np.std(
+            self.rfp_dark.dark_rate_image
+        )
+        rfp_dark_mean = np.mean(
+            self.rfp_dark.dark_rate_image
+        )
+
+        # Define threshold for hot pixels (e.g., > 5 standard deviations above mean)
+        threshold = rfp_dark_mean + 3 * rfp_dark_std # TODO - do we want this to be a multiplier of standard deviation?  Or a specific value?
+        hot_threshold = rfp_dark_mean + 5 * rfp_dark_std  # this must be same as above check
+        warm_pixel_mask = (self.rfp_dark.dark_rate_image > threshold) & (self.rfp_dark.dark_rate_image <= hot_threshold)
+        warm_pixel_count = np.sum(warm_pixel_mask)
+
+        max_num_warm_pix = self.pipeline.values["max_num_warm_pix"]
+        if warm_pixel_count <= max_num_warm_pix:
+            logging.info(f"Check Max Num Warm Pixels Dark Rate passed for {self.detector}: {warm_pixel_count} <= {max_num_warm_pix}")
+            return QC_CHECK_SUCCEED
+        else:
+            logging.warning(f"Check Max Num Warm Pixels Dark Rate failed for {self.detector}: {warm_pixel_count} <= {max_num_warm_pix}")
+            return QC_CHECK_FAIL
 
     def qc_checks_notifications(self):
         """
