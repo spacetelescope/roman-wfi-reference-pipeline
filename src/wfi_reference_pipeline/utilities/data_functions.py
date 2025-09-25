@@ -1,6 +1,6 @@
 import numpy as np
 
-from wfi_reference_pipeline.constants import VIRTUAL_PIXEL_DEPTH
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT, VIRTUAL_PIXEL_DEPTH
 
 
 def get_science_pixels_cube(data_cube, border=VIRTUAL_PIXEL_DEPTH):

@@ -1,3 +1,4 @@
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 import numpy as np
@@ -69,7 +70,7 @@ rfp_mask3 = Mask(meta_data=tmp.meta_mask,
                  clobber=True)
 
 # These methods are called inside the make_mask_image() method.
-# Modifying a parameter 
+# Modifying a parameter
 rfp_mask3.make_mask_image(from_smoothed=False)
 # Now the self.mask_image has the user input plus random bad pixels and the reference pixel flags set.
 # Save file.

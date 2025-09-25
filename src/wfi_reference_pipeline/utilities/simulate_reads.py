@@ -3,7 +3,7 @@ import random
 
 import numpy as np
 
-from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT, WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
 
 
 def simulate_dark_reads(n_reads,
@@ -129,8 +129,8 @@ def simulate_dark_reads(n_reads,
     read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
     for read_r in range(0, n_reads):
         # Create read cube by simulating data in reads and add noise.
-        rn = np.random.normal(loc=noise_mean, 
-                              scale=noise_std, 
+        rn = np.random.normal(loc=noise_mean,
+                              scale=noise_std,
                               size=(ni, ni))  # Random noise term to add; simulate a read noise.
         read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
     return read_cube, rate_image

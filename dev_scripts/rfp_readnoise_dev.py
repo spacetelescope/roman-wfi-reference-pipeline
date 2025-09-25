@@ -1,3 +1,4 @@
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
@@ -34,7 +35,7 @@ tmp2 = MakeDevMeta(ref_type='READNOISE')
 # Set simulated cube read noise variance for testing ReadNoise().
 sim_readnoise_std = 5
 # Create simulated data cube. Adjust parameters as desired.
-                    
+
 sim_dev_cube, dev_rate_image = simulate_dark_reads(55,
                                                    dark_rate=.001,
                                                    dark_rate_var=0.0,

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from romancal.lib import dqflags
 
-from wfi_reference_pipeline.constants import REF_TYPE_DARK, REF_TYPE_READNOISE
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT, REF_TYPE_DARK, REF_TYPE_READNOISE
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads

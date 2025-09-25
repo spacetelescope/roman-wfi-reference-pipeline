@@ -1,3 +1,4 @@
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
 
@@ -11,7 +12,7 @@ logging_functions.configure_logging('wfi_refpixel_example')
 # Glob a set of Total Noise files
 total_noise_files = glob.glob('/grp/roman/GROUND_TESTS/TVAC1/ASDF/NOM_OPS/OTP00639_All_TV1a_R1_MCEB/Activity_1/*WFI09_uncal.asdf')[0:3]
 
-# define the detector 
+# define the detector
 detector = 'WFI09'
 
 outfile = '/grp/roman/RFP/DEV/scratch/rfp_referencepixel_dev_file_TVAC.asdf'

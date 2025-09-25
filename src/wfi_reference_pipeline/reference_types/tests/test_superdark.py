@@ -7,6 +7,8 @@ import pytest
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
 

@@ -7,7 +7,7 @@ import numpy as np
 from astropy.time import Time
 from romancal.lib import dqflags
 
-from wfi_reference_pipeline.constants import WFI_REF_TYPES_WITHOUT_INPUT_DATA
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT, WFI_REF_TYPES_WITHOUT_INPUT_DATA
 
 
 class ReferenceType(ABC):
