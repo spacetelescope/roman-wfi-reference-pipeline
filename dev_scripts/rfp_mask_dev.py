@@ -13,7 +13,7 @@ tmp = MakeDevMeta(ref_type='MASK')
 # Example how to change the useafter in the meta data.
 tmp.meta_mask.use_after = '2024-01-01T00:00:00.000'
 # Create an empty mask array.
-user_mask = np.zeros((4096, 4096), dtype=np.uint32)
+user_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 # Set a single pixel to a dq flag of 2^2 = 4
 user_mask[5, 5] = 4
 # Instantiate rfp mask object.
@@ -34,7 +34,7 @@ outfile = '/grp/roman/RFP/DEV/scratch/rfp_mask_dev_file_CRDS.asdf'
 # Use dev meta maker for MASK
 tmp2 = MakeDevMeta(ref_type='MASK')
 # Create an empty mask array.
-user_mask2 = np.zeros((4096, 4096), dtype=np.uint32)
+user_mask2 = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 # Instantiate rfp mask object.
 # Need some type of ref_type_data as input to pass data check tests.
 rfp_mask2 = Mask(meta_data=tmp.meta_mask,

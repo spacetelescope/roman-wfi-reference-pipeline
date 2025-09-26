@@ -18,13 +18,13 @@ def valid_meta_data():
 @pytest.fixture
 def valid_ref_type_data_array():
     """Fixture for generating valid ref_type_data array (read noise image)."""
-    return np.random.random((4096, 4096))  # Simulate a valid read noise image
+    return np.random.random((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
 
 
 @pytest.fixture
 def valid_ref_type_data_cube():
     """Fixture for generating valid ref_type_data cube (read noise cube)."""
-    return np.random.random((3, 4096, 4096))  # Simulate a valid read noise image
+    return np.random.random((3, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ class TestReadNoise:
         Test that ReadNoise object is created successfully with valid input data array.
         """
         assert isinstance(readnoise_object_with_data_array, ReadNoise)
-        assert readnoise_object_with_data_array.readnoise_image.shape == (4096, 4096)
+        assert readnoise_object_with_data_array.readnoise_image.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
 
     def test_readnoise_instantiation_with_valid_ref_type_data_cube(self,
                                                                     readnoise_object_with_data_cube):
@@ -123,7 +123,7 @@ class TestReadNoise:
         assert 'data' in data_model_tree  # For read noise data, it would likely be 'noise' instead of 'dq'
 
         # Check the shape and dtype of the 'noise' array
-        assert data_model_tree['data'].shape == (4096, 4096)
+        assert data_model_tree['data'].shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert data_model_tree['data'].dtype == np.float32  # Assuming read noise values are stored as floats
 
     def test_readnoise_outfile_default(self, readnoise_object_with_data_array):

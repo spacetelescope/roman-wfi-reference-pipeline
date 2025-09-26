@@ -130,11 +130,11 @@ class TestDark:
         Test the make_ma_table_resampled_data method with a valid read pattern.
         """
         read_pattern = [[1, 2], [3, 4], [5]]
-        dark_object_with_data_cube.data_cube.data = np.random.random((5, 4096, 4096))
+        dark_object_with_data_cube.data_cube.data = np.random.random((5, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))
         dark_object_with_data_cube.data_cube.time_array = np.arange(5)
         dark_object_with_data_cube.make_ma_table_resampled_data(read_pattern=read_pattern)
         assert dark_object_with_data_cube.num_resultants == len(read_pattern)
-        assert dark_object_with_data_cube.resampled_data.shape == (3, 4096, 4096)  # 3 resultants
+        assert dark_object_with_data_cube.resampled_data.shape == (3, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)  # 3 resultants
         assert dark_object_with_data_cube.resultant_tau_array.shape == (3,)
 
         # Check that the data was averaged correctly
@@ -149,12 +149,12 @@ class TestDark:
         """
         num_resultants = 2
         num_reads_per_resultant = 2
-        dark_object_with_data_cube.data_cube.data = np.random.random((4, 4096, 4096))
+        dark_object_with_data_cube.data_cube.data = np.random.random((4, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))
         dark_object_with_data_cube.data_cube.time_array = np.arange(10)
         dark_object_with_data_cube.make_ma_table_resampled_data(num_resultants=num_resultants,
                                                                 num_reads_per_resultant=num_reads_per_resultant)
         assert dark_object_with_data_cube.num_resultants == num_resultants
-        assert dark_object_with_data_cube.resampled_data.shape == (num_resultants, 4096, 4096)
+        assert dark_object_with_data_cube.resampled_data.shape == (num_resultants, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert dark_object_with_data_cube.resultant_tau_array.shape == (num_resultants,)
 
         # Check that the data was averaged correctly
@@ -225,7 +225,7 @@ class TestDark:
         assert 'dq' in data_model_tree
 
         # Check the shape and dtype of the 'data' array
-        assert data_model_tree['data'].shape == (5, 4096, 4096)
+        assert data_model_tree['data'].shape == (5, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert data_model_tree['data'].dtype == np.float32
         # Check the shape and dtype of the 'dark_slope' array
         assert data_model_tree['dark_slope'].shape == (3, 3)
@@ -234,7 +234,7 @@ class TestDark:
         assert data_model_tree['dark_slope_error'].shape == (3, 3)
         assert data_model_tree['dark_slope_error'].dtype == np.float32
         # Check the shape and dtype of the 'dq' array
-        assert data_model_tree['dq'].shape == (4096, 4096)
+        assert data_model_tree['dq'].shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert data_model_tree['dq'].dtype == np.uint32
 
     def test_dark_outfile_default(self, dark_object_with_data_cube):

@@ -13,7 +13,7 @@ tmp = MakeDevMeta(ref_type='READNOISE')
 # Example how to change the useafter in the meta data.
 tmp.meta_readnoise.use_after = '2024-01-01T00:00:00.000'
 # Create user input rate image - imagine this is your TVAC analysis read noise image.
-user_rate_image = np.random.normal(loc=5, scale=1, size=(4096, 4096)).astype(np.float32)
+user_rate_image = np.random.normal(loc=5, scale=1, size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)).astype(np.float32)
 # Instantiate rfp readnoise object.
 rfp_readnoise = ReadNoise(meta_data=tmp.meta_readnoise,
                           ref_type_data=user_rate_image,

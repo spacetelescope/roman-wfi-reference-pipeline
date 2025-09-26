@@ -118,7 +118,7 @@ class Saturation(ReferenceType):
         if saturation_threshold < 1 or saturation_threshold > 65535:
             raise ValueError("Saturation threshold must be 1 or less than unit16 maximum value 66535.")
 
-        self.saturation_image = saturation_threshold * np.ones((4096, 4096), dtype=np.float32)
+        self.saturation_image = saturation_threshold * np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 
     def calculate_error(self):
         """

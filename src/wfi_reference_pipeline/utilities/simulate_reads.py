@@ -7,7 +7,7 @@ from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PI
 
 
 def simulate_dark_reads(n_reads,
-                        ni=4096,
+                        ni=DETECTOR_PIXEL_X_COUNT,
                         exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
                         dark_rate=0.005,
                         dark_rate_var=0.001,
@@ -32,7 +32,7 @@ def simulate_dark_reads(n_reads,
     ----------
     n_reads: int;
         The number of reads to be simulated into a cube of n_reads x ni x ni.
-    ni: int: default = 4096;
+    ni: int: default = DETECTOR_PIXEL_X_COUNT;
         The number of x=y pixels to be simulated in the square array.
     exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
         WIM exposure time is set to default from constants.py in seconds.
@@ -73,7 +73,7 @@ def simulate_dark_reads(n_reads,
 
     Returns
     ----------
-    read_cube [n_reads, 4096, 4096], rate_image [4096, 4096]
+    read_cube [n_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT], rate_image [DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT]
     """
 
     logging.info('Making dark read cube.')
@@ -154,7 +154,7 @@ def simulate_flat_reads(n_reads,
     ----------
     n_reads: int
         The number of reads to be simulated into a cube of n_reads x ni x ni.
-    ni: int: default = 4096
+    ni: int: default = 4088
         The number of x=y pixels to be simulated in the square array.
     exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
         WIM exposure time is set to default from constants.py in seconds.

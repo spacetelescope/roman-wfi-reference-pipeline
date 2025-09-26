@@ -12,7 +12,7 @@ tmp = MakeDevMeta(ref_type='SATURATION')
 # Example how to change the useafter in the meta data.
 tmp.meta_saturation.use_after = '2024-01-01T00:00:00.000'
 # Create an empty mask array.
-user_saturation_array = 47000*np.ones((4096, 4096), dtype=np.float32)
+user_saturation_array = 47000*np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 # Instantiate rfp mask object.
 rfp_saturation = Saturation(meta_data=tmp.meta_saturation,
                             file_list=None,

@@ -184,7 +184,7 @@ class TestSchema(unittest.TestCase):
 
         # Make test meta and data.
         tmp = MakeTestMeta(ref_type='MASK')
-        test_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        test_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         # Make RFP Mask reference file object for testing.
         rfp_mask = Mask(meta_data=tmp.meta_mask,

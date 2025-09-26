@@ -75,7 +75,7 @@ tmp_class = ReferencePixel(meta_data=refpixel_dev_meta,
                 file_list=total_noise_files[0:2],
                 outfile=outfile,
                 clobber=True)
-large_data = np.zeros((2,55, 4096, 4224))
+large_data = np.zeros((2,55, DETECTOR_PIXEL_X_COUNT, 4224))
 for i, fil in enumerate(total_noise_files[0:2]):
     data = tmp_class.get_data_cube_from_dark_file(fil, skip_first_frame=skip_first_frame)
     large_data[i,:,:,:] = data

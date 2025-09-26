@@ -37,7 +37,7 @@ class ReferenceType(ABC):
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
-                 mask_size=(4096, 4096)
+                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
                  ):
 
         have_file_list = False

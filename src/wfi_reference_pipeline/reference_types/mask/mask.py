@@ -94,7 +94,7 @@ class Mask(ReferenceType):
         # Module flow creating reference file.
         if not ((isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
-                ref_type_data.shape == (4096, 4096)) or file_list):
+                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or file_list):
 
             raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
 
@@ -390,9 +390,9 @@ class Mask(ReferenceType):
         if ALL of these four pixels are >1.05 norm im. If so, then this is a OPEN/ADJ
         pixel. Otherwise, then just the center is marked as LOW_QE.
         """
-        low_qe_map = np.zeros((4096, 4096), dtype=np.uint32)
-        open_map = np.zeros((4096, 4096), dtype=np.uint32)
-        adj_map = np.zeros((4096, 4096), dtype=np.uint32)
+        low_qe_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
+        open_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
+        adj_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
 
@@ -433,7 +433,7 @@ class Mask(ReferenceType):
         DO_NOT_USE pixels are excluded in subsequent pipeline processing.
         More flags may be added after further analyses.
         """
-        dnupix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        dnupix_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         # Going through each DNU flag
         for flag in do_not_use_flags:
@@ -462,7 +462,7 @@ class Mask(ReferenceType):
         """
         Create array to flag the 4 px reference pixel border around detector.
         """
-        refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        refpix_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         refpix_mask[:4, :] = dqflags.REFERENCE_PIXEL.value
         refpix_mask[-4:, :] = dqflags.REFERENCE_PIXEL.value

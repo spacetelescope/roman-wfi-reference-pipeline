@@ -114,7 +114,7 @@ class SuperDarkDynamic(SuperDark):
             "float32"
         ).itemsize  # Size of a single float32 element in bytes
         num_elements = (
-            self._calculated_num_reads * 4096 * 4096
+            self._calculated_num_reads * DETECTOR_PIXEL_X_COUNT * DETECTOR_PIXEL_Y_COUNT
         )  # Total number of elements in the array
         shared_mem_size = num_elements * element_size  # Total size in bytes
 
@@ -156,7 +156,7 @@ class SuperDarkDynamic(SuperDark):
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
             # create the numpy array from the allocated memory
             superdark_shared_mem = np.ndarray(
-                [self._calculated_num_reads, 4096, 4096],
+                [self._calculated_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT],
                 dtype="float32",
                 buffer=shared_mem.buf,
             )
@@ -223,7 +223,7 @@ class SuperDarkDynamic(SuperDark):
             name=shared_mem_name
         )  # create from the existing one made by the parent process
         superdark_shared_mem = np.ndarray(
-            [self._calculated_num_reads, 4096, 4096],
+            [self._calculated_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT],
             dtype="float32",
             buffer=shared_mem.buf,
         )  # attach a numpy array to the memory object
@@ -261,7 +261,7 @@ class SuperDarkDynamic(SuperDark):
                     # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                     start_file = len(self.short_dark_file_list)
                 read_index_cube = np.zeros(
-                    (num_files_with_this_read_index, 4096, 4096), dtype=np.float32
+                    (num_files_with_this_read_index, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32
                 )
 
                 for file_nr in range(0, num_files_with_this_read_index):
