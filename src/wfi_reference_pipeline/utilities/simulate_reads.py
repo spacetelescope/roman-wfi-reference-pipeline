@@ -3,28 +3,38 @@ import random
 
 import numpy as np
 
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT, WFI_FRAME_TIME, WFI_MODE_WIM, WFI_MODE_WSM
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+    SCI_PIXEL_X_COUNT,
+    SCI_PIXEL_Y_COUNT,
+    WFI_FRAME_TIME,
+    WFI_MODE_WIM,
+    WFI_MODE_WSM,
+)
 
 
-def simulate_dark_reads(n_reads,
-                        ni=DETECTOR_PIXEL_X_COUNT,
-                        exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
-                        dark_rate=0.005,
-                        dark_rate_var=0.001,
-                        hot_pix_rate=0.015,
-                        hot_pix_rate_var=0.010,
-                        num_hot_pix=2000,
-                        num_hot_pix_var=0,
-                        warm_pix_rate=0.050,
-                        warm_pix_rate_var=0.010,
-                        num_warm_pix=1000,
-                        num_warm_pix_var=0,
-                        dead_pix_rate=0.0001,
-                        dead_pix_rate_var=0.00001,
-                        num_dead_pix=500,
-                        num_dead_pix_var=0,
-                        noise_mean=0.001,
-                        noise_std=0.0005):
+def simulate_dark_reads(
+    n_reads,
+    ni=DETECTOR_PIXEL_X_COUNT,
+    exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],
+    dark_rate=0.005,
+    dark_rate_var=0.001,
+    hot_pix_rate=0.015,
+    hot_pix_rate_var=0.010,
+    num_hot_pix=2000,
+    num_hot_pix_var=0,
+    warm_pix_rate=0.050,
+    warm_pix_rate_var=0.010,
+    num_warm_pix=1000,
+    num_warm_pix_var=0,
+    dead_pix_rate=0.0001,
+    dead_pix_rate_var=0.00001,
+    num_dead_pix=500,
+    num_dead_pix_var=0,
+    noise_mean=0.001,
+    noise_std=0.0005,
+):
     """
     Function to create a dark read cube with random number of hot, warm, and dead pixels.
 
@@ -76,15 +86,27 @@ def simulate_dark_reads(n_reads,
     read_cube [n_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT], rate_image [DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT]
     """
 
-    logging.info('Making dark read cube.')
+    logging.info("Making dark read cube.")
     if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
-        print("Making WFI Imaging Mode (WIM) dark read cube with frame time", exp_time, "seconds.")
+        print(
+            "Making WFI Imaging Mode (WIM) dark read cube with frame time",
+            exp_time,
+            "seconds.",
+        )
     elif exp_time == WFI_FRAME_TIME[WFI_MODE_WSM]:
-        print("Making WFI Spectral Mode (WSM) dark read cube with frame time", exp_time, "seconds.")
+        print(
+            "Making WFI Spectral Mode (WSM) dark read cube with frame time",
+            exp_time,
+            "seconds.",
+        )
     elif exp_time == 1.0:
-        print("Simulating reads for diagnostic purposes with frame time", exp_time, "second.")
+        print(
+            "Simulating reads for diagnostic purposes with frame time",
+            exp_time,
+            "second.",
+        )
     else:
-        raise ValueError('Invalid WFI frame time.')
+        raise ValueError("Invalid WFI frame time.")
 
     # Initialize rate image.
     rate_image = np.random.normal(dark_rate, scale=dark_rate_var, size=(ni, ni))
@@ -98,7 +120,9 @@ def simulate_dark_reads(n_reads,
     # Get locations and apply hot pixels to rate image.
     coords_x = np.random.randint(0, ni, hot_pix_count)
     coords_y = np.random.randint(0, ni, hot_pix_count)
-    hot_pixels = np.random.normal(hot_pix_rate, scale=hot_pix_rate_var, size=hot_pix_count)
+    hot_pixels = np.random.normal(
+        hot_pix_rate, scale=hot_pix_rate_var, size=hot_pix_count
+    )
     rate_image[coords_x, coords_y] = hot_pixels
 
     # Determine the number of warm pixels.
@@ -110,7 +134,9 @@ def simulate_dark_reads(n_reads,
     # Get locations and apply warm pixels to rate image.
     coords_x = np.random.randint(0, ni, warm_pix_count)
     coords_y = np.random.randint(0, ni, warm_pix_count)
-    warm_pixels = np.random.normal(warm_pix_rate, scale=warm_pix_rate_var, size=warm_pix_count)
+    warm_pixels = np.random.normal(
+        warm_pix_rate, scale=warm_pix_rate_var, size=warm_pix_count
+    )
     rate_image[coords_x, coords_y] = warm_pixels
 
     # Determine the number of dead pixels.
@@ -122,31 +148,37 @@ def simulate_dark_reads(n_reads,
     # Get locations and apply dead pixels to rate image.
     coords_x = np.random.randint(0, ni, dead_pix_count)
     coords_y = np.random.randint(0, ni, dead_pix_count)
-    dead_pixels = np.random.normal(dead_pix_rate, scale=dead_pix_rate_var, size=dead_pix_count)
+    dead_pixels = np.random.normal(
+        dead_pix_rate, scale=dead_pix_rate_var, size=dead_pix_count
+    )
     rate_image[coords_x, coords_y] = dead_pixels
 
     # Create the read cube using the rate image and noise per read.
     read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
     for read_r in range(0, n_reads):
         # Create read cube by simulating data in reads and add noise.
-        rn = np.random.normal(loc=noise_mean,
-                              scale=noise_std,
-                              size=(ni, ni))  # Random noise term to add; simulate a read noise.
+        rn = np.random.normal(
+            loc=noise_mean, scale=noise_std, size=(ni, ni)
+        )  # Random noise term to add; simulate a read noise.
         read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
     return read_cube, rate_image
 
 
-def simulate_flat_reads(n_reads,
-                        ni=4088,
-                        exp_time=WFI_FRAME_TIME[WFI_MODE_WIM],  # Assuming default exposure time as 3.04 seconds
-                        flat_rate=200,
-                        flat_rate_var=1,
-                        num_low_qe_pix=1000,
-                        num_low_qe_pix_var=0,
-                        low_qe_rate=0.8,
-                        low_qe_rate_var=0.05,
-                        noise_mean=0.001,
-                        noise_var=0.0005):
+def simulate_flat_reads(
+    n_reads,
+    ni=SCI_PIXEL_X_COUNT,
+    exp_time=WFI_FRAME_TIME[
+        WFI_MODE_WIM
+    ],  # Assuming default exposure time as 3.04 seconds
+    flat_rate=200,
+    flat_rate_var=1,
+    num_low_qe_pix=1000,
+    num_low_qe_pix_var=0,
+    low_qe_rate=0.8,
+    low_qe_rate_var=0.05,
+    noise_mean=0.001,
+    noise_var=0.0005,
+):
     """
     Function to create a flat read cube with a random number of low QE (quantum efficiency) pixels.
 
@@ -154,7 +186,7 @@ def simulate_flat_reads(n_reads,
     ----------
     n_reads: int
         The number of reads to be simulated into a cube of n_reads x ni x ni.
-    ni: int: default = 4088
+    ni: int: default = SCI_PIXEL_X_COUNT
         The number of x=y pixels to be simulated in the square array.
     exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
         WIM exposure time is set to default from constants.py in seconds.
@@ -184,13 +216,17 @@ def simulate_flat_reads(n_reads,
         2D numpy array with shape (ni, ni) representing the rate image with low QE pixels.
     """
 
-    logging.info('Making flat read cube.')
+    logging.info("Making flat read cube.")
     if exp_time == WFI_FRAME_TIME[WFI_MODE_WIM]:
-        print("Making WFI Imaging Mode (WIM) flat read cube with exposure time", exp_time, "seconds.")
+        print(
+            "Making WFI Imaging Mode (WIM) flat read cube with exposure time",
+            exp_time,
+            "seconds.",
+        )
     else:
-        raise ValueError('Invalid WFI exposure time for flats.')
+        raise ValueError("Invalid WFI exposure time for flats.")
 
-    logging.info('Making flat read cube.')
+    logging.info("Making flat read cube.")
     print("Making flat read cube with exposure time", exp_time, "seconds.")
 
     # Initialize rate image.
@@ -205,14 +241,20 @@ def simulate_flat_reads(n_reads,
     # Get locations and apply low QE pixels to rate image.
     coords_x = np.random.randint(0, ni, low_qe_pix_count)
     coords_y = np.random.randint(0, ni, low_qe_pix_count)
-    low_qe_pixels = np.random.normal(low_qe_rate * flat_rate, scale=low_qe_rate_var * flat_rate, size=low_qe_pix_count)
+    low_qe_pixels = np.random.normal(
+        low_qe_rate * flat_rate,
+        scale=low_qe_rate_var * flat_rate,
+        size=low_qe_pix_count,
+    )
     rate_image[coords_x, coords_y] = low_qe_pixels
 
     # Create the read cube using the rate image and noise per read.
     read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
     for read_r in range(n_reads):
         # Create read cube by simulating data in reads and add noise.
-        rn = np.random.normal(noise_mean, noise_var, size=(ni, ni))  # Random noise term to add; simulate a read noise.
+        rn = np.random.normal(
+            noise_mean, noise_var, size=(ni, ni)
+        )  # Random noise term to add; simulate a read noise.
         read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn
 
     return read_cube, rate_image

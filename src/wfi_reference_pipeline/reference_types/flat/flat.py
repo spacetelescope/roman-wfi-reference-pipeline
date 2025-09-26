@@ -6,6 +6,8 @@ import roman_datamodels.stnode as rds
 from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
+    SCI_PIXEL_X_COUNT,
+    SCI_PIXEL_Y_COUNT,
     WFI_TYPE_IMAGE,
 )
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
@@ -74,7 +76,7 @@ class Flat(ReferenceType):
         # Default bit mask size of 4088x4088 for flat is size of science array
         # and must be provided if not bit_mask to instantiate properly in base class.
         if bit_mask is None:
-            bit_mask = np.zeros((4088, 4088), dtype=np.uint32)
+            bit_mask = np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.uint32)
 
         # Access methods of base class ReferenceType
         super().__init__(
@@ -125,7 +127,7 @@ class Flat(ReferenceType):
                 logging.debug(
                     "Initializing flat error array with all zeros."
                 )
-                self.flat_error = np.zeros((4088, 4088), dtype=np.float32)
+                self.flat_error = np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.float32)
                 logging.debug("Ready to generate reference file.")
             elif len(dim) == 3:
                 logging.debug(
@@ -177,7 +179,7 @@ class Flat(ReferenceType):
         logging.debug(
             "Initializing flat error array with all zeros. Run calculate_error()."
         )
-        self.flat_error = np.zeros((4088, 4088), dtype=np.float32)
+        self.flat_error = np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.float32)
         logging.debug("Ready to generate reference file.")
 
     def make_rate_image_from_data_cube(self, fit_order=1):
@@ -303,7 +305,7 @@ class Flat(ReferenceType):
 
         if fill_random:
             self.flat_error = np.random.randint(
-                1, 11, size=(4088, 4088)).astype(np.float32) / 100.
+                1, 11, size=(SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)).astype(np.float32) / 100.
         else:
             # We randomly select a subset of the images to calculate the median on them
             sel = np.random.choice(
@@ -335,8 +337,8 @@ class Flat(ReferenceType):
             # TODO remove random loq qe pixels from flat_rate_image
             # Generate between 200-300 pixels with low qe for DMS builds
             rand_num_lowqe = np.random.randint(200, 300)
-            coords_x = np.random.randint(0, 4088, rand_num_lowqe)
-            coords_y = np.random.randint(0, 4088, rand_num_lowqe)
+            coords_x = np.random.randint(0, SCI_PIXEL_X_COUNT, rand_num_lowqe)
+            coords_y = np.random.randint(0, SCI_PIXEL_Y_COUNT, rand_num_lowqe)
             rand_low_qe_values = np.random.randint(
                 5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
             self.flat_image[coords_x, coords_y] = rand_low_qe_values
