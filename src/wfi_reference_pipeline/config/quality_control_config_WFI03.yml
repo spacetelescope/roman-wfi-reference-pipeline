@@ -24,9 +24,12 @@ dark:
       max_mean_dark_rate: 0.01
       max_med_dark_rate: 0.01
       max_std_dark_rate: 0.01
+      hot_pixel_rate: 0.015
+      warm_pixel_rate: 0.010
+      dead_pixel_rate: 0.0001
       max_num_hot_pix: 1.0e+6
-      max_num_dead_pix: 1.0e+6
       max_num_warm_pix: 1.0e+6
+      max_num_dead_pix: 1.0e+6
   pre_delivery:
     checks:
       romancal_dark: true
