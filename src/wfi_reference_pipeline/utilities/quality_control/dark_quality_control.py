@@ -179,7 +179,7 @@ class DarkQualityControl(QualityControl):
                 QC_CHECK_SUCCEED if the number of hot pixels is within the allowed
                 limit; QC_CHECK_FAIL otherwise.
         """
-        hot_pixel_count = np.count_nonzero(self.dq_mask & self.rfp_dark.dqflag_defs["HOT"])
+        hot_pixel_count = np.count_nonzero(self.rfp_dark.dq_mask & self.rfp_dark.dqflag_defs["HOT"])
         max_num_hot_pix = self.pipeline.values["max_num_hot_pix"]
 
         if hot_pixel_count <= max_num_hot_pix:
@@ -206,7 +206,7 @@ class DarkQualityControl(QualityControl):
                 QC_CHECK_SUCCEED if the number of dead pixels is within the allowed
                 limit; QC_CHECK_FAIL otherwise.
         """
-        dead_pixel_count = np.count_nonzero(self.dq_mask & self.rfp_dark.dqflag_defs["DEAD"])
+        dead_pixel_count = np.count_nonzero(self.rfp_dark.dq_mask & self.rfp_dark.dqflag_defs["DEAD"])
         max_num_dead_pix = self.pipeline.values["max_num_dead_pix"]
         if dead_pixel_count <= max_num_dead_pix:
             logging.info(f"Check Max Num Dead Pixels Dark Rate passed for {self.detector}: {dead_pixel_count} <= {max_num_dead_pix}")
@@ -231,7 +231,7 @@ class DarkQualityControl(QualityControl):
                 QC_CHECK_SUCCEED if the number of warm pixels is within the allowed
                 limit; QC_CHECK_FAIL otherwise.
         """
-        warm_pixel_count = np.count_nonzero(self.dq_mask & self.rfp_dark.dqflag_defs["WARM"])
+        warm_pixel_count = np.count_nonzero(self.rfp_dark.dq_mask & self.rfp_dark.dqflag_defs["WARM"])
         max_num_warm_pix = self.pipeline.values["max_num_warm_pix"]
         if warm_pixel_count <= max_num_warm_pix:
             logging.info(f"Check Max Num Warm Pixels Dark Rate passed for {self.detector}: {warm_pixel_count} <= {max_num_warm_pix}")
