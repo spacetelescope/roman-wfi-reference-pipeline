@@ -5,7 +5,10 @@ import asdf
 import numpy as np
 import pytest
 
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+)
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.reference_types.gain.gain import Gain

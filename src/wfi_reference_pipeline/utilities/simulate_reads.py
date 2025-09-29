@@ -5,9 +5,7 @@ import numpy as np
 
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
-    DETECTOR_PIXEL_Y_COUNT,
     SCI_PIXEL_X_COUNT,
-    SCI_PIXEL_Y_COUNT,
     WFI_FRAME_TIME,
     WFI_MODE_WIM,
     WFI_MODE_WSM,

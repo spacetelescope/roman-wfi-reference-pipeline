@@ -9,7 +9,10 @@ from astropy.convolution import Box2DKernel, convolve
 from astropy.io import fits
 from roman_datamodels.dqflags import pixel as dqflags
 
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+)
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 
 from ..reference_type import ReferenceType
