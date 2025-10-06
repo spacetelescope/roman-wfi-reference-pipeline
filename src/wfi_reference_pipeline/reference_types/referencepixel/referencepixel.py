@@ -24,7 +24,7 @@ class ReferencePixel(ReferenceType):
     """
     Class ReferencePixel() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
-    Under automated operations conditions, a list of dark calibration files from a directory will be the input data for the class to begin generatoring a reference pixel reference pixel.
+    Under automated operations conditions, a list of calibration files from a directory will be the input data for the class to begin generatoring a reference pixel reference pixel.
     Each file will be run through IRRC, which will generate per exposure sums necessary to minimize Fn = alpha*Fa + gamma*Fl + zeta*Fr, which are then combined to create a final reference pixel reference file coefficientts.
 
     rfp_referencepixel = RefType(meta_data, file_list=file_list)
@@ -96,8 +96,7 @@ class ReferencePixel(ReferenceType):
             # place in list if only one file
             if isinstance(self.file_list, str):
                 self.file_list = [self.file_list]
-
-            # Display the directory name where the dark calibration files are located to make the reference pixel reference file
+            # Display the directory name where the calibration files are located to make the reference pixel reference file
             logging.info(f"Using files from {os.path.dirname(self.file_list[0])} to construct reference coeffienct object.")
         
         # if data array is provided instead of file list
@@ -129,14 +128,14 @@ class ReferencePixel(ReferenceType):
                 )
             
             
-    def get_data_cube_from_dark_file(self, file_name, skip_first_frame=False):
+    def get_data_cube_from_file(self, file_name, skip_first_frame=False):
         """
-        The method get_data_cube_from_dark_file() opens an individual dark file and extracts the data and 33rd amplifier. The files are opened using roman_datamodels and the data and amp33 arrays are extracted and concatenated into one array.   
+        The method get_data_cube_from_file() opens an individual data file and extracts the data and 33rd amplifier. The files are opened using roman_datamodels and the data and amp33 arrays are extracted and concatenated into one array.   
         
         Parameters
         ----------
         file_name: str
-            Path string. Full path to dark data file
+            Path string. Full path to data data file
         skip_first_frame: boolean; default = False
             should the first frame of the data be skipped? In the majority of cases, it should not be skipped as long as the reset read is a separate frame. 
         
@@ -183,14 +182,14 @@ class ReferencePixel(ReferenceType):
         # Convert from uint16 to prepare for in-place computations
         return dset.astype(np.float64)
 
-    def _get_detector_name_from_dark_file_meta(self, file_name):
+    def _get_detector_name_from_data_file_meta(self, file_name):
         """
-        The method _get_detector_name_from_dark_file_meta() opens an individual dark file, extracts the instrument detector name, and updates the meta_data.instrument_detector variable. 
+        The method _get_detector_name_from_data_file_meta() opens an individual data file, extracts the instrument detector name, and updates the meta_data.instrument_detector variable. 
         
         Parameters
         ----------
         file_name: str
-            Path string. Full path to dark data file
+            Path string. Full path to data file
         """
         if not isinstance(file_name, Path):
             file_name = Path(file_name)
@@ -211,10 +210,10 @@ class ReferencePixel(ReferenceType):
 
     def make_referencepixel_image(self, tmppath=None, detector_name=None, skip_first_frame=False):
         """
-        The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each dark calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
+        The method make_referencepixel_coeffs creates an object from the DMS data model. The method make_referencepixel_coeffs() ingests all files located in a directory as a python object list of filenames with absolute paths.  The reference pixel reference file is created by iterating through each data calibration file and computing a model of the read noise in the normal pixels that is a linear combination of the reference output, left, and right column pixels (IRRC; Rauscher et al., in prep).  The sums for each exposure are then combined/summed together to create a final model that minimizes the 1/f noise given as
         Fn = alpha*Fa + gamma+Fl + zeta+Fr.  The coefficients are then saved as a final reference class attribute.
 
-        NOTE: Initial testing was performed by S. Betti with 100 dark files each with 55 reads.  Each file took ~180s to calculate the sums and ~5hours to compute the final coefficients.  The peak memory usage was 40 GB.
+        NOTE: Initial testing was performed by S. Betti with 100 Total Noise files each with 55 reads.  Each file took ~180s to calculate the sums and ~5hours to compute the final coefficients.  The peak memory usage was 40 GB.
 
         Parameters
         ----------
@@ -228,8 +227,9 @@ class ReferencePixel(ReferenceType):
             should the first frame of the data be skipped? (should not be skipped if the reset read is a separate frame)
         """
         # determine detector name to populate meta_data.instrument_detector
+
         if self.file_list:
-            self._get_detector_name_from_dark_file_meta(self.file_list[0])
+            self._get_detector_name_from_data_file_meta(self.file_list[0])
         else:
             if detector_name is not None:
                 self.meta_data.instrument_detector = detector_name
@@ -257,7 +257,7 @@ class ReferencePixel(ReferenceType):
         if self.file_list:
             for file in self.file_list:
                 # extract data from cube
-                data = self.get_data_cube_from_dark_file(file, skip_first_frame=skip_first_frame)
+                data = self.get_data_cube_from_file(file, skip_first_frame=skip_first_frame)
                 out_file_name = Path(tmpdir, os.path.basename(file) + '_sums.h5')
              
                 logging.info(f"*** Processing ramp for file: {file}")
@@ -265,12 +265,14 @@ class ReferencePixel(ReferenceType):
         # loop through each data array and extract IRRC sums
         else:
             for exp, data in enumerate(self.ref_type_data):
+
                 if skip_first_frame:
                     data = data[1:]
                 logging.info(f"*** Processing ramp for exposure: {exp+1}")
                 # create temporary out_file_name based on timestamp 
                 timestr = time.strftime("%Y%m%d-%H%M%S")
                 out_file_name = Path(tmpdir, f'exposure{exp+1}_{timestr}_sums.h5')
+
                 extract(data, out_file_name)
 
         # Compute IRRC frequency dependent weights 
@@ -293,7 +295,7 @@ class ReferencePixel(ReferenceType):
         Create data model from DMS and populate tree.
         """
 
-        # Construct the dark object from the data model.
+        # Construct the refpix object from the data model.
         referencepixel_datamodel_tree = rds.RefpixRef()
         referencepixel_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         referencepixel_datamodel_tree['gamma'] = self.gamma
