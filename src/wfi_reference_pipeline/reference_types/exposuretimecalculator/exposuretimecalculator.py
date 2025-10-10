@@ -3,10 +3,14 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from astropy import units as u
-
-from wfi_reference_pipeline.reference_types.data_cube import DataCube
-from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+import roman_datamodels as rdm
+import os
+import yaml
+import crds
+from crds.client import api
+import subprocess
+import shutil
+from pathlib import Path
 
 from ..reference_type import ReferenceType
 
@@ -91,68 +95,123 @@ class ExposureTimeCalculator(ReferenceType):
         af.write_to(self.outfile, overwrite=True)
 
 
-    @classmethod
-    def update_etc_config_from_crds(cls, config_path="exposure_time_calculator_config.yml"):
-        """
-        Connect to CRDS to get current pmap context and identify the current list of each
-        ref type files needed for: dark, flat, read noise, and saturation
-
-        Create a mapping for each detector to the subset of the reference files for that detector.
-
-        Open each reference file to extract the desired quantity from the
-        """
-        with open(config_path, "r") as f:
-            cfg = yaml.safe_load(f)
-
-        for det_id, det_block in cfg.get("detectors", {}).items():
-            # Need to make sure file lists are returned or sorted in order of detector ID WFI018-WFI18
-            dark_file_list = query_crds_files(detector=det_id, reftype='dark')
-            read_file_list = query_crds_files(detector=det_id, reftype='readnoise')
-            flat_file_list = query_crds_files(detector=det_id, reftype='flat')
-            sat_file_list = query_crds_files(detector=det_id, reftype='saturation')
-
-            # Compute statistics
-            new_dark = cls.mean_data_from_asdf_files(dark_file_list)
-            new_read = cls.mean_data_from_asdf_files(read_file_list)
-            new_ff_e = cls.stddev_data_from_asdf_files(flat_file_list)
-            new_fw = cls.median_data_from_asdf_files(sat_file_list)
-
-            det_block.update({
-                "dark_current_avg": new_dark,
-                "readnoise_avg": new_read,
-                "saturation_fullwell": new_fw,
-                "ff_electrons": new_ff_e
-            })
-
-        with open(config_path, "w") as f:
-            yaml.safe_dump(cfg, f, sort_keys=False)
-
-        print(f"Configuration file '{config_path}' updated from CRDS.")
+ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
 
 
+def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
+    """
+    Load the ETC YAML configuration and set CRDS server & cache path.
+
+    Parameters
+    ----------
+    etc_dump_dir : str
+        Path to the directory where CRDS reference files will be cached/downloaded.
+
+    crds_server = "https://roman-crds.stsci.edu/"
+    crds_context = crds.get_default_context()  # or specify a context if desired
+
+    print(f"CRDS server: {crds_server}")
+    print(f"CRDS context: {crds_context}")
+    os.environ["CRDS_PATH"] = etc_dump_dir
+    os.environ["CRDS_SERVER_URL"] = crds_server
+
+    print(f"CRDS_PATH set to: {os.environ['CRDS_PATH']}")
+    print(f"CRDS_SERVER_URL set to: {os.environ['CRDS_SERVER_URL']}")
+    """
+
+    print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
+    print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
+    crds_context = crds.get_default_context()
+    print(f"CRDS context: {crds_context}")
+
+    if os.path.exists(etc_dump_dir):
+        print(f"Deleting existing dump directory: {etc_dump_dir}")
+        shutil.rmtree(etc_dump_dir)
+
+    print(f"Creating dump directory: {etc_dump_dir}")
+    os.makedirs(etc_dump_dir, exist_ok=True)
+
+    print("Syncing CRDS reference files...")
+    try:
+        result = subprocess.run(
+            ["crds", "sync", "--all"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running crds sync: {e.stderr}")
 
 
-    # ---------------- Helper functions ----------------
-    @staticmethod
-    def compute_stat_from_asdf_files(file_list, stat_func):
-        """
-        Open each ASDF file in file_list and compute a statistic using stat_func (e.g., np.mean, np.median, np.std).
-        Raises an exception if any file cannot be opened.
-        """
-        vals = []
-        for fname in file_list:
-            try:
-                with asdf.open(fname) as af:
-                    data = af.tree['roman']['data']
-                    vals.append(stat_func(data))
-            except Exception as e:
-                raise RuntimeError(f"Error opening ASDF file '{fname}': {e}") from e
+    if not os.path.exists(ETC_CONFIG):
+        raise FileNotFoundError(f"Config file not found at {ETC_CONFIG}")
 
-        if not vals:
-            raise ValueError("No valid data found in any of the provided ASDF files.")
-        return vals
+    with open(ETC_CONFIG, "r") as f:
+        cfg = yaml.safe_load(f)
 
-    # These are thin wrappers for clarity
-    mean_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.mean))
-    median_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.median))
-    stddev_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.std))
+    # pmap = crds.rmap.asmapping(crds_context)
+    # imap = pmap.get_imap("wfi")
+    # readnoise_rmap = imap.get_rmap("readnoise")
+    # all_readnoise_files = readnoise_rmap.reference_names()
+
+    readnoise_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('readnoise').reference_names()
+    print(readnoise_files)
+    results = api.dump_references(crds_context, readnoise_files)
+
+
+
+    #return cfg
+
+    # for det_id, det_block in cfg.get("detectors", {}).items():
+    #     # Need to make sure file lists are returned or sorted in order of detector ID WFI018-WFI18
+    #     dark_file_list = query_crds_files(detector=det_id, reftype='dark')
+    #     read_file_list = query_crds_files(detector=det_id, reftype='readnoise')
+    #     flat_file_list = query_crds_files(detector=det_id, reftype='flat')
+    #     sat_file_list = query_crds_files(detector=det_id, reftype='saturation')
+
+    #     # Compute statistics
+    #     new_dark = cls.mean_data_from_asdf_files(dark_file_list)
+    #     new_read = cls.mean_data_from_asdf_files(read_file_list)
+    #     new_ff_e = cls.stddev_data_from_asdf_files(flat_file_list)
+    #     new_fw = cls.median_data_from_asdf_files(sat_file_list)
+
+    #     det_block.update({
+    #         "dark_current_avg": new_dark,
+    #         "readnoise_avg": new_read,
+    #         "saturation_fullwell": new_fw,
+    #         "ff_electrons": new_ff_e
+    #     })
+
+    #     with open(config_path, "w") as f:
+    #         yaml.safe_dump(cfg, f, sort_keys=False)
+
+    #     print(f"Configuration file '{config_path}' updated from CRDS.")
+
+
+
+
+# ---------------- Helper functions ----------------
+@staticmethod
+def compute_stat_from_asdf_files(file_list, stat_func):
+    """
+    Open each ASDF file in file_list and compute a statistic using stat_func (e.g., np.mean, np.median, np.std).
+    Raises an exception if any file cannot be opened.
+    """
+    vals = []
+    for fname in file_list:
+        try:
+            with asdf.open(fname) as af:
+                data = af.tree['roman']['data']
+                vals.append(stat_func(data))
+        except Exception as e:
+            raise RuntimeError(f"Error opening ASDF file '{fname}': {e}") from e
+
+    if not vals:
+        raise ValueError("No valid data found in any of the provided ASDF files.")
+    return vals
+
+# These are thin wrappers for clarity
+mean_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.mean))
+median_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.median))
+stddev_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.std))
