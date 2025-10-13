@@ -1,207 +1,199 @@
-# ==========================================
-# Roman WFI Exposure Time Calculator Configuration File
-# ==========================================
-
-# -------- Static defaults (do not change per detector) --------
 static:
-  crs_on: true            # Include cosmic rays in noise calculation
-  det_type: "h4rg"        # Detector type; Roman WFI uses H4RG-10 detectors
-  pix_size_x: 10          # Pixel size in microns (X direction)
-  pix_size_y: 10          # Pixel size in microns (Y direction)
-  pixels_x: 4088          # Number of pixels along X-axis
-  pixels_y: 4088          # Number of pixels along Y-axis
-  excess: false           # Apply excess noise model (not used for Roman)
-  excessp1: 0             # Quadratic correction coefficient
-  excessp2: 0             # Linear correction coefficient
-  ktc_noise: 0            # Special additive noise for ngroups=1
-  ipc_on: false           # Include interpixel capacitance effects
-  mingroups: 2            # Minimum unsaturated groups required before saturation
-  npostrej: 0             # Groups rejected at the end of an observation
-  nprerej: 0              # Groups rejected at the beginning of an observation
-  nreset: 0               # Number of resets
-  report_counts: false    # Output in counts/sec instead of electrons/sec
-  scatter: false          # Include detector scattering
-
-# -------- Per-detector configurable values --------
+  crs_on: true
+  det_type: h4rg
+  pix_size_x: 10
+  pix_size_y: 10
+  pixels_x: 4088
+  pixels_y: 4088
+  excess: false
+  excessp1: 0
+  excessp2: 0
+  ktc_noise: 0
+  ipc_on: false
+  mingroups: 2
+  npostrej: 0
+  nprerej: 0
+  nreset: 0
+  report_counts: false
+  scatter: false
 detectors:
   WFI01:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 60000.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 6.196895122528076
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI02:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 60000.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.647524833679199
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI03:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58905.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.895864486694336
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI04:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 57456.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 6.098455905914307
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI05:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58412.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.49294376373291
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI06:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58875.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.867035865783691
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI07:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58803.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 4.798841953277588
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI08:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58044.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.192303657531738
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI09:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 60000.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.247626304626465
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI10:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 59526.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.8629608154296875
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI11:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58092.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.392239093780518
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI12:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 59749.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.722226619720459
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI13:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58935.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 6.1576361656188965
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI14:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 59538.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.320662498474121
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI15:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 57992.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.197111129760742
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI16:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 58192.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.3603339195251465
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI17:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 60000.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.908330917358398
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
   WFI18:
     saturation_on: true
-    saturation_fullwell: 60000
+    saturation_fullwell: 60000.0
     dark_current_on: true
-    dark_current_avg: 0.005
+    dark_current_avg: 0.0
     readnoise_on: true
-    readnoise_avg: 10
+    readnoise_avg: 5.755289077758789
     readnoise_correlation: false
     ffnoise: true
     ff_electrons: 1000000
-    

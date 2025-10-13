@@ -100,6 +100,10 @@ ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_ca
 
 def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
+    Update ETC YAML config with median readnoise, dark current, and flat field
+    values for each WFI detector from CRDS reference files.
+    """
+    """
     Load the ETC YAML configuration and set CRDS server & cache path.
 
     Parameters
@@ -150,68 +154,113 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     with open(ETC_CONFIG, "r") as f:
         cfg = yaml.safe_load(f)
 
-    # pmap = crds.rmap.asmapping(crds_context)
-    # imap = pmap.get_imap("wfi")
-    # readnoise_rmap = imap.get_rmap("readnoise")
-    # all_readnoise_files = readnoise_rmap.reference_names()
+    # get a pointer to just the detectors portion of the ETC CONFIG file
+    detectors_cfg = cfg.get("detectors", {})
+
+    # -------------------------------
+    # Locally download all reference files needed to update ETC config
+    # -------------------------------
 
     readnoise_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('readnoise').reference_names()
-    print(readnoise_files)
     results = api.dump_references(crds_context, readnoise_files)
+    readnoise_filepaths = list(results.values())
 
+    dark_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('dark').reference_names()
+    results = api.dump_references(crds_context, dark_files)
+    dark_filepaths = list(results.values())
 
+    flat_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('flat').reference_names()
+    results = api.dump_references(crds_context, flat_files)
+    flat_filepaths = list(results.values()) # 1/sqrt(ff_electrons) = std(flat_field)
 
-    #return cfg
+    saturation_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('saturation').reference_names()
+    results = api.dump_references(crds_context, saturation_files)
+    saturation_filepaths = list(results.values())
 
-    # for det_id, det_block in cfg.get("detectors", {}).items():
-    #     # Need to make sure file lists are returned or sorted in order of detector ID WFI018-WFI18
-    #     dark_file_list = query_crds_files(detector=det_id, reftype='dark')
-    #     read_file_list = query_crds_files(detector=det_id, reftype='readnoise')
-    #     flat_file_list = query_crds_files(detector=det_id, reftype='flat')
-    #     sat_file_list = query_crds_files(detector=det_id, reftype='saturation')
-
-    #     # Compute statistics
-    #     new_dark = cls.mean_data_from_asdf_files(dark_file_list)
-    #     new_read = cls.mean_data_from_asdf_files(read_file_list)
-    #     new_ff_e = cls.stddev_data_from_asdf_files(flat_file_list)
-    #     new_fw = cls.median_data_from_asdf_files(sat_file_list)
-
-    #     det_block.update({
-    #         "dark_current_avg": new_dark,
-    #         "readnoise_avg": new_read,
-    #         "saturation_fullwell": new_fw,
-    #         "ff_electrons": new_ff_e
-    #     })
-
-    #     with open(config_path, "w") as f:
-    #         yaml.safe_dump(cfg, f, sort_keys=False)
-
-    #     print(f"Configuration file '{config_path}' updated from CRDS.")
-
-
-
-
-# ---------------- Helper functions ----------------
-@staticmethod
-def compute_stat_from_asdf_files(file_list, stat_func):
-    """
-    Open each ASDF file in file_list and compute a statistic using stat_func (e.g., np.mean, np.median, np.std).
-    Raises an exception if any file cannot be opened.
-    """
-    vals = []
-    for fname in file_list:
+    # -------------------------------
+    # READNOISE: update readnoise_avg with median readnoise from data array
+    # -------------------------------
+    for filepath in readnoise_filepaths:
         try:
-            with asdf.open(fname) as af:
-                data = af.tree['roman']['data']
-                vals.append(stat_func(data))
+            ref = rdm.open(filepath)
+            det = ref.meta.instrument.detector
+            val = float(np.median(ref.data))
+            if det in detectors_cfg:
+                detectors_cfg[det]["readnoise_avg"] = val
+                detectors_cfg[det]["readnoise_on"] = True
+                print(f"{det}: readnoise_avg -> {val:.2f}")
+            else:
+                print(f"Warning: detector {det} not found in config.")
         except Exception as e:
-            raise RuntimeError(f"Error opening ASDF file '{fname}': {e}") from e
+            print(f"Failed to process readnoise {filepath}: {e}")
 
-    if not vals:
-        raise ValueError("No valid data found in any of the provided ASDF files.")
-    return vals
+    # -------------------------------
+    # DARK CURRENT: update dark_current_avg with mean of dark current rate array
+    # -------------------------------
+    for filepath in dark_filepaths:
+        try:
+            ref = rdm.open(filepath)
+            det = ref.meta.instrument.detector
+            val = float(np.mean(ref.dark_slope))
+            if det in detectors_cfg:
+                detectors_cfg[det]["dark_current_avg"] = val
+                detectors_cfg[det]["dark_current_on"] = True
+                print(f"{det}: dark_current_avg -> {val:.3f}")
+            else:
+                print(f"Warning: detector {det} not found in config.")
+        except Exception as e:
+            print(f"Failed to process dark current {filepath}: {e}")
 
-# These are thin wrappers for clarity
-mean_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.mean))
-median_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.median))
-stddev_data_from_asdf_files = staticmethod(lambda files: ExposureTimeCalculator.compute_stat_from_asdf_files(files, np.std))
+    # -------------------------------
+    # FLAT FIELD: update ff_electrons
+    # -------------------------------
+    for filepath in flat_filepaths:
+        try:
+            ref = rdm.open(filepath)
+            if ref.meta.instrument.optical_element == 'F062':
+                det = ref.meta.instrument.detector
+                std_val = float(np.std(ref.data))
+                ff_electrons = 1.0 / (std_val ** 2)
+                if det in detectors_cfg:
+                    detectors_cfg[det]["ff_electrons"] = ff_electrons
+                    detectors_cfg[det]["ffnoise"] = True
+                    print(f"{det}: ff_electrons -> {ff_electrons:.2f}")
+                else:
+                    print(f"Warning: detector {det} not found in config.")
+        except Exception as e:
+            print(f"Failed to process flat field {filepath}: {e}")
+
+    # -------------------------------
+    # SATURATION: update saturation_fullwell
+    # -------------------------------
+    for filepath in saturation_filepaths:
+        try:
+            ref = rdm.open(filepath)
+            det = ref.meta.instrument.detector
+            val = float(np.amax(ref.data))
+            if det in detectors_cfg:
+                detectors_cfg[det]["saturation_fullwell"] = val
+                detectors_cfg[det]["saturation_on"] = True
+                print(f"{det}: saturation_fullwell -> {val:.1f}")
+            else:
+                print(f"Warning: detector {det} not found in config.")
+        except Exception as e:
+            print(f"Failed to process saturation {filepath}: {e}")
+
+
+    # -------------------------------
+    # Write updated config
+    # -------------------------------
+    backup_path = ETC_CONFIG.with_suffix(".bak")
+    shutil.copy(ETC_CONFIG, backup_path)
+    print(f"\nBackup saved to: {backup_path}")
+
+    with open(ETC_CONFIG, "w") as f:
+        yaml.safe_dump(cfg, f, sort_keys=False)
+
+    print(f"Updated config file saved to: {ETC_CONFIG}")
+
+
+
+
+
