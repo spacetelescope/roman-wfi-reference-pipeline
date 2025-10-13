@@ -15,6 +15,7 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.resources.wfi_meta_exposuretimecalculator import WFIMetaExposureTimeCalculator
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
@@ -62,6 +63,9 @@ class MakeDevMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+    
+    def _create_dev_meta_etc(self, meta_data):
+        self.meta_etc = WFIMetaExposureTimeCalculator(*meta_data)
 
     def _create_dev_meta_flat(self, meta_data):
         p_optical_element = "F158"

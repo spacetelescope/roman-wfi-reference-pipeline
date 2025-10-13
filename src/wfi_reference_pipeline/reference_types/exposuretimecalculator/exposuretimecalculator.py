@@ -58,12 +58,12 @@ class ExposureTimeCalculator(ReferenceType):
         self.detector_id = self.meta.get("detector")   # e.g., "WFI07"
         self.detector_config = None
 
-    def load_detector_config(self):
+    def get_detector_config(self):
         """Read YAML and merge static + detector-specific settings."""
         with open(self.config_path, "r") as f:
             cfg = yaml.safe_load(f)
 
-        static_cfg = cfg.get("static", {})
+        static_cfg = cfg.get("common", {})
         det_cfgs = cfg.get("detectors", {})
 
         if self.detector_id not in det_cfgs:
@@ -78,7 +78,7 @@ class ExposureTimeCalculator(ReferenceType):
         using the merged detector configuration.
         """
         if self.detector_config is None:
-            self.load_detector_config()
+            self.get_detector_config()
 
         # Example datamodel structure; replace rds.ExposureTimeRef
         # with the correct roman_datamodels reference class when available.
@@ -95,8 +95,12 @@ class ExposureTimeCalculator(ReferenceType):
         af.write_to(self.outfile, overwrite=True)
 
 
-ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
 
+# -------------------------------
+# Standalone function to update config file
+# -------------------------------
+
+ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
 
 def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
@@ -110,17 +114,6 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     ----------
     etc_dump_dir : str
         Path to the directory where CRDS reference files will be cached/downloaded.
-
-    crds_server = "https://roman-crds.stsci.edu/"
-    crds_context = crds.get_default_context()  # or specify a context if desired
-
-    print(f"CRDS server: {crds_server}")
-    print(f"CRDS context: {crds_context}")
-    os.environ["CRDS_PATH"] = etc_dump_dir
-    os.environ["CRDS_SERVER_URL"] = crds_server
-
-    print(f"CRDS_PATH set to: {os.environ['CRDS_PATH']}")
-    print(f"CRDS_SERVER_URL set to: {os.environ['CRDS_SERVER_URL']}")
     """
 
     print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
@@ -169,9 +162,11 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     results = api.dump_references(crds_context, dark_files)
     dark_filepaths = list(results.values())
 
+    # TODO figure out a way to just download one optical element for all 18 detectors using this
+    # or some modification to this code
     flat_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('flat').reference_names()
     results = api.dump_references(crds_context, flat_files)
-    flat_filepaths = list(results.values()) # 1/sqrt(ff_electrons) = std(flat_field)
+    flat_filepaths = list(results.values()) 
 
     saturation_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('saturation').reference_names()
     results = api.dump_references(crds_context, saturation_files)
