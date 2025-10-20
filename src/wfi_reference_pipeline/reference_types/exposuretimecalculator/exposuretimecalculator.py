@@ -16,6 +16,8 @@ from wfi_reference_pipeline.resources.wfi_meta_exposuretimecalculator import WFI
 
 from ..reference_type import ReferenceType
 
+ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
+
 
 class ExposureTimeCalculator(ReferenceType):
     """
@@ -23,6 +25,10 @@ class ExposureTimeCalculator(ReferenceType):
     where static meta data for all reference file types are written. The
     method make_etc_file() creates or retrieves the exposure time calculator necessary
     data from an input file.
+
+    This class assumes the etc config file within the repository is used to generate the asdf file. 
+    If you want to use your own config file, do: 
+    rfp_etc = ExposureTimeCalculator(meta_data=my_meta, file_list=["/path/to/custom_config.yml"])
     """
 
     def __init__(self,
@@ -47,7 +53,7 @@ class ExposureTimeCalculator(ReferenceType):
         config_path : str
             Path to the YAML configuration file.
         """
-        super().__init__(meta_data, file_list, clobber=clobber)
+        super().__init__(meta_data, clobber=clobber)
 
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaETC):
@@ -57,35 +63,57 @@ class ExposureTimeCalculator(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI ETC reference file."
 
+        # Default to ETC_CONFIG if not supplied
+        if file_list is None or len(file_list) == 0:
+            self.config_path = ETC_CONFIG
+            self.file_list = [str(ETC_CONFIG)]
+        else:
+            self.config_path = Path(file_list[0]).resolve()
+            self.file_list = [str(self.config_path)]
+
         self.outfile = outfile
 
-    def get_detector_config(self):
-        """Read YAML and merge static + detector-specific settings."""
+    def get_config(self):
+        """
+        Load the entire ETC YAML config and return both common and all detector configs.
+        """
         with open(self.config_path, "r") as f:
             cfg = yaml.safe_load(f)
 
-        static_cfg = cfg.get("common", {})
-        det_cfgs = cfg.get("detectors", {})
+        common_cfg = cfg.get("common", {})
+        detectors_cfg = cfg.get("detectors", {})
 
-        if self.detector_id not in det_cfgs:
-            raise ValueError(f"Detector {self.detector_id} not in config file")
-
-        self.detector_config = {**static_cfg, **det_cfgs[self.detector_id]}
-        return self.detector_config
+        # return structure as-is (no per-detector merge)
+        full_config = {
+            "common": common_cfg,
+            "detectors": detectors_cfg
+        }
+        return full_config
+    
+    # Abstract base classes not needed for ETC config reference file
+    def calculate_error(self):
+        return super().calculate_error()
+    
+    def update_data_quality_array(self):
+        return super().update_data_quality_array()
 
     def populate_datamodel_tree(self):
         """
         Build the Roman datamodel tree for the exposure time calculator
         using the merged detector configuration.
         """
-        if self.detector_config is None:
-            self.get_detector_config()
 
-        # Example datamodel structure; replace rds.ExposureTimeRef
-        # with the correct roman_datamodels reference class when available.
-        etc_datamodel_tree = rds.ExposureTimeRef()
-        etc_datamodel_tree["meta"] = self.meta
-        etc_datamodel_tree["config"] = self.detector_config
+        #TODO replace rds.ExposureTimeRef with the correct roman_datamodels reference class when available.
+        try:
+            etc_datamodel_tree = rds.ExposureTimeRef()
+        except AttributeError:
+            # use a plain dict 
+            etc_datamodel_tree = {
+                "meta": {},
+                "config": {}
+            }
+        etc_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
+        etc_datamodel_tree["config"] = self.get_config()
         return etc_datamodel_tree
     
     def save_exposure_time_file(self):
@@ -95,12 +123,9 @@ class ExposureTimeCalculator(ReferenceType):
         af.write_to(self.outfile, overwrite=True)
 
 
-
 # -------------------------------
 # Standalone function to update config file
 # -------------------------------
-
-ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
 
 def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
