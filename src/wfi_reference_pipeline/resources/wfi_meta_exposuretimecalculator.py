@@ -5,9 +5,9 @@ from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
 @dataclass
-class WFIMetaExposureTimeCalculator(WFIMetadata):
+class WFIMetaETC(WFIMetadata):
     """
-    Class WFIMetaExposureTimeCalculator() Metadata Specific to the ETC Reference File Type
+    Class WFIMetaETC() Metadata Specific to the Eexposure Time Calculator Reference File Type
     inherits WFIMetadata
     All Fields are required and positional with base class fields first
 
@@ -15,7 +15,7 @@ class WFIMetaExposureTimeCalculator(WFIMetadata):
 
     def __post_init__(self):
         super().__post_init__()
-        self.reference_type = constants.REF_TYPE_EXPOSURETIMECALCULATOR
+        self.reference_type = constants.REF_TYPE_ETC
 
     def export_asdf_meta(self):
         asdf_meta = {

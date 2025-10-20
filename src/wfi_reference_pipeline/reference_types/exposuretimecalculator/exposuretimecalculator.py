@@ -12,6 +12,8 @@ import subprocess
 import shutil
 from pathlib import Path
 
+from wfi_reference_pipeline.resources.wfi_meta_exposuretimecalculator import WFIMetaETC
+
 from ..reference_type import ReferenceType
 
 
@@ -24,11 +26,13 @@ class ExposureTimeCalculator(ReferenceType):
     """
 
     def __init__(self,
-                 meta_data: dict,
+                 meta_data,
                  file_list=None,
+                 ref_type_data=None,
+                 bit_mask=None,
                  outfile="roman_etc_file.asdf",
-                 clobber=False,
-                 config_path="exposure_time_calculator_config.yml"):
+                 clobber=False
+    ):
         """
         Parameters
         ----------
@@ -54,9 +58,6 @@ class ExposureTimeCalculator(ReferenceType):
             self.meta_data.description = "Roman WFI ETC reference file."
 
         self.outfile = outfile
-        self.config_path = Path(config_path)
-        self.detector_id = self.meta.get("detector")   # e.g., "WFI07"
-        self.detector_config = None
 
     def get_detector_config(self):
         """Read YAML and merge static + detector-specific settings."""
@@ -84,14 +85,13 @@ class ExposureTimeCalculator(ReferenceType):
         # with the correct roman_datamodels reference class when available.
         etc_datamodel_tree = rds.ExposureTimeRef()
         etc_datamodel_tree["meta"] = self.meta
-        etc_datamodel_tree["data"] = self.detector_config
+        etc_datamodel_tree["config"] = self.detector_config
         return etc_datamodel_tree
     
-
-    def save_exposure_time_file(self, datamodel_tree=None):
+    def save_exposure_time_file(self):
         """Write the ASDF file for the detector."""
         af = asdf.AsdfFile()
-        af.tree = {"roman": datamodel_tree or self.populate_datamodel_tree()}
+        af.tree = {"roman": self.populate_datamodel_tree()}
         af.write_to(self.outfile, overwrite=True)
 
 
@@ -241,7 +241,6 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
                 print(f"Warning: detector {det} not found in config.")
         except Exception as e:
             print(f"Failed to process saturation {filepath}: {e}")
-
 
     # -------------------------------
     # Write updated config
