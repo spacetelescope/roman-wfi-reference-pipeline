@@ -65,7 +65,7 @@ class MakeDevMeta:
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
     def _create_dev_meta_darkdecay(self, meta_data):
-        self.meta_gain = WFIMetaDarkDecay(*meta_data)
+        self.meta_darkdecay = WFIMetaDarkDecay(*meta_data)
 
     def _create_dev_meta_flat(self, meta_data):
         p_optical_element = "F158"

@@ -6,7 +6,7 @@ from pathlib import Path
 import roman_datamodels.stnode as rds
 import roman_datamodels as rdm
 
-from wfi_reference_pipeline.resources.darkdecaysignal import WFIMetaDarkDecay
+from wfi_reference_pipeline.resources.wfi_meta_darkdecaysignal import WFIMetaDarkDecay
 from ..reference_type import ReferenceType
 
 # Path to the configuration file
