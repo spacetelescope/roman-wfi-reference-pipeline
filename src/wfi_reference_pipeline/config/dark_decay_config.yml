@@ -1,0 +1,108 @@
+detectors:
+  - id: WFI01
+    amplitude_DN: 0.15
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 24.6
+    decay_constant_uncertainty_s: 10.1
+
+  - id: WFI02
+    amplitude_DN: 0.43
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 22.1
+    decay_constant_uncertainty_s: 2.7
+
+  - id: WFI03
+    amplitude_DN: 0.50
+    amplitude_uncertainty_DN: 0.07
+    decay_constant_s: 23.1
+    decay_constant_uncertainty_s: 8.2
+
+  - id: WFI04
+    amplitude_DN: 0.36
+    amplitude_uncertainty_DN: 0.01
+    decay_constant_s: 19.6
+    decay_constant_uncertainty_s: 2.5
+
+  - id: WFI05
+    amplitude_DN: 0.42
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 28.8
+    decay_constant_uncertainty_s: 4.5
+
+  - id: WFI06
+    amplitude_DN: 0.61
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 22.1
+    decay_constant_uncertainty_s: 2.5
+
+  - id: WFI07
+    amplitude_DN: 0.22
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 20.2
+    decay_constant_uncertainty_s: 7.5
+
+  - id: WFI08
+    amplitude_DN: 0.36
+    amplitude_uncertainty_DN: 0.04
+    decay_constant_s: 31.4
+    decay_constant_uncertainty_s: 5.6
+
+  - id: WFI09
+    amplitude_DN: 0.48
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 21.9
+    decay_constant_uncertainty_s: 2.8
+
+  - id: WFI10
+    amplitude_DN: 0.19
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 22.1
+    decay_constant_uncertainty_s: 7.6
+
+  - id: WFI11
+    amplitude_DN: 0.37
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 23.3
+    decay_constant_uncertainty_s: 4.3
+
+  - id: WFI12
+    amplitude_DN: 0.39
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 29.5
+    decay_constant_uncertainty_s: 4.5
+
+  - id: WFI13
+    amplitude_DN: 0.26
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 27.5
+    decay_constant_uncertainty_s: 6.7
+
+  - id: WFI14
+    amplitude_DN: 0.40
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 25.4
+    decay_constant_uncertainty_s: 3.7
+
+  - id: WFI15
+    amplitude_DN: 0.42
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 23.2
+    decay_constant_uncertainty_s: 2.9
+
+  - id: WFI16
+    amplitude_DN: 0.36
+    amplitude_uncertainty_DN: 0.02
+    decay_constant_s: 22.7
+    decay_constant_uncertainty_s: 4.3
+
+  - id: WFI17
+    amplitude_DN: 0.67
+    amplitude_uncertainty_DN: 0.03
+    decay_constant_s: 25.2
+    decay_constant_uncertainty_s: 2.6
+
+  - id: WFI18
+    amplitude_DN: 0.53
+    amplitude_uncertainty_DN: 0.04
+    decay_constant_s: 21.3
+    decay_constant_uncertainty_s: 3.4
