@@ -2,6 +2,7 @@ import logging
 import asdf
 import yaml
 from pathlib import Path
+import os
 
 import roman_datamodels.stnode as rds
 import roman_datamodels as rdm
@@ -156,23 +157,26 @@ class DarkDecaySignal(ReferenceType):
             # Placeholder until official datamodel exists
             dark_decay_ref = rds.DarkDecaySignalRef()
         except AttributeError:
-            dark_decay_ref = {"meta": {}, "config": {}}
+            dark_decay_ref = {"meta": {}, 
+                              "amplitude": {},
+                              "decay_constant": {}
+                              }
 
         dark_decay_ref["meta"] = self.meta_data.export_asdf_meta()
         dark_decay_ref["amplitude"] = self.amp
-        dark_decay_ref["amplitude_err"] = self.amp_error
         dark_decay_ref["decay_constant"] = self.decay
-        dark_decay_ref["decay_const_error"] = self.decay_err
         return dark_decay_ref
 
     def save_dark_decay_signal_file(self):
         """
         Write the dark decay signal reference ASDF file.
         """
+        file_permission=0o666
         af = asdf.AsdfFile()
         af.tree = {"roman": self.populate_datamodel_tree()}
-        log.info(f"Writing dark decay signal reference to {self.outfile}")
-        af.write_to(self.outfile, overwrite=True)
+        af.write_to(self.outfile, all_array_compression="zlib")
+        os.chmod(self.outfile, file_permission)
+        logging.info(f"Saved {self.outfile}")
 
     # Optional inherited stubs for completeness
     def calculate_error(self):
