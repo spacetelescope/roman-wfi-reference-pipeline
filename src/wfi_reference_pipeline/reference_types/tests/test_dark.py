@@ -197,7 +197,7 @@ class TestDark:
         dark_obj.dqflag_defs = dqflag_defs
 
         # Call the update_data_quality_array method with specified thresholds
-        dark_obj.update_data_quality_array(hot_pixel_rate=2.0, warm_pixel_rate=1.0, dead_pixel_rate=0.1)
+        dark_obj.update_data_quality_array(2.0, 1.0, 0.1)
 
         # Create the expected mask based on the pixel values and threshold comparisons
         expected_mask = np.array([

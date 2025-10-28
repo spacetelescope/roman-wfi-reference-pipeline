@@ -342,7 +342,7 @@ class Dark(ReferenceType):
             #     std * std + self.data_cube.rate_image_err
             # ) ** 0.5
 
-    def update_data_quality_array(self, hot_pixel_rate=0.015, warm_pixel_rate=0.010, dead_pixel_rate=0.0001):
+    def update_data_quality_array(self, hot_pixel_rate, warm_pixel_rate, dead_pixel_rate):
         # TODO evaluate options for variables like this and sigma clipping with a parameter file?
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
