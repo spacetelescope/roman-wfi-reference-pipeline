@@ -1,7 +1,6 @@
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-
 from wfi_reference_pipeline.config.config_access import get_data_files_config
 from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_DETECTORS
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
@@ -35,7 +34,8 @@ class Pipeline(ABC):
         if detector.upper() in WFI_DETECTORS:
             self.detector = detector.upper()
         else:
-            raise KeyError(f"Invalid Detector {detector} - choose from {WFI_DETECTORS}")
+            raise KeyError(
+                f"Invalid Detector {detector} - choose from {WFI_DETECTORS}")
 
         try:
             # Initialize logging named for the derived class
@@ -43,7 +43,8 @@ class Pipeline(ABC):
             self._data_files_config = get_data_files_config()
             self.ingest_path = Path(self._data_files_config["ingest_dir"])
             self.prep_path = Path(self._data_files_config["prep_dir"])
-            self.pipeline_out_path = Path(self._data_files_config["crds_ready_dir"])
+            self.pipeline_out_path = Path(
+                self._data_files_config["crds_ready_dir"])
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
             sys.exit()
