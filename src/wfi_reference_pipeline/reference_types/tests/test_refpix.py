@@ -1,12 +1,14 @@
 import os
 
+import asdf
 import numpy as np
 import pytest
-import asdf
 from roman_datamodels import maker_utils as utils
 
-from wfi_reference_pipeline.constants import REF_TYPE_REFPIX, REF_TYPE_READNOISE
-from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
+from wfi_reference_pipeline.constants import REF_TYPE_READNOISE, REF_TYPE_REFPIX
+from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
+    ReferencePixel,
+)
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 
 skip_on_github = pytest.mark.skipif(

@@ -1,11 +1,14 @@
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
-
 import glob
+
 import numpy as np
 
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT
+from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
+    ReferencePixel,
+)
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities import logging_functions
+
 logging_functions.configure_logging('wfi_refpixel_example')
 
 #####################

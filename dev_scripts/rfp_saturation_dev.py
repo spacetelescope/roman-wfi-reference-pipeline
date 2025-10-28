@@ -1,7 +1,11 @@
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 import numpy as np
+
+from wfi_reference_pipeline.constants import (
+                            DETECTOR_PIXEL_X_COUNT,
+                            DETECTOR_PIXEL_Y_COUNT,
+)
+from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 print('-' * 80)
 

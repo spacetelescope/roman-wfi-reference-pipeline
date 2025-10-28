@@ -1,8 +1,12 @@
-from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
+import numpy as np
+
+from wfi_reference_pipeline.constants import (
+                          DETECTOR_PIXEL_X_COUNT,
+                          DETECTOR_PIXEL_Y_COUNT,
+)
+from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
-from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-import numpy as np
 
 print('-' * 80)
 

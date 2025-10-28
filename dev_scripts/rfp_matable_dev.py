@@ -1,4 +1,6 @@
-from wfi_reference_pipeline.reference_types.multiaccumulationtable.multiaccumulationtable import MultiAccumulationTable
+from wfi_reference_pipeline.reference_types.multiaccumulationtable.multiaccumulationtable import (
+    MultiAccumulationTable,
+)
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 outfile = '/grp/roman/RFP/DEV/scratch/rfp_matable_dev_file_revG_w_dms_tests.asdf'
