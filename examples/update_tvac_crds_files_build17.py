@@ -1,4 +1,5 @@
 import os
+
 from wfi_reference_pipeline.utilities.update_reference_files import UpdateReferences
 
 

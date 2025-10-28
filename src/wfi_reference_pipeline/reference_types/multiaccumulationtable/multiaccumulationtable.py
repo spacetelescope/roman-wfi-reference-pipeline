@@ -79,28 +79,23 @@ class MultiAccumulationTable(ReferenceType):
         """
         Create data model from DMS and populate tree.
         """
-        # TODO: This will need to be updated when we have rad/datamodel implemented
-
         # Construct the dark object from the data model.
-        matable_datamodel_tree = rds.SaturationRef()
-        matable_datamodel_tree['meta'] = self.meta
-        key, sub_dict = self.generate_multi_accumulation_table_dict()
-        matable_datamodel_tree[key] = sub_dict
+        matable_datamodel_tree = rds.MatableRef()
+        matable_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
+        key, sub_dicts = self.generate_multi_accumulation_table_dict()
+        for key, sub_dict in zip(key, sub_dicts):
+            matable_datamodel_tree[key] = sub_dict
 
         return matable_datamodel_tree
 
-    def save_multi_accumulation_table(self, datamodel_tree=None, no_datamodel=True):
+    def save_multi_accumulation_table(self, datamodel_tree=None):
         """
         The method save_aperture_correction writes the reference file object to the specified asdf outfile.
         """
-
-        # TODO: With the next RAD and roman_datamodels release, this should only use the datamodel, not an asdf tree
         # Use data model tree if supplied. Else write tree from module.
         af = asdf.AsdfFile()
         if datamodel_tree:
             af.tree = {'roman': datamodel_tree}
-        elif no_datamodel:
-            af.tree = {'roman': self.populate_asdf_tree()}
         else:
             af.tree = {'roman': self.populate_datamodel_tree()}
 

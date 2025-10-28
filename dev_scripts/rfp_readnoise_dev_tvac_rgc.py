@@ -1,8 +1,8 @@
-from pathlib import Path
 from collections import defaultdict
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
+from pathlib import Path
 
+from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
 tvac1_totalnoise_dir = '/grp/roman/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'

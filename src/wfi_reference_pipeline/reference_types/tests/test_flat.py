@@ -4,7 +4,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from wfi_reference_pipeline.constants import REF_TYPE_DARK, REF_TYPE_FLAT
+from wfi_reference_pipeline.constants import (
+    REF_TYPE_DARK,
+    REF_TYPE_FLAT,
+    SCI_PIXEL_X_COUNT,
+    SCI_PIXEL_Y_COUNT,
+)
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 
@@ -23,13 +28,13 @@ def valid_meta_data():
 @pytest.fixture
 def valid_ref_type_data_array():
     """Fixture for generating valid ref_type_data array (flat field image)."""
-    return np.ones((4088, 4088)).astype(np.float32)  # Simulate a valid flat field image
+    return np.ones((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)).astype(np.float32)  # Simulate a valid flat field image
 
 
 @pytest.fixture
 def valid_ref_type_data_cube():
     """Fixture for generating valid ref_type_data cube (flat field cube)."""
-    return np.ones((5, 4088, 4088)).astype(np.float32)  # Simulate a valid flat field data cube
+    return np.ones((5, SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)).astype(np.float32)  # Simulate a valid flat field data cube
 
 
 @pytest.fixture
@@ -55,7 +60,7 @@ class TestFlat:
         Test that Flat object is created successfully with valid input data array.
         """
         assert isinstance(flat_object_with_data_array, Flat)
-        assert flat_object_with_data_array.flat_image.shape == (4088, 4088)
+        assert flat_object_with_data_array.flat_image.shape == (SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)
 
     def test_flat_instantiation_with_valid_ref_type_data_cube(self, flat_object_with_data_cube):
         """
@@ -118,18 +123,18 @@ class TestFlat:
         """
         flat_object_with_data_cube.calculate_error(fill_random=True)
         assert flat_object_with_data_cube.flat_error is not None
-        assert flat_object_with_data_cube.flat_error.shape == (4088, 4088)
+        assert flat_object_with_data_cube.flat_error.shape == (SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)
 
     @skip_on_github
     def test_calculate_error_with_individual_images(self, flat_object_with_data_cube):
         """
         Test calculate_error with a user-supplied error array.
         """
-        custom_individual = np.ones((10, 4088, 4088), dtype=np.float32)
+        custom_individual = np.ones((10, SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.float32)
         flat_object_with_data_cube.calculate_error(ind_flat_array=custom_individual,
                                                    nsamples=5, nboot=10)
         assert np.array_equal(
-            flat_object_with_data_cube.flat_error, np.zeros((4088, 4088), dtype=np.float32))
+            flat_object_with_data_cube.flat_error, np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.float32))
 
     def test_update_data_quality_array(self, flat_object_with_data_array):
         """
@@ -140,7 +145,7 @@ class TestFlat:
         flat_object_with_data_array.flat_image[2000, 2000] = 0.1
         flat_object_with_data_array.update_data_quality_array(
             low_qe_threshold=low_qe_threshold)
-        assert flat_object_with_data_array.mask[2000, 2000] > 0
+        assert flat_object_with_data_array.dq_mask[2000, 2000] > 0
 
     def test_populate_datamodel_tree(self, flat_object_with_data_array):
         """
@@ -155,13 +160,13 @@ class TestFlat:
         assert 'err' in data_model_tree
 
         # Check the shape and dtype of the 'data' array
-        assert data_model_tree['data'].shape == (4088, 4088)
+        assert data_model_tree['data'].shape == (SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)
         assert data_model_tree['data'].dtype == np.float32
         # Check the shape and dtype of the 'dq' array
-        assert data_model_tree['dq'].shape == (4088, 4088)
+        assert data_model_tree['dq'].shape == (SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)
         assert data_model_tree['dq'].dtype == np.uint32
         # Check the shape and dtype of the 'err' array
-        assert data_model_tree['err'].shape == (4088, 4088)
+        assert data_model_tree['err'].shape == (SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT)
         assert data_model_tree['err'].dtype == np.float32
 
     def test_flat_outfile_default(self, flat_object_with_data_array):

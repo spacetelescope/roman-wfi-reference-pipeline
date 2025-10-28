@@ -1,8 +1,12 @@
-from wfi_reference_pipeline.utilities import logging_functions
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.abvegamagnitudeoffset.abvegamagnitudeoffset import ABVegaMagnitudeOffset
-from astropy.time import Time
 from pathlib import Path
+
+from astropy.time import Time
+
+from wfi_reference_pipeline.reference_types.abvegamagnitudeoffset.abvegamagnitudeoffset import (
+    ABVegaMagnitudeOffset,
+)
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.utilities import logging_functions
 
 # configure a logging file
 logging_functions.configure_logging("wfi_ABVega_mag_offset_creation")
