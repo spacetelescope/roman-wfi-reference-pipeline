@@ -1,7 +1,8 @@
+import numpy as np
+
+from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities import simulate_reads
-from wfi_reference_pipeline.reference_types.flat.flat import Flat
-import numpy as np
 
 print('-' * 80)
 

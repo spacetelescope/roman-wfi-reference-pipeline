@@ -1,6 +1,11 @@
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 import numpy as np
+
+from wfi_reference_pipeline.constants import (
+                            DETECTOR_PIXEL_X_COUNT,
+                            DETECTOR_PIXEL_Y_COUNT,
+)
+from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 print('-' * 80)
 
@@ -11,7 +16,7 @@ tmp = MakeDevMeta(ref_type='SATURATION')
 # Example how to change the useafter in the meta data.
 tmp.meta_saturation.use_after = '2024-01-01T00:00:00.000'
 # Create an empty mask array.
-user_saturation_array = 47000*np.ones((4096, 4096), dtype=np.float32)
+user_saturation_array = 47000*np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 # Instantiate rfp mask object.
 rfp_saturation = Saturation(meta_data=tmp.meta_saturation,
                             file_list=None,

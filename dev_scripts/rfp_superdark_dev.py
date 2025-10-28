@@ -3,9 +3,12 @@ import time
 
 from memory_profiler import profile
 
-from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import SuperDarkDynamic
-from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import SuperDarkBatches
-
+from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
+    SuperDarkDynamic,
+)
+from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import (
+    SuperDarkBatches,
+)
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 
 input_directory = "/grp/roman/RFP/DEV/sim_inflight_calplan/WFIsim_darks/asdf_files"

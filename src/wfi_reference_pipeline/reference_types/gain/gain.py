@@ -116,14 +116,14 @@ class Gain(ReferenceType):
 
         # Set up the variance and mean signal level arrays that
         # we'll need for the photon transfer curve. For a full WFI
-        # SCA, these should be N x 4088 x 4088, where N is the number
+        # SCA, these should be N x SCI_PIXEL_X_COUNT x SCI_PIXEL_Y_COUNT, where N is the number
         # of reads or resultants in the input data.
         var_arr = np.zeros(data_shape, dtype=np.float)
         signal_arr = np.zeros(data_shape, dtype=np.float)
 
         # For each read/resultant, step over each pair of flats and
         # compute the difference. Save the difference to a temporary
-        # N x 4088 x 4088 array, where N is the number of pairs.
+        # N x SCI_PIXEL_X_COUNT x SCI_PIXEL_Y_COUNT array, where N is the number of pairs.
         #
         # From the temporary array, compute the variance and store it
         # in the plane of var_arr corresponding to a given read/resultant.

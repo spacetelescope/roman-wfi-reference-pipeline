@@ -4,6 +4,10 @@ import numpy as np
 import roman_datamodels.stnode as rds
 from astropy import units as u
 
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+)
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 
 from ..reference_type import ReferenceType
@@ -117,7 +121,7 @@ class Saturation(ReferenceType):
         if saturation_threshold < 1 or saturation_threshold > 65535:
             raise ValueError("Saturation threshold must be 1 or less than unit16 maximum value 66535.")
 
-        self.saturation_image = saturation_threshold * np.ones((4096, 4096), dtype=np.float32)
+        self.saturation_image = saturation_threshold * np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 
     def calculate_error(self):
         """
@@ -140,7 +144,7 @@ class Saturation(ReferenceType):
 
         logging.info("Flagging no saturation check DQ array.")
         # Locate bad saturated pixels with no saturation check
-        self.mask[self.saturation_image > no_saturated_check_array] += self.dqflag_defs['NO_SAT_CHECK']
+        self.dq_mask[self.saturation_image > no_saturated_check_array] += self.dqflag_defs['NO_SAT_CHECK']
 
     def populate_datamodel_tree(self):
         """
@@ -151,6 +155,6 @@ class Saturation(ReferenceType):
         saturation_datamodel_tree = rds.SaturationRef()
         saturation_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
         saturation_datamodel_tree["data"] = self.saturation_image
-        saturation_datamodel_tree["dq"] = self.mask
+        saturation_datamodel_tree["dq"] = self.dq_mask
 
         return saturation_datamodel_tree
