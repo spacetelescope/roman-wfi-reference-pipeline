@@ -23,12 +23,12 @@ class ExposureTimeCalculator(ReferenceType):
     """
     Class ExposureTimeCalculator() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
-    method make_etc_file() creates or retrieves the exposure time calculator necessary
-    data from an input file.
+    method creates or retrieves the exposure time calculator yaml to create
+    the asdf reference file.
 
     This class assumes the etc config file within the repository is used to generate the asdf file. 
     If you want to use your own config file, do: 
-    rfp_etc = ExposureTimeCalculator(meta_data=my_meta, file_list=["/path/to/custom_config.yml"])
+    rfp_etc = ExposureTimeCalculator(meta_data=my_meta, file_list=["/path/to/custom_form.yml"])
     """
 
     def __init__(self,
@@ -40,16 +40,23 @@ class ExposureTimeCalculator(ReferenceType):
         """
         Parameters
         ----------
-        meta_data : dict
+        meta_data: dict
             Must include a key like {"detector": "WFI03"} to identify the detector.
-        file_list : list[str] | None
-            When creating a reference file, this should contain the YAML config path.
-        outfile : str
-            Output ASDF file name for Mode 1.
-        clobber : bool
+        file_list: list[str] | None
+            When creating this reference file, a YAML form path is allowed or the form in this
+            module is then used.
+        outfile: str
+            Output ASDF file name.
+        clobber: bool
             Whether to overwrite existing ASDF file.
-        config_path : str
-            Path to the YAML configuration file.
+
+        Parameters NOT INCLUDED
+        ----------
+        ref_type_data: numpy array; default = None
+            The input data comes from many files on CRDS and can not be represented as a single
+            data cube or 2D array.
+        bit_mask: 2D integer numpy array, default = None
+            This reference file has to data quality array.
         """
         super().__init__(meta_data, clobber=clobber)
 
@@ -73,7 +80,7 @@ class ExposureTimeCalculator(ReferenceType):
 
     def get_form(self):
         """
-        Load the entire ETC YAML config and return both common and all detector configs.
+        Load the entire ETC YAML form and return both common and all detector keys and values.
         """
         with open(self.form_path, "r") as f:
             form = yaml.safe_load(f)
@@ -98,7 +105,7 @@ class ExposureTimeCalculator(ReferenceType):
     def populate_datamodel_tree(self):
         """
         Build the Roman datamodel tree for the exposure time calculator
-        using the merged detector configuration.
+        using the merged detector yaml form section.
         """
 
         #TODO replace rds.ExposureTimeRef with the correct roman_datamodels reference class when available.
@@ -125,17 +132,17 @@ class ExposureTimeCalculator(ReferenceType):
 # Standalone function to update config file
 # -------------------------------
 
-def update_etc_config_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
+def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
-    Update ETC YAML config with median readnoise, dark current, and flat field
+    Update ETC YAML form with predetermined metrics for readnoise, dark current, and flat field
     values for each WFI detector from CRDS reference files.
     """
     """
-    Load the ETC YAML configuration and set CRDS server & cache path.
+    Load the ETC YAML form and set CRDS server & cache path.
 
     Parameters
     ----------
-    etc_dump_dir : str
+    output_dir : str
         Path to the directory where CRDS reference files will be cached/downloaded.
     """
 
@@ -145,10 +152,10 @@ def update_etc_config_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_
     print(f"CRDS context: {crds_context}")
 
     if os.path.exists(output_dir):
-        print(f"Deleting existing dump directory: {output_dir}")
+        print(f"Deleting existing output directory: {output_dir}")
         shutil.rmtree(output_dir)
 
-    print(f"Creating dump directory: {output_dir}")
+    print(f"Creating output directory: {output_dir}")
     os.makedirs(output_dir, exist_ok=True)
 
     print("Syncing CRDS reference files...")
@@ -165,7 +172,7 @@ def update_etc_config_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_
 
 
     if not os.path.exists(ETC_FORM):
-        raise FileNotFoundError(f"Config file not found at {ETC_FORM}")
+        raise FileNotFoundError(f"ETC form file not found at {ETC_FORM}")
 
     with open(ETC_FORM, "r") as f:
         form = yaml.safe_load(f)
@@ -271,4 +278,4 @@ def update_etc_config_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_
     with open(ETC_FORM, "w") as f:
         yaml.safe_dump(form, f, sort_keys=False)
 
-    print(f"Updated config file saved to: {ETC_FORM}")
+    print(f"Updated ETC form file saved to: {ETC_FORM}")
