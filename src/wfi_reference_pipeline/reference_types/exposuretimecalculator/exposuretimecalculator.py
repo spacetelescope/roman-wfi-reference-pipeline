@@ -50,7 +50,7 @@ class ExposureTimeCalculator(ReferenceType):
         clobber: bool
             Whether to overwrite existing ASDF file.
 
-        Parameters NOT INCLUDED
+        Not included
         ----------
         ref_type_data: numpy array; default = None
             The input data comes from many files on CRDS and can not be represented as a single
