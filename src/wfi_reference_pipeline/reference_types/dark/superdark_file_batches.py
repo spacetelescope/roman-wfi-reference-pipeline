@@ -13,6 +13,8 @@ from astropy.stats import sigma_clip
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
 )
 
 from .superdark import SuperDark
@@ -98,7 +100,7 @@ class SuperDarkBatches(SuperDark):
         logging.debug(f"Memory used at start of method: {get_mem_usage():.2f} GB")
         self._superdark_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
 
-        self.superdark = np.zeros((self._superdark_num_reads, 4096, 4096), dtype=np.float32)
+        self.superdark = np.zeros((self._superdark_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
         # Loop over read to construct superdark of length of long dark reads.
         # Going into each file for every i'th read or read_i index.
         for read_i in range(0, self._superdark_num_reads):
@@ -113,7 +115,7 @@ class SuperDarkBatches(SuperDark):
                 num_files = len(self.long_dark_file_list)
 
             # Create temporary array for i'th read from all files.
-            self.read_i_from_all_files = np.zeros((num_files, 4096, 4096), dtype=np.float32)
+            self.read_i_from_all_files = np.zeros((num_files, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 
             short_dark_results = []
             # Process short dark files in batches if the read index is within the range of short dark reads

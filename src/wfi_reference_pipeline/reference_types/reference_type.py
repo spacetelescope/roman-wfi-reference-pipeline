@@ -7,7 +7,11 @@ import numpy as np
 from astropy.time import Time
 from romancal.lib import dqflags
 
-from wfi_reference_pipeline.constants import WFI_REF_TYPES_WITHOUT_INPUT_DATA
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+    WFI_REF_TYPES_WITHOUT_INPUT_DATA,
+)
 
 
 class ReferenceType(ABC):
@@ -37,7 +41,7 @@ class ReferenceType(ABC):
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
-                 mask_size=(4096, 4096)
+                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
                  ):
 
         have_file_list = False
@@ -77,7 +81,7 @@ class ReferenceType(ABC):
         self.dqflag_defs = dqflags.pixel
 
         # Handle bit_mask initialization
-        self.mask = self._initialize_mask(bit_mask)
+        self.dq_mask = self._initialize_mask(bit_mask)
 
     def _initialize_mask(self, bit_mask):
         """

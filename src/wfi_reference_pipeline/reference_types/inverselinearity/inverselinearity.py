@@ -185,7 +185,7 @@ class InverseLinearity(ReferenceType):
         outside_tolerance = differences > (tolerance * test_count)
 
         # Update mask based on where the test was outside the tolerance.
-        self.mask[outside_tolerance] += self.dqflag_defs['NONLINEAR']
+        self.dq_mask[outside_tolerance] += self.dqflag_defs['NONLINEAR']
 
     def populate_datamodel_tree(self):
         """
@@ -196,6 +196,6 @@ class InverseLinearity(ReferenceType):
         inverselinearity_datamodel_tree = rds.InverselinearityRef()
         inverselinearity_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         inverselinearity_datamodel_tree['coeffs'] = self.inverselinearity_coefficients
-        inverselinearity_datamodel_tree['dq'] = self.mask
+        inverselinearity_datamodel_tree['dq'] = self.dq_mask
 
         return inverselinearity_datamodel_tree

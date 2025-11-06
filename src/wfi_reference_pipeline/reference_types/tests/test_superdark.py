@@ -7,6 +7,8 @@ import pytest
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.dark.superdark import SuperDark
 
@@ -18,9 +20,9 @@ class TmpSuperDark(SuperDark):
         self.superdark = self._generate_test_superdark_cube()
 
     def _generate_test_superdark_cube(self):
-        # Return a 3D array with shape (num_reads, 4096, 4096)
+        # Return a 3D array with shape (num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         import numpy as np
-        return np.ones((self.short_dark_num_reads, 4096, 4096))
+        return np.ones((self.short_dark_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))
 
 
 @pytest.fixture(scope="class")
@@ -128,7 +130,7 @@ class TestSuperDark:
                            )
 
         # Mock the superdark data for the test
-        obj.superdark = np.zeros((1, 4096, 4096))
+        obj.superdark = np.zeros((1, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))
 
         # Generate the outfile in the temporary path
         obj.outfile = tmp_path / "test_superdark.asdf"

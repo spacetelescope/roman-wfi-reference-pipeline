@@ -9,6 +9,10 @@ from astropy.convolution import Box2DKernel, convolve
 from astropy.io import fits
 from roman_datamodels.dqflags import pixel as dqflags
 
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+)
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 
 from ..reference_type import ReferenceType
@@ -93,7 +97,7 @@ class Mask(ReferenceType):
         # Module flow creating reference file.
         if not ((isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
-                ref_type_data.shape == (4096, 4096)) or file_list):
+                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or file_list):
 
             raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
 
@@ -183,7 +187,7 @@ class Mask(ReferenceType):
         self.set_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
         # Updating the Mask object with calculated mask
-        self.mask_image = self.mask
+        self.mask_image = self.dq_mask
 
     def update_mask_from_flats(self, filelist, multip, from_smoothed, boxwidth, normalized_path, dead_sigma, max_low_qe_signal, min_open_adj_signal):
         """
@@ -313,7 +317,7 @@ class Mask(ReferenceType):
 
         dead_mask[dead_mask == 1] = dqflags.DEAD.value
 
-        self.mask += dead_mask
+        self.dq_mask += dead_mask
 
         return
 
@@ -389,16 +393,16 @@ class Mask(ReferenceType):
         if ALL of these four pixels are >1.05 norm im. If so, then this is a OPEN/ADJ
         pixel. Otherwise, then just the center is marked as LOW_QE.
         """
-        low_qe_map = np.zeros((4096, 4096), dtype=np.uint32)
-        open_map = np.zeros((4096, 4096), dtype=np.uint32)
-        adj_map = np.zeros((4096, 4096), dtype=np.uint32)
+        low_qe_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
+        open_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
+        adj_map = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
 
         for x, y in zip(low_sig_x, low_sig_y):
 
             # Skip calculations if this is a DEAD pixel
-            if self.mask[y, x] & dqflags.DEAD.value == dqflags.DEAD.value:
+            if self.dq_mask[y, x] & dqflags.DEAD.value == dqflags.DEAD.value:
                 continue
 
             adj_coor = self._get_adjacent_pix(
@@ -419,9 +423,9 @@ class Mask(ReferenceType):
             else:
                 low_qe_map[y, x] = dqflags.LOW_QE.value
 
-        self.mask += low_qe_map.astype(np.uint32)
-        self.mask += open_map.astype(np.uint32)
-        self.mask += adj_map.astype(np.uint32)
+        self.dq_mask += low_qe_map.astype(np.uint32)
+        self.dq_mask += open_map.astype(np.uint32)
+        self.dq_mask += adj_map.astype(np.uint32)
 
         return
 
@@ -432,7 +436,7 @@ class Mask(ReferenceType):
         DO_NOT_USE pixels are excluded in subsequent pipeline processing.
         More flags may be added after further analyses.
         """
-        dnupix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        dnupix_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         # Going through each DNU flag
         for flag in do_not_use_flags:
@@ -441,13 +445,13 @@ class Mask(ReferenceType):
             bitval = dqflags[flag].value
 
             # The indices of pixels with the current iteration's flag
-            flagged_pix = np.where((self.mask & bitval) == bitval)
+            flagged_pix = np.where((self.dq_mask & bitval) == bitval)
 
             # Setting flagged pix to DNU bitval
             dnupix_mask[flagged_pix] = dqflags.DO_NOT_USE.value
 
         # Adding to mask
-        self.mask += dnupix_mask.astype(np.uint32)
+        self.dq_mask += dnupix_mask.astype(np.uint32)
 
         return
 
@@ -461,14 +465,14 @@ class Mask(ReferenceType):
         """
         Create array to flag the 4 px reference pixel border around detector.
         """
-        refpix_mask = np.zeros((4096, 4096), dtype=np.uint32)
+        refpix_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         refpix_mask[:4, :] = dqflags.REFERENCE_PIXEL.value
         refpix_mask[-4:, :] = dqflags.REFERENCE_PIXEL.value
         refpix_mask[:, :4] = dqflags.REFERENCE_PIXEL.value
         refpix_mask[:, -4:] = dqflags.REFERENCE_PIXEL.value
 
-        self.mask += refpix_mask
+        self.dq_mask += refpix_mask
 
     def calculate_error(self):
         """

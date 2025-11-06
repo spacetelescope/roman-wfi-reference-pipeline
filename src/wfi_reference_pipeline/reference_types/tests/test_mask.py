@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from wfi_reference_pipeline.constants import REF_TYPE_MASK, REF_TYPE_READNOISE
+from wfi_reference_pipeline.constants import (
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
+    REF_TYPE_MASK,
+    REF_TYPE_READNOISE,
+)
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 
@@ -16,7 +21,7 @@ def valid_meta_data():
 @pytest.fixture
 def valid_ref_type_data_array():
     """Fixture for generating a valid ref_type_data array (mask image)."""
-    return np.zeros((4096, 4096), dtype=np.uint32)  # Simulate a valid mask image
+    return np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)  # Simulate a valid mask image
 
 
 @pytest.fixture
@@ -34,7 +39,7 @@ class TestMask:
         Test that Mask object is created successfully with valid input data array.
         """
         assert isinstance(mask_object_with_data_array, Mask)
-        assert mask_object_with_data_array.mask_image.shape == (4096, 4096)
+        assert mask_object_with_data_array.mask_image.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert mask_object_with_data_array.mask_image.dtype == np.uint32
 
     def test_mask_instantiation_with_invalid_metadata(self, valid_ref_type_data_array):
@@ -92,7 +97,7 @@ class TestMask:
         assert 'dq' in data_model_tree
 
         # Check the shape and dtype of the 'dq' array
-        assert data_model_tree['dq'].shape == (4096, 4096)
+        assert data_model_tree['dq'].shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
         assert data_model_tree['dq'].dtype == np.uint32
 
     def test_mask_outfile_default(self, mask_object_with_data_array):
