@@ -1,6 +1,6 @@
 common:
   crs_on: true
-  det_type: h4rg
+  det_type: h4rg-10
   pix_size_x: 10
   pix_size_y: 10
   pixels_x: 4088
@@ -10,7 +10,7 @@ common:
   excessp2: 0
   ktc_noise: 0
   ipc_on: false
-  mingroups: 2
+  minresultants: 2
   npostrej: 0
   nprerej: 0
   nreset: 0

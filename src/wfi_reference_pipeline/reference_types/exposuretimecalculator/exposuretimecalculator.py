@@ -16,7 +16,7 @@ from wfi_reference_pipeline.resources.wfi_meta_exposuretimecalculator import WFI
 
 from ..reference_type import ReferenceType
 
-ETC_CONFIG = (Path(__file__).parent.parent.parent / "config" / "exposure_time_calculator_config.yml").resolve()
+ETC_FORM = (Path(__file__).parent / "exposure_time_calculator_form.yml").resolve()
 
 
 class ExposureTimeCalculator(ReferenceType):
@@ -34,8 +34,6 @@ class ExposureTimeCalculator(ReferenceType):
     def __init__(self,
                  meta_data,
                  file_list=None,
-                 ref_type_data=None,
-                 bit_mask=None,
                  outfile="roman_etc_file.asdf",
                  clobber=False
     ):
@@ -65,30 +63,30 @@ class ExposureTimeCalculator(ReferenceType):
 
         # Default to ETC_CONFIG if not supplied
         if file_list is None or len(file_list) == 0:
-            self.config_path = ETC_CONFIG
-            self.file_list = [str(ETC_CONFIG)]
+            self.form_path = ETC_FORM
+            self.file_list = [str(ETC_FORM)]
         else:
-            self.config_path = Path(file_list[0]).resolve()
+            self.form_path = Path(file_list[0]).resolve()
             self.file_list = [str(self.config_path)]
 
         self.outfile = outfile
 
-    def get_config(self):
+    def get_form(self):
         """
         Load the entire ETC YAML config and return both common and all detector configs.
         """
-        with open(self.config_path, "r") as f:
-            cfg = yaml.safe_load(f)
+        with open(self.form_path, "r") as f:
+            form = yaml.safe_load(f)
 
-        common_cfg = cfg.get("common", {})
-        detectors_cfg = cfg.get("detectors", {})
+        common_form = form.get("common", {})
+        detectors_form = form.get("detectors", {})
 
         # return structure as-is (no per-detector merge)
-        full_config = {
-            "common": common_cfg,
-            "detectors": detectors_cfg
+        full_form = {
+            "common": common_form,
+            "detectors": detectors_form
         }
-        return full_config
+        return full_form
     
     # Abstract base classes not needed for ETC config reference file
     def calculate_error(self):
@@ -105,7 +103,7 @@ class ExposureTimeCalculator(ReferenceType):
 
         #TODO replace rds.ExposureTimeRef with the correct roman_datamodels reference class when available.
         try:
-            etc_datamodel_tree = rds.ExposureTimeRef()
+            etc_datamodel_tree = rds.ExposureTimeCalcRef()
         except AttributeError:
             # use a plain dict 
             etc_datamodel_tree = {
@@ -113,7 +111,7 @@ class ExposureTimeCalculator(ReferenceType):
                 "config": {}
             }
         etc_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        etc_datamodel_tree["config"] = self.get_config()
+        etc_datamodel_tree["form"] = self.get_form()
         return etc_datamodel_tree
     
     def save_exposure_time_file(self):
@@ -127,7 +125,7 @@ class ExposureTimeCalculator(ReferenceType):
 # Standalone function to update config file
 # -------------------------------
 
-def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
+def update_etc_config_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
     Update ETC YAML config with median readnoise, dark current, and flat field
     values for each WFI detector from CRDS reference files.
@@ -146,12 +144,12 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     crds_context = crds.get_default_context()
     print(f"CRDS context: {crds_context}")
 
-    if os.path.exists(etc_dump_dir):
-        print(f"Deleting existing dump directory: {etc_dump_dir}")
-        shutil.rmtree(etc_dump_dir)
+    if os.path.exists(output_dir):
+        print(f"Deleting existing dump directory: {output_dir}")
+        shutil.rmtree(output_dir)
 
-    print(f"Creating dump directory: {etc_dump_dir}")
-    os.makedirs(etc_dump_dir, exist_ok=True)
+    print(f"Creating dump directory: {output_dir}")
+    os.makedirs(output_dir, exist_ok=True)
 
     print("Syncing CRDS reference files...")
     try:
@@ -166,14 +164,14 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
         print(f"Error running crds sync: {e.stderr}")
 
 
-    if not os.path.exists(ETC_CONFIG):
-        raise FileNotFoundError(f"Config file not found at {ETC_CONFIG}")
+    if not os.path.exists(ETC_FORM):
+        raise FileNotFoundError(f"Config file not found at {ETC_FORM}")
 
-    with open(ETC_CONFIG, "r") as f:
-        cfg = yaml.safe_load(f)
+    with open(ETC_FORM, "r") as f:
+        form = yaml.safe_load(f)
 
     # get a pointer to just the detectors portion of the ETC CONFIG file
-    detectors_cfg = cfg.get("detectors", {})
+    detectors_form = form.get("detectors", {})
 
     # -------------------------------
     # Locally download all reference files needed to update ETC config
@@ -202,32 +200,32 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     # -------------------------------
     for filepath in readnoise_filepaths:
         try:
-            ref = rdm.open(filepath)
-            det = ref.meta.instrument.detector
-            val = float(np.median(ref.data))
-            if det in detectors_cfg:
-                detectors_cfg[det]["readnoise_avg"] = val
-                detectors_cfg[det]["readnoise_on"] = True
+            with rdm.open(filepath) as ref:
+                det = ref.meta.instrument.detector
+                val = float(np.median(ref.data))
+            if det in detectors_form:
+                detectors_form[det].update({
+                    "readnoise_avg": val,
+                    "readnoise_on": True
+                })
                 print(f"{det}: readnoise_avg -> {val:.2f}")
-            else:
-                print(f"Warning: detector {det} not found in config.")
         except Exception as e:
-            print(f"Failed to process readnoise {filepath}: {e}")
+            print(f"Error reading {filepath}: {e}")
 
     # -------------------------------
     # DARK CURRENT: update dark_current_avg with mean of dark current rate array
     # -------------------------------
     for filepath in dark_filepaths:
         try:
-            ref = rdm.open(filepath)
-            det = ref.meta.instrument.detector
-            val = float(np.mean(ref.dark_slope))
-            if det in detectors_cfg:
-                detectors_cfg[det]["dark_current_avg"] = val
-                detectors_cfg[det]["dark_current_on"] = True
+            with rdm.open(filepath) as ref:
+                det = ref.meta.instrument.detector
+                val = float(np.mean(ref.dark_slope))
+            if det in detectors_form:
+                detectors_form[det].update({
+                    "dark_current_avg": val,
+                    "dark_current_on": True
+                })
                 print(f"{det}: dark_current_avg -> {val:.3f}")
-            else:
-                print(f"Warning: detector {det} not found in config.")
         except Exception as e:
             print(f"Failed to process dark current {filepath}: {e}")
 
@@ -236,17 +234,17 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     # -------------------------------
     for filepath in flat_filepaths:
         try:
-            ref = rdm.open(filepath)
-            if ref.meta.instrument.optical_element == 'F062':
-                det = ref.meta.instrument.detector
-                std_val = float(np.std(ref.data))
-                ff_electrons = 1.0 / (std_val ** 2)
-                if det in detectors_cfg:
-                    detectors_cfg[det]["ff_electrons"] = ff_electrons
-                    detectors_cfg[det]["ffnoise"] = True
-                    print(f"{det}: ff_electrons -> {ff_electrons:.2f}")
-                else:
-                    print(f"Warning: detector {det} not found in config.")
+            with rdm.open(filepath) as ref:
+                if ref.meta.instrument.optical_element == 'F062':
+                    det = ref.meta.instrument.detector
+                    std_val = float(np.std(ref.data))
+                    ff_electrons = 1.0 / (std_val ** 2)
+                    if det in detectors_form:
+                        detectors_form[det].update({
+                            "ff_electrons": ff_electrons,
+                            "ffnoise": True
+                        })
+                        print(f"{det}: ff_electrons -> {ff_electrons:.2f}")
         except Exception as e:
             print(f"Failed to process flat field {filepath}: {e}")
 
@@ -255,31 +253,22 @@ def update_etc_config_from_crds(etc_dump_dir="/grp/roman/RFP/DEV/scratch/etc_dum
     # -------------------------------
     for filepath in saturation_filepaths:
         try:
-            ref = rdm.open(filepath)
-            det = ref.meta.instrument.detector
-            val = float(np.amax(ref.data))
-            if det in detectors_cfg:
-                detectors_cfg[det]["saturation_fullwell"] = val
-                detectors_cfg[det]["saturation_on"] = True
+            with rdm.open(filepath) as ref:
+                det = ref.meta.instrument.detector
+                val = float(np.amax(ref.data))
+            if det in detectors_form:
+                detectors_form[det].update({
+                    "saturation_fullwell": val,
+                    "saturation_on": True
+                })
                 print(f"{det}: saturation_fullwell -> {val:.1f}")
-            else:
-                print(f"Warning: detector {det} not found in config.")
         except Exception as e:
             print(f"Failed to process saturation {filepath}: {e}")
 
     # -------------------------------
     # Write updated config
     # -------------------------------
-    backup_path = ETC_CONFIG.with_suffix(".bak")
-    shutil.copy(ETC_CONFIG, backup_path)
-    print(f"\nBackup saved to: {backup_path}")
+    with open(ETC_FORM, "w") as f:
+        yaml.safe_dump(form, f, sort_keys=False)
 
-    with open(ETC_CONFIG, "w") as f:
-        yaml.safe_dump(cfg, f, sort_keys=False)
-
-    print(f"Updated config file saved to: {ETC_CONFIG}")
-
-
-
-
-
+    print(f"Updated config file saved to: {ETC_FORM}")
