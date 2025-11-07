@@ -91,6 +91,18 @@ class DetectorStatus(ReferenceType):
         }
 
         return {"detectors": detectors}
+    
+    def calculate_error(self):
+        """
+        Abstract method not applicable.
+        """
+        pass
+
+    def update_data_quality_array(self):
+        """
+        Abstract method not utilized.
+        """
+        pass
 
     def populate_datamodel_tree(self):
         """
