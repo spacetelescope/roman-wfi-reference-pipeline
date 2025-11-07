@@ -1,0 +1,111 @@
+import logging
+
+import asdf
+import numpy as np
+import roman_datamodels.stnode as rds
+import roman_datamodels as rdm
+import os
+import yaml
+import crds
+from crds.client import api
+import subprocess
+import shutil
+from pathlib import Path
+
+
+import roman_datamodels.stnode as rds
+
+from wfi_reference_pipeline.resources.wfi_meta_detectorstatus import WFIMetaDetectorStatus
+from ..reference_type import ReferenceType
+
+
+class DetectorStatus(ReferenceType):
+    """
+    Class DetectorStatus() inherits the ReferenceType() base class methods
+    where static meta data for all reference file types are written. The
+    method creates the asdf reference file.
+
+    This reference file is much like the MA Table reference file and is a look
+    up through CRDS to determine the health and status of all 18 detectors.
+    """
+
+    def __init__(self,
+                 meta_data,
+                 file_list=None,
+                 outfile="roman_detector_status.asdf",
+                 clobber=False
+    ):
+        """
+        Parameters
+        ----------
+        meta_data: Object; default = None
+            Object of meta information converted to dictionary when writing reference file.
+        file_list: list[str] | None
+            reference_type baes class requires an input
+        outfile: str
+            Output ASDF file name.
+        clobber: bool
+            Whether to overwrite existing ASDF file.
+
+        Not included
+        ----------
+        ref_type_data: numpy array; default = None
+            No data is required to make this reference file.
+        bit_mask: 2D integer numpy array, default = None
+            This reference file has no data quality array.
+        """
+        super().__init__(meta_data, clobber=clobber)
+
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaDetectorStatus):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaDETECTORSTATUS"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI detector status reference file."
+
+        self.detector_status_dict = self._make_detector_status_dict()        
+
+        self.outfile = outfile
+
+    def _make_detector_status_dict(self):
+        detectors = {
+            "WFI01": {"status_ON": True},
+            "WFI02": {"status_ON": True},
+            "WFI03": {"status_ON": True},
+            "WFI04": {"status_ON": True},
+            "WFI05": {"status_ON": True},
+            "WFI06": {"status_ON": True},
+            "WFI07": {"status_ON": True},
+            "WFI08": {"status_ON": True},
+            "WFI09": {"status_ON": True},
+            "WFI10": {"status_ON": True},
+            "WFI11": {"status_ON": True},
+            "WFI12": {"status_ON": True},
+            "WFI13": {"status_ON": True},
+            "WFI14": {"status_ON": True},
+            "WFI15": {"status_ON": True},
+            "WFI16": {"status_ON": True},
+            "WFI17": {"status_ON": True},
+            "WFI18": {"status_ON": True},
+        }
+
+        return {"detectors": detectors}
+
+    def populate_datamodel_tree(self):
+        """
+        Build the Roman datamodel tree for the detector status reference.
+        """
+        try:
+            # Placeholder until official datamodel exists
+            detector_status_ref = rds.DetectorStatus()
+        except AttributeError:
+            detector_status_ref = {"meta": {}, 
+                                   "status_info": {}
+                                   }
+
+        detector_status_ref["meta"] = self.meta_data.export_asdf_meta()
+        detector_status_ref["status_info"] = self.detector_status_dict
+
+        return detector_status_ref
+    
