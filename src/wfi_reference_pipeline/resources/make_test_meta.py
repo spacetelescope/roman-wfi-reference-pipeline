@@ -2,6 +2,7 @@ from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
+    REF_TYPE_DETECTORSTATUS,
     REF_TYPE_FLAT,
     REF_TYPE_GAIN,
     REF_TYPE_INVERSELINEARITY,
@@ -18,6 +19,7 @@ from wfi_reference_pipeline.constants import (
     WFI_TYPE_IMAGE,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.resources.wfi_meta_detectorstatus import WFIMetaDetectorStatus
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
@@ -56,6 +58,9 @@ class MakeTestMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
+
+    def _create_test_meta_detectorstatus(self, meta_data):
+        self.meta_detectorstatus = WFIMetaDetectorStatus(*meta_data)
 
     def _create_test_meta_flat(self, meta_data):
         ref_optical_element = "F158"
@@ -140,6 +145,9 @@ class MakeTestMeta:
                             use_after, telescope, origin, instrument, detector]
 
         if ref_type == REF_TYPE_DARK:
+            self._create_test_meta_dark(meta_data_params)
+        
+        if ref_type == REF_TYPE_DETECTORSTATUS:
             self._create_test_meta_dark(meta_data_params)
 
         if ref_type == REF_TYPE_FLAT:
