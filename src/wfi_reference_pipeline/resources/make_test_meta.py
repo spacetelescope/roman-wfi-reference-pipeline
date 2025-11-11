@@ -4,6 +4,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
     REF_TYPE_FLAT,
     REF_TYPE_GAIN,
+    REF_TYPE_INL,
     REF_TYPE_INVERSELINEARITY,
     REF_TYPE_IPC,
     REF_TYPE_LINEARITY,
@@ -21,6 +22,7 @@ from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
+from wfi_reference_pipeline.resources.wfi_meta_integralnonlinearity import WFIMetaINL
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
     WFIMetaInverseLinearity,
 )
@@ -65,6 +67,9 @@ class MakeTestMeta:
 
     def _create_test_meta_gain(self, meta_data):
         self.meta_gain = WFIMetaGain(*meta_data)
+
+    def _create_test_meta_intengralnonlinearity(self, meta_data):
+        self.meta_inl = WFIMetaINL(*meta_data)
 
     def _create_test_meta_interpixelcapacitance(self, meta_data):
         ref_optical_element = "F158"
@@ -146,6 +151,9 @@ class MakeTestMeta:
             self._create_test_meta_flat(meta_data_params)
 
         if ref_type == REF_TYPE_GAIN:
+            self._create_test_meta_gain(meta_data_params)
+
+        if ref_type == REF_TYPE_INL:
             self._create_test_meta_gain(meta_data_params)
 
         if ref_type == REF_TYPE_INVERSELINEARITY:

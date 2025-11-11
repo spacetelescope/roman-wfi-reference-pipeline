@@ -16,6 +16,7 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
+from wfi_reference_pipeline.resources.wfi_meta_integralnonlinearity import WFIMetaINL
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
     WFIMetaInverseLinearity,
@@ -71,6 +72,9 @@ class MakeDevMeta:
 
     def _create_dev_meta_gain(self, meta_data):
         self.meta_gain = WFIMetaGain(*meta_data)
+    
+    def _create_dev_meta_inl(self, meta_data):
+        self.meta_inl = WFIMetaINL(*meta_data)
 
     def _create_dev_meta_ipc(self, meta_data):
         p_optical_element = "F158"
@@ -164,6 +168,9 @@ class MakeDevMeta:
 
         if ref_type == "GAIN":
             self._create_dev_meta_gain(meta_data_params)
+
+        if ref_type == "INL":
+            self._create_dev_meta_inl(meta_data_params)
 
         if ref_type == "INVERSELINEARITY":
             self._create_dev_meta_inverselinearity(meta_data_params)
