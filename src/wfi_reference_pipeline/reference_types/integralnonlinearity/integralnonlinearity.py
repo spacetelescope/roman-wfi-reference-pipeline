@@ -79,52 +79,12 @@ class IntegralNonLinearity(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI gain reference file."
 
-        if ref_type_data is None:
-            self.inl_correction = self._make_inl_correction_array()
-            self.channel_num = [i for i in range(1, 33)]
-            # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
-            self.col_indices = [(i, i + 128) for i in range(0, 4096, 128)]        
+        self.inl_correction = ref_type_data
+        self.channel_num = [i for i in range(1, 33)]
+        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
+        self.col_indices = [(i, i + 128) for i in range(0, 4096, 128)]        
 
         self.outfile = outfile
-
-    def _make_inl_correction_array(self):
-
-        N = 65536
-        x = np.linspace(0, 65535, N)
-        mid = (N - 1) // 2
-
-        num_chan = 32
-        arrays = []
-
-        for _ in range(num_chan):
-            # Linear slope for first half
-            linear_first = np.linspace(0, 3, mid+1)
-
-            # Low-frequency sawtooth with random phase offset (0–180 degrees)
-            phase_offset_deg = np.random.uniform(0, 180)
-            phase_offset_rad = np.deg2rad(phase_offset_deg)
-            num_humps_saw = 1.7
-            phase_saw = ((num_humps_saw * x[:mid+1] / mid) * 2 * np.pi + phase_offset_rad) % (2 * np.pi)
-            saw = 5 * (phase_saw / np.pi - 1) 
-
-            # High-frequency sine
-            num_humps_sine = 4.3
-            sine = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / N)
-
-            # Combine
-            y_first = linear_first + saw + sine
-
-            # diagonal symmetry
-            y_second = -y_first[::-1]
-            y = np.concatenate([y_first, y_second])
-
-            # Add Gaussian noise σ = 0.2
-            noise = np.random.normal(0, 0.2, size=N)
-            y_noisy = y + noise
-
-            arrays.append(y_noisy)
-
-        return arrays
 
     def calculate_error(self):
         """
@@ -144,13 +104,57 @@ class IntegralNonLinearity(ReferenceType):
         """
         try:
             # Placeholder until official datamodel exists
-            detector_status_ref = rds.DetectorStatus()
+            inl_ref = rds.IntegralNonLinearity()
         except AttributeError:
-            detector_status_ref = {"meta": {}, 
-                                   "status_info": {}
-                                   }
+            inl_ref = {"meta": {}, 
+                       "channel_num": {},
+                       "col_indices": {},
+                       "num_counts_array": {}
+                       }
 
-        detector_status_ref["meta"] = self.meta_data.export_asdf_meta()
-        detector_status_ref["status_info"] = self.detector_status_dict
+        inl_ref["meta"] = self.meta_data.export_asdf_meta()
+        inl_ref["channel_num"] = self.channel_num
+        inl_ref["col_indices"] = self.col_indices
+        inl_ref["num_counts_array"] = self.inl_correction
 
-        return detector_status_ref
+        return inl_ref
+    
+
+def make_inl_correction_array():
+
+    N = 65536
+    x = np.linspace(0, 65535, N)
+    mid = (N - 1) // 2
+
+    num_chan = 32
+    arrays = []
+
+    for _ in range(num_chan):
+        # Linear slope for first half
+        linear_first = np.linspace(0, 3, mid+1)
+
+        # Low-frequency sawtooth with random phase offset (0–180 degrees)
+        phase_offset_deg = np.random.uniform(0, 180)
+        phase_offset_rad = np.deg2rad(phase_offset_deg)
+        num_humps_saw = 1.7
+        phase_saw = ((num_humps_saw * x[:mid+1] / mid) * 2 * np.pi + phase_offset_rad) % (2 * np.pi)
+        saw = 5 * (phase_saw / np.pi - 1) 
+
+        # High-frequency sine
+        num_humps_sine = 4.3
+        sine = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / N)
+
+        # Combine
+        y_first = linear_first + saw + sine
+
+        # diagonal symmetry
+        y_second = -y_first[::-1]
+        y = np.concatenate([y_first, y_second])
+
+        # Add Gaussian noise σ = 0.2
+        noise = np.random.normal(0, 0.2, size=N)
+        y_noisy = y + noise
+
+        arrays.append(y_noisy)
+
+    return arrays
