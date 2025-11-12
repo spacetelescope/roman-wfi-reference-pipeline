@@ -77,7 +77,7 @@ class IntegralNonLinearity(ReferenceType):
                 f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaINL"
             )
         if len(self.meta_data.description) == 0:
-            self.meta_data.description = "Roman WFI gain reference file."
+            self.meta_data.description = "Roman WFI integral non linearity reference file."
 
         self.inl_correction = ref_type_data
         self.channel_num = [i for i in range(1, 33)]
@@ -100,7 +100,7 @@ class IntegralNonLinearity(ReferenceType):
 
     def populate_datamodel_tree(self):
         """
-        Build the Roman datamodel tree for the detector status reference.
+        Build the Roman datamodel tree for the integral non-linearity reference.
         """
         try:
             # Placeholder until official datamodel exists
@@ -121,6 +121,14 @@ class IntegralNonLinearity(ReferenceType):
     
 
 def make_inl_correction_array():
+    """
+    Helper function to create reference type data that will be used to create
+    fully populated example reference file.
+
+    Using a combination of a linear slope, saw tooth and sine curve with different periods
+    and reflect about the mid point about the line y=x. Adding some noise and random
+    phase shifts to look as much like synthetic INL data as possible from T. Brandt 2025.
+    """
 
     N = 65536
     x = np.linspace(0, 65535, N)
@@ -131,29 +139,29 @@ def make_inl_correction_array():
 
     for _ in range(num_chan):
         # Linear slope for first half
-        linear_first = np.linspace(0, 3, mid+1)
+        linear_component = np.linspace(0, 3, mid+1)
 
         # Low-frequency sawtooth with random phase offset (0–180 degrees)
         phase_offset_deg = np.random.uniform(0, 180)
         phase_offset_rad = np.deg2rad(phase_offset_deg)
         num_humps_saw = 1.7
         phase_saw = ((num_humps_saw * x[:mid+1] / mid) * 2 * np.pi + phase_offset_rad) % (2 * np.pi)
-        saw = 5 * (phase_saw / np.pi - 1) 
+        saw_component = 5 * (phase_saw / np.pi - 1) 
 
         # High-frequency sine
         num_humps_sine = 4.3
-        sine = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / N)
+        sine_cpononent = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / N)
 
         # Combine
-        y_first = linear_first + saw + sine
+        first_half_inl = linear_component + saw_component + sine_cpononent
 
         # diagonal symmetry
-        y_second = -y_first[::-1]
-        y = np.concatenate([y_first, y_second])
+        second_half_inl = -first_half_inl[::-1]
+        y_inl = np.concatenate([first_half_inl, second_half_inl])
 
         # Add Gaussian noise σ = 0.2
         noise = np.random.normal(0, 0.2, size=N)
-        y_noisy = y + noise
+        y_noisy = y_inl + noise
 
         arrays.append(y_noisy)
 
