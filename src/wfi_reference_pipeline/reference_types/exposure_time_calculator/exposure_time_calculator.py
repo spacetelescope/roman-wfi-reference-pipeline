@@ -12,7 +12,7 @@ import subprocess
 import shutil
 from pathlib import Path
 
-from wfi_reference_pipeline.resources.wfi_meta_exposuretimecalculator import WFIMetaETC
+from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import WFIMetaETC
 
 from ..reference_type import ReferenceType
 
@@ -26,8 +26,8 @@ class ExposureTimeCalculator(ReferenceType):
     method creates or retrieves the exposure time calculator yaml to create
     the asdf reference file.
 
-    This class assumes the etc config file within the repository is used to generate the asdf file. 
-    If you want to use your own config file, do: 
+    This class assumes the etc form file within the repository is used to generate the asdf file. 
+    If you want to use your own form file, do: 
     rfp_etc = ExposureTimeCalculator(meta_data=my_meta, file_list=["/path/to/custom_form.yml"])
     """
 
@@ -53,10 +53,7 @@ class ExposureTimeCalculator(ReferenceType):
         Not included
         ----------
         ref_type_data: numpy array; default = None
-            The input data comes from many files on CRDS and can not be represented as a single
-            data cube or 2D array.
         bit_mask: 2D integer numpy array, default = None
-            This reference file has to data quality array.
         """
         super().__init__(meta_data, clobber=clobber)
 
@@ -74,26 +71,36 @@ class ExposureTimeCalculator(ReferenceType):
             self.file_list = [str(ETC_FORM)]
         else:
             self.form_path = Path(file_list[0]).resolve()
-            self.file_list = [str(self.config_path)]
+            self.file_list = [str(self.form_path)]
 
         self.outfile = outfile
+        self.etc_detector_form = self._get_etc_detector_form()
 
-    def get_form(self):
+    def _get_etc_detector_form(self):
         """
-        Load the entire ETC YAML form and return both common and all detector keys and values.
+        Load the ETC form and return a dictionary containing
+        the 'common' parameters merged with the parameters
+        for the detector specified in meta_data.instrument_detector.
         """
+
         with open(self.form_path, "r") as f:
             form = yaml.safe_load(f)
 
         common_form = form.get("common", {})
         detectors_form = form.get("detectors", {})
 
-        # return structure as-is (no per-detector merge)
-        full_form = {
-            "common": common_form,
-            "detectors": detectors_form
-        }
-        return full_form
+        detector_name = getattr(self.meta_data, "instrument_detector", None)
+        if detector_name is None:
+            raise ValueError("meta_data.instrument_detector must be set to a valid detector name (e.g. 'WFI01').")
+
+        detector_form = detectors_form.get(detector_name)
+        if detector_form is None:
+            raise KeyError(f"Detector '{detector_name}' not found in ETC YAML form.")
+
+        # Merge common and detector-specific parameters (detector takes precedence)
+        merged_form = {**common_form, **detector_form}
+
+        return merged_form
     
     # Abstract base classes not needed for ETC config reference file
     def calculate_error(self):
@@ -107,7 +114,6 @@ class ExposureTimeCalculator(ReferenceType):
         Build the Roman datamodel tree for the exposure time calculator
         using the merged detector yaml form section.
         """
-
         #TODO replace rds.ExposureTimeRef with the correct roman_datamodels reference class when available.
         try:
             etc_datamodel_tree = rds.ExposureTimeCalcRef()
@@ -115,23 +121,16 @@ class ExposureTimeCalculator(ReferenceType):
             # use a plain dict 
             etc_datamodel_tree = {
                 "meta": {},
-                "config": {}
+                "form": {}
             }
         etc_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        etc_datamodel_tree["form"] = self.get_form()
+        etc_datamodel_tree["form"] = self.etc_detector_form
         return etc_datamodel_tree
-    
-    def save_exposure_time_file(self):
-        """Write the ASDF file for the detector."""
-        af = asdf.AsdfFile()
-        af.tree = {"roman": self.populate_datamodel_tree()}
-        af.write_to(self.outfile, overwrite=True)
 
 
 # -------------------------------
-# Standalone function to update config file
+# Standalone function to update form file
 # -------------------------------
-
 def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
     """
     Update ETC YAML form with predetermined metrics for readnoise, dark current, and flat field
@@ -148,6 +147,7 @@ def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_fi
 
     print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
     print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
+    #TODO Test a specific context here or might have to update env var
     crds_context = crds.get_default_context()
     print(f"CRDS context: {crds_context}")
 
@@ -169,7 +169,6 @@ def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_fi
         print(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error running crds sync: {e.stderr}")
-
 
     if not os.path.exists(ETC_FORM):
         raise FileNotFoundError(f"ETC form file not found at {ETC_FORM}")
