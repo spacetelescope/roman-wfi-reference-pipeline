@@ -1,18 +1,19 @@
-import logging
 
-import asdf
-import numpy as np
-import roman_datamodels.stnode as rds
-import roman_datamodels as rdm
 import os
-import yaml
-import crds
-from crds.client import api
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 
-from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import WFIMetaETC
+import crds
+import numpy as np
+import roman_datamodels as rdm
+import roman_datamodels.stnode as rds
+import yaml
+from crds.client import api
+
+from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
+    WFIMetaETC,
+)
 
 from ..reference_type import ReferenceType
 

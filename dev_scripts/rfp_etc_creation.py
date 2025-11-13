@@ -1,5 +1,7 @@
-from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_time_calculator import update_etc_form_from_crds
-from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_time_calculator import ExposureTimeCalculator
+from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_time_calculator import (
+    ExposureTimeCalculator,
+    update_etc_form_from_crds,
+)
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # First step in this process is to update the yml form in the repo or write it somewhere else locally. 

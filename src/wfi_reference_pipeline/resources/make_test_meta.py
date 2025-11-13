@@ -19,7 +19,9 @@ from wfi_reference_pipeline.constants import (
     WFI_TYPE_IMAGE,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
-from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import WFIMetaETC
+from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
+    WFIMetaETC,
+)
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
