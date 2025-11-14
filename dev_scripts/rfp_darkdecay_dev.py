@@ -1,8 +1,5 @@
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.darkdecaysignal.darkdecaysignal import (
-    DarkDecaySignal,
-    get_darkdecay_values_from_config,
-)
+from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal import DarkDecaySignal
 
 # Base output folder (update as needed)
 output_dir = "/grp/roman/RFP/DEV/build_files/Build_26Q1_B20"

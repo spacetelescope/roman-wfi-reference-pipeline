@@ -14,7 +14,7 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
     WFIMetaApertureCorrection,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
-from wfi_reference_pipeline.resources.wfi_meta_darkdecaysignal import WFIMetaDarkDecay
+from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import WFIMetaDarkDecaySignal
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
@@ -64,8 +64,8 @@ class MakeDevMeta:
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
-    def _create_dev_meta_darkdecay(self, meta_data):
-        self.meta_darkdecay = WFIMetaDarkDecay(*meta_data)
+    def _create_dev_meta_dark_decay_signal(self, meta_data):
+        self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
 
     def _create_dev_meta_flat(self, meta_data):
         p_optical_element = "F158"

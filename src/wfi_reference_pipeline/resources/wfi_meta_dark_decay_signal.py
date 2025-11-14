@@ -5,7 +5,7 @@ from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
 @dataclass
-class WFIMetaDarkDecay(WFIMetadata):
+class WFIMetaDarkDecaySignal(WFIMetadata):
     """
     Class WFIMetaDarkDecay() Metadata Specific to Dark Decay Signal Reference File Type
     inherits WFIMetadata
@@ -15,7 +15,7 @@ class WFIMetaDarkDecay(WFIMetadata):
 
     def __post_init__(self):
         super().__post_init__()
-        self.reference_type = constants.REF_TYPE_DARKDECAY
+        self.reference_type = constants.REF_TYPE_DARKDECAYSIGNAL
 
     def export_asdf_meta(self):
         asdf_meta = {
