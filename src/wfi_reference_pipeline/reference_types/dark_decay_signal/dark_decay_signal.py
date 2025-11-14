@@ -1,65 +1,59 @@
 import logging
-import asdf
-import yaml
-from pathlib import Path
-import os
 
 import roman_datamodels.stnode as rds
-import roman_datamodels as rdm
-import numpy as np
 
-from wfi_reference_pipeline.resources.wfi_meta_darkdecaysignal import WFIMetaDarkDecay
-from ..reference_type import ReferenceType
-
-# Path to the configuration file
-DARK_DECAY_SIGNAL_CONFIG = (
-    Path(__file__).resolve().parents[2] / "config" / "dark_decay_config.yml"
+from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
+    WFIMetaDarkDecaySignal,
 )
+
+from ..reference_type import ReferenceType
 
 log = logging.getLogger(__name__)
 
 
-
-# =====================================================================
-#  MAIN REFERENCE FILE CLASS
-# =====================================================================
 class DarkDecaySignal(ReferenceType):
     """
-    Creates a Roman WFI Dark Decay reference file that stores
-    amplitude and time constant per detector.
+    Creates a Roman WFI Dark Decay Signal reference file that stores
+    amplitude and time constant for all detectors
 
-    No array maps are created — this is a detector-level table.
+    No array maps are created — this is a detector-level table from T. Brandt et al 2025.
     """
 
-    def __init__(
-        self,
-        meta_data,
-        file_list=None,
-        ref_type_data=None,
-        bit_mask=None,
-        outfile="roman_dark_decay_signal.asdf",
-        clobber=False,
+    def __init__(self,
+                 meta_data,
+                 outfile="roman_dark_decay_signal.asdf",
+                 clobber=False
     ):
+        """
+        Parameters
+        ----------
+        meta_data: dict
+            Must include a key like {"detector": "WFI01"} but for this reference file it has
+            all data for every detector. WFI01 is the default.
+        outfile: str
+            Output ASDF file name.
+        clobber: bool
+            Whether to overwrite existing ASDF file.
 
-        super().__init__(
-            meta_data=meta_data,
-            file_list=file_list,
-            ref_type_data=ref_type_data,
-            bit_mask=bit_mask,
-            outfile=outfile,
-            clobber=clobber,
-        )
+        Not included
+        ----------
+        file_list: list[str] | None
+        ref_type_data: numpy array; default = None
+        bit_mask: 2D integer numpy array, default = None
+        """
+        super().__init__(meta_data, outfile=outfile, clobber=clobber)
+        
 
         # Metadata validation
-        if not isinstance(meta_data, WFIMetaDarkDecay):
+        if not isinstance(meta_data, WFIMetaDarkDecaySignal):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaDarkDecay"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaDarkDecaySignal"
             )
 
         # Default description
         if not getattr(self.meta_data, "description", ""):
             self.meta_data.description = (
-                "Roman WFI Dark Decay Signal reference file (detector table)."
+                "Roman WFI Dark Decay Signal reference file for each detector table."
             )
 
         self.outfile = outfile
@@ -69,10 +63,13 @@ class DarkDecaySignal(ReferenceType):
         Create the datamodel tree to be written to ASDF.
         """
         try:
-            # Until official datamodel exists
+            # TODO for when official datamodel exists
             dark_decay_ref = rds.DarkDecaySignalRef()
         except AttributeError:
-            dark_decay_ref = {"meta": {}, "data": {}}
+            dark_decay_ref = {
+                             "meta": {}, 
+                             "data": {}
+                             }
 
         dark_decay_ref["meta"] = self.meta_data.export_asdf_meta()
         dark_decay_ref["data"] = DARK_DECAY_TABLE

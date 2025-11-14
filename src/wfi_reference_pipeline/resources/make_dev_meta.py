@@ -14,7 +14,9 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
     WFIMetaApertureCorrection,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
-from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import WFIMetaDarkDecaySignal
+from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
+    WFIMetaDarkDecaySignal,
+)
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
@@ -163,8 +165,8 @@ class MakeDevMeta:
         if ref_type == "DARK":
             self._create_dev_meta_dark(meta_data_params)
 
-        if ref_type == "DARKDECAY":
-            self._create_dev_meta_darkdecay(meta_data_params)
+        if ref_type == "DARKDECAYSIGNAL":
+            self._create_dev_meta_dark_decay_signal(meta_data_params)
 
         if ref_type == "FLAT":
             self._create_dev_meta_flat(meta_data_params)
