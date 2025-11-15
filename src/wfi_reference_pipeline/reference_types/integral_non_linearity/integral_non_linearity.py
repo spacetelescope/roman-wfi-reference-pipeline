@@ -30,11 +30,6 @@ class IntegralNonLinearity(ReferenceType):
     from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
     from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import IntegralNonLinearity
 
-    tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
-    arr = simulate_inl_correction_array()
-    rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity, ref_type_data=arr)
-    rfp_inl.generate_outfile()
-
     for det in range(1, 19):
         arr = simulate_inl_correction_array()
         # Create meta data object for INL ref file
