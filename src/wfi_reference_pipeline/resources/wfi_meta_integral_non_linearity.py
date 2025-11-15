@@ -6,7 +6,7 @@ from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
 @dataclass
-class WFIMetaINL(WFIMetadata):
+class WFIMetaIntegralNonLinearity(WFIMetadata):
     """
     Class WFIMetaINL() Metadata Specific to Integral Non Linearity Reference File Type
     inherits WFIMetadata
@@ -16,7 +16,7 @@ class WFIMetaINL(WFIMetadata):
 
     def __post_init__(self):
         super().__post_init__()
-        self.reference_type = constants.REF_TYPE_INL
+        self.reference_type = constants.REF_TYPE_INTEGRALNONLINEARITY
 
     def export_asdf_meta(self):
         asdf_meta = {

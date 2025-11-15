@@ -15,7 +15,7 @@ from pathlib import Path
 
 import roman_datamodels.stnode as rds
 
-from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import WFIMetaINL
+from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import WFIMetaIntegralNonLinearity
 from ..reference_type import ReferenceType
 
 
@@ -30,22 +30,22 @@ class IntegralNonLinearity(ReferenceType):
     from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
     from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import IntegralNonLinearity
 
-    tmp = MakeDevMeta(ref_type='INL')
+    tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
     arr = simulate_inl_correction_array()
-    rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_inl, ref_type_data=arr)
+    rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity, ref_type_data=arr)
     rfp_inl.generate_outfile()
 
     for det in range(1, 19):
         arr = simulate_inl_correction_array()
         # Create meta data object for INL ref file
-        tmp = MakeDevMeta(ref_type='INL')
+        tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
         # Update meta per detector to get the right values from the form and update description
-        tmp.meta_inl.instrument_detector = f"WFI{det:02d}"
-        tmp.meta_inl.description = 'To support new integral non linearity correction development for B21'
+        tmp.meta_integral_non_linearity.instrument_detector = f"WFI{det:02d}"
+        tmp.meta_integral_non_linearity.description = 'To support new integral non linearity correction development for B21'
         # Update the file name to match the detector
-        fl_name = 'new_roman_inl_' + tmp.meta_inl.instrument_detector
+        fl_name = 'new_roman_inl_' + tmp.meta_integral_non_linearity.instrument_detector
         # Instantiate an object and write the file out
-        rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_inl, 
+        rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity, 
                                     ref_type_data=arr, 
                                     clobber=True, 
                                     outfile=fl_name+'.asdf')
@@ -98,9 +98,9 @@ class IntegralNonLinearity(ReferenceType):
         )
 
         # Default meta creation for module specific ref type.
-        if not isinstance(meta_data, WFIMetaINL):
+        if not isinstance(meta_data, WFIMetaIntegralNonLinearity):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaINL"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaIntegralNonLinearity"
             )
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI integral non linearity reference file."
