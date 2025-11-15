@@ -15,7 +15,7 @@ from pathlib import Path
 
 import roman_datamodels.stnode as rds
 
-from wfi_reference_pipeline.resources.wfi_meta_integralnonlinearity import WFIMetaINL
+from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import WFIMetaINL
 from ..reference_type import ReferenceType
 
 
@@ -24,6 +24,32 @@ class IntegralNonLinearity(ReferenceType):
     Class IntegralNonLinearity() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method creates the asdf reference file.
+
+    Example creation
+    from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import simulate_inl_correction_array
+    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import IntegralNonLinearity
+
+    tmp = MakeDevMeta(ref_type='INL')
+    arr = simulate_inl_correction_array()
+    rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_inl, ref_type_data=arr)
+    rfp_inl.generate_outfile()
+
+    for det in range(1, 19):
+        arr = simulate_inl_correction_array()
+        # Create meta data object for INL ref file
+        tmp = MakeDevMeta(ref_type='INL')
+        # Update meta per detector to get the right values from the form and update description
+        tmp.meta_inl.instrument_detector = f"WFI{det:02d}"
+        tmp.meta_inl.description = 'To support new integral non linearity correction development for B21'
+        # Update the file name to match the detector
+        fl_name = 'new_roman_inl_' + tmp.meta_inl.instrument_detector
+        # Instantiate an object and write the file out
+        rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_inl, 
+                                    ref_type_data=arr, 
+                                    clobber=True, 
+                                    outfile=fl_name+'.asdf')
+        rfp_inl.generate_outfile()
     """
 
     def __init__(
@@ -80,6 +106,8 @@ class IntegralNonLinearity(ReferenceType):
             self.meta_data.description = "Roman WFI integral non linearity reference file."
 
         self.inl_correction = ref_type_data
+        _, num_values = np.shape(ref_type_data)
+        self.value_array = np.linspace(0, 65535, num_values, dtype=np.uint16)
         self.channel_num = [i for i in range(1, 33)]
         # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
         self.col_indices = [(i, i + 128) for i in range(0, 4096, 128)]        
@@ -107,22 +135,24 @@ class IntegralNonLinearity(ReferenceType):
             inl_ref = rds.IntegralNonLinearity()
         except AttributeError:
             inl_ref = {"meta": {}, 
-                       "channel_num": {},
-                       "col_indices": {},
-                       "num_counts_array": {}
+                       "channel": {},
+                       "column_indices": {},
+                       "inl_correction": {},
+                       "value": {}
                        }
 
         inl_ref["meta"] = self.meta_data.export_asdf_meta()
-        inl_ref["channel_num"] = self.channel_num
-        inl_ref["col_indices"] = self.col_indices
-        inl_ref["num_counts_array"] = self.inl_correction
+        inl_ref["channel"] = self.channel_num
+        inl_ref["column_indices"] = self.col_indices
+        inl_ref["inl_correction"] = self.inl_correction
+        inl_ref["value"] = self.value_array
 
         return inl_ref
     
 
-def make_inl_correction_array():
+def simulate_inl_correction_array():
     """
-    Helper function to create reference type data that will be used to create
+    Helper function to simulate array that will be used to create
     fully populated example reference file.
 
     Using a combination of a linear slope, saw tooth and sine curve with different periods
@@ -135,7 +165,7 @@ def make_inl_correction_array():
     mid = (N - 1) // 2
 
     num_chan = 32
-    arrays = []
+    inl_arrays = []
 
     for _ in range(num_chan):
         # Linear slope for first half
@@ -163,6 +193,6 @@ def make_inl_correction_array():
         noise = np.random.normal(0, 0.2, size=N)
         y_noisy = y_inl + noise
 
-        arrays.append(y_noisy)
+        inl_arrays.append(y_noisy)
 
-    return arrays
+    return inl_arrays
