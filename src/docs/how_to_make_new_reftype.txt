@@ -1,0 +1,31 @@
+To create a new reference file type here is a step by step of files neeeded to be created or modified. 
+For this example the new reference file type will be called "NEW_EFFECT"
+
+1 - Start by defining the new reference file type in src/wfi_reference_pipeline/constants.py under # Ref Type Strings and
+add it to the WFI_REF_TYPES dictionary: REF_TYPE_NEW_EFFECT = "NEW_EFFECT"
+  
+2 - Create the wfi_meta_new_effect.py data class in src/wfi_reference_pipeline/resources/wfi_meta_new_effect.py
+and create the new class WFIMetaNewEffect(WFIMetadata). If there is additional meta data needed utilize 
+the __post_init__ method to add new meta data.
+
+3 - Update src/wfi_reference_pipeline/resources/make_dev_meta.py by adding _create_dev_meta_new_effect()
+by utilizing the WFIMetaNewEffect and under __init__ method if ref_type == "NEW_EFFECT" conditional statement.
+This allows the creation of a meta data dictionary with development values for all required keys.
+
+4 - Update src/wfi_reference_pipeline/resources/make_test_meta.py by adding _create_test_meta_new_effect()
+by utilizing the WFIMetaNewEffect and under __init__ method if ref_type == "NEW_EFFECT" conditional statement.
+This allows the creation of a meta data dictionary with testing values for all required keys.
+
+5 - Create a new directory and module new_effect/ in src/wfi_reference_pipeline/reference_types/ called
+new_effect.py where you will create the class NewEffect(). Enforce checking instantiated meta data
+against the NewEffect meta data class value for NEWEFFECT. Provide __init__.py to allow export of the module.
+
+6 - Add the NEWEFFECT ref type to WFI_REF_TYPES_WITHOUT_INPUT_DATA (if applicable) if there is no WFI_REF_TYPES_WITHOUT_INPUT_DATA
+expected for this reference file type. The reference_type.py has a base class ReferenceType that expects
+some type of input data to be provided - either a file list or an array into ref_type_data.
+
+7 - Inherit ReferenceType as a base class and abstract methods.
+
+8 - Add new src/wfi_reference_pipeline/reference_types/tests/test_new_effect.py and modify src/wfi_reference_pipeline/reference_types/tests/test_rfp_schema.py 
+with a new test_rfp_new_effect_schema() test. 
+
