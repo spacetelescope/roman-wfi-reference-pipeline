@@ -14,7 +14,7 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
     WFIMetaApertureCorrection,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
-from wfi_reference_pipeline.resources.wfi_meta_detectorstatus import WFIMetaDetectorStatus
+from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
@@ -64,8 +64,8 @@ class MakeDevMeta:
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
-    def _create_dev_meta_detectorstatus(self, meta_data):
-        self.meta_detectorstatus = WFIMetaDetectorStatus(*meta_data)
+    def _create_dev_meta_detector_status(self, meta_data):
+        self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
 
     def _create_dev_meta_flat(self, meta_data):
         p_optical_element = "F158"
@@ -164,7 +164,7 @@ class MakeDevMeta:
             self._create_dev_meta_dark(meta_data_params)
         
         if ref_type == "DETECTORSTATUS":
-            self._create_dev_meta_detectorstatus(meta_data_params)
+            self._create_dev_meta_detector_status(meta_data_params)
 
         if ref_type == "FLAT":
             self._create_dev_meta_flat(meta_data_params)

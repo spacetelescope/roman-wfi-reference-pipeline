@@ -15,7 +15,7 @@ from pathlib import Path
 
 import roman_datamodels.stnode as rds
 
-from wfi_reference_pipeline.resources.wfi_meta_detectorstatus import WFIMetaDetectorStatus
+from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
 from ..reference_type import ReferenceType
 
 
