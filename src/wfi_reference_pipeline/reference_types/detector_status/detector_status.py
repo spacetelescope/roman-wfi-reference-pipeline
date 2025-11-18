@@ -27,11 +27,19 @@ class DetectorStatus(ReferenceType):
 
     This reference file is much like the MA Table reference file and is a look
     up through CRDS to determine the health and status of all 18 detectors.
+
+    Example code for file creation:
+
+    from wfi_reference_pipeline.reference_types.detector_status.detector_status import DetectorStatus
+    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+
+    tmp = MakeDevMeta(ref_type='DETECTORSTATUS')
+    rfp_det_stat = DetectorStatus(meta_data=tmp.meta_detector_status)   
+    rfp_det_stat.generate_outfile()
     """
 
     def __init__(self,
                  meta_data,
-                 file_list=None,
                  outfile="roman_detector_status.asdf",
                  clobber=False
     ):
