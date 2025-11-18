@@ -36,7 +36,9 @@ class IntegralNonLinearity(ReferenceType):
         tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
         # Update meta per detector to get the right values from the form and update description
         tmp.meta_integral_non_linearity.instrument_detector = f"WFI{det:02d}"
-        tmp.meta_integral_non_linearity.description = 'To support new integral non linearity correction development for B21'
+        tmp.meta_integral_non_linearity.description = 'To support new integral non linearity correction development for B21. 
+        The integral non-linearity correction is applied to each channel numbered left to right from 1-32 with each channels 128 
+        pixels in length.'
         # Update the file name to match the detector
         fl_name = 'new_roman_inl_' + tmp.meta_integral_non_linearity.instrument_detector
         # Instantiate an object and write the file out
@@ -103,9 +105,7 @@ class IntegralNonLinearity(ReferenceType):
         self.inl_correction = ref_type_data
         _, num_values = np.shape(ref_type_data)
         self.value_array = np.linspace(0, 65535, num_values, dtype=np.uint16)
-        self.channel_num = [i for i in range(1, 33)]
-        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
-        self.col_indices = [(i, i + 128) for i in range(0, 4096, 128)]        
+        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems   
 
         self.outfile = outfile
 
@@ -130,15 +130,11 @@ class IntegralNonLinearity(ReferenceType):
             inl_ref = rds.IntegralNonLinearity()
         except AttributeError:
             inl_ref = {"meta": {}, 
-                       "channel": {},
-                       "column_indices": {},
                        "inl_correction": {},
                        "value": {}
                        }
 
         inl_ref["meta"] = self.meta_data.export_asdf_meta()
-        inl_ref["channel"] = self.channel_num
-        inl_ref["column_indices"] = self.col_indices
         inl_ref["inl_correction"] = self.inl_correction
         inl_ref["value"] = self.value_array
 

@@ -75,7 +75,13 @@ class MakeDevMeta:
         self.meta_gain = WFIMetaGain(*meta_data)
     
     def _create_dev_meta_integral_non_linearity(self, meta_data):
-        self.meta_integral_non_linearity = WFIMetaIntegralNonLinearity(*meta_data)
+        n_channels = '32'
+        n_pixels_per_channel = '128'
+
+        meta_integral_non_linearity = [n_channels, n_pixels_per_channel]
+    
+        self.meta_integral_non_linearity = WFIMetaIntegralNonLinearity(*meta_data,
+                                                                       *meta_integral_non_linearity)
 
     def _create_dev_meta_ipc(self, meta_data):
         p_optical_element = "F158"
