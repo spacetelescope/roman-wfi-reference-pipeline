@@ -36,9 +36,12 @@ class IntegralNonLinearity(ReferenceType):
         tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
         # Update meta per detector to get the right values from the form and update description
         tmp.meta_integral_non_linearity.instrument_detector = f"WFI{det:02d}"
-        tmp.meta_integral_non_linearity.description = 'To support new integral non linearity correction development for B21. 
-        The integral non-linearity correction is applied to each channel numbered left to right from 1-32 with each channels 128 
-        pixels in length.'
+        tmp.meta_integral_non_linearity.description = (
+            "To support new integral non-linearity correction development for B21. "
+            "The integral non-linearity correction is applied to each channel, "
+            "numbered left to right from 1 to 32, with each channel containing 128 "
+            "pixels in length."
+            )
         # Update the file name to match the detector
         fl_name = 'new_roman_inl_' + tmp.meta_integral_non_linearity.instrument_detector
         # Instantiate an object and write the file out
@@ -121,6 +124,28 @@ class IntegralNonLinearity(ReferenceType):
         """
         pass
 
+    def _make_inl_table(self):
+        """
+        Construct the integral non linearity correction table to populate the data model.
+        """
+        inl_table = {}
+
+        # Assuming self.inl_correction is shaped (32, N)
+        # Each row corresponds to a science chunk (0–31)
+        for sci_chunk in range(32):
+            # Reverse channel mapping: 0→32, 1→31, ..., 31→1 for a detector that is 
+            # needing to be flipped left right from detector to science coordinates
+            # NOTE: other detectors 
+            channel = 32 - sci_chunk
+
+            inl_table[str(sci_chunk)] = {
+                'channel': channel,
+                'correction': self.inl_correction[sci_chunk]
+            }
+
+        return inl_table
+
+
     def populate_datamodel_tree(self):
         """
         Build the Roman datamodel tree for the integral non-linearity reference.
@@ -135,7 +160,7 @@ class IntegralNonLinearity(ReferenceType):
                        }
 
         inl_ref["meta"] = self.meta_data.export_asdf_meta()
-        inl_ref["inl_correction"] = self.inl_correction
+        inl_ref["inl_table"] = self._make_inl_table()
         inl_ref["value"] = self.value_array
 
         return inl_ref
