@@ -17,6 +17,14 @@ class DarkDecaySignal(ReferenceType):
     amplitude and time constant for all detectors
 
     No array maps are created — this is a detector-level table from T. Brandt et al 2025.
+
+    Example code to generate file:
+    from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal import DarkDecaySignal
+    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+
+    tmp = MakeDevMeta(ref_type='DARKDECAYSIGNAL')
+    rfp_dark_decay = DarkDecaySignal(meta_data=tmp.meta_dark_decay_signal)
+    rfp_dark_decay.generate_outfile()
     """
 
     def __init__(self,
@@ -72,7 +80,7 @@ class DarkDecaySignal(ReferenceType):
                              }
 
         dark_decay_ref["meta"] = self.meta_data.export_asdf_meta()
-        dark_decay_ref["data"] = DARK_DECAY_TABLE
+        dark_decay_ref["decay_table"] = DARK_DECAY_TABLE
 
         return dark_decay_ref
     
