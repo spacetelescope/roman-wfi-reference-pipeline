@@ -24,6 +24,7 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
+)
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
@@ -69,10 +70,10 @@ class MakeTestMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
-    
+
     def _create_test_meta_dark_decay_signal(self, meta_data):
         self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
-  
+
     def _create_test_meta_etc(self, meta_data):
         self.meta_etc = WFIMetaETC(*meta_data)
 
@@ -118,7 +119,7 @@ class MakeTestMeta:
 
     def _create_test_meta_mask(self, meta_data):
         self.meta_mask = WFIMetaMask(*meta_data)
-    
+
     def _create_test_meta_pedestal(self, meta_data):
         self.meta_pedestal = WFIMetaPedestal(*meta_data)
 
@@ -173,10 +174,10 @@ class MakeTestMeta:
 
         if ref_type == REF_TYPE_DARK:
             self._create_test_meta_dark(meta_data_params)
-        
+
         if ref_type == REF_TYPE_DARKDECAYSIGNAL:
             self._create_test_meta_dark_decay_signal(meta_data_params)
-  
+
         if ref_type == REF_TYPE_ETC:
             self._create_test_meta_etc(meta_data_params)
 
