@@ -42,15 +42,22 @@ class SuperDark(ABC):
         """
 
 
-        if short_dark_num_reads < 1:
-            raise ValueError(
-                f"short_dark_num_reads {short_dark_num_reads} must be larger than 0"
-                )
-
         if short_dark_num_reads > long_dark_num_reads:
             if long_dark_num_reads > 0:
                 raise ValueError(
                     f"long_dark_num_reads {long_dark_num_reads} must be 0 or larger than short_dark_num_reads {short_dark_num_reads}"
+                    )
+
+        if short_dark_num_reads < 1:
+            if long_dark_num_reads > 0:
+                # no shorts were sent in, only longs.  Move longs to shorts and continue.
+                short_dark_num_reads = long_dark_num_reads
+                short_dark_file_list = long_dark_file_list.copy()
+                long_dark_num_reads = 0
+                long_dark_file_list = []
+            else:
+                raise ValueError(
+                    f"short_dark_num_reads {short_dark_num_reads} must be larger than 0"
                     )
 
         if len(short_dark_file_list) == 0:
@@ -83,7 +90,7 @@ class SuperDark(ABC):
 
         # Verify all files are of the correct detector type
         for file in self.file_list:
-            if self.wfi_detector_str not in file:
+            if self.wfi_detector_str not in file.upper():
                 raise ValueError(f"Invalid WFI detector ID found in file list provided for {file}.")
 
         if self.wfi_detector_str not in WFI_DETECTORS:

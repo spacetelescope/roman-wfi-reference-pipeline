@@ -16,13 +16,16 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
+from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
+    WFIMetaETC,
 )
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
+from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
+    WFIMetaIntegralNonLinearity)
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
-    WFIMetaInverseLinearity,
-)
+    WFIMetaInverseLinearity)
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
@@ -32,6 +35,7 @@ from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
+from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal 
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 
 
@@ -68,6 +72,9 @@ class MakeDevMeta:
 
     def _create_dev_meta_dark_decay_signal(self, meta_data):
         self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
+  
+    def _create_dev_meta_etc(self, meta_data):
+        self.meta_etc = WFIMetaETC(*meta_data)
 
     def _create_dev_meta_flat(self, meta_data):
         p_optical_element = "F158"
@@ -77,6 +84,15 @@ class MakeDevMeta:
 
     def _create_dev_meta_gain(self, meta_data):
         self.meta_gain = WFIMetaGain(*meta_data)
+    
+    def _create_dev_meta_integral_non_linearity(self, meta_data):
+        n_channels = '32'
+        n_pixels_per_channel = '128'
+
+        meta_integral_non_linearity = [n_channels, n_pixels_per_channel]
+    
+        self.meta_integral_non_linearity = WFIMetaIntegralNonLinearity(*meta_data,
+                                                                       *meta_integral_non_linearity)
 
     def _create_dev_meta_ipc(self, meta_data):
         p_optical_element = "F158"
@@ -105,6 +121,9 @@ class MakeDevMeta:
 
     def _create_dev_meta_matable(self, meta_data):
         self.meta_matable = WFIMetaMultiAccumulationTable(*meta_data)
+
+    def _create_dev_meta_pedestal(self, meta_data):
+        self.meta_pedestal = WFIMetaPedestal(*meta_data)
 
     def _create_dev_meta_readnoise(self, meta_data):
         mode = WFI_MODE_WIM
@@ -164,15 +183,21 @@ class MakeDevMeta:
 
         if ref_type == "DARK":
             self._create_dev_meta_dark(meta_data_params)
-
+       
         if ref_type == "DARKDECAYSIGNAL":
             self._create_dev_meta_dark_decay_signal(meta_data_params)
+  
+        if ref_type == "ETC":
+            self._create_dev_meta_etc(meta_data_params)
 
         if ref_type == "FLAT":
             self._create_dev_meta_flat(meta_data_params)
 
         if ref_type == "GAIN":
             self._create_dev_meta_gain(meta_data_params)
+
+        if ref_type == "INTEGRALNONLINEARITY":
+            self._create_dev_meta_integral_non_linearity(meta_data_params)
 
         if ref_type == "INVERSELINEARITY":
             self._create_dev_meta_inverselinearity(meta_data_params)
@@ -188,6 +213,9 @@ class MakeDevMeta:
 
         if ref_type == "MATABLE":
             self._create_dev_meta_matable(meta_data_params)
+
+        if ref_type == "PEDESTAL":
+            self._create_dev_meta_pedestal(meta_data_params)
 
         if ref_type == "READNOISE":
             self._create_dev_meta_readnoise(meta_data_params)

@@ -1,0 +1,199 @@
+common:
+  crs_on: true
+  det_type: h4rg-10
+  pix_size_x: 10
+  pix_size_y: 10
+  pixels_x: 4088
+  pixels_y: 4088
+  excess: false
+  excessp1: 0
+  excessp2: 0
+  ktc_noise: 0
+  ipc_on: false
+  minresultants: 2
+  npostrej: 0
+  nprerej: 0
+  nreset: 0
+  report_counts: false
+  scatter: false
+detectors:
+  WFI01:
+    saturation_on: true
+    saturation_fullwell: 60000.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 6.196895122528076
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 716.3978518135043
+  WFI02:
+    saturation_on: true
+    saturation_fullwell: 60000.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.647524833679199
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 564.5276615439435
+  WFI03:
+    saturation_on: true
+    saturation_fullwell: 58905.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.895864486694336
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 706.3434790868706
+  WFI04:
+    saturation_on: true
+    saturation_fullwell: 57456.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 6.098455905914307
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 843.5802452844152
+  WFI05:
+    saturation_on: true
+    saturation_fullwell: 58412.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.49294376373291
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 695.902974053243
+  WFI06:
+    saturation_on: true
+    saturation_fullwell: 58875.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.867035865783691
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 751.3834779497772
+  WFI07:
+    saturation_on: true
+    saturation_fullwell: 58803.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 4.798841953277588
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 604.0132499033344
+  WFI08:
+    saturation_on: true
+    saturation_fullwell: 58044.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.192303657531738
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 298.11534095713534
+  WFI09:
+    saturation_on: true
+    saturation_fullwell: 60000.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.247626304626465
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1276.6796640589087
+  WFI10:
+    saturation_on: true
+    saturation_fullwell: 59526.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.8629608154296875
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1306.3757588097048
+  WFI11:
+    saturation_on: true
+    saturation_fullwell: 58092.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.392239093780518
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 906.350929662245
+  WFI12:
+    saturation_on: true
+    saturation_fullwell: 59749.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.722226619720459
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1057.6265876428877
+  WFI13:
+    saturation_on: true
+    saturation_fullwell: 58935.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 6.1576361656188965
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1362.3101423839423
+  WFI14:
+    saturation_on: true
+    saturation_fullwell: 59538.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.320662498474121
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 650.2957900562842
+  WFI15:
+    saturation_on: true
+    saturation_fullwell: 57992.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.197111129760742
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1017.4222410858433
+  WFI16:
+    saturation_on: true
+    saturation_fullwell: 58192.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.3603339195251465
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1381.4956280438923
+  WFI17:
+    saturation_on: true
+    saturation_fullwell: 60000.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.908330917358398
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 1912.2918564681436
+  WFI18:
+    saturation_on: true
+    saturation_fullwell: 60000.0
+    dark_current_on: true
+    dark_current_avg: 0.0
+    readnoise_on: true
+    readnoise_avg: 5.755289077758789
+    readnoise_correlation: false
+    ffnoise: true
+    ff_electrons: 951.1774635771062

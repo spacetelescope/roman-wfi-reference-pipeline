@@ -17,6 +17,7 @@ from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 # TODO: FilenameParser will be useful when making files for different detectors since can split by SCA
 # from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
 
+
 class MaskPipeline(Pipeline):
     """
     Derived from the Pipeline Base Class
@@ -40,15 +41,14 @@ class MaskPipeline(Pipeline):
 
     mask_pipeline.restart_pipeline()
     """
-    def __init__(self, detector):
 
+    def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_MASK, detector)
 
         self.mask_file = None
 
     def select_uncal_files(self, filelist):
-
         # Clearing from previous run
         self.uncal_files.clear()
 
@@ -61,21 +61,18 @@ class MaskPipeline(Pipeline):
         logging.info(f"Ingesting {len(files)} files: {files}")
 
     def run_romancal(self, file, outpath):
-        '''
+        """
         Run romancal on a single file. Created so I can implement multiprocessing's Pool.
-        '''
+        """
         with rdm.open(file) as f:
-
             dq_data = DQInitStep.call(f)
 
-            _ = RefPixStep.call(dq_data,
-                                save_results=True,
-                                output_dir=outpath)
+            _ = RefPixStep.call(dq_data, save_results=True, output_dir=outpath)
 
         return
 
     def prep_pipeline(self, prep_path):
-
+        """Prepare calibration data files by running data through select romancal steps"""
         # This will be a temp directory for IRRC corrected files
         new_outpath = f"{prep_path}irrc_corr/"
 
@@ -92,7 +89,6 @@ class MaskPipeline(Pipeline):
         return
 
     def run_pipeline(self, outfile_path, file_list):
-
         tmp = MakeDevMeta(ref_type=self.ref_type)
 
         rfp_mask = Mask(
@@ -100,9 +96,8 @@ class MaskPipeline(Pipeline):
             file_list=self.prepped_files,
             ref_type_data=None,
             outfile=outfile_path,
-            clobber=True
+            clobber=True,
         )
 
         rfp_mask.make_mask_image()
         rfp_mask.generate_outfile()
-
