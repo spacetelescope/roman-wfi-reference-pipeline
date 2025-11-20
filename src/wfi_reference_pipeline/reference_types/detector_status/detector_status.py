@@ -72,33 +72,35 @@ class DetectorStatus(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI detector status reference file."
 
-        self.detector_status_dict = self._make_detector_status_dict()        
+        self.status_info_dict = self._make_status_info()        
 
         self.outfile = outfile
 
-    def _make_detector_status_dict(self):
-        detectors = {
-            "WFI01": {"status_ON": True},
-            "WFI02": {"status_ON": True},
-            "WFI03": {"status_ON": True},
-            "WFI04": {"status_ON": True},
-            "WFI05": {"status_ON": True},
-            "WFI06": {"status_ON": True},
-            "WFI07": {"status_ON": True},
-            "WFI08": {"status_ON": True},
-            "WFI09": {"status_ON": True},
-            "WFI10": {"status_ON": True},
-            "WFI11": {"status_ON": True},
-            "WFI12": {"status_ON": True},
-            "WFI13": {"status_ON": True},
-            "WFI14": {"status_ON": True},
-            "WFI15": {"status_ON": True},
-            "WFI16": {"status_ON": True},
-            "WFI17": {"status_ON": True},
-            "WFI18": {"status_ON": True},
+    def _make_status_info(self):
+        """
+        Make explicit dictionary for each detector to be enabled True or False
+        """
+        status_info = {
+            "WFI01": {"enabled": True},
+            "WFI02": {"enabled": True},
+            "WFI03": {"enabled": True},
+            "WFI04": {"enabled": True},
+            "WFI05": {"enabled": True},
+            "WFI06": {"enabled": True},
+            "WFI07": {"enabled": True},
+            "WFI08": {"enabled": True},
+            "WFI09": {"enabled": True},
+            "WFI10": {"enabled": True},
+            "WFI11": {"enabled": True},
+            "WFI12": {"enabled": True},
+            "WFI13": {"enabled": True},
+            "WFI14": {"enabled": True},
+            "WFI15": {"enabled": True},
+            "WFI16": {"enabled": True},
+            "WFI17": {"enabled": True},
+            "WFI18": {"enabled": True},
         }
-
-        return {"detectors": detectors}
+        return status_info
     
     def calculate_error(self):
         """
@@ -125,7 +127,7 @@ class DetectorStatus(ReferenceType):
                                    }
 
         detector_status_ref["meta"] = self.meta_data.export_asdf_meta()
-        detector_status_ref["status_info"] = self.detector_status_dict
+        detector_status_ref["status_info"] = self.status_info_dict
 
         return detector_status_ref
     
