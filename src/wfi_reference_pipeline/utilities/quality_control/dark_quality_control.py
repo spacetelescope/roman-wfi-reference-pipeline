@@ -34,7 +34,7 @@ class DarkQualityControl(QualityControl):
         Method to do checks only set to true in the config file and populate a dictionary with the checks that
         will be performed as the key and the value for that is true or false
         """
-        # SAPP TODO - Evaluate once more get created if this should be moved to the QaulityContorl Base class
+        # TODO - Evaluate once more get created if this should be moved to the QaulityContorl Base class
         # For now assume each ref type check will be unique although it doesn't look like it.
         failed_checks = []
         all_checks_passed = True
