@@ -20,20 +20,22 @@ from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
-    WFIMetaIntegralNonLinearity)
+    WFIMetaIntegralNonLinearity,
+)
 from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
-    WFIMetaInverseLinearity)
+    WFIMetaInverseLinearity,
+)
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
     WFIMetaMultiAccumulationTable,
 )
+from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
-from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal 
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 
 
