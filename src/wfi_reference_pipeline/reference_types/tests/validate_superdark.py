@@ -49,7 +49,7 @@ meta = {
     }
 }
 
-def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/DEV/scratch'):
+def generate_short_dark_files(output_dir, n_files=9, n_reads=10):
     """
     Generate short dark files with controlled inputs using simulate_dark_reads and save as ASDF files.
 
@@ -116,7 +116,7 @@ def generate_short_dark_files(n_files=9, n_reads=10, output_dir='/grp/roman/RFP/
     return short_files
 
 
-def generate_long_dark_files(n_files=2, n_reads=20, output_dir='/grp/roman/RFP/DEV/scratch'):
+def generate_long_dark_files(output_dir, n_files=2, n_reads=20):
     """
     Generate long dark files with controlled inputs using simulate_dark_reads and save as ASDF files.
 
@@ -260,9 +260,9 @@ def generate_files(rebuild_files, input_dir):
         long_files=[]
 
     if len(short_files) == 0:
-        short_files = generate_short_dark_files()
+        short_files = generate_short_dark_files(input_dir) # TODO - get output dir argument instead of using input dir for both
     if len(long_files) == 0:
-        long_files = generate_long_dark_files()
+        long_files = generate_long_dark_files(input_dir) # TODO - get output dir instead of using input dir for both
 
     return short_files, long_files
 
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("-r", "--rebuild", action="store_true", help="Rebuild the dark files")
-    parser.add_argument("-p", "--path", type=str, help="Dark Files Path.", default="/grp/roman/RFP/DEV/scratch"
+    parser.add_argument("-p", "--path", type=str, help="Dark Files Path."
     )
     args = parser.parse_args()
 

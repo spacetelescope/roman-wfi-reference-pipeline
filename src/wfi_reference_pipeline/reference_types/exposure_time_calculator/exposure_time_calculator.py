@@ -27,8 +27,8 @@ class ExposureTimeCalculator(ReferenceType):
     method creates or retrieves the exposure time calculator yaml to create
     the asdf reference file.
 
-    This class assumes the etc form file within the repository is used to generate the asdf file. 
-    If you want to use your own form file, do: 
+    This class assumes the etc form file within the repository is used to generate the asdf file.
+    If you want to use your own form file, do:
     rfp_etc = ExposureTimeCalculator(meta_data=my_meta, file_list=["/path/to/custom_form.yml"])
     """
 
@@ -102,11 +102,11 @@ class ExposureTimeCalculator(ReferenceType):
         merged_form = {**common_form, **detector_form}
 
         return merged_form
-    
+
     # Abstract base classes not needed for ETC config reference file
     def calculate_error(self):
         return super().calculate_error()
-    
+
     def update_data_quality_array(self):
         return super().update_data_quality_array()
 
@@ -119,7 +119,7 @@ class ExposureTimeCalculator(ReferenceType):
         try:
             etc_datamodel_tree = rds.ExposureTimeCalcRef()
         except AttributeError:
-            # use a plain dict 
+            # use a plain dict
             etc_datamodel_tree = {
                 "meta": {},
                 "form": {}
@@ -132,7 +132,7 @@ class ExposureTimeCalculator(ReferenceType):
 # -------------------------------
 # Standalone function to update form file
 # -------------------------------
-def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_files/"):
+def update_etc_form_from_crds(output_dir):
     """
     Update ETC YAML form with predetermined metrics for readnoise, dark current, and flat field
     values for each WFI detector from CRDS reference files.
@@ -196,7 +196,7 @@ def update_etc_form_from_crds(output_dir="/grp/roman/RFP/DEV/scratch/etc_dump_fi
     # or some modification to this code
     flat_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('flat').reference_names()
     results = api.dump_references(crds_context, flat_files)
-    flat_filepaths = list(results.values()) 
+    flat_filepaths = list(results.values())
 
     saturation_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('saturation').reference_names()
     results = api.dump_references(crds_context, saturation_files)

@@ -5,7 +5,7 @@ from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 print('-' * 80)
 
 print('Dev to make Dark with number of reads per resultant and number of resultants for even spacing.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_dark_dev_file_TVAC.asdf'
 # Use dev meta maker for DARK
 tmp = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.
@@ -30,7 +30,7 @@ print('Made reference file', rfp_dark.outfile)
 print('-' * 80)
 
 print('Dev to make Dark from read pattern uneven spacing.')
-outfile2 = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file_CRDS.asdf'
+outfile2 = '/PATH/TO/scratch/rfp_dark_dev_file_CRDS.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp2 = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.
@@ -70,7 +70,7 @@ print('Made reference file', rfp_dark2.outfile)
 print('-' * 80)
 
 print('Dev to make Dark from read pattern with uneven spacing for RDMT-local Hack Day.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_dark_dev_file.asdf'
+outfile = '/PATH/TO/scratch/rfp_dark_dev_file.asdf'
 # Use dev meta to instantiate rfp dark object.
 tmp3 = MakeDevMeta(ref_type='DARK')
 # Simulate a cube of dark reads.

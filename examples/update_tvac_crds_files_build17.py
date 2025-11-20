@@ -8,8 +8,8 @@ def main():
     Main script to update all reference files that now dont have units
     to the latest data model.
     """
-    input_dir = "/ifs/crds/roman/tvac/file_cache/references/roman/"
-    output_dir = '/grp/roman/RFP/TVAC/TVAC_CRDS_B17_update/'
+    input_dir = "/PATH/TO/INPUT/TVAC/"
+    output_dir = "/PATH/TO/OUTPUT/"
 
     # Replace default message with this to append to description.
     update_message = " Updated for Build 17 versions of romancal, rad, and rdm."
