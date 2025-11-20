@@ -76,7 +76,7 @@ class DarkDecaySignal(ReferenceType):
         except AttributeError:
             dark_decay_ref = {
                              "meta": {}, 
-                             "data": {}
+                             "decay_table": {}
                              }
 
         dark_decay_ref["meta"] = self.meta_data.export_asdf_meta()
