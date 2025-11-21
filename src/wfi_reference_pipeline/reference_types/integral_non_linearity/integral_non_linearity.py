@@ -145,8 +145,8 @@ class IntegralNonLinearity(ReferenceType):
             # Placeholder until official datamodel exists
             inl_ref = rds.IntegralNonLinearity()
         except AttributeError:
-            inl_ref = {"meta": {},
-                       "inl_correction": {},
+            inl_ref = {"meta": {}, 
+                       "inl_table": {},
                        "value": {}
                        }
 
