@@ -1,8 +1,12 @@
-from wfi_reference_pipeline.utilities import logging_functions
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.aperturecorrection.aperturecorrection import ApertureCorrection
-from astropy.time import Time
 from pathlib import Path
+
+from astropy.time import Time
+
+from wfi_reference_pipeline.reference_types.aperturecorrection.aperturecorrection import (
+    ApertureCorrection,
+)
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.utilities import logging_functions
 
 # configure a logging file
 logging_functions.configure_logging("wfi_aperture_correction_creation")

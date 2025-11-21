@@ -15,6 +15,8 @@ from astropy.stats import sigma_clip
 from wfi_reference_pipeline.constants import (
     DARK_LONG_NUM_READS,
     DARK_SHORT_NUM_READS,
+    DETECTOR_PIXEL_X_COUNT,
+    DETECTOR_PIXEL_Y_COUNT,
     GB,
 )
 
@@ -24,6 +26,7 @@ from .superdark import SuperDark
 # This class is used as a flag in the queue to signal a process stop
 class STOPPROCESS:
     pass
+
 
 # TODO - MAKE SURE SHARED MEMORY IS FREE AFTER A TERMINATION SIGNAL IS SENT! THIS SHOULDNT HAPPEN BUT IT SHOULD BE ACCOUNTED FOR!
 # investigate atexit and signal handlers  (I tried quickly but ran into some issues.)
@@ -96,7 +99,9 @@ class SuperDarkDynamic(SuperDark):
             Upper bound limit to filter data
         """
         logging.debug(f"Begin date and time: {datetime.now()}")
-        self._calculated_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
+        self._calculated_num_reads = max(
+            self.short_dark_num_reads, self.long_dark_num_reads
+        )  # need this check in case no long is sent in
         self.sig_clip_sd_low = sig_clip_sd_low
         self.sig_clip_sd_high = sig_clip_sd_high
 
@@ -104,22 +109,29 @@ class SuperDarkDynamic(SuperDark):
         num_cores = multiprocessing.cpu_count()
         total_available_mem = psutil.virtual_memory().available
 
-
         # Calculate the required size for the shared memory cube
-        element_size = np.dtype("float32").itemsize  # Size of a single float32 element in bytes
-        num_elements = (self._calculated_num_reads * 4096 * 4096)  # Total number of elements in the array
+        element_size = np.dtype(
+            "float32"
+        ).itemsize  # Size of a single float32 element in bytes
+        num_elements = (
+            self._calculated_num_reads * DETECTOR_PIXEL_X_COUNT * DETECTOR_PIXEL_Y_COUNT
+        )  # Total number of elements in the array
         shared_mem_size = num_elements * element_size  # Total size in bytes
 
-        available_mem = total_available_mem - shared_mem_size # This memory will be used and unavailable for other processes
+        available_mem = (
+            total_available_mem - shared_mem_size
+        )  # This memory will be used and unavailable for other processes
 
-        needed_mem_per_process = (shared_mem_size * 2) + (2*GB)  # 2 cubes per process from starting and sigma clip result, plus 2 gigs for processing # TODO VERIFY
+        needed_mem_per_process = (
+            (shared_mem_size * 2) + (2 * GB)
+        )  # 2 cubes per process from starting and sigma clip result, plus 2 gigs for processing # TODO VERIFY
         max_num_processes = available_mem // needed_mem_per_process
-        max_num_processes = min(num_cores - 1, max_num_processes - 1, self._calculated_num_reads) # reserve a process for main thread with shared memory
+        max_num_processes = min(
+            num_cores - 1, max_num_processes - 1, self._calculated_num_reads
+        )  # reserve a process for main thread with shared memory
 
         logging.info("STARTING SUPERDARK DYNAMIC PROCESS")
-        logging.info(
-            f"Number of CPU cores available:                    {num_cores}"
-        )
+        logging.info(f"Number of CPU cores available:                    {num_cores}")
         logging.info(
             f"Available Memory:                                 {total_available_mem} "
         )
@@ -133,13 +145,20 @@ class SuperDarkDynamic(SuperDark):
             f"Calculated Max Additional Processes:              {max_num_processes} "
         )
 
+        if max_num_processes < 1:
+            raise MemoryError(
+                "Not enough memory to effectively run Superdark Dynamic Processing. Set config/pipelines_config.yml `multiprocess_superdark: false`"
+            )
+
         print(f"Begin Multiprocessing with {max_num_processes} processes")
 
         try:
             shared_mem = shared_memory.SharedMemory(create=True, size=shared_mem_size)
             # create the numpy array from the allocated memory
             superdark_shared_mem = np.ndarray(
-                [self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf
+                [self._calculated_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT],
+                dtype="float32",
+                buffer=shared_mem.buf,
             )
             # Initialize the shared memory to 0
             superdark_shared_mem[:] = 0
@@ -170,7 +189,7 @@ class SuperDarkDynamic(SuperDark):
             logging.error(f"Error processing generate_superdark with error: {e}")
         finally:
             if shared_mem:
-                 # unlink is called only once after the last instance has been closed
+                # unlink is called only once after the last instance has been closed
                 shared_mem.close()
                 shared_mem.unlink()
 
@@ -203,7 +222,11 @@ class SuperDarkDynamic(SuperDark):
         shared_mem = shared_memory.SharedMemory(
             name=shared_mem_name
         )  # create from the existing one made by the parent process
-        superdark_shared_mem = np.ndarray([self._calculated_num_reads, 4096, 4096], dtype="float32", buffer=shared_mem.buf)  # attach a numpy array to the memory object
+        superdark_shared_mem = np.ndarray(
+            [self._calculated_num_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT],
+            dtype="float32",
+            buffer=shared_mem.buf,
+        )  # attach a numpy array to the memory object
 
         # Run until we hit our STOP_PROCESS flag or queue is empty
         try:
@@ -212,7 +235,9 @@ class SuperDarkDynamic(SuperDark):
                     # Dont wait longer than a second to get the next item off the queue
                     queue_item = input_queue.get(1)
                 except Empty:  # multiprocessing.Queue uses an exception template from the queue library
-                    logging.debug("Assuming all tasks are complete. Stopping process...")
+                    logging.debug(
+                        "Assuming all tasks are complete. Stopping process..."
+                    )
                     break
                 if isinstance(queue_item, STOPPROCESS):
                     print("STOP FLAG received.  Stopping process...")
@@ -228,12 +253,16 @@ class SuperDarkDynamic(SuperDark):
                 # unused zeroes that will affect averaging.
                 # Determine the number of files to process for the current read index.
                 if read_index < self.short_dark_num_reads:
-                    num_files_with_this_read_index = len(self.short_dark_file_list) + len(self.long_dark_file_list)
+                    num_files_with_this_read_index = len(
+                        self.short_dark_file_list
+                    ) + len(self.long_dark_file_list)
                 else:
                     num_files_with_this_read_index = len(self.long_dark_file_list)
                     # Files are sorted with all shorts followed by all long files.  If the read_index is for long only, then skip the short files.
                     start_file = len(self.short_dark_file_list)
-                read_index_cube = np.zeros((num_files_with_this_read_index, 4096, 4096), dtype=np.float32)
+                read_index_cube = np.zeros(
+                    (num_files_with_this_read_index, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32
+                )
 
                 for file_nr in range(0, num_files_with_this_read_index):
                     file_name = self.file_list[start_file + file_nr]
@@ -242,10 +271,16 @@ class SuperDarkDynamic(SuperDark):
                     # darks with only 46 reads from long darks with 98 reads.
                     try:
                         with asdf.open(file_name) as asdf_file:
-                            if isinstance(asdf_file.tree["roman"]["data"], u.Quantity):  # Only access data from quantity object.
-                                read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"].value[read_index, :, :]
+                            if isinstance(
+                                asdf_file.tree["roman"]["data"], u.Quantity
+                            ):  # Only access data from quantity object.
+                                read_index_cube[used_file_index, :, :] = asdf_file.tree[
+                                    "roman"
+                                ]["data"].value[read_index, :, :]
                             else:
-                                read_index_cube[used_file_index, :, :] = asdf_file.tree["roman"]["data"][read_index, :, :]
+                                read_index_cube[used_file_index, :, :] = asdf_file.tree[
+                                    "roman"
+                                ]["data"][read_index, :, :]
                             used_file_index += 1
                     except (
                         FileNotFoundError,
@@ -253,7 +288,9 @@ class SuperDarkDynamic(SuperDark):
                         PermissionError,
                         ValueError,
                     ) as e:
-                        logging.warning(f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}")
+                        logging.warning(
+                            f"    -> PID {process_name} Read {read_index}: Could not open {str(file_name)} - {e}"
+                        )
                     gc.collect()
                 try:
                     # TODO NOTE: may want to have option to use utilities.data_functions.get_science_pixels_cube for sigma clipping
@@ -267,7 +304,9 @@ class SuperDarkDynamic(SuperDark):
                         copy=False,
                     )
                 except Exception as e:
-                    logging.error(f"Error Sigma Clipping read index {read_index} with exception: {e}")
+                    logging.error(
+                        f"Error Sigma Clipping read index {read_index} with exception: {e}"
+                    )
                 # Imperative that we ignore NaN values when calculating mean
                 superdark_shared_mem[read_index] = np.nanmean(clipped_reads, axis=0)
         finally:

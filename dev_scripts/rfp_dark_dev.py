@@ -1,6 +1,6 @@
+from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
-from wfi_reference_pipeline.reference_types.dark.dark import Dark
 
 print('-' * 80)
 
@@ -22,7 +22,7 @@ rfp_dark.make_ma_table_resampled_data(num_resultants=5, num_reads_per_resultant=
 # Calculate error or input error array.
 rfp_dark.calculate_error()
 # Update the data quality array.
-rfp_dark.update_data_quality_array()
+rfp_dark.update_data_quality_array(0.015, 0.010, 0.0001)
 # Save file.
 rfp_dark.generate_outfile()
 print('Made reference file', rfp_dark.outfile)
@@ -56,7 +56,7 @@ read_pattern = [
 ]
 rfp_dark2.make_ma_table_resampled_data(read_pattern=read_pattern)
 # Update the data quality array.
-rfp_dark2.update_data_quality_array()
+rfp_dark2.update_data_quality_array(0.015, 0.010, 0.0001)
 # Save file.
 rfp_dark2.generate_outfile()
 print('Made reference file', rfp_dark2.outfile)
@@ -87,7 +87,7 @@ read_pattern = [[1],
                 [4, 5, 6, 7, 8, 9, 10]]
 rfp_dark3.make_ma_table_resampled_data(read_pattern=read_pattern)
 # Update the data quality array.
-rfp_dark3.update_data_quality_array()
+rfp_dark3.update_data_quality_array(0.015, 0.010, 0.0001)
 # Save file.
 rfp_dark3.generate_outfile()
 print('Made reference file', rfp_dark3.outfile)
