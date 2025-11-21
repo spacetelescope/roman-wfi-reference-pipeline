@@ -16,6 +16,7 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
+from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
@@ -69,9 +70,12 @@ class MakeDevMeta:
         dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
-
+        
     def _create_dev_meta_dark_decay_signal(self, meta_data):
         self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
+
+    def _create_dev_meta_detector_status(self, meta_data):
+        self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
   
     def _create_dev_meta_etc(self, meta_data):
         self.meta_etc = WFIMetaETC(*meta_data)
@@ -186,6 +190,9 @@ class MakeDevMeta:
        
         if ref_type == "DARKDECAYSIGNAL":
             self._create_dev_meta_dark_decay_signal(meta_data_params)
+
+        if ref_type == "DETECTORSTATUS":
+            self._create_dev_meta_detector_status(meta_data_params)
   
         if ref_type == "ETC":
             self._create_dev_meta_etc(meta_data_params)

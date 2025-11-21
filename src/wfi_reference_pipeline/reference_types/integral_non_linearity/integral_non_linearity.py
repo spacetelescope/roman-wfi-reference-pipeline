@@ -155,7 +155,7 @@ class IntegralNonLinearity(ReferenceType):
             inl_ref = rds.IntegralNonLinearity()
         except AttributeError:
             inl_ref = {"meta": {}, 
-                       "inl_correction": {},
+                       "inl_table": {},
                        "value": {}
                        }
 
