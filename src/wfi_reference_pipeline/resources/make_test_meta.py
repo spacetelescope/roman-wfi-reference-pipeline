@@ -2,8 +2,8 @@ from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
-    REF_TYPE_DETECTORSTATUS,
     REF_TYPE_DARKDECAYSIGNAL,
+    REF_TYPE_DETECTORSTATUS,
     REF_TYPE_ETC,
     REF_TYPE_FLAT,
     REF_TYPE_GAIN,
@@ -23,9 +23,9 @@ from wfi_reference_pipeline.constants import (
     WFI_TYPE_IMAGE,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
-from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
+from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
@@ -74,12 +74,12 @@ class MakeTestMeta:
     
     def _create_test_meta_dark_decay_signal(self, meta_data):
         self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
-  
-    def _create_test_meta_etc(self, meta_data):
-        self.meta_etc = WFIMetaETC(*meta_data)
 
     def _create_test_meta_detector_status(self, meta_data):
         self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
+    
+    def _create_test_meta_etc(self, meta_data):
+        self.meta_etc = WFIMetaETC(*meta_data)
 
     def _create_test_meta_flat(self, meta_data):
         ref_optical_element = "F158"
@@ -179,10 +179,11 @@ class MakeTestMeta:
         if ref_type == REF_TYPE_DARK:
             self._create_test_meta_dark(meta_data_params)
         
-        if ref_type == REF_TYPE_DETECTORSTATUS:
-            self._create_test_meta_detector_status(meta_data_params)
         if ref_type == REF_TYPE_DARKDECAYSIGNAL:
             self._create_test_meta_dark_decay_signal(meta_data_params)
+
+        if ref_type == REF_TYPE_DETECTORSTATUS:
+            self._create_test_meta_detector_status(meta_data_params)
   
         if ref_type == REF_TYPE_ETC:
             self._create_test_meta_etc(meta_data_params)
