@@ -26,7 +26,9 @@ from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
 )
-from wfi_reference_pipeline.resources.wfi_meta_detector_status import WFIMetaDetectorStatus
+from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
+    WFIMetaDetectorStatus,
+)
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
