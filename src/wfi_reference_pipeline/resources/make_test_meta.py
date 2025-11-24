@@ -12,6 +12,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
     REF_TYPE_REFPIX,
     REF_TYPE_SATURATION,
+    REF_TYPE_PEDESTAL,
     WFI_DETECTORS,
     WFI_MODE_WIM,
     WFI_PEDIGREE,
@@ -35,6 +36,7 @@ from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
+from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
 
 
 class MakeTestMeta:
@@ -111,6 +113,12 @@ class MakeTestMeta:
         referencepixel_meta_data = [input_units, output_units]
         self.meta_referencepixel = WFIMetaReferencePixel(*meta_data,
                                                          *referencepixel_meta_data)
+        
+    def _create_test_meta_pedestal(self, meta_data):
+        e_type = "good type"
+
+        pedestal_meta_data = [e_type]
+        self.meta_pedestal = WFIMetaPedestal(*meta_data, *pedestal_meta_data)
 
     def _create_test_meta_saturation(self, meta_data):
         self.meta_saturation = WFIMetaSaturation(*meta_data)
@@ -178,5 +186,8 @@ class MakeTestMeta:
 
         if ref_type == REF_TYPE_SATURATION:
             self._create_test_meta_saturation(meta_data_params)
+
+        if ref_type == REF_TYPE_PEDESTAL:
+            self._create_test_meta_pedestal(meta_data_params)
 
 

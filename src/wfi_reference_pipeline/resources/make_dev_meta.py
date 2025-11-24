@@ -33,7 +33,7 @@ from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
-
+from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
 
 class MakeDevMeta:
     """
@@ -125,6 +125,12 @@ class MakeDevMeta:
     def _create_dev_meta_saturation(self, meta_data):
         self.meta_saturation = WFIMetaSaturation(*meta_data)
 
+    def _create_dev_meta_pedestal(self, meta_data):
+        e_type = "good type"
+
+        pedestal_meta_data = [e_type]
+        self.meta_pedestal = WFIMetaPedestal(*meta_data, *pedestal_meta_data)
+
     def __init__(self, ref_type):
         """
         Generates a reference type specific MetaData object relevant to the ref_type
@@ -197,3 +203,6 @@ class MakeDevMeta:
 
         if ref_type == "SATURATION":
             self._create_dev_meta_saturation(meta_data_params)
+
+        if ref_type == "PEDESTAL":
+            self._create_dev_meta_pedestal(meta_data_params)

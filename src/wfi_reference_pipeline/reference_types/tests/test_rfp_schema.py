@@ -26,6 +26,7 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.reference_types.pedestal.pedestal import Pedestal
 
 skip_on_github = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",
@@ -267,4 +268,17 @@ class TestSchema(unittest.TestCase):
         tf.tree = {'roman': rfp_saturation.populate_datamodel_tree()}
         # Validate method returns list of exceptions the json schema file failed to match.
         # If none, then datamodel tree is valid.
+        assert tf.validate() is None
+
+    def test_rfp_pedestal_schema(self):
+
+        tmp = MakeTestMeta(ref_type='PEDESTAL')
+        
+        rfp_pedestal = Pedestal(meta_data=tmp.meta_pedestal)
+
+        tf = asdf.AsdfFile()
+        tf.tree = {
+            'roman' : rfp_pedestal.populate_datamodel_tree()
+        }
+
         assert tf.validate() is None
