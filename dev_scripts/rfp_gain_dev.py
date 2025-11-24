@@ -10,7 +10,7 @@ from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 print('-' * 80)
 
 print('Dev script to make Gain reference file with user input.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_gain_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_gain_dev_file_TVAC.asdf'
 # Use dev meta maker for GAIN
 tmp = MakeDevMeta(ref_type='GAIN')
 # Example how to change the useafter in the meta data.

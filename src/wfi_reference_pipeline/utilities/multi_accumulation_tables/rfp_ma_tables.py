@@ -20,8 +20,7 @@ class RefPipeMATableConfig:
     rfp_config.make_rfp_ma_table_config() - not working to maintain nested list of lists - NEEDED FOR DARK RESAMPLING
     """
     def __init__(self,
-                 output_dir="/grp/roman/rcosenti/RFP_git_clone/"
-                            "wfi_reference_pipeline/src/wfi_reference_pipeline/config",
+                 output_dir,
                  output_file="rfp_ma_table_config.yml"):
         """
         Initializes the RefPipeMATableConfig with the specified output directory and file name.

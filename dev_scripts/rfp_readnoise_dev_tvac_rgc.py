@@ -5,10 +5,10 @@ from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
-tvac1_totalnoise_dir = '/grp/roman/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
+tvac1_totalnoise_dir = '/PATH/TO/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
 
 # This directory has irrc corrected asdf files from TVAC1 WITH LIGHT
-tvac1_not_dark_dir = '/grp/roman/GROUND_TESTS/TVAC1/NOM_OPS/OTP00636_Dark_TV1a_R3_MCEB_IRRCcorr/*/'
+tvac1_not_dark_dir = '/PATH/TO/GROUND_TESTS/TVAC1/NOM_OPS/OTP00636_Dark_TV1a_R3_MCEB_IRRCcorr/*/'
 
 # Path to directory
 directory = Path(tvac1_totalnoise_dir)
@@ -42,7 +42,7 @@ if make_files:
     for i in range(1, 19):
         wfi_id = f'WFI{i:02}'
         file_list = wfi_filelists.get(wfi_id, [])
-        output_dir = '/grp/roman/RFP/TVAC/TVAC1/rfp_readnoise_first_pass/'
+        output_dir = '/PATH/TO/TVAC/TVAC1/rfp_readnoise_first_pass/'
         outfile = output_dir + 'roman_tvac1_readnoise_rfp_first_pass_'+wfi_id + '.asdf'
 
         tmp = MakeDevMeta(ref_type='READNOISE')
@@ -56,7 +56,7 @@ if make_files:
                                         outfile=outfile,
                                         clobber=True)
         rfp_tvac1_readnoise.make_readnoise_image()
-        #rfp_tvac1_readnoise.apply_gain_from_crds(tmp_crds_path='/grp/roman/RFP/DEV/scratch/')
+        #rfp_tvac1_readnoise.apply_gain_from_crds(tmp_crds_path='/PATH/TO/scratch/')
         # Save file.
         rfp_tvac1_readnoise.generate_outfile()
         print('Made reference file', rfp_tvac1_readnoise.outfile)

@@ -1,21 +1,12 @@
-import logging
 
-import asdf
+
 import numpy as np
 import roman_datamodels.stnode as rds
-import roman_datamodels as rdm
-import os
-import yaml
-import crds
-from crds.client import api
-import subprocess
-import shutil
-from pathlib import Path
 
+from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
+    WFIMetaIntegralNonLinearity,
+)
 
-import roman_datamodels.stnode as rds
-
-from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import WFIMetaIntegralNonLinearity
 from ..reference_type import ReferenceType
 
 
@@ -45,9 +36,9 @@ class IntegralNonLinearity(ReferenceType):
         # Update the file name to match the detector
         fl_name = 'new_roman_inl_' + tmp.meta_integral_non_linearity.instrument_detector
         # Instantiate an object and write the file out
-        rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity, 
-                                    ref_type_data=arr, 
-                                    clobber=True, 
+        rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity,
+                                    ref_type_data=arr,
+                                    clobber=True,
                                     outfile=fl_name+'.asdf')
         rfp_inl.generate_outfile()
     """
@@ -108,7 +99,7 @@ class IntegralNonLinearity(ReferenceType):
         self.inl_correction = ref_type_data
         _, num_values = np.shape(ref_type_data)
         self.value_array = np.linspace(0, 65535, num_values, dtype=np.uint16)
-        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems   
+        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
 
         self.outfile = outfile
 
@@ -133,9 +124,9 @@ class IntegralNonLinearity(ReferenceType):
         # Assuming self.inl_correction is shaped (32, N)
         # Each row corresponds to a science chunk (0–31)
         for sci_chunk in range(32):
-            # Reverse channel mapping: 0→32, 1→31, ..., 31→1 for a detector that is 
+            # Reverse channel mapping: 0→32, 1→31, ..., 31→1 for a detector that is
             # needing to be flipped left right from detector to science coordinates
-            # NOTE: other detectors 
+            # NOTE: other detectors
             channel = 32 - sci_chunk
 
             inl_table[str(sci_chunk)] = {
@@ -164,7 +155,7 @@ class IntegralNonLinearity(ReferenceType):
         inl_ref["value"] = self.value_array
 
         return inl_ref
-    
+
 
 def simulate_inl_correction_array():
     """
@@ -176,9 +167,9 @@ def simulate_inl_correction_array():
     phase shifts to look as much like synthetic INL data as possible from T. Brandt 2025.
     """
 
-    N = 65536
-    x = np.linspace(0, 65535, N)
-    mid = (N - 1) // 2
+    n = 65536
+    x = np.linspace(0, 65535, n)
+    mid = (n - 1) // 2
 
     num_chan = 32
     inl_arrays = []
@@ -192,11 +183,11 @@ def simulate_inl_correction_array():
         phase_offset_rad = np.deg2rad(phase_offset_deg)
         num_humps_saw = 1.7
         phase_saw = ((num_humps_saw * x[:mid+1] / mid) * 2 * np.pi + phase_offset_rad) % (2 * np.pi)
-        saw_component = 5 * (phase_saw / np.pi - 1) 
+        saw_component = 5 * (phase_saw / np.pi - 1)
 
         # High-frequency sine
         num_humps_sine = 4.3
-        sine_cpononent = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / N)
+        sine_cpononent = np.sin(3 * np.pi * num_humps_sine * x[:mid+1] / n)
 
         # Combine
         first_half_inl = linear_component + saw_component + sine_cpononent
@@ -206,7 +197,7 @@ def simulate_inl_correction_array():
         y_inl = np.concatenate([first_half_inl, second_half_inl])
 
         # Add Gaussian noise σ = 0.2
-        noise = np.random.normal(0, 0.2, size=N)
+        noise = np.random.normal(0, 0.2, size=n)
         y_noisy = y_inl + noise
 
         inl_arrays.append(y_noisy)

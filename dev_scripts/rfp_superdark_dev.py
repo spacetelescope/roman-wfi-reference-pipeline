@@ -11,7 +11,7 @@ from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import (
 )
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 
-input_directory = "/grp/roman/RFP/DEV/sim_inflight_calplan/WFIsim_darks/asdf_files"
+input_directory = "/PATH/TO/RFP/DEV/sim_inflight_calplan/WFIsim_darks/asdf_files"
 
 # Get all files in the directory
 files = os.listdir(input_directory)

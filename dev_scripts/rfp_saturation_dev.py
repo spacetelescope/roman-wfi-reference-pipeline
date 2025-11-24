@@ -10,7 +10,7 @@ from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 print('-' * 80)
 
 print('Dev script to make Saturation reference file with user input.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_saturation_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_saturation_dev_file_TVAC.asdf'
 # Use dev meta maker for SATURATION.
 tmp = MakeDevMeta(ref_type='SATURATION')
 # Example how to change the useafter in the meta data.
@@ -31,7 +31,7 @@ print('This is not how the Saturation reference files on CRDS were made. For tha
 print('-' * 80)
 
 print('Dev script to make Saturation reference file for romancal development on CRDS')
-outfile2 = '/grp/roman/RFP/DEV/scratch/rfp_saturation_dev_file_CRDS.asdf'
+outfile2 = '/PATH/TO/scratch/rfp_saturation_dev_file_CRDS.asdf'
 # Use dev meta maker for SATURATION
 tmp2 = MakeDevMeta(ref_type='SATURATION')
 # Create some sort of data. The ReferenceType base class needs to be instantiated

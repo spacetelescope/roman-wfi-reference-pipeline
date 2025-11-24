@@ -11,7 +11,7 @@ from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 print('-' * 80)
 
 print('Dev script to make Read Noise reference file with user input.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_readnoise_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_readnoise_dev_file_TVAC.asdf'
 # Use dev meta maker for READNOISE
 tmp = MakeDevMeta(ref_type='READNOISE')
 # Example how to change the useafter in the meta data.
@@ -33,7 +33,7 @@ print('-' * 80)
 
 print('Dev script to make Read Noise reference file for romancal development on CRDS')
 print('Give ReadNoise a simulated dark cube or an exposure up the ramp.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_readnoise_dev_CRDS.asdf'
+outfile = '/PATH/TO/scratch/rfp_readnoise_dev_CRDS.asdf'
 # Use dev meta maker for READNOISE
 tmp2 = MakeDevMeta(ref_type='READNOISE')
 # Set simulated cube read noise variance for testing ReadNoise().
