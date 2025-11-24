@@ -20,12 +20,15 @@ This allows the creation of a meta data dictionary with testing values for all r
 new_effect.py where you will create the class NewEffect(). Enforce checking instantiated meta data
 against the NewEffect meta data class value for NEWEFFECT. Provide __init__.py to allow export of the module.
 
-6 - Add the NEWEFFECT ref type to WFI_REF_TYPES_WITHOUT_INPUT_DATA (if applicable) if there is no WFI_REF_TYPES_WITHOUT_INPUT_DATA
-expected for this reference file type. The reference_type.py has a base class ReferenceType that expects
-some type of input data to be provided - either a file list or an array into ref_type_data.
+6 - Add the NEWEFFECT ref type to WFI_REF_TYPES_WITHOUT_INPUT_DATA (if applicable) to the list of ref reference_types
+that dont require input data in constants.py also if there is no expected input data for this reference file type. The 
+reference_type.py has a base class ReferenceType that expects some type of input data to be provided - either a
+file list or an array into ref_type_data.
 
 7 - Inherit ReferenceType as a base class and abstract methods.
 
 8 - Add new src/wfi_reference_pipeline/reference_types/tests/test_new_effect.py and modify src/wfi_reference_pipeline/reference_types/tests/test_rfp_schema.py 
-with a new test_rfp_new_effect_schema() test. 
+with a new test_rfp_new_effect_schema() test. The basic tests should include instantiating the class with and WFI_REF_TYPES_WITHOUT_INPUT_DATA
+valid input data types, making sure both cant be supplied, or at least one is supplied and tracking the flow through
+the module.
 
