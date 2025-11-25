@@ -3,7 +3,7 @@ name = "wfi_reference_pipeline"
 description = "Reference file pipeline for the Roman WFI instrument."
 requires-python = ">=3.12"
 authors = [
-    { name = "STScI", email = "help@stsci.edu" },
+    { name = "STScI" },
 ]
 classifiers = [
     "Intended Audience :: Science/Research",

@@ -1,5 +1,11 @@
 # Roman WFI Reference File Pipeline
 
+> [!CAUTION]
+> The code in this repository is under heavy development and not currently intended for widespread use. 
+>
+> If you have questions, please create a new issue.
+
+
 ## Installation
 
 It is recommended to begin with a clean environment, such as:
@@ -27,6 +33,10 @@ Users must create a config.yml living at:
 Use example_config.yml in the same directory as a template.
 
 ## Contributing
+> [!WARNING]
+> We are not currently accepting external Pull Requests. However, we plan to
+> use the guidelines below in the near future.
+
 To contribute to this project, please become familiar with our [Contributing Guide](https://github.com/spacetelescope/roman-wfi-reference-pipeline/blob/main/CONTRIBUTING.md)
 
 ## Documentation
@@ -51,12 +61,12 @@ Go to your .bash_profile and set environment variables to determine the crds sta
 This is for the Roman test instance of CRDS.
 ```buildoutcfg
 export CRDS_SERVER_URL="https://roman-crds-test.stsci.edu"
-export CRDS_PATH="/grp/roman/RFP/DEV/scratch/test_crds/"
+export CRDS_PATH="<local_path_to_cache>/test_crds/"
 ```
 This is for the Roman TVAC CRDS server which is temporary for analysis up to commissioning.
 ```buildoutcfg
 export CRDS_SERVER_URL="https://roman-crds-tvac.stsci.edu"
-export CRDS_PATH="/grp/roman/RFP/DEV/scratch/tvac_crds"
+export CRDS_PATH="<local_path_to_cache>/tvac_crds"
 ```
 
 Start with a clean environment where you will get the latest versions of romancal, roman attribute
@@ -72,9 +82,4 @@ to replace old reference files with the most current.
 Now sync crds to get all of the mappings updated.
 ```buildoutcfg
 crds sync --all
-```
-
-See the update_reference_files.py script in examples that was done for Build 17 in April 2025. Also see
-```buildoutcfg
-/grp/roman/RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```
