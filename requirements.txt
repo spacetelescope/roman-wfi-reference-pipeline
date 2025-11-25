@@ -1,4 +1,4 @@
-astropy==7.0.2
+astropy==7.1.1
 crds==12.1.8
 matplotlib==3.10.3
 numpy==2.2.6
