@@ -105,7 +105,7 @@ class DarkPipeline(Pipeline):
 
         for file in file_list:
             logging.info("OPENING - " + file.name)
-            in_file = rdm.open(file)  # SAPP should this be asdf open or rdm.open
+            in_file = rdm.open(file)  # TODO should this be asdf open or rdm.open
 
             # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
             # name of the last step replacing 'uncal'.asdf
@@ -128,7 +128,7 @@ class DarkPipeline(Pipeline):
             result.save(path=prep_output_file_path)
 
             self.prepped_files.append(prep_output_file_path)
-        self.qc.check_prep_pipeline()  # SAPP TODO - speak with rick about what to do on QC Failures
+        self.qc.check_prep_pipeline()  # TODO - speak with rick about what to do on QC Failures
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
     # @log_info
@@ -291,8 +291,13 @@ class DarkPipeline(Pipeline):
         read_pattern = [[1], [2, 3], [5, 6, 7], [10]]
         rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
         rfp_dark.make_rate_image_from_data_cube()
+        rfp_dark.update_data_quality_array(
+            hot_pixel_rate=self.qc.pipeline.values.hot_pixel_rate,
+            warm_pixel_rate=self.qc.pipeline.values.warm_pixel_rate,
+            dead_pixel_rate=self.qc.pipeline.values.dead_pixel_rate,
+        )
         rfp_dark.generate_outfile()
-        self.qc.check_pipeline(rfp_dark) # TODO - discuss placement of this
+        self.qc.check_pipeline(rfp_dark)  # TODO - discuss placement of this
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 

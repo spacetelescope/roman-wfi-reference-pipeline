@@ -1,9 +1,13 @@
 import glob
 import time
-from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
-from wfi_reference_pipeline.config.config_access import get_crds_submission_config
-from wfi_reference_pipeline.utilities.manifest import make_manifest, print_manifest, print_meta_fields_together
 
+from wfi_reference_pipeline.config.config_access import get_crds_submission_config
+from wfi_reference_pipeline.utilities.manifest import (
+    make_manifest,
+    print_manifest,
+    print_meta_fields_together,
+)
+from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 
 # Change to True to complete submission info
 update_dict = False
@@ -21,11 +25,10 @@ new_files.sort()
 submission = WFISubmit(new_files, server='ops')
 
 # User has to modify the following entries in the submission dictionary.
-# Rick Cosentino example
 if update_dict:
     submission.submission_dict['instrument'] = 'WFI'
-    submission.submission_dict['deliverer'] = 'Richard Cosentino'
-    submission.submission_dict['other_email'] = 'rcosenti@stsci.edu'
+    submission.submission_dict['deliverer'] = 'NAME OF USER'
+    submission.submission_dict['other_email'] = 'USER_EMAIL@stsci.edu'
     submission.submission_dict['file_type'] = 'MASk'
     submission.submission_dict['useafter_matches'] = 'N/A'
     submission.submission_dict['compliance_verified'] = 'N/A'

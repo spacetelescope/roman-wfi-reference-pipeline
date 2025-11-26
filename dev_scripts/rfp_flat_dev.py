@@ -1,12 +1,13 @@
+import numpy as np
+
+from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities import simulate_reads
-from wfi_reference_pipeline.reference_types.flat.flat import Flat
-import numpy as np
 
 print('-' * 80)
 
 print('Dev script to make Flat reference file with user input.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_flat_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_flat_dev_file_TVAC.asdf'
 # Use dev meta maker for FLAT
 tmp = MakeDevMeta(ref_type='FLAT')
 # Example how to change the useafter in the meta data.
@@ -29,7 +30,7 @@ print('-' * 80)
 
 print('Dev script to make Flat reference file from input data cube and made to be like others'
       ' on CRDS with non-zero error array and randomly located loq qe pixels in the dq mask.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_flat_dev_file_CRDS.asdf'
+outfile = '/PATH/TO/scratch/rfp_flat_dev_file_CRDS.asdf'
 # Use dev meta maker for FLAT
 tmp2 = MakeDevMeta(ref_type='FLAT')
 # Example how to change the useafter in the meta data.

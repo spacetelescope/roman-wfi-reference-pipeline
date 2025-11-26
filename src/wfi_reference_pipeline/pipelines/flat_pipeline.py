@@ -52,10 +52,11 @@ class FlatPipeline(Pipeline):
         self.uncal_files.clear()
         logging.info("FLAT SELECT_UNCAL_FILES")
 
-        """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
+        """ TODO THIS MUST BE REPLACED WITH ACTUAL SELECTION LOGIC USING PARAMS
+        FROM CONFIG IN CONJUNCTION WITH HOW WE WILL OBTAIN INFORMATION FROM DAAPI """
         # Get files from input directory
         files = list(
-            self.ingest_path.glob("r00444*_WFI01_uncal.asdf")  # Change this
+            self.ingest_path.glob("*_uncal.asdf")  # Change this
         )
 
         self.uncal_files = files
@@ -63,7 +64,8 @@ class FlatPipeline(Pipeline):
 
     # @log_info
     def prep_pipeline(self, file_list=None):
-        """Prepare calibration data files by running data through select romancal steps"""
+        """Prepare calibration data files by running data
+        through select romancal steps"""
         logging.info("FLAT PREP")
 
         # Clean up previous runs
@@ -80,24 +82,31 @@ class FlatPipeline(Pipeline):
             logging.info("OPENING - " + file.name)
             in_file = rdm.open(file)
 
-            # If save_result = True, then the input asdf file is written to disk, in the current directory, with the
-            # name of the last step replacing 'uncal'.asdf
-            result = DQInitStep.call(in_file, save_results=False)
-            result = SaturationStep.call(result, save_results=False)
-            result = RefPixStep.call(result, save_results=False)
-            result = LinearityStep.call(result, save_results=False)
-            result = DarkCurrentStep.call(result, save_results=False)
-            result = RampFitStep.call(result, save_results=False)
-            # TODO Need to confirm steps from romancal and their functionality
+            # If save_result = True, then the input asdf file is written to disk,
+            # in the current directory, with the name of the last step replacing 'uncal'.asdf
+            if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
+                result = DQInitStep.call(in_file, save_results=False)
+            if in_file["meta"]["cal_step"]["refpix"] == "INCOMPLETE":
+                result = RefPixStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["saturation"] == "INCOMPLETE":
+                result = SaturationStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["linearity"] == "INCOMPLETE":
+                result = LinearityStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
+                result = DarkCurrentStep.call(result, save_results=False)
+            if in_file["meta"]["cal_step"]["ramp_fit"] == "INCOMPLETE":
+                result = RampFitStep.call(result, save_results=False)
+            # Make sure to only use files that have not been flat-fielded
+            if in_file["meta"]["cal_step"]["flat_field"] == "INCOMPLETE":
+                prep_output_file_path = self.file_handler.format_prep_output_file_path(
+                    result.meta.filename
+                )
+                result.save(path=prep_output_file_path)
 
-            prep_output_file_path = self.file_handler.format_prep_output_file_path(
-                result.meta.filename
-            )
-            result.save(path=prep_output_file_path)
+                self.prepped_files.append(prep_output_file_path)
 
-            self.prepped_files.append(prep_output_file_path)
-
-        logging.info("Finished PREPPING files to make FLAT reference file from RFP")
+        logging.info(
+            "Finished PREPPING files to make FLAT reference file from RFP")
 
         logging.info("Starting to make FLAT from PREPPED FLAT asdf files")
 
@@ -111,11 +120,12 @@ class FlatPipeline(Pipeline):
             if self.prepped_files is not None:
                 file_list = self.prepped_files
             else:
-                raise ValueError("Prepare file or pass a (pre-processed) file list")
+                raise ValueError(
+                    "Prepare file or pass a (pre-processed) file list")
 
         tmp = MakeDevMeta(ref_type=self.ref_type)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
-            tmp.meta_flat.mode,
+            tmp.meta_flat.optical_element,
             tmp.meta_flat.instrument_detector,
         )
 
@@ -126,8 +136,15 @@ class FlatPipeline(Pipeline):
             outfile=out_file_path,
             clobber=True,
         )
-        rfp_flat.flat_image = rfp_flat.make_flat_from_files(file_list)
+        _, _ = rfp_flat.make_flat_from_files(calc_error=True, lo=20, hi=500)
         rfp_flat.populate_datamodel_tree()
         rfp_flat.generate_outfile()
+        self.flat_file = rfp_flat
         logging.info("Finished RFP to make FLAT")
         print("Finished RFP to make FLAT")
+
+    def deliver(self):
+        pass
+
+    def pre_deliver(self):
+        pass

@@ -61,12 +61,12 @@ Go to your .bash_profile and set environment variables to determine the crds sta
 This is for the Roman test instance of CRDS.
 ```buildoutcfg
 export CRDS_SERVER_URL="https://roman-crds-test.stsci.edu"
-export CRDS_PATH="<local_path_to_cache>/test_crds/"
+export CRDS_PATH="/PATH/TO/test_crds/"
 ```
 This is for the Roman TVAC CRDS server which is temporary for analysis up to commissioning.
 ```buildoutcfg
 export CRDS_SERVER_URL="https://roman-crds-tvac.stsci.edu"
-export CRDS_PATH="<local_path_to_cache>/tvac_crds"
+export CRDS_PATH="/PATH/TO/tvac_crds"
 ```
 
 Start with a clean environment where you will get the latest versions of romancal, roman attribute
@@ -82,4 +82,10 @@ to replace old reference files with the most current.
 Now sync crds to get all of the mappings updated.
 ```buildoutcfg
 crds sync --all
+```
+
+See the update_reference_files.py script in examples that was done for Build 17 in April 2025. Also see
+```buildoutcfg
+navigate to central store's roman directory, then:
+./RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```

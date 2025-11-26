@@ -1,27 +1,31 @@
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import ReferencePixel
-
 import glob
+
 import numpy as np
 
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT
+from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
+    ReferencePixel,
+)
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.utilities import logging_functions
+
 logging_functions.configure_logging('wfi_refpixel_example')
 
 #####################
 # Glob a set of Total Noise files
-total_noise_files = glob.glob('/grp/roman/GROUND_TESTS/TVAC1/ASDF/NOM_OPS/OTP00639_All_TV1a_R1_MCEB/Activity_1/*WFI09_uncal.asdf')[0:3]
+total_noise_files = glob.glob('/PATH/TO/GROUND_TESTS/TVAC1/ASDF/NOM_OPS/OTP00639_All_TV1a_R1_MCEB/Activity_1/*WFI09_uncal.asdf')[0:3]
 
-# define the detector 
+# define the detector
 detector = 'WFI09'
 
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_referencepixel_dev_file_TVAC.asdf'
+outfile = '/PATH/TO/scratch/rfp_referencepixel_dev_file_TVAC.asdf'
 
 # Use dev meta maker for REFPIX
 tmp = MakeDevMeta(ref_type='REFPIX')
 # get the meta data
 refpixel_dev_meta = tmp.meta_referencepixel
 
-tmppath = '/grp/roman/RFP/DEV/scratch/'
+tmppath = '/PATH/TO/scratch/'
 skip_first_frame = False
 
 ###################
@@ -40,7 +44,7 @@ print('Made reference file', rfp_refpix1.outfile)
 #####################
 print('-' * 80)
 print('Dev to make ReferencePixel coefficienct with one file.')
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_referencepixel_dev_file_TVAC2.asdf'
+outfile = '/PATH/TO/scratch/rfp_referencepixel_dev_file_TVAC2.asdf'
 
 # Instantiate rfp referencepixel object.
 rfp_refpix2 = ReferencePixel(meta_data=refpixel_dev_meta,
@@ -74,7 +78,7 @@ tmp_class = ReferencePixel(meta_data=refpixel_dev_meta,
                 file_list=total_noise_files[0:2],
                 outfile=outfile,
                 clobber=True)
-large_data = np.zeros((2,55, 4096, 4224))
+large_data = np.zeros((2,55, DETECTOR_PIXEL_X_COUNT, 4224))
 for i, fil in enumerate(total_noise_files[0:2]):
     data = tmp_class.get_data_cube_from_dark_file(fil, skip_first_frame=skip_first_frame)
     large_data[i,:,:,:] = data

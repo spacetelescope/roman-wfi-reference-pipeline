@@ -119,16 +119,16 @@ class Linearity(ReferenceType):
             if self.times.shape[0] != self.input_data.shape[0]:
                 raise ValueError('Frame times should have the same length as datacube')
 
-        nframes = get_fit_length(self.input_data, self.times, dq=self.mask)
+        nframes = get_fit_length(self.input_data, self.times, dq=self.dq_mask)
 
         # Keep only the frames that we need
         img_arr = self.input_data[:nframes, :, :]
         time = self.times[:nframes]
-        if self.mask is not None:
-            if len(self.mask.shape) == 2:
-                img_dq = np.ones(nframes)[:, None, None] * self.mask
-            elif len(self.mask.shape) == 3:
-                img_dq = self.mask[:nframes, :, :]
+        if self.dq_mask is not None:
+            if len(self.dq_mask.shape) == 2:
+                img_dq = np.ones(nframes)[:, None, None] * self.dq_mask
+            elif len(self.dq_mask.shape) == 3:
+                img_dq = self.dq_mask[:nframes, :, :]
             else:
                 raise ValueError('dq array expected to be 2 or 3-dimensional')
 
@@ -164,7 +164,7 @@ class Linearity(ReferenceType):
         else:
             raise NotImplementedError
         # Mask bad pixels
-        self.mask[np.where(np.isnan(coeffs))[1:]] += flag_nlc
+        self.dq_mask[np.where(np.isnan(coeffs))[1:]] += flag_nlc
         self.coeffs = coeffs
         self.fit_complete = True
         self.poly_order = poly_order
@@ -178,18 +178,18 @@ class Linearity(ReferenceType):
         linearity_datamodel_tree = rds.LinearityRef()
         linearity_datamodel_tree['meta'] = self.meta
         if self.fit_complete:
-            nonlinear_pixels = ((self.mask == float('NaN')) |
+            nonlinear_pixels = ((self.dq_mask == float('NaN')) |
                                 (self.coeffs[0, :, :] == float('NaN')))
             nonlinear_pixels = np.where(nonlinear_pixels)
-            self.mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
+            self.dq_mask[nonlinear_pixels] += flag_nlc  # linearity correction not available
             self.coeffs[self.coeffs == float('NaN')] = 0
             self.coeffs = self.coeffs.astype(np.float32)  # to comply with datamodel
             linearity_datamodel_tree['coeffs'] = self.coeffs * u.DN
-            linearity_datamodel_tree['dq'] = np.sum(self.mask, axis=0).astype(np.uint32)
+            linearity_datamodel_tree['dq'] = np.sum(self.dq_mask, axis=0).astype(np.uint32)
         else:
             linearity_datamodel_tree['coeffs'] = np.zeros((1, self.img_size[0],
                                                            self.img_size[1]), np.float32)
-            linearity_datamodel_tree['dq'] = np.sum(self.mask, axis=0).astype(np.uint32)
+            linearity_datamodel_tree['dq'] = np.sum(self.dq_mask, axis=0).astype(np.uint32)
         return linearity_datamodel_tree
 
     def save_linearity(self, datamodel_tree=None, clobber=False):
@@ -233,7 +233,7 @@ def get_fit_length(datacube, time, dq=None, frac_thr=0.5,
     Outputs:
     --------
     nframes: int; Number of frames to consider for the fit.
-    
+
     """
     if len(datacube.shape) != 3:
         raise ValueError('A 3-dimensional datacube is expected')

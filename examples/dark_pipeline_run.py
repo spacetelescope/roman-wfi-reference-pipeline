@@ -9,7 +9,7 @@ from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
 from pathlib import Path
 
 
-rfp_dark_pipe_all = 0
+rfp_dark_pipe_all = 1
 if rfp_dark_pipe_all == 1:
     # REFTYPE_PIPE.DARK
 
@@ -48,7 +48,7 @@ if rfp_dark_pipe_only == 1:
 rfp_tvac_list_run_prep = 0
 if rfp_tvac_list_run_prep == 1:
 
-    files = glob.glob("/grp/roman/GROUND_TESTS/TVAC2/ASDF/NOM_OPS/OTP00644_Darks_TV2a_R2_MCEB/Activity_1/*_WFI01*.asdf")
+    files = glob.glob("/PATH/TO/GROUND_TESTS/TVAC2/ASDF/NOM_OPS/OTP00644_Darks_TV2a_R2_MCEB/Activity_1/*_WFI01*.asdf")
     dark_pipe = DarkPipeline("WFI01")
     dark_pipe.prep_pipeline(file_list=files)
     print(f"pipeline prepped!!")
@@ -60,8 +60,8 @@ if rfp_tvac_list_run_prep == 1:
     dark_pipe.prep_superdark_file(short_file_list=file_list, short_dark_num_reads=350, outfile="validate_superdark_TVAC_test_prepped_superdark_short.asdf")
     print(f"superdark prepped!!")
 
-rfp_superdark_only = 1
+rfp_superdark_only = 0
 if rfp_superdark_only:
-    file_list = glob.glob("/grp/roman/GROUND_TESTS/TVAC2_IRRCcorr/ASDF/NOM_OPS/OTP00644_Darks_TV2a_R2_MCEB/Activity_1/*_WFI01*.asdf")
+    file_list = glob.glob("/PATH/TO/GROUND_TESTS/TVAC2_IRRCcorr/ASDF/NOM_OPS/OTP00644_Darks_TV2a_R2_MCEB/Activity_1/*_WFI01*.asdf")
     dark_pipe = DarkPipeline("WFI01")
     dark_pipe.prep_superdark_file(full_file_list=file_list, full_file_num_reads=350, outfile="THIS_DEFINITELY_WORKED_FIRST_TRY.asdf")

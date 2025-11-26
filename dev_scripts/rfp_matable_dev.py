@@ -1,9 +1,11 @@
-from wfi_reference_pipeline.reference_types.multiaccumulationtable.multiaccumulationtable import MultiAccumulationTable
+from wfi_reference_pipeline.reference_types.multiaccumulationtable.multiaccumulationtable import (
+    MultiAccumulationTable,
+)
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
-outfile = '/grp/roman/RFP/DEV/scratch/rfp_matable_dev_file_revG_w_dms_tests.asdf'
+outfile = '/PATH/TO/scratch/rfp_matable_dev_file_revG_w_dms_tests.asdf'
 
-input_file = '/Users/wschultz/RTB/prd-delivery-utils/src/rev_post-G/ma_table_ref_20250701_rev_post-G_dev.yaml'
+input_file = 'PATH/TO/ma_table_ref_20250701_rev_post-G_dev.yaml'
 
 tmp = MakeDevMeta(ref_type='MATABLE')
 tmp.meta_matable.author = 'William C. Schultz'

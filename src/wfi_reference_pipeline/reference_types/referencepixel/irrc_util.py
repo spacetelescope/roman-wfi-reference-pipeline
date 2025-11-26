@@ -24,10 +24,10 @@ from .irrc_constants import (
 
 logger = logging.getLogger('ReferencePixel util')
 
-    
+
 def remove_linear_trends(data_frames_rowscols:np.ndarray, subtract_offset_only:bool):
     '''
-    Remove linear trends (gains/slope, biases/offsets) per pixel 
+    Remove linear trends (gains/slope, biases/offsets) per pixel
 
     Parameters
     ----------
@@ -35,10 +35,10 @@ def remove_linear_trends(data_frames_rowscols:np.ndarray, subtract_offset_only:b
         image data [num_frames][num_rows][num_cols].  The data is modified IN PLACE
     subtract_offset_only: boolean
         if True, only the liner model offset is removed.  If False, the offset and slope are removed
-    
+
     Returns
     ----------
-    per-pixel image array of modeled m (slope) and b (offset) 
+    per-pixel image array of modeled m (slope) and b (offset)
     '''
 
     num_frames, num_rows, num_cols = data_frames_rowscols.shape
@@ -71,7 +71,7 @@ def remove_linear_trends(data_frames_rowscols:np.ndarray, subtract_offset_only:b
 
 def remove_linear_trends_per_frame(logger:logging.Logger, data_chans_frames_rowschancols:np.ndarray, subtract_offset_only:bool, multithread=True):
     '''
-    Entry point for Fitting and removal of slopes per frame to remove issues at frame boundaries. 
+    Entry point for Fitting and removal of slopes per frame to remove issues at frame boundaries.
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def interp_zeros_channel_fun(chan_number:int, interp_func:np.ndarray, data_chans
     Convolve interp_func across pixels with values of 0 for a single channel.  We are not using the outlier mask and thus possibly interpolating
     pixels with original values of 0.  This is to ensure we don't have discontinuities (around 0) when doing the FFT interpolation, which could
     damage the performance.
-    
+
     Parameters
     ----------
     chan_number: int
@@ -167,7 +167,7 @@ def interp_zeros_channel_fun(chan_number:int, interp_func:np.ndarray, data_chans
 
 def fft_interp_step_channel_fun(chan_number:int, data_chans_frames_flattenedimage:np.ndarray, data_fft_out:np.ndarray, read_only_pixels_are_onemask_chanrowcol:np.ndarray, appodize_func:np.ndarray, num_fft_iterations:int):
     '''
-    Perform FFT interpolation on pixels for a single channel. A final FFT is done before return (needed by IRRC algorithm and more performant to do here) 
+    Perform FFT interpolation on pixels for a single channel. A final FFT is done before return (needed by IRRC algorithm and more performant to do here)
 
     Parameters
     ----------
@@ -175,7 +175,7 @@ def fft_interp_step_channel_fun(chan_number:int, data_chans_frames_flattenedimag
     data_chans_frames_flattenedimage: ndarray
         (channels, frames, rows*cols) of data.  WILL BE UPDATED IN PLACE
     data_fft_out: ndarray
-        Returned interpolated data - with a final FFT applied 
+        Returned interpolated data - with a final FFT applied
     read_only_pixels_are_onemask_chanrowcol: ndarray
         image mask with 1's represent read-only pixels (e.g., 0 entries will be updated with interpolation)
     appodize_func: ndarray
@@ -198,7 +198,7 @@ def fft_interp(chandata_framesflat:np.ndarray, read_only_pixels_are_onemask_flat
     ----------
     chandata_framesflat: ndarray
         Multi-frame, single channel data with each frame flattened to 1D.  WILL BE UPDATED IN PLACE
-    read_only_pixels_are_onemask_flattenedimage: ndarray  
+    read_only_pixels_are_onemask_flattenedimage: ndarray
         Flattened image size mask indicating (good) pixels that should be used in the interpolation but not modified
     apodize_filter: ndarray
     num_iterations: int
@@ -227,7 +227,7 @@ def fft_interp(chandata_framesflat:np.ndarray, read_only_pixels_are_onemask_flat
 def get_reference_mask(value_for_refpixels:bool=0):
     '''
     Generate a full image mask of the reference pixels
-    
+
     Parameters
     ----------
     value_for_refpixels: boolean, default = 0
@@ -247,10 +247,10 @@ def get_reference_mask(value_for_refpixels:bool=0):
     return mask
 
 def get_fft_apodize_function():
-    
+
     apo_len = NUM_ROWS * NUM_COLS_PER_OUTPUT_CHAN_WITH_PAD
     apo2 = np.abs(np.fft.rfftfreq(apo_len, 1 / apo_len))
-    apodize_func = np.cos(2 * np.pi * apo2 / apo_len) / 2.0 + 0.5 
+    apodize_func = np.cos(2 * np.pi * apo2 / apo_len) / 2.0 + 0.5
     return apodize_func
 
 def get_trig_interpolation_function(data):
@@ -259,20 +259,20 @@ def get_trig_interpolation_function(data):
 def exec_channel_func_threads(chan_index_range:range, target_func, func_args, multithread=False):
     '''
     Execute a function over a range of channels.  If multithread is True, all executions
-    will be executed on individual threads.  
-    
+    will be executed on individual threads.
+
     Parameters
     ----------
     chan_index_range: range
         E.g., 'range(NUM_OUTPUT_CHANS')
-    target_func: 
+    target_func:
         function to call, first arg must be channel number
-    func_args: 
+    func_args:
         function argument tuple NOT INCLUDING channel number e.g. (sig_data, goodPixelsOneIsMask_RowCol)
     multithread: boolean, default = False
         if True allocate a separate thread for each channel; otherwise the channels are processed sequentially in a single thread
     '''
-    
+
     if multithread:
         logger.info("multithreading-> ")
         thread_list = []
