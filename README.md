@@ -3,7 +3,7 @@
 > [!CAUTION]
 > The code in this repository is under heavy development and not currently intended for widespread use. 
 >
-> If you have questions, please create a new issue.
+> If you have questions, see the CONTRIBUTING.md.
 
 
 ## Installation
@@ -41,7 +41,8 @@ To contribute to this project, please become familiar with our [Contributing Gui
 
 ## Documentation
 
-To get the full documentation, install the package as described above, then go to the /src/docs/ directory and run:
+To get the full documentation, install the package as described above, install sphinx, 
+then go to the /src/docs/ directory and run:
 
 ```buildoutcfg
 make html
@@ -60,20 +61,15 @@ Go to your .bash_profile and set environment variables to determine the crds sta
 
 This is for the Roman test instance of CRDS.
 ```buildoutcfg
-export CRDS_SERVER_URL="https://roman-crds-test.stsci.edu"
-export CRDS_PATH="/PATH/TO/test_crds/"
-```
-This is for the Roman TVAC CRDS server which is temporary for analysis up to commissioning.
-```buildoutcfg
-export CRDS_SERVER_URL="https://roman-crds-tvac.stsci.edu"
-export CRDS_PATH="/PATH/TO/tvac_crds"
+export CRDS_SERVER_URL="https://roman-crds.stsci.edu"
+export CRDS_PATH="/PATH/TO/ops_crds/"
 ```
 
 Start with a clean environment where you will get the latest versions of romancal, roman attribute
 dictionary, and roman data models.
 ```buildoutcfg
-conda create -yn devRFP_RGCenv_update_refs ipython
-conda activate devRFP_RGCenv_update_refs
+conda create -yn VMdevRFP_update_refs ipython
+conda activate VMdevRFP_update_refs
 pip install romancal crds
 ```
 By doing this pip install you will get the latest released versions since this workflow is setup
