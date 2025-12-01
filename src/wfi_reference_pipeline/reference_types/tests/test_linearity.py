@@ -17,7 +17,7 @@ from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 
 # TODO - re-implement tests after linearity pipeline is re-worked
 @pytest.fixture
-def test_metadata():
+def temp_metadata():
     return MakeTestMeta(ref_type="LINEARITY").meta_linearity.export_asdf_meta()
 
 
@@ -71,7 +71,7 @@ class TestGetFitLength():
 
 @pytest.mark.skip(reason="Temporarily disabled test")
 class TestFitSingle():
-    def test_fit_single_nodq(self, test_metadata):
+    def test_fit_single_nodq(self, temp_metadata):
         """
         Test fitting a single image.
         """
@@ -82,11 +82,11 @@ class TestFitSingle():
         poly_coeffs = (0.1, 10, 0.001)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        lin = Linearity(y_test, test_metadata, optical_element='F146')
+        lin = Linearity(y_test, temp_metadata, optical_element='F146')
         lin.make_linearity(poly_order=2)
         assert lin.coeffs[:, 0, 0] == pytest.approx(poly_coeffs, abs=1e-7)
 
-    def test_fit_single_dq(self, test_metadata):
+    def test_fit_single_dq(self, temp_metadata):
         """
         Test fitting a single image with a dq array.
         """
@@ -102,7 +102,7 @@ class TestFitSingle():
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, test_metadata,
+        lin = Linearity(y_test, temp_metadata,
                         optical_element='F146', bit_mask=dq_test)
         lin.make_linearity(poly_order=2)
         # Check the 0,0 pixel that has some masked values
@@ -112,7 +112,7 @@ class TestFitSingle():
         # Check the other masked pixel
         assert lin.coeffs[:, 10, 10] == pytest.approx(poly_coeffs, abs=1e-7)
 
-    def test_fit_single_nodq_wnoise(self, test_metadata):
+    def test_fit_single_nodq_wnoise(self, temp_metadata):
         """
         Test fitting a single image with no dq, but noise added to it.
         """
@@ -124,11 +124,11 @@ class TestFitSingle():
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
         rng = np.random.default_rng(1234)
         y_test += 0.005 * rng.standard_normal(size=y_test.shape)
-        lin = Linearity(y_test, test_metadata, optical_element='F146')
+        lin = Linearity(y_test, temp_metadata, optical_element='F146')
         lin.make_linearity(poly_order=2)
         assert lin.coeffs[:, 10, 10] == pytest.approx(poly_coeffs, abs=1e-2)
 
-    def test_fit_single_dq_wnoise(self, test_metadata):
+    def test_fit_single_dq_wnoise(self, temp_metadata):
         """
         Test fitting a single image with dq and noise.
         """
@@ -146,7 +146,7 @@ class TestFitSingle():
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, test_metadata, optical_element='F146',
+        lin = Linearity(y_test, temp_metadata, optical_element='F146',
                         bit_mask=dq_test)
         lin.make_linearity(poly_order=2)
         # Check the 0,0 pixel that has some masked values
@@ -156,7 +156,7 @@ class TestFitSingle():
         # Check the other masked pixel
         assert lin.coeffs[:, 10, 10] == pytest.approx(poly_coeffs, abs=1e-2)
 
-    def test_fit_single_wrong_poly(self, test_metadata):
+    def test_fit_single_wrong_poly(self, temp_metadata):
         """
         Test fitting a single image requesting a polynomial order larger
         than the original.
@@ -173,7 +173,7 @@ class TestFitSingle():
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, test_metadata, optical_element='F146',
+        lin = Linearity(y_test, temp_metadata, optical_element='F146',
                         bit_mask=dq_test)
         # Check if the "correct" polynomial is still fit even if we change
         # input and output polynomial orders don't match
@@ -185,7 +185,7 @@ class TestFitSingle():
         # Check the other masked pixel
         assert lin.coeffs[3:, 10, 10] == pytest.approx(poly_coeffs, abs=1e-7)
 
-    def test_fit_single_constrained_dq(self, test_metadata):
+    def test_fit_single_constrained_dq(self, temp_metadata):
         """
         Test fitting a single image with constraints and a dq array.
         It should raise a NotImplementedError.
@@ -202,13 +202,13 @@ class TestFitSingle():
         dq_test[8, 0, 0] = 2**20
         dq_test[9, 0, 0] = 2**20
         dq_test[8, 10, 10] = 2**20
-        lin = Linearity(y_test, test_metadata, optical_element='F146',
+        lin = Linearity(y_test, temp_metadata, optical_element='F146',
                         bit_mask=dq_test)
         # We have not implemented this option with a dq array yet
         with pytest.raises(NotImplementedError):
             lin.make_linearity(poly_order=2, constrained=True)
 
-    def test_fit_single_constrained_nodq(self, test_metadata):
+    def test_fit_single_constrained_nodq(self, temp_metadata):
         """
         Test fitting a single image fixing slope to 1 and intercept to 0.
         """
@@ -218,7 +218,7 @@ class TestFitSingle():
         poly_coeffs = (0.1, 1, 0)
         y_test = np.polyval(poly_coeffs, t_test)
         y_test = y_test[:, None, None] * np.ones((40, 40))  # Test with array (10, 40, 40)
-        lin = Linearity(y_test, test_metadata, optical_element='F146')
+        lin = Linearity(y_test, temp_metadata, optical_element='F146')
         # Check if the "correct" polynomial is still fit even if we change
         # input and output polynomial orders don't match
         lin.make_linearity(poly_order=2, constrained=True)
@@ -227,16 +227,16 @@ class TestFitSingle():
 
 @pytest.mark.skip(reason="Temporarily disabled test")
 class TestLinearityMulti():
-    def test_make_linearity_multi_dummy(self, test_metadata):
-        _meta = test_metadata
+    def test_make_linearity_multi_dummy(self, temp_metadata):
+        _meta = temp_metadata
         t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         _meta['exposure'] = dict()
         _meta['exposure']['frame_time'] = t_test
         with pytest.raises(ValueError):
             _ = make_linearity_multi(None, _meta, output_file=None)
 
-    def test_make_linearity_multi_dq_nounc(self, test_metadata):
-        _meta = test_metadata
+    def test_make_linearity_multi_dq_nounc(self, temp_metadata):
+        _meta = temp_metadata
         t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
         poly_coeffs = (0.1, 10, 0.01)
@@ -311,8 +311,8 @@ class TestLinearityMulti():
                                                  return_unc=True, output_file=None)
         assert coeffs[:, 10, 10] == pytest.approx((poly_coeffs[0], 1, 0), abs=1e-2)
 
-    def test_make_linearity_multi_dq_useunc(self, test_metadata):
-        _meta = test_metadata
+    def test_make_linearity_multi_dq_useunc(self, temp_metadata):
+        _meta = temp_metadata
         # Set up a grid of times
         t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
@@ -385,8 +385,8 @@ class TestLinearityMulti():
                                                  use_unc=True)
         assert coeffs[:, 10, 10] == pytest.approx((poly_coeffs[0], 1, 0), abs=1e-2)
 
-    def test_make_linearity_dq_ngrid(self, test_metadata):
-        _meta = test_metadata
+    def test_make_linearity_dq_ngrid(self, temp_metadata):
+        _meta = temp_metadata
         # Set up a grid of times
         t_test = WFI_FRAME_TIME[WFI_MODE_WIM] * np.arange(10)
         # Set up constrained fit (i.e, slope 1 and intercept 0)
