@@ -7,6 +7,7 @@ from astropy import units as u
 
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT
 
 from ..reference_type import ReferenceType
 
@@ -15,12 +16,12 @@ class Dark(ReferenceType):
     """
     Class Dark() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written.
-    Dark() creates the read noise reference file using roman data models
+    Dark() creates the dark reference file using roman data models
     and has all necessary meta and matching criteria for delivery to CRDS.
 
     Under automated operations conditions, a super dark file will be opened
-    and resampled and averaged to make a MA-Table specific dark resampled cube.
-    The dark rate image and slope are derived from the input data cube.
+    to fit a linear rate to the superdark cube.
+    The dark rate image slope is derived from the super dark cube.
 
     NOTE: RFP Development Strategy is for explicit method calls to run code to populate reference type data models
 
@@ -28,25 +29,15 @@ class Dark(ReferenceType):
     With user cube and even spacing.
     dark_obj = Dark(meta_data, ref_type_data=input_data_cube)
     dark_obj.make_rate_image_from_data_cube()
-    dark_obj.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant)
     dark_obj.calculate_error()
     dark_obj.update_data_quality_array()
     dark_bj.generate_outfile()
 
     With file list is superdark.asdf and even spacing.
     dark_obj = Dark(meta_data, file_list=superdark.asdf)
-    dark_obj.make_ma_table_resampled_data(num_resultants, num_reads_per_resultant)
     dark_obj.calculate_error()
     dark_obj.update_data_quality_array()
     dark_bj.generate_outfile()
-
-    With user cube and uneven spacing and resampling from a user read pattern.
-    dark_obj = Dark(meta_data, ref_type_data=user_cube)
-    dark_obj.make_rate_image_from_data_cube()
-    dark_obj.make_ma_table_resampled_data(None, None, user_read_pattern)
-    dark_obj.calculate_error()
-    dark_obj.update_data_quality_array()
-    dark_obj.generate_outfile()
     """
 
     def __init__(
@@ -73,7 +64,7 @@ class Dark(ReferenceType):
             for reference file types not generated from a file list.
         bit_mask: 2D integer numpy array, default = None
             A 2D data quality integer mask array to be applied to reference file.
-        outfile: string; default = roman_readnoise.asdf
+        outfile: string; default = roman_dark.asdf
             File path and name for saved reference file.
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
@@ -106,17 +97,6 @@ class Dark(ReferenceType):
         # Attributes to make reference file with valid data model.
         self.dark_rate_image = None
         self.dark_rate_image_error = None
-        # MA Table attributes
-        # TODO populate from MA Table Config file and how to incorporate MA Table Number on __init__ or in methods.
-        self.ma_table_read_pattern = None  # read pattern from ma table meta data -
-        # nested list of lists reads in resultants will be replacing (ngroups, nframes, groupgap)
-        self.num_resultants = None
-
-        # Attributes for initialized arrays for resampling.
-        self.resampled_data = None
-        self.resampled_data_error = None
-        self.resampled_model = None
-        self.resultant_tau_array = None
 
         # TODO get from Dark config yml
         # Load default parameters from config_dark.yml
@@ -124,43 +104,37 @@ class Dark(ReferenceType):
         self.warm_pixel_rate = 0
         self.dead_pixel_rate = 0
 
-        # Module flow creating reference file
-        # This SHOULD only be one file in the file list, and it is the SuperDark file
+        # Module flow for creating reference file.
+        # The fle list should only be one file, the super dark file.
         if self.file_list:
-            # Get file list properties and select data cube.
+            # Expect exactly one super dark file.
             if len(self.file_list) > 1:
-                raise ValueError(f"A single super dark was expected in file_list. Received {self.file_list}")
-            else:
-                self._get_data_cube_from_superdark_file()
+                raise ValueError(
+                    f"A single super dark was expected in file_list. "
+                    f"Received: {self.file_list}"
+                )
 
-            # Must make_ma_table_resampled_data to create data for dark data model.
+            # Extract data cube from the superdark file.
+            self._get_data_cube_from_superdark_file()
+
             logging.info(
-                "Must call make_rate_image_from_data_cube and"
-                " make_ma_table_resampled_data to finish creating reference file."
+                "Must call make_rate_image_from_data_cube and "
             )
         else:
-            if not isinstance(ref_type_data,
-                              (np.ndarray, u.Quantity)):
-                raise TypeError(
-                    "Input data is neither a numpy array nor a Quantity object."
-                )
-            if isinstance(ref_type_data, u.Quantity):  # Only access data from quantity object.
-                ref_type_data = ref_type_data.value
-                logging.info("Quantity object detected. Extracted data values.")
-
+            # Validate input data type.
+            if not isinstance(ref_type_data, np.ndarray):
+                raise TypeError("Input data must be a numpy array.")
+            
             dim = ref_type_data.shape
             if len(dim) == 3:
                 logging.info("User supplied 3D data cube to make dark reference file.")
                 self.data_cube = self.DarkDataCube(ref_type_data, self.meta_data.type)
-                # Must make_ma_table_resampled_data to create data for dark data model.
-                logging.info(
-                    "Must call make_rate_image_from_data_cube and"
-                    " make_ma_table_resampled_data to finish creating reference file."
-                )
+                logging.info("Must call make_rate_image_from_data_cube to get rate image.")
+            elif len(dim) == 2:
+                logging.info("User supplied 2D data array assumed to be dark rate.")
+                self.dark_rate_image = ref_type_data
             else:
-                raise ValueError(
-                    "Input data is not a valid numpy array of dimension 3."
-                )
+                raise ValueError("Input data must be a 2D or 3D numpy array.")
 
     def _get_data_cube_from_superdark_file(self):
         """
@@ -180,8 +154,6 @@ class Dark(ReferenceType):
         """
         Method to fit the data cube. Intentional method call to specific fitting order to data.
 
-        Must call make_ma_table_resampled_data to finish populating
-
         Parameters
         ----------
         fit_order: integer; Default=None
@@ -197,180 +169,81 @@ class Dark(ReferenceType):
         self.dark_rate_image = self.data_cube.rate_image
         self.dark_rate_image_error = self.data_cube.rate_image_err
 
-    def make_ma_table_resampled_data(self,
-                                     num_resultants=None,
-                                     num_reads_per_resultant=None,
-                                     read_pattern=None):
+    def calculate_error(self):
         """
-        The method make_ma_table_resampled_data() uses the input read_pattern, which is a nested list of lists,
-        or the number of resultants and reads per resultant to average reads into resultants. If read_pattern
-        is supplied, the even spacing parameters will be ignored.
-
-        Parameters
-        ----------
-        num_resultants: integer; Default=None
-            The number of resultants.
-        num_reads_per_resultant: integer; Default=None
-            The user supplied number of reads per resultant in evenly spaced resultants.
-        read_pattern: list of lists; Default=None
-            Nested list of lists with integers for averaging reads into resultants.
+        Populate dark rate error array. Create a uniform error array where each pixel
+        is set using the detector-specific sigma value from the Table 1 of Betti et al. 2025
+        'The Statistical Properties of Dark Ramps for the Roman-WFI Detectors'.
         """
 
-        if read_pattern:
-            self.num_resultants = len(read_pattern)
-        else:
-            self.num_resultants = num_resultants
+        # Uncertainity values from the Table 1, in DN/s, from Betti et al. 2025
+        DETECTOR_RATE_UNCERTAINTY = {
+            "WFI01": 0.0059,
+            "WFI02": 0.0035,
+            "WFI03": 0.0065,
+            "WFI04": 0.0046,
+            "WFI05": 0.0049,
+            "WFI06": 0.0048,
+            "WFI07": 0.0052,
+            "WFI08": 0.0041,
+            "WFI09": 0.0035,
+            "WFI10": 0.0040,
+            "WFI11": 0.0060,
+            "WFI12": 0.0048,
+            "WFI13": 0.0043,
+            "WFI14": 0.0044,
+            "WFI15": 0.0034,
+            "WFI16": 0.0039,
+            "WFI17": 0.0049,
+            "WFI18": 0.0052,
+        }
 
-        self.resampled_data = np.zeros((self.num_resultants,
-                                        self.data_cube.num_i_pixels,
-                                        self.data_cube.num_j_pixels), dtype=np.float32)
-        self.resampled_data_error = np.zeros((self.num_resultants,
-                                              self.data_cube.num_i_pixels,
-                                              self.data_cube.num_j_pixels), dtype=np.float32)
-        self.resultant_tau_array = np.zeros(self.num_resultants, dtype=np.float32)
+        detector = self.meta_data.instrument_detector
 
-        if read_pattern:
-            # Use read pattern for resampling by averaging reads into resultants and
-            # get mean time of resultant for tau array
-            # Iterate over each nested list in the read pattern
-            logging.debug("Averaging over reads following read pattern supplied.")
-            for resultant_i, read_pattern_frames in enumerate(read_pattern):
-                # Get the average time for the list of frames in the read pattern
-                read_pattern_zero_indices = [
-                    i - 1 for i in read_pattern_frames
-                ]  # zero index for time array
-                self.resultant_tau_array[resultant_i] = np.mean(
-                    self.data_cube.time_array[read_pattern_zero_indices]
-                )  # TODO - do we need this? DMS calculates this but could be needed for error analysis
-                # Average the data by summing read by read and dividing by number of raeds
-                for read_i in read_pattern_frames:
-                    self.resampled_data[resultant_i] += self.data_cube.data[
-                        read_i - 1
-                    ]  # Adjusted for 0 indexing
-                self.resampled_data[resultant_i] /= len(read_pattern_frames)
-            logging.debug("Finished re-sampling with read pattern.")
-        else:
-            # Use even spacing resultant and reads per resultant provided to the method and
-            # get mean time of resultant for tau array.
-            if not isinstance(num_resultants, int) or not isinstance(num_reads_per_resultant, int):
-                raise ValueError(
-                    "Both num_resultants and num_reads_per_resultant must be integers."
-                )
-            if num_resultants is None or num_reads_per_resultant is None:
-                raise ValueError(
-                    "Both num_resultants and num_reads_per_resultant are required inputs for"
-                    "MA Table resampling with even spacing."
-                )
-            logging.debug("Averaging over reads with evenly spaced resultants.")
-            if num_reads_per_resultant > self.data_cube.num_reads:
-                raise ValueError(
-                    "Cannot average over reads greater in length than data."
-                )
-            # Averaging with even spacing.
-            for resultant_i in range(self.num_resultants):
-                i1 = resultant_i * num_reads_per_resultant
-                i2 = i1 + num_reads_per_resultant
-                if i2 > self.data_cube.num_reads:
-                    logging.warning(
-                        "Warning: The number of reads per resultant was not evenly divisible into the number"
-                        " of available reads to average and remainder reads were skipped."
-                    )
-                    logging.warning(
-                        f"Resultants after resultant {resultant_i+1} contain zeros."
-                    )
-                    break  # Remaining reads cannot be evenly divided
-                self.resampled_data[resultant_i, :, :] = np.mean(
-                    self.data_cube.data[i1:i2, :, :], axis=0
-                )
-                self.resultant_tau_array[resultant_i] = np.mean(
-                    self.data_cube.time_array[i1:i2]
-                )
-
-            logging.info(
-                f"MA Table resampling with {self.num_resultants} resultants averaging {num_reads_per_resultant}"
-                f" reads per resultant complete."
+        # Validate detector exists
+        try:
+            sigma = DETECTOR_RATE_UNCERTAINTY[detector]
+        except KeyError:
+            raise KeyError(
+                f"Detector '{detector}' not found in DETECTOR_RATE_UNCERTAINTY "
+                f"(expected keys: {list(DETECTOR_RATE_UNCERTAINTY.keys())})."
             )
 
-    def calculate_error(self, error_array=None):
-        """
-        Calculate the uncertainty in the dark rate image. If error array is None, set
-        error array to zeros.
+        # Look up value from table
+        sigma = DETECTOR_RATE_UNCERTAINTY[detector]
+        self.dark_rate_image_error = np.full(
+            (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT),
+            sigma,
+            dtype=np.float32
+        )
 
-        Parameters
-        ----------
-        error_array: ndarray; default = None,
-           Variable to provide a precalculated error array.
-        """
+        # Update for reference pixel border which has no dark rate and no dark rate error
+        self.dark_rate_image_error[:4, :] = 0
+        self.dark_rate_image_error[-4:, :] = 0
+        self.dark_rate_image_error[:, :4] = 0
+        self.dark_rate_image_error[:, -4:] = 0
 
-        # TODO for future implementation from A. Petric
-        # high_flux_err = 1.2 * self.flat_rate_image * (n_reads * 2 + 1) /
-        # (n_reads * (n_reads * 2 - 1) * self.frame_time)
-        #
-        if error_array is None:
-            self.dark_rate_image_error = np.zeros((
-                self.data_cube.num_i_pixels,
-                self.data_cube.num_j_pixels,
-                ),
-                dtype=np.float32
-            )
-        else:
-            self.dark_rate_image_error = error_array
-
-            # TODO OLD dark resampled cube calculation for error in previous version of data model
-            # Generate a dark ramp cube model per the resampled ma table specs.
-            # self.resampled_model = np.zeros(
-            #     (
-            #         len(self.resampled_data),
-            #         self.data_cube.num_i_pixels,
-            #         self.data_cube.num_j_pixels,
-            #     ),
-            #     dtype=np.float32,
-            # )
-            # for tt in range(0, len(self.resultant_tau_array)):
-            #     self.resampled_model[tt, :, :] = (
-            #         self.data_cube.rate_image * self.resultant_tau_array[tt]
-            #         + self.data_cube.intercept_image
-            #     )  # y = m*x + b
-            # # Calculate the residuals of the dark ramp model and the data
-            # residual_cube = self.resampled_model - self.resampled_data
-            # std = np.std(residual_cube, axis=0)
-            # # This is the standard deviation of residuals from the resampled cube
-            # # model and the resampled cube data. Therefore std^2 is the resampled read noise variance.
-            # # The dark cube error array should be a 2D image of 4096x4096 with the slope variance from the model fit
-            # # and the variance of the resampled residuals are added in quadrature.
-            # self.resampled_data_error[0, :, :] = (
-            #     std * std + self.data_cube.rate_image_err
-            # ) ** 0.5
-
-    def update_data_quality_array(self, hot_pixel_rate, warm_pixel_rate, dead_pixel_rate):
-        # TODO evaluate options for variables like this and sigma clipping with a parameter file?
+    def update_data_quality_array(self, hot_pixel_rate, warm_pixel_rate):
         """
         The hot and warm pixel thresholds are applied to the dark_rate_image and the pixels are identified with their respective
         DQ bit flag.
 
         Parameters
         ----------
-        dead_pixel_rate: float; default = 0.0001 DN/s or ADU/s
-            The dead pixel rate is the number of DN/s determined from detector characterization to be the level at
-            which no detectable signal from dark current would be found in a very long exposure.
-        hot_pixel_rate: float; default = 0.015 DN/s or ADU/s
-            The hot pixel rate is the number of DN/s determined from detector characterization to be 10-sigma above
-            the nominal expectation of dark current.
-        warm_pixel_rate: float; default = 0.010 e/s
-            The warm pixel rate is the number of DN/s determined from detector characterization to be 8-sigma above
-            the nominal expectation of dark current.
+        hot_pixel_rate: float; default = 0.25 DN/s
+            Determined from TVAC data by S Gomez
+        warm_pixel_rate: float; default = 0.050 e/s
+            Determined from TVAC data by S Gomez
         """
 
         self.hot_pixel_rate = hot_pixel_rate
         self.warm_pixel_rate = warm_pixel_rate
-        self.dead_pixel_rate = dead_pixel_rate
 
-        logging.info("Flagging dead, hot, and warm pixels and updating DQ array.")
+        logging.info("Flagging hot and warm pixels and updating DQ array.")
         # Locate hot and warm pixel num_i_pixels, num_j_pixels positions in 2D array
-        self.dq_mask[self.data_cube.rate_image >= self.hot_pixel_rate] += self.dqflag_defs["HOT"]
-        self.dq_mask[(self.data_cube.rate_image >= self.warm_pixel_rate)
-                  & (self.data_cube.rate_image < self.hot_pixel_rate)] += self.dqflag_defs["WARM"]
-        self.dq_mask[self.data_cube.rate_image <= self.dead_pixel_rate] += self.dqflag_defs["DEAD"]
+        self.dq_mask[self.dark_rate_image >= self.hot_pixel_rate] += self.dqflag_defs["HOT"]
+        self.dq_mask[(self.dark_rate_image >= self.warm_pixel_rate)
+                  & (self.dark_rate_image < self.hot_pixel_rate)] += self.dqflag_defs["WARM"]
 
     def populate_datamodel_tree(self):
         """
@@ -380,9 +253,8 @@ class Dark(ReferenceType):
         # Construct the dark object from the data model.
         dark_datamodel_tree = rds.DarkRef()
         dark_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        dark_datamodel_tree["data"] = self.resampled_data
         dark_datamodel_tree["dark_slope"] = self.dark_rate_image.astype(np.float32)
-        dark_datamodel_tree["dark_slope_error"] = (self.dark_rate_image_error.astype(np.float32))**0.5
+        dark_datamodel_tree["dark_slope_error"] = self.dark_rate_image_error.astype(np.float32)
         dark_datamodel_tree["dq"] = self.dq_mask
 
         return dark_datamodel_tree

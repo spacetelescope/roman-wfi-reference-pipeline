@@ -63,16 +63,16 @@ class MakeDevMeta:
         self.meta_aperturecorrection = WFIMetaApertureCorrection(*meta_data)
 
     def _create_dev_meta_dark(self, meta_data):
-        ngroups = 6
-        nframes = 8
-        groupgap = 0
+        #ngroups = 6
+        #nframes = 8
+        #groupgap = 0
         ma_table_name = "High Latitude Imaging Survey"
         ma_table_number = 1
         mode = WFI_MODE_WIM
         type = WFI_TYPE_IMAGE
         ref_optical_element = ["F158"]
 
-        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
+        dark_meta_data = [ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
         

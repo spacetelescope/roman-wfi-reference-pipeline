@@ -16,9 +16,9 @@ class WFIMetaDark(WFIMetadata):
     """
 
     # These are required reftype specific
-    ngroups: int
-    nframes: int
-    groupgap: int
+    #ngroups: int
+    #nframes: int
+    #groupgap: int
     ma_table_name: str
     ma_table_number: int
     mode: InitVar[Optional[str]] = ""
@@ -65,9 +65,9 @@ class WFIMetaDark(WFIMetadata):
                            'optical_element': ','.join(self.ref_optical_element) #TODO determine how asdf validate handles multiple optical elements, comma separated?/ # Ref type specific meta
                            },
             # Ref type specific meta
-            'exposure': {'ngroups': self.ngroups,
-                        'nframes': self.nframes,
-                        'groupgap': self.groupgap,
+            'exposure': {#'ngroups': self.ngroups,
+                        #'nframes': self.nframes,
+                        #'groupgap': self.groupgap,
                         'ma_table_name': self.ma_table_name,
                         'ma_table_number': self.ma_table_number,
                         'type': self.type,

@@ -62,16 +62,16 @@ class MakeTestMeta:
     """
 
     def _create_test_meta_dark(self, meta_data):
-        ngroups = 1
-        nframes = 1
-        groupgap = 0
+        #ngroups = 1
+        #nframes = 1
+        #groupgap = 0
         ma_table_name = "Test ma_table_name"
         ma_table_number = 0
         mode = WFI_MODE_WIM
         type = WFI_TYPE_IMAGE
         ref_optical_element = ["F158"]
 
-        dark_meta_data = [ngroups, nframes, groupgap, ma_table_name, ma_table_number,
+        dark_meta_data = [ma_table_name, ma_table_number,
                           mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 

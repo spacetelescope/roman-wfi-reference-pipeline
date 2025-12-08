@@ -130,7 +130,7 @@ class ABVegaMagnitudeOffset(ReferenceType):
         Create data model from DMS and populate tree.
         """
 
-        # Construct the dark object from the data model.
+        # Construct object from the data model.
         abvegaoffset_datamodel_tree = rds.AbvegaoffsetRef()
         abvegaoffset_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
         abvegaoffset_datamodel_tree['data'] = self.generate_abvega_offset_dict()
