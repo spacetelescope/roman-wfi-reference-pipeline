@@ -63,9 +63,6 @@ class MakeDevMeta:
         self.meta_aperturecorrection = WFIMetaApertureCorrection(*meta_data)
 
     def _create_dev_meta_dark(self, meta_data):
-        #ngroups = 6
-        #nframes = 8
-        #groupgap = 0
         ma_table_name = "High Latitude Imaging Survey"
         ma_table_number = 1
         mode = WFI_MODE_WIM

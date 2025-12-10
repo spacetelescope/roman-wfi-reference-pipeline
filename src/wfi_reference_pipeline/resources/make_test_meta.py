@@ -62,9 +62,6 @@ class MakeTestMeta:
     """
 
     def _create_test_meta_dark(self, meta_data):
-        #ngroups = 1
-        #nframes = 1
-        #groupgap = 0
         ma_table_name = "Test ma_table_name"
         ma_table_number = 0
         mode = WFI_MODE_WIM
