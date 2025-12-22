@@ -13,7 +13,7 @@ def test_create_valid_datacube_4k_IMAGE():
     f, x, y = 3, SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT
     wfi_type = WFI_TYPE_IMAGE
 
-    test_data = np.empty((f, x, y))
+    test_data = np.zeros((f, x, y))
 
     datacube = DataCube(test_data, wfi_type)
 
@@ -28,7 +28,7 @@ def test_create_valid_datacube_4k_PRISM():
     f, x, y = 3, SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT
     wfi_type = WFI_TYPE_PRISM
 
-    test_data = np.empty((f, x, y))
+    test_data = np.zeros((f, x, y))
 
     datacube = DataCube(test_data, wfi_type)
 
@@ -43,7 +43,7 @@ def test_create_valid_datacube_1k_IMAGE():
     f, x, y = 1, SCI_PIXEL_X_COUNT // 4, SCI_PIXEL_Y_COUNT // 4
     wfi_type = WFI_TYPE_IMAGE
 
-    test_data = np.empty((f, x, y))
+    test_data = np.zeros((f, x, y))
 
     datacube = DataCube(test_data, wfi_type)
 
@@ -58,7 +58,7 @@ def test_invalid_datacube_lengths():
     f, x, y = 3, SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT - 1
     wfi_type = WFI_TYPE_IMAGE
 
-    test_data = np.empty((f, x, y))
+    test_data = np.zeros((f, x, y))
 
     with pytest.raises(ValueError):
         datacube = DataCube(test_data, wfi_type)
