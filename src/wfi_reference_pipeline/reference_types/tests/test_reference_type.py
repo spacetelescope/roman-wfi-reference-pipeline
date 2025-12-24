@@ -44,6 +44,12 @@ def valid_dummy_referencedata():
     data = np.zeros((100, 100), dtype=np.uint32)
     return data
 
+# Necessary so that all dependencies have the same tmp_path
+@pytest.fixture 
+def valid_outfile(tmp_path):
+    outfile = tmp_path / "outfile.asdf"
+    return outfile
+
 @pytest.fixture
 def valid_dummy_ref(valid_dummy_metadata, valid_dummy_filelist):
     
@@ -51,7 +57,20 @@ def valid_dummy_ref(valid_dummy_metadata, valid_dummy_filelist):
 
     return ref_type
 
+@pytest.fixture
+def valid_dummy_ref_with_outfile(valid_dummy_metadata, valid_dummy_filelist, valid_outfile):
+    ref_type = DummyReferenceType(meta_data=valid_dummy_metadata, file_list=valid_dummy_filelist, outfile=valid_outfile)
+
+    return ref_type
+
+@pytest.fixture
+def valid_dummy_ref_with_outfile_clobber(valid_dummy_metadata, valid_dummy_filelist, valid_outfile):
+    ref_type = DummyReferenceType(meta_data=valid_dummy_metadata, file_list=valid_dummy_filelist, outfile=valid_outfile, clobber=True)
+    return ref_type
+
 ## TODO: add fixture for adding files
+
+## TODO: check if this is a reasonable fixture 
 
 
 ### Initialization Tests ###
@@ -122,8 +141,33 @@ def test_check_no_outfile(valid_dummy_ref):
     with pytest.raises(ValueError):
         valid_dummy_ref.check_outfile()
 
-def test_check_outfile_no_clobber_with_file(valid_dummy_ref):
-    pass 
+def test_check_outfile_no_clobber_with_file(valid_dummy_ref_with_outfile, valid_outfile):
 
-def test_check_outfile_clobber_with_file(valid_dummy_ref):
-    pass
+    valid_outfile.write_text("")
+
+    with pytest.raises(FileExistsError):
+        valid_dummy_ref_with_outfile.check_outfile()
+
+def test_check_outfile_clobber_with_file(valid_dummy_ref_with_outfile_clobber, valid_outfile):
+    
+    valid_outfile.write_text("")
+
+    valid_dummy_ref_with_outfile_clobber.check_outfile()
+
+    assert not valid_outfile.exists()
+
+def test_check_outfile_no_clobber_no_file(valid_dummy_ref_with_outfile, valid_outfile):
+
+    valid_dummy_ref_with_outfile.check_outfile()
+
+    assert not valid_outfile.exists()
+
+def test_check_outfile_clobber_no_file(valid_dummy_ref_with_outfile_clobber, valid_outfile):
+    
+    valid_dummy_ref_with_outfile_clobber.check_outfile()
+
+    assert not valid_outfile.exists()
+
+### Generate Outfile Tests ###
+
+# TODO
