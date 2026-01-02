@@ -24,6 +24,11 @@ class DetectorStatus(ReferenceType):
     from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
     tmp = MakeDevMeta(ref_type='DETECTORSTATUS')
+    tmp.meta_detector_status.pedigree = 'GROUND'
+    tmp.meta_detector_status.instrument_detector = 'WFI01'
+    tmp.meta_detector_status.use_after = '2023-08-01T00:00:00.000'
+    tmp.meta_detector_status.author = 'Rick Cosentino'
+    tmp.meta_detector_status.description = 'New calibration reference file to inform ground systems of the status for processing on all WFI detectors. All set to True when healthy and working and False if an issue with processing data currently exists, i.e. the stuck bit on WFI08 during SCIPA for instance.'
     rfp_det_stat = DetectorStatus(meta_data=tmp.meta_detector_status)   
     rfp_det_stat.generate_outfile()
     """
