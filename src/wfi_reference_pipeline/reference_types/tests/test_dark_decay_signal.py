@@ -90,3 +90,31 @@ class TestDarkDecaySignalHelpers:
         with pytest.raises(KeyError):
             get_darkdecay_values("WFI99")
             
+
+@pytest.mark.parametrize("detector_id, values", DARK_DECAY_TABLE.items())
+def test_dark_decay_table_schema_and_value_ranges(detector_id, values):
+    """
+    Ensure each detector entry has exactly one amplitude and one time constant
+    and that values fall within valid range. Times less than 3 seconds are
+    shorter than the WFI frame time in imaging mode so that is not physical.
+    Others were chosen to be consistent but within a reasonable tolerance
+    of the data provided in the DARK DECAY TABLE from T. Brandt.
+    """
+    # Enforce exactly two keys
+    assert isinstance(values, dict)
+    assert set(values.keys()) == {"amplitude", "time_constant"}
+
+    amplitude = values["amplitude"]
+    time_constant = values["time_constant"]
+
+    # Amplitude must be > 0 and < 1
+    assert isinstance(amplitude, (int, float))
+    assert 0.001 <= amplitude <= 0.99, (
+        f"{detector_id}: amplitude {amplitude} outside valid range [0.001, 0.99]"
+    )
+
+    # Time constant must be between 3 and 100 seconds
+    assert isinstance(time_constant, (int, float))
+    assert 3.0 <= time_constant <= 100.0, (
+        f"{detector_id}: time_constant {time_constant} outside valid range [3, 100]"
+    )
