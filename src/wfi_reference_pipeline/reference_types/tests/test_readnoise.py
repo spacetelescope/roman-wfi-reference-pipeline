@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import asdf
 
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
@@ -9,6 +10,41 @@ from wfi_reference_pipeline.constants import (
 )
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
+
+
+# TODO: find a way to make this into a reusable fixture if it is possible, so we don't create new files each time
+# Keeping like this for now for prototyping purposes
+# Question: Does this have the same path in the session, while being temporary and not the same as other test's tmp_path for parallelization
+# - Answer: nope, I had it as session-scoped, that's not allowed. I need a factory for that
+# Question: Can simulate_dark_reads work? it seems like the shape is usable because its just a 3d array, but does the pixel actually matter?
+@pytest.fixture(scope="function")
+def simulated_reads_filelist(tmp_path):
+    print("RUNNING THE NEW THINGS in ", tmp_path)
+
+    file_list = []
+    
+    # TODO: Fix. Works for one, not for multiple
+    for i in range(0, 3):
+        cube_data, _ = simulate_dark_reads(i)
+        
+        curr_path = tmp_path / f"data_num_{i}.asdf"
+        curr_path.parent.mkdir(parents=True, exist_ok=True)
+
+        tree = {
+            "roman" : {
+                "data" : cube_data
+            }
+        }
+
+        af = asdf.AsdfFile(tree)
+
+        af.write_to(curr_path)
+
+        file_list.append(curr_path)
+
+    # Return the file list
+    return file_list
 
 
 @pytest.fixture
@@ -45,7 +81,12 @@ def readnoise_object_with_data_cube(valid_meta_data, valid_ref_type_data_cube):
                                                 ref_type_data=valid_ref_type_data_cube)
     yield readnoise_object_with_data_cube
 
+@pytest.fixture 
+def readnoise_object_with_file_list(valid_meta_data, simulated_reads_filelist):
+    readnoise_object_with_file_list_obj = ReadNoise(meta_data=valid_meta_data, file_list=simulated_reads_filelist)
+    return readnoise_object_with_file_list_obj
 
+# NOTE SYE: Can we change this to not use the test? not very used and just adding the self
 class TestReadNoise:
 
     def test_readnoise_instantiation_with_valid_ref_type_data_array(self,
@@ -80,6 +121,7 @@ class TestReadNoise:
         with pytest.raises(TypeError):
             ReadNoise(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
+    # NOTE: SYE Should we switch this to actual files with tmp_path
     def test_readnoise_instantiation_with_file_list(self, valid_meta_data, mocker):
         """
         Test that ReadNoise object handles file list input correctly.
@@ -136,4 +178,9 @@ class TestReadNoise:
         that the default name is 'roman_readnoise.asdf'
         """
         assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
+
+# Note: This is not the final test. I want to break it up into the parts to individually test. This is currently a proof of concept that we can
+# run tests with simulated data, and also so we can have a benchmark for time and memory usage
+def test_full_pipe(readnoise_object_with_file_list):
+    readnoise_object_with_file_list.make_readnoise_image()
 
