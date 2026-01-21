@@ -91,6 +91,8 @@ class MakeTestMeta:
         self.meta_gain = WFIMetaGain(*meta_data)
 
     def _create_test_meta_integral_non_linearity(self, meta_data):
+        # There are 32 amplifiers to read 128 pixels at a time. 
+        # https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
         n_channels = 32
         n_pixels_per_channel = 128
 

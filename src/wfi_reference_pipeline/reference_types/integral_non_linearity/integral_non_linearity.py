@@ -25,6 +25,14 @@ class IntegralNonLinearity(ReferenceType):
     rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity,
                                 ref_type_data=arr)
     rfp_inl.generate_outfile()
+
+    Documentation and important notes. This effect comes from the Analog to Digital converters that read out the detector
+    array. The dimensions of the detector are 4096x4096 with 32 A/D converters and amplifiers reading out every 128 pixels
+    together at the same time. The correction implemented adjust the measured value to the actual value which varies across
+    all possible values in UNIT16 from 0 to 65535. This module expects that the transformation from instrument to science 
+    coordinate reference system has already taken place when the input data is passed into the class as ref_type_data.
+    
+    See https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
     """
 
     def __init__(
@@ -88,7 +96,7 @@ class IntegralNonLinearity(ReferenceType):
 
         # If INL correction arrays are provded as input into class then check everything needed
         # for the array to be valid.
-        elif file_list is None and ref_type_data is not None:
+        elif ref_type_data:
             # Convert to numpy array and enforce dtype in one go
             ref_type_data = np.asarray(ref_type_data, dtype=np.float64)
 
@@ -122,7 +130,10 @@ class IntegralNonLinearity(ReferenceType):
             self.inl_correction = ref_type_data
             self.value_array = np.linspace(0, 65535, n_val, dtype=np.uint16)
 
-        # TODO look at references for channel id number - https://roman-docs.stsci.edu/data-handbook-home/wfi-data-format/coordinate-systems
+        elif file_list:
+            raise ValueError(
+                    "Module currently not capable to support file list input."
+                    )
 
         self.outfile = outfile
 
@@ -141,6 +152,20 @@ class IntegralNonLinearity(ReferenceType):
     def _make_inl_table(self):
         """
         Populate the INL table following the Roman INL reference schema.
+
+        This method is explicit to map instrument channel number and index in the
+        instrument coordinate reference frame to the science channel number and index
+        in the science coorcinate reference frame. 
+
+        Science channels are always numbered from bottom left to right for each detector
+        from 1-32. The science coordinate reference frame is how the pixels on the detector
+        look at the sky - after the hardware has been placed and some rotated to account
+        for the position of detector electronics. 
+
+        Instrument channels are indexed from 0-31 with the origin including detector electronics
+        always in the lower left. The transformation from instrument to science coordinates is
+        illustrated in https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
+
         """
         table = {}
         for science_chan in range(32):

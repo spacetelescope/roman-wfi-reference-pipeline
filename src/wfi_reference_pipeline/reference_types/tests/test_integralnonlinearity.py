@@ -61,6 +61,8 @@ class TestIntegralNonLinearity:
         assert len(inl_table) == 32
 
         # Ensure all keys exist and values are correct
+        # There are 32 amplifiers to read 128 pixels at a time. 
+        # https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
         for i in range(32):
             key = f"science_channel_{i+1:02d}"
             assert key in inl_table
@@ -71,6 +73,7 @@ class TestIntegralNonLinearity:
 
             assert table_entry["instrument_channel"] == i
             assert isinstance(table_entry["correction"], np.ndarray)
+            # The Analog to Digital conversion is in UINT16.
             assert table_entry["correction"].shape == (65536,)
 
         value_array = data_model_tree["value"]
