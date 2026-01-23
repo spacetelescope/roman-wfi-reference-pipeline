@@ -1,7 +1,7 @@
 # Roman WFI Reference File Pipeline
 
 > [!CAUTION]
-> The code in this repository is under heavy development and not currently intended for widespread use. 
+> The code in this repository is under heavy development and not currently intended for widespread use.
 >
 > If you have questions, see the CONTRIBUTING.md.
 
@@ -21,6 +21,12 @@ To install the package for development and testing:
 ```buildoutcfg
 pip install -e .[docs,test]
 ```
+OR
+To install the package utilizing any database functionality (needed for automation or QC checks) [Additional instructions below](#installation-with-rtb-database-access)
+```buildoutcfg
+pip install -e .[rtbdb]
+```
+
 This will also install all of the dependencies.
 
 > NOTE: Installing this way uses the dependencies outlined in `pyproject.toml`.
@@ -32,6 +38,56 @@ Users must create a config.yml living at:
 ```/wfi_reference_pipeline/src/wfi_reference_pipeline/config/config.yml```
 Use example_config.yml in the same directory as a template.
 
+
+
+
+
+## Installation with RTB database access
+
+To install with the RTB database on most platforms, the main additional step is to install the SQL driver packages with anaconda. This is the easiest way to ensure the correct SQL drivers are installed regardless of operating system. The one exception are Macs with M1 processors. For these installations, please see [macOS M1 installation](#notes-on-macos-machine-with-an-m1-chip-to-be-tested).
+
+
+Notes:
+    1) You will need access to the Roman Grit group and might need to configure git on your machine to use a username and password that are registered with the Roman Grit group.
+    2) If you have 2FA enabled for your Grit account, you will need to use an access token to `pip install .[rtbdb]`.  Follow the instructions to [create an access token](https://grit.stsci.edu/help/user/profile/personal_access_tokens.md#create-a-personal-access-token).  This access token can now be used as your user password when prompted during the install.
+
+Using conda, please run the following:
+```
+conda activate wfirefpipe
+pip install .[rtbdb]
+```
+
+The last step is creating some SQL configuration files.
+You will need to set some environmental variables and create some driver configuration files. Please follow the instructions in the "Configuring SQL drivers" section of the README.md file from the [RTB Database repository](https://grit.stsci.edu/roman/rtb-database).
+
+
+
+### Notes on macOS machine with an M1 chip (to be tested)
+Begin by creating and entering a new conda environment:
+```
+conda create -n rdmt-reef python=3.10
+conda activate rdmt-reef
+```
+
+Next we need to install the SQL drivers for `freetds` and `pyodbc`. A custom build of FreeTDS is necessary for the drivers to work with the M1 processor and `pyodbc` must be installed with anaconda before you install the main package:
+```
+conda install pyodbc
+conda install -c http://www.stsci.edu/\~jhunk/conda freetds=1.3.6
+```
+
+To install the `rdmt-reef` package with the RTB database, run:
+```
+pip install .[rtbdb]
+```
+
+
+
+
+
+
+
+
+
 ## Contributing
 > [!WARNING]
 > We are not currently accepting external Pull Requests. However, we plan to
@@ -41,7 +97,7 @@ To contribute to this project, please become familiar with our [Contributing Gui
 
 ## Documentation
 
-To get the full documentation, install the package as described above, install sphinx, 
+To get the full documentation, install the package as described above, install sphinx,
 then go to the /src/docs/ directory and run:
 
 ```buildoutcfg

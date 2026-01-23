@@ -38,6 +38,9 @@ docs = [
     "stsci_rtd_theme",
     "sphinx_automodapi",
 ]
+rtbdb = [
+    "rtb_db@git+https://grit.stsci.edu/roman/rtb-database"
+]
 test = [
     "pytest-cov",
     "pytest",
