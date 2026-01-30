@@ -2,8 +2,9 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from wfi_reference_pipeline.config.config_access import get_data_files_config
+from wfi_reference_pipeline.config.config_access import get_data_files_config, get_db_config
 from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_DETECTORS
+from wfi_reference_pipeline.utilities.db_handler import DBHandler
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
 from wfi_reference_pipeline.utilities.logging_functions import configure_logging
 from wfi_reference_pipeline.utilities.quality_control.dark_quality_control import (
@@ -52,6 +53,11 @@ class Pipeline(ABC):
         self.file_handler = FileHandler(
             self.ref_type, self.prep_path, self.pipeline_out_path
         )
+        self._db_config = get_db_config()
+        if self._db_config["use_rtbdb"]:
+            self.db_handler = DBHandler(self.ref_type, self._db_config["sql_server_str"], self._db_config["sql_database_str"])
+        else:
+            self.db_handler = None
 
     @abstractmethod
     def select_uncal_files(self):

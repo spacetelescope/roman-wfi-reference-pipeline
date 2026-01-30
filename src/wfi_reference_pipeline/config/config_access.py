@@ -81,7 +81,7 @@ def get_logging_config(config_file="config.yml"):
     Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "config.yml".
 
     Returns
     -------
@@ -101,7 +101,7 @@ def get_data_files_config(config_file="config.yml"):
     Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "config.yml".
 
     Returns
     -------
@@ -111,6 +111,24 @@ def get_data_files_config(config_file="config.yml"):
     settings = _get_config(config_file)
     _validate_config(settings, CONFIG_SCHEMA)
     return settings["data_files"]
+
+def get_db_config(config_file="config.yml"):
+    """Get configuration settings from config.yml for database
+    Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default config.yml.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+    """
+    settings = _get_config(config_file)
+    _validate_config(settings, CONFIG_SCHEMA)
+    return settings["database"]
 
 
 def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
@@ -122,7 +140,7 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     ref_type : CONSTANT
         The defined reference type from constants.py
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "pipelines_config.yml".
 
     Returns
     -------
@@ -152,7 +170,7 @@ def get_quality_control_config(ref_type, detector=None, config_file=None):
     ref_type : CONSTANT
         The defined reference type from constants.py
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default None.
 
     Returns
     -------
