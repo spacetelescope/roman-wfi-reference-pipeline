@@ -55,10 +55,13 @@ Using conda, please run the following:
 ```
 conda activate wfirefpipe
 pip install .[rtbdb]
+conda install freetds
 ```
 
 The last step is creating some SQL configuration files.
-You will need to set some environmental variables and create some driver configuration files. Please follow the instructions in the "Configuring SQL drivers" section of the README.md file from the [RTB Database repository](https://grit.stsci.edu/roman/rtb-database).
+You will need to set some environmental variables and create some driver configuration files. Please follow the instructions in the "Configuring SQL drivers" section of the README.md file from the [RTB Database repository](https://grit.stsci.edu/roman/rtb-database#configuring-sql-drivers).
+
+If experiencing any issues connecting to the server, please check out the [rtbdb troubleshooting](https://grit.stsci.edu/roman/rtb-database#connecting-to-the-server-and-troubleshooting).
 
 
 
@@ -79,12 +82,6 @@ To install the `rdmt-reef` package with the RTB database, run:
 ```
 pip install .[rtbdb]
 ```
-
-
-
-
-
-
 
 
 
