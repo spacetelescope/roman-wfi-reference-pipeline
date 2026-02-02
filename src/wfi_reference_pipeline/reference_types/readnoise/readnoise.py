@@ -172,17 +172,12 @@ class ReadNoise(ReferenceType):
 
         # Get the input file with the most number of reads from the sorted list.
         # TODO update using rdm.open() method
-        with asdf.open(fl_reads_ordered_list[0][0], lazy_load=True) as tmp: # NOTE: SYE lazy_load = False might be warranted
+        with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
             ref_type_data = tmp.tree["roman"]["data"]
             if isinstance(
                 ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
                 ref_type_data = ref_type_data.value
-
-            # NOTE SYE: prints a wrapper type, not a numpy array specifically
-            # <class 'asdf.tags.core.ndarray.NDArrayType'> when lazy_load=True
-            # <class 'numpy.ndarray'> when lazy_load=False
-            print("DataType of ref_type_data: ", type(ref_type_data))
 
         logging.debug(
             f"Using the file {fl_reads_ordered_list[0][0]} to get a read noise cube."
@@ -224,7 +219,6 @@ class ReadNoise(ReferenceType):
         self.data_cube.rate_image: object;
         """
 
-        # TODO: This doesn't actually return anything, is this supposed to happen?
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
