@@ -117,7 +117,6 @@ class Mask(ReferenceType):
             raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
 
         else:
-
             logging.debug("The input 2D data array is now self.mask_image.")
             self.mask_image = ref_type_data
             logging.debug("Ready to generate reference file.")
@@ -249,6 +248,7 @@ class Mask(ReferenceType):
 
         # Running update_mask_from_flats on flat_filelist if not None
         if flat_filelist is not None:
+            logging.debug(f"Running update_mask_from_flats() on {flat_filelist}")
             self.update_mask_from_flats(filelist=flat_filelist,
                                         multip=multip,
                                         from_smoothed=from_smoothed,
@@ -257,8 +257,8 @@ class Mask(ReferenceType):
                                         dead_sigma=dead_sigma,
                                         max_low_qe_signal=max_low_qe_signal,
                                         min_open_adj_signal=min_open_adj_signal)
-
         if self.file_list is not None:
+            logging.debug(f"Running update_mask_from_darks() on {self.file_list}")
             self.update_mask_from_darks(filelist=self.file_list,
                                         intermediate_path=intermediate_path,
                                         superdark_path=superdark_path,
@@ -272,7 +272,10 @@ class Mask(ReferenceType):
                                         jump_path=jump_path)
 
         # These functions can be implemented without input files
+        logging.debug("Setting REFERENCE pixels")
         self.update_mask_ref_pixels()
+
+        logging.debug("Setting DO_NOT_USE pixels")
         self.set_do_not_use_pixels(do_not_use_flags=do_not_use_flags)
 
         # Updating the Mask object with calculated mask
@@ -290,20 +293,23 @@ class Mask(ReferenceType):
         illuminated pixels across the entire detector, they are ideal for
         identifying low sensitivity pixels (such as DEAD).
         """
+        logging.debug("Creating normalized image with ", filelist)
         normalized_image = self.create_normalized_image(filelist,
                                                         multip,
                                                         from_smoothed,
                                                         boxwidth)
 
         if intermediate_path is not None:
-
+            logging.debug("Writing normalized image to ", intermediate_path)
             fits.writeto(os.path.join(intermediate_path, "normalized_image.fits"),
                          data=normalized_image,
                          overwrite=True)
 
+        logging.debug("Identifying DEAD pixels")
         self.set_dead_pixels(normalized_image,
                              dead_sigma)
 
+        logging.debug("Identifying LOW_QE and OPEN/ADJ pixels")
         self.set_low_qe_open_adj_pixels(normalized_image,
                                         max_low_qe_signal,
                                         min_open_adj_signal)
@@ -403,6 +409,8 @@ class Mask(ReferenceType):
 
         threshold = norm_mean - (dead_sigma * norm_std)
 
+        logging.debug(f"Pixels with normalized countrate value < {threshold} are marked as DEAD")
+
         dead_mask = (normalized_image < threshold).astype(np.uint32)
         dead_mask[dead_mask == 1] = dqflags.DEAD.value
 
@@ -488,6 +496,7 @@ class Mask(ReferenceType):
 
         low_sig_y, low_sig_x = np.where(normalized_image < max_low_qe_signal)
 
+        logging.debug("Looping through low signal pixels to identify OPEN/ADJ/LOW_QE pixels")
         for x, y in zip(low_sig_x, low_sig_y):
 
             # Skip calculations if this is a DEAD pixel
@@ -531,6 +540,8 @@ class Mask(ReferenceType):
         # Going through each DNU flag
         for flag in do_not_use_flags:
 
+            logging.debug(f"Setting {flag} pixels as DO_NOT_USE")
+
             # Bitval for the current flag
             bitval = dqflags[flag].value
 
@@ -570,18 +581,22 @@ class Mask(ReferenceType):
         # (tho maybe it already is able to be?)
         # There could be a boolean val for saving intermed_prod and if False just delete at end
         if not intermediate_path or not os.path.exists(intermediate_path):
+            logging.debug("Creating an intermediate_path directory")
             intermediate_path = os.path.join(os.getcwd(), "intermed_prod")
             os.makedirs(intermediate_path, exist_ok=True)
 
+        logging.debug("Creating the superdark")
         superdark = self.create_superdark(filelist,
                                           intermediate_path,
                                           superdark_path)
 
-        print("Computing MAD-based jump counts for all pixels...")
+        logging.debug("Computing MAD-based jump counts for all pixels")
         jump_count_img, jump_mask_cube = self.mad_based_jump_counter_cube(superdark,
                                                                           sigma_thresh_jump=sigma_thresh_jump,
                                                                           jump_path=jump_path,
                                                                           intermediate_path=intermediate_path)
+
+        logging.debug("Identifying TELEGRAPH and RC pixels")
         self.set_rc_tel_pixels(superdark=superdark,
                                jump_count_img=jump_count_img,
                                jump_mask_cube=jump_mask_cube,
@@ -676,7 +691,7 @@ class Mask(ReferenceType):
         other_bad_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         cand_y, cand_x = np.where(jump_count_img >= min_jumps_for_rc_telegraph)
-        print(f"Found {cand_x.size} candidates for 'jumpy' pixels with >= {min_jumps_for_rc_telegraph} jumps")
+        logging.debug(f"Found {cand_x.size} candidates for 'jumpy' pixels with >= {min_jumps_for_rc_telegraph} jumps")
 
         # Create coord list to run in parallel
         cand_coords = list(zip(cand_y.tolist(), cand_x.tolist()))
@@ -711,9 +726,11 @@ class Mask(ReferenceType):
 
             return metrics
 
+        logging.debug("Beginning pixel processing")
         with ThreadPoolExecutor(max_workers=16) as ex:
             rows = list(ex.map(_process_pixel_rc_tel, cand_coords))
 
+        logging.debug("Updating dict rows with bad pixel label")
         for row in rows:
             x, y = row["x"], row["y"]
             label = row["label_new"]
@@ -735,13 +752,12 @@ class Mask(ReferenceType):
 
         # Saving the metrics to intermediate_path if specified by user
         if save_metrics:
-            print("Saving Telegraph + RC metrics to CSV")
-
+            logging.debug("Saving Telegraph + RC metrics to CSV")
             df = pd.DataFrame(rows)
             df_filepath = os.path.join(intermediate_path, "tel_rc_metrics.csv")
 
             df.to_csv(df_filepath)
-            print(f"Metrics saved to {df_filepath}")
+            logging.debug(f"Metrics saved to {df_filepath}")
 
         return
 
@@ -1200,7 +1216,7 @@ class Mask(ReferenceType):
         is used only as a screening step; classification is performed using full-ramp diagnostics.
         """
         if os.path.exists(jump_path):
-            print(f"Loading pre-created jump file, {jump_path}")
+            logging.debug(f"Loading pre-created jump file, {jump_path}")
 
             with fits.open(jump_path) as hdul:
                 jump_count = hdul["JUMP_COUNT"].data
@@ -1209,7 +1225,7 @@ class Mask(ReferenceType):
             return jump_count, jump_mask
 
         else:
-
+            logging.debug("Creating jump file")
             diffs = np.diff(cube, axis=0)
             med = np.median(diffs, axis=0)
             mad = np.median(np.abs(diffs - med), axis=0)
@@ -1246,6 +1262,8 @@ class Mask(ReferenceType):
         os.makedirs(intermediate_path, exist_ok=True)
         outfile = os.path.join(intermediate_path, "jump_products.fits")
 
+        logging.debug(f"Saving jump file to {outfile}")
+
         hdu_count = fits.ImageHDU(
             data=jump_count.astype(np.int16),
             name="JUMP_COUNT",
@@ -1264,7 +1282,6 @@ class Mask(ReferenceType):
 
         hdul.writeto(outfile, overwrite=True)
 
-
     def create_superdark(self, filelist, intermediate_path, superdark_path):
         """
         Using pipeline.DarkPipeline() to create a superdark using the list of darks.
@@ -1272,7 +1289,7 @@ class Mask(ReferenceType):
         """
         # Checking if user supplied a superdark
         if superdark_path is not None:
-            print(f"User supplied superdark file is: {superdark_path}")
+            logging.debug(f"User supplied superdark file is: {superdark_path}")
 
             # Load the supplied superdark
             if os.path.exists(superdark_path):
@@ -1283,10 +1300,10 @@ class Mask(ReferenceType):
 
             else:
                 # File path was given but does not exist
-                print(f"User-supplied superdark {os.path.basename(superdark_path)} does not exist!")
+                logging.debug(f"User-supplied superdark {os.path.basename(superdark_path)} does not exist!")
                 raise FileExistsError
         else:
-            print("Attempting to create superdark from filelist...")
+            logging.debug("Attempting to create superdark from filelist...")
 
             # If no files in filelist
             if len(filelist) == 0:
@@ -1305,12 +1322,15 @@ class Mask(ReferenceType):
             superdark_path = os.path.join(intermediate_path, "superdark.asdf")
             dark_pipe.prep_superdark_file(full_file_list=filelist,
                                           outfile=superdark_path,
-                                          full_file_num_reads=nreads)
+                                          full_file_num_reads=nreads,
+                                          do_sigma_clipping=False)
 
             with asdf.open(superdark_path, memmap=True) as af:
                 data = af["roman"]["data"]
                 superdark = data.value if hasattr(data, "value") else data
                 superdark = np.asarray(superdark)
+
+            logging.debug("Superdark created and loaded")
 
         return superdark
 
@@ -1319,14 +1339,14 @@ class Mask(ReferenceType):
         For the first file in filelist, extract the number of reads (used in superdark creation).
         """
         if len(filelist) == 0:
-            print("No files in filelist!")
+            logging.debug("No files in long darks filelist!")
             raise FileNotFoundError
 
         # TODO: Should I assume all files will have same number of reads?
         file = filelist[0]
 
         if not os.path.exists(file):
-            print("File does not exist!")
+            logging.debug("File does not exist!")
             raise FileExistsError
 
         with asdf.open(file) as af:
@@ -1334,7 +1354,7 @@ class Mask(ReferenceType):
             data = data.value if hasattr(data, "value") else data
 
             if len(data.shape) != 3:
-                print(f"Data array has {len(data.shape)} dimensions, not 3")
+                logging.debug(f"Data array has {len(data.shape)} dimensions, not 3")
                 raise ValueError
 
             nreads, _, _ = data.shape
