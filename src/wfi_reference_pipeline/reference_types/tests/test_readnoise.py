@@ -224,12 +224,19 @@ def test_make_rate_image_from_data_cube(readnoise_object_with_data_cube):
 # Presumably DataCube is already tested in full
 # Does the value of stuff in DataCube change between (No, but we aren't testing together yet)
 
-def test_comp_ramp_res_var(readnoise_object_with_data_cube, mocker):
+def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
     # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
+
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
 
     # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
 
     result = readnoise_object_with_data_cube.comp_ramp_res_var()
 
-    # asserts
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
