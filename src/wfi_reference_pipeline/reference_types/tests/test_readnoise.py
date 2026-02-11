@@ -1,6 +1,6 @@
+import asdf
 import numpy as np
 import pytest
-import asdf
 
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
@@ -13,28 +13,19 @@ from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 # NOTE SYE: I think it is a good idea to have a set smaller test data size
-# TODO: Move this into constants.py if it is decided we should have this for all tests
+# Move this into constants.py if it is decided we should have this for all tests
 TEST_DETECTOR_PIXEL_COUNT = 32 
 
 
-# TODO: find a way to make this into a reusable fixture if it is possible, so we don't create new files each time
-# Keeping like this for now for prototyping purposes
-# Question: Does this have the same path in the session, while being temporary and not the same as other test's tmp_path for parallelization
-# - Answer: nope, I had it as session-scoped, that's not allowed. I need a factory for that
-# Question: Can simulate_dark_reads work? it seems like the shape is usable because its just a 3d array, but does the pixel actually matter?
 @pytest.fixture(scope="module")
 def simulated_reads_filelist(tmp_path_factory, ref_type_data_factory):
 
     data_path = tmp_path_factory.mktemp("data")
 
-    print("Simuated reads for tests stored in ", data_path)
-
     file_list = []
 
     for i in range(1, 4):
         cube_data = ref_type_data_factory(i)
-
-        print("DataType", type(cube_data))
         
         curr_path = data_path / f"data_num_{i}.asdf"
         curr_path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,7 +61,7 @@ def valid_ref_type_data_array():
 
 # NOTE SYE: This factory makes a new read each call
 #    We can introduce a _cache dictionary to store in the future if generating becomes too expensive
-#    I'm currently not concerned as long as we use the TEST_DETECTOR_PIXEL_COUNT to keep 
+#    I'm currently not concerned as long as we use the TEST_DETECTOR_PIXEL_COUNT to keep data small
 @pytest.fixture(scope="session")
 def ref_type_data_factory():
     """Factory fixture for generating valid ref_type_data cubes with N reads."""
@@ -102,7 +93,6 @@ def readnoise_object_with_file_list(valid_meta_data, simulated_reads_filelist):
     readnoise_object_with_file_list_obj = ReadNoise(meta_data=valid_meta_data, file_list=simulated_reads_filelist)
     return readnoise_object_with_file_list_obj
 
-# NOTE SYE: Can we change this to not use the test? not very used and just adding the self
 class TestReadNoise:
 
     def test_readnoise_instantiation_with_valid_ref_type_data_array(self,
@@ -137,7 +127,7 @@ class TestReadNoise:
         with pytest.raises(TypeError):
             ReadNoise(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
-    # NOTE: SYE Should we switch this to actual files with tmp_path
+    # NOTE SYE: Potentially switch to use the factory, though I see nothing wrong with keeping this as is
     def test_readnoise_instantiation_with_file_list(self, valid_meta_data, mocker):
         """
         Test that ReadNoise object handles file list input correctly.
@@ -195,10 +185,7 @@ class TestReadNoise:
         """
         assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
 
-# Note: This is not the final test. I want to break it up into the parts to individually test. This is currently a proof of concept that we can
-# run tests with simulated data, and also so we can have a benchmark for time and memory usage
-# TODO: Split into each of the called functions in make_readnoise_image
-# Do we want to have this alongside more individual unit tests (this as an integration test)
+# NOTE SYE: I think this can be left has a integration testß
 def test_full_pipe(readnoise_object_with_file_list):
 
     readnoise_object_with_file_list.make_readnoise_image()
@@ -206,6 +193,7 @@ def test_full_pipe(readnoise_object_with_file_list):
 
 def test_select_data_cube_from_file_list(readnoise_object_with_file_list):
 
+    # Check datacube doesn't exist
     with pytest.raises(AttributeError):
         _ = readnoise_object_with_file_list.data_cube
 
@@ -221,9 +209,6 @@ def test_make_rate_image_from_data_cube(readnoise_object_with_data_cube):
     assert readnoise_object_with_data_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
     assert readnoise_object_with_data_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
-# Presumably DataCube is already tested in full
-# Does the value of stuff in DataCube change between (No, but we aren't testing together yet)
-
 def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
     # Mock a datacube with the necessary parts: ramp_model
@@ -238,5 +223,23 @@ def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factor
     mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
 
     result = readnoise_object_with_data_cube.comp_ramp_res_var()
+
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+
+def test_comp_cds_noise(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+
+    # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
+
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
+    mock_readnoise_datacube.num_reads = 3
+
+    # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
+
+    result = readnoise_object_with_data_cube.comp_cds_noise()
 
     assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
