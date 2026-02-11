@@ -1,3 +1,4 @@
+import asdf
 import numpy as np
 import pytest
 
@@ -9,9 +10,43 @@ from wfi_reference_pipeline.constants import (
 )
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
+
+# NOTE SYE: I think it is a good idea to have a set smaller test data size
+# Move this into constants.py if it is decided we should have this for all tests
+TEST_DETECTOR_PIXEL_COUNT = 32 
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
+def simulated_reads_filelist(tmp_path_factory, ref_type_data_factory):
+
+    data_path = tmp_path_factory.mktemp("data")
+
+    file_list = []
+
+    for i in range(1, 4):
+        cube_data = ref_type_data_factory(i)
+        
+        curr_path = data_path / f"data_num_{i}.asdf"
+        curr_path.parent.mkdir(parents=True, exist_ok=True)
+
+        tree = {
+            "roman" : {
+                "data" : cube_data
+            }
+        }
+
+        af = asdf.AsdfFile(tree)
+
+        af.write_to(curr_path)
+
+        file_list.append(str(curr_path))
+
+    # Return the file list
+    return file_list
+
+
+@pytest.fixture(scope="module")
 def valid_meta_data():
     """Fixture for generating valid meta_data for ReadNoise class."""
     test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
@@ -24,10 +59,17 @@ def valid_ref_type_data_array():
     return np.random.random((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
 
 
-@pytest.fixture
-def valid_ref_type_data_cube():
-    """Fixture for generating valid ref_type_data cube (read noise cube)."""
-    return np.random.random((3, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
+# NOTE SYE: This factory makes a new read each call
+#    We can introduce a _cache dictionary to store in the future if generating becomes too expensive
+#    I'm currently not concerned as long as we use the TEST_DETECTOR_PIXEL_COUNT to keep data small
+@pytest.fixture(scope="session")
+def ref_type_data_factory():
+    """Factory fixture for generating valid ref_type_data cubes with N reads."""
+    def _make_cube(num_reads):
+        cube_data, _ = simulate_dark_reads(num_reads, ni=TEST_DETECTOR_PIXEL_COUNT)
+        return cube_data
+    
+    return _make_cube
 
 
 @pytest.fixture
@@ -35,16 +77,21 @@ def readnoise_object_with_data_array(valid_meta_data, valid_ref_type_data_array)
     """Fixture for initializing a ReadNoise object with a valid data array."""
     readnoise_object_with_data_array = ReadNoise(meta_data=valid_meta_data,
                                                  ref_type_data=valid_ref_type_data_array)
-    yield readnoise_object_with_data_array
+    return readnoise_object_with_data_array
 
 
 @pytest.fixture
-def readnoise_object_with_data_cube(valid_meta_data, valid_ref_type_data_cube):
+def readnoise_object_with_data_cube(valid_meta_data, ref_type_data_factory):
     """Fixture for initializing a ReadNoise object with a valid data cube."""
+    ref_type_data = ref_type_data_factory(3)
     readnoise_object_with_data_cube = ReadNoise(meta_data=valid_meta_data,
-                                                ref_type_data=valid_ref_type_data_cube)
-    yield readnoise_object_with_data_cube
+                                                ref_type_data=ref_type_data)
+    return readnoise_object_with_data_cube
 
+@pytest.fixture
+def readnoise_object_with_file_list(valid_meta_data, simulated_reads_filelist):
+    readnoise_object_with_file_list_obj = ReadNoise(meta_data=valid_meta_data, file_list=simulated_reads_filelist)
+    return readnoise_object_with_file_list_obj
 
 class TestReadNoise:
 
@@ -80,6 +127,7 @@ class TestReadNoise:
         with pytest.raises(TypeError):
             ReadNoise(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
+    # NOTE SYE: Potentially switch to use the factory, though I see nothing wrong with keeping this as is
     def test_readnoise_instantiation_with_file_list(self, valid_meta_data, mocker):
         """
         Test that ReadNoise object handles file list input correctly.
@@ -137,3 +185,61 @@ class TestReadNoise:
         """
         assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
 
+# NOTE SYE: I think this can be left has a integration testß
+def test_full_pipe(readnoise_object_with_file_list):
+
+    readnoise_object_with_file_list.make_readnoise_image()
+
+
+def test_select_data_cube_from_file_list(readnoise_object_with_file_list):
+
+    # Check datacube doesn't exist
+    with pytest.raises(AttributeError):
+        _ = readnoise_object_with_file_list.data_cube
+
+    readnoise_object_with_file_list._select_data_cube_from_file_list()
+
+    assert readnoise_object_with_file_list.data_cube is not None
+    assert readnoise_object_with_file_list.data_cube.num_reads == 3
+
+def test_make_rate_image_from_data_cube(readnoise_object_with_data_cube):
+
+    readnoise_object_with_data_cube.make_rate_image_from_data_cube()
+
+    assert readnoise_object_with_data_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+    assert readnoise_object_with_data_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+
+def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+
+    # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
+
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
+
+    # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
+
+    result = readnoise_object_with_data_cube.comp_ramp_res_var()
+
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+
+def test_comp_cds_noise(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+
+    # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
+
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
+    mock_readnoise_datacube.num_reads = 3
+
+    # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
+
+    result = readnoise_object_with_data_cube.comp_cds_noise()
+
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
