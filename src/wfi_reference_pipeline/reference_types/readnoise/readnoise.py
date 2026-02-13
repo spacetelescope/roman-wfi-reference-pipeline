@@ -173,7 +173,7 @@ class ReadNoise(ReferenceType):
         # Get the input file with the most number of reads from the sorted list.
         # TODO update using rdm.open() method
         with asdf.open(fl_reads_ordered_list[0][0]) as tmp:
-            ref_type_data = tmp.tree["roman"]["data"]
+            ref_type_data = np.array(tmp.tree["roman"]["data"])
             if isinstance(
                 ref_type_data, u.Quantity
             ):  # Only access data from quantity object.
