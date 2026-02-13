@@ -6,5 +6,4 @@ The goals for this file would be:
  - Identify package versions that have been updated since the original code was created and how it impacts code changes in the updated version you'll be working on
  - Have this script be working and functional to produce everything needed to make a new version of the photom reference file
  - This will be our baseline for an implementation that we will then refactor and put into photom.py
-
 """
