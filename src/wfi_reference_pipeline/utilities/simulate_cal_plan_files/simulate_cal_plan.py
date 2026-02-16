@@ -104,12 +104,13 @@ class BaseDarkSimulation:
     # ---------------------------------------------------------
     def _parse_scas(self, scas):
         """
+        scas: multiple inputs accepted 
         Accept:
             - "ALL_WFI"
             - ["WFI01", "WFI02", ...]
             - [1, 2, 7, 18]
         Returns:
-            sorted list of integer SCA numbers
+            sorted list of integer SCA or WFI detector numbers
         """
 
         if scas == "ALL_WFI":
@@ -137,16 +138,13 @@ class BaseDarkSimulation:
 
         return sorted(set(parsed))
 
-
     # ---------------------------------------------------------
     # Configuration Handling
     # ---------------------------------------------------------
     def _load_config(self, config_file):
         """
-        Docstring for _load_config
-        
-        :param self: Description
-        :param config_file: Description
+        Loading a config file from the pwd directory which contains properties to override
+        dark defaults in the RFP simulate dark function.
         """
         if config_file is None:
             return None
@@ -187,11 +185,8 @@ class BaseDarkSimulation:
     # ---------------------------------------------------------
     def _make_filename(self, exp, sca):
         """
-        Docstring for _make_filename
-        
-        :param self: Description
-        :param exp: Description
-        :param sca: Description
+        Need to make the output file string for romanisim that should include exposure number
+        and WFI detector ID number or in romanisim SCA
         """
         exp_str = f"{exp:04d}"
         sca_str = f"wfi{sca:02d}"
@@ -203,12 +198,7 @@ class BaseDarkSimulation:
 
     def _run_romanisim(self, filename, current_time, sca):
         """
-        Docstring for _run_romanisim
-        
-        :param self: Description
-        :param filename: Description
-        :param current_time: Description
-        :param sca: Description
+        Need to construct the command line for romanisim-make-image
         """
         command = ["romanisim-make-image",
                    "--date", current_time.isot,
@@ -234,9 +224,6 @@ class BaseDarkSimulation:
         It instead is simulating F213 resultants with no sources or objects with a pre-set MA Table in
         a local clone of the romanisim repository. Need to update meta data and in the future possibly
         the filename too - reminder filename is in meta as well.
-        
-        filename: Description
-        sca: Description
         """
 
         # Get the override parameters to simulate a dark cube from the RFP function
@@ -285,7 +272,14 @@ class BaseDarkSimulation:
 # Short Dark Class
 # =============================================================
 class ShortDarkSimulation(BaseDarkSimulation):
+    """
+    For simulating the inflight calibration plan, we are going to change the actual requirement 
+    to something more manageable in memory and filesize. 
 
+    Inflight plan calls for: (26) short dark exposures with 46 single read resultants.
+
+    Implemented here: (26) short dark exposures with 16 single read resultants. 
+    """
     def __init__(self, output_dir, config_file=None, scas="ALL_WFI", num_exposures=26, auto_run=False):
         super().__init__(
             output_dir=output_dir,
@@ -304,6 +298,14 @@ class ShortDarkSimulation(BaseDarkSimulation):
 # Long Dark Class
 # =============================================================
 class LongDarkSimulation(BaseDarkSimulation):
+    """
+    For simulating the inflight calibration plan, we are going to change the actual requirement 
+    to something more manageable in memory and filesize. 
+
+    Inflight plan calls for: (24) long dark exposures with 98 single read resultants.
+
+    Implemented here: (24) long dark exposures with 28 single read resultants. 
+    """
 
     def __init__(self, output_dir, config_file=None, scas="ALL_WFI", num_exposures=24, auto_run=False):
         super().__init__(
