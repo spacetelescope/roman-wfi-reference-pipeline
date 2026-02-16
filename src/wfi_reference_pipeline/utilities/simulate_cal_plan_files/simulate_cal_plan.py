@@ -1,10 +1,11 @@
-from pathlib import Path
 import subprocess
-import numpy as np
-import astropy.units as u
-from astropy.time import Time
+from pathlib import Path
+
 import asdf
+import astropy.units as u
+import numpy as np
 import yaml
+from astropy.time import Time
 
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
