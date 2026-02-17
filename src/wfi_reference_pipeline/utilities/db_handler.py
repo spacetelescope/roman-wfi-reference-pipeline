@@ -1,7 +1,7 @@
 import logging
 
 from rtb_db.utilities.login import connect_server
-from rtb_db.utilities.table_tools import ensure_connection_is_engine, table_names
+from rtb_db.utilities.table_tools import ensure_connection_is_engine
 
 from wfi_reference_pipeline import constants
 

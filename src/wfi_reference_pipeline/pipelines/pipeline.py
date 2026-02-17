@@ -2,7 +2,10 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from wfi_reference_pipeline.config.config_access import get_data_files_config, get_db_config
+from wfi_reference_pipeline.config.config_access import (
+    get_data_files_config,
+    get_db_config,
+)
 from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_DETECTORS
 from wfi_reference_pipeline.utilities.db_handler import DBHandler
 from wfi_reference_pipeline.utilities.file_handler import FileHandler
