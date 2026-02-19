@@ -64,27 +64,6 @@ You will need to set some environmental variables and create some driver configu
 If experiencing any issues connecting to the server, please check out the [rtbdb troubleshooting](https://grit.stsci.edu/roman/rtb-database#connecting-to-the-server-and-troubleshooting).
 
 
-
-### Notes on macOS machine with an M1 chip (to be tested)
-Begin by creating and entering a new conda environment:
-```
-conda create -n wfirefpipe python=3.12
-conda activate wfirefpipe
-```
-
-Next we need to install the SQL drivers for `freetds` and `pyodbc`. A custom build of FreeTDS is necessary for the drivers to work with the M1 processor and `pyodbc` must be installed with anaconda before you install the main package:
-```
-conda install pyodbc
-conda install -c http://www.stsci.edu/\~jhunk/conda freetds=1.3.6
-```
-
-To install the `wfirefpipe` package with the RTB database, run:
-```
-pip install .[rtbdb]
-```
-
-
-
 ## Contributing
 > [!WARNING]
 > We are not currently accepting external Pull Requests. However, we plan to
