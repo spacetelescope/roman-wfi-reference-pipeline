@@ -1,0 +1,44 @@
+defaults:
+  dark_rate: 0.01
+  dark_rate_var: 0.001
+  hot_pix_rate: 0.25
+  hot_pix_rate_var: 0.10
+  num_hot_pix: 2000
+  num_hot_pix_var: 0
+  warm_pix_rate: 0.050
+  warm_pix_rate_var: 0.010
+  num_warm_pix: 1000
+  num_warm_pix_var: 0
+  dead_pix_rate: 0.0001
+  dead_pix_rate_var: 0.00001
+  num_dead_pix: 500
+  num_dead_pix_var: 0
+  noise_mean: 0.001
+  noise_std: 0.0005
+
+sca_overrides:
+# detector WFI01 is normal
+
+# WFI02 is a hot rate detector
+  2:
+    dark_rate: 0.40
+# WFI03 is a detector with A LOT of HOT PIXELS
+  3:
+    num_hot_pix: 1e6
+# WFI04 is a warm detector
+  4:
+    warm_pix_rate: 0.01
+# WFI05 is a detector with A LOT of WARM PIXELS
+  5:
+    num_warm_pix: 3e6
+# WFI06 is a detector with a really low dark rate
+  6:
+    dark_rate: 0.001
+    dark_rate_var: 0
+# WF008 has had problems before with a stuck bit so putting A LOT of DEAD PIXELS
+  8:
+    num_dead_pix: 6e6
+# WFI18 has the anomaly on the lower portion of the detector so let's give it a high number of dead and hot pixels
+  18:
+    dark_rate: 0.2
+    noise_mean: 0.1
