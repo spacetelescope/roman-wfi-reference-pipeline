@@ -22,10 +22,7 @@ To install the package for development and testing:
 pip install -e .[docs,test]
 ```
 OR
-To install the package utilizing any database functionality (needed for automation or QC checks) [Additional instructions below](#installation-with-rtb-database-access)
-```buildoutcfg
-pip install -e .[rtbdb]
-```
+To install the package utilizing any database functionality (needed for automation or QC checks) please follow the [Additional instructions below](#installation-with-rtb-database-access)
 
 This will also install all of the dependencies.
 
@@ -37,9 +34,6 @@ This will also install all of the dependencies.
 Users must create a config.yml living at:
 ```/wfi_reference_pipeline/src/wfi_reference_pipeline/config/config.yml```
 Use example_config.yml in the same directory as a template.
-
-
-
 
 
 ## Installation with RTB database access
