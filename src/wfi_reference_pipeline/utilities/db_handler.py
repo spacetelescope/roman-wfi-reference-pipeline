@@ -14,15 +14,17 @@ class DBHandler:
     This class should be initialized as part of a base pipeline initialization procedure AFTER config values have been read and stored
     """
 
-    def __init__(self, ref_type, sql_server_str, sql_database_str, dsn_header_str):
+    def __init__(self, ref_type, use_dsn, sql_server_str=None, sql_database_str=None, port=None, dsn_header_str=None):
         if ref_type not in constants.WFI_REF_TYPES:
             raise ValueError(
                 f"ref_type {ref_type} not valid, must be: {constants.WFI_REF_TYPES}"
             )
 
+
         self.ref_type = ref_type
         self.sql_engine = None
         self.sql_server_str = sql_server_str
+        self.port = port
         self.sql_database_str = sql_database_str
         self.dsn_header_str = dsn_header_str
         self.connect()
@@ -43,7 +45,7 @@ class DBHandler:
             else:
                 engine = connect_server(driver="FreeTDS",
                                         server=self.sql_server_str,
-                                        port=1433,
+                                        port=self.port,
                                         tds_version=7.1,
                                         database=self.sql_database_str)
             engine = ensure_connection_is_engine(engine)

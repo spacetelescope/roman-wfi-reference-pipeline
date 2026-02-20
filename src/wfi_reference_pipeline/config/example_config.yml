@@ -21,10 +21,10 @@ data_files:
 
 database:
   use_rtbdb: false
-  use_dns: true
-  # if use_dns == false, the following must be filled
+  use_dsn: true
+  # if use_dsn == false, the following must be filled
   sql_server_str: "<SERVER_NAME.stsci.edu>"
   sql_database_str: "<DATABASE_NAME>"
   port: <Port Number>
-  # if use_dns == true, ensure you have populated ~/.odbc.ini properly and use the following
+  # if use_dsn == true, ensure you have populated ~/.odbc.ini properly and use the following
   dsn_header_str: "<DSN_STR>" # DSN file header, should be located in ~/.odbc.ini

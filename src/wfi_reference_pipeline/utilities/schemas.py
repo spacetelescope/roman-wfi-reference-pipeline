@@ -29,13 +29,13 @@ CONFIG_SCHEMA = {
             "type": "object",
             "properties": {
                 "use_rtbdb": {"type": "boolean"},
-                "use_dns": {"type": "boolean"},
+                "use_dsn": {"type": "boolean"},
                 "sql_server_str": {"type": "string"},
                 "sql_database_str": {"type": "string"},
                 "port": {"type": "number"},
                 "dsn_header_str": {"type": "string"},
             },
-            "required": ["use_rtbdb", "use_dns", "sql_server_str", "sql_database_str", "port", "dsn_header_str"],
+            "required": ["use_rtbdb", "use_dsn"],
         },
     },
     # List which entries are needed (all of them)
