@@ -58,7 +58,7 @@ class Pipeline(ABC):
         )
         self._db_config = get_db_config()
         if self._db_config["use_rtbdb"]:
-            self.db_handler = DBHandler(self.ref_type, self._db_config["sql_server_str"], self._db_config["sql_database_str"])
+            self.db_handler = DBHandler(self.ref_type, self._db_config["sql_server_str"], self._db_config["sql_database_str"], self._db_config["dsn_header_str"])
         else:
             self.db_handler = None
 

@@ -1,5 +1,6 @@
 import logging
 
+from rtb_db.utilities import table_tools
 from rtb_db.utilities.login import connect_server
 from rtb_db.utilities.table_tools import ensure_connection_is_engine
 
@@ -13,7 +14,7 @@ class DBHandler:
     This class should be initialized as part of a base pipeline initialization procedure AFTER config values have been read and stored
     """
 
-    def __init__(self, ref_type, sql_server_str, sql_database_str):
+    def __init__(self, ref_type, sql_server_str, sql_database_str, dsn_header_str):
         if ref_type not in constants.WFI_REF_TYPES:
             raise ValueError(
                 f"ref_type {ref_type} not valid, must be: {constants.WFI_REF_TYPES}"
@@ -23,6 +24,7 @@ class DBHandler:
         self.sql_engine = None
         self.sql_server_str = sql_server_str
         self.sql_database_str = sql_database_str
+        self.dsn_header_str = dsn_header_str
         self.connect()
 
     def connect(self):
@@ -36,17 +38,22 @@ class DBHandler:
 
         """
         try:
-            engine = connect_server(driver="FreeTDS",
-                                    server=self.sql_server_str,
-                                    port=1433,
-                                    tds_version=7.1,
-                                    database=self.sql_database_str)
-
+            if self.dsn_header_str:
+                engine = connect_server(dsn_name=self.dsn_header_str)
+            else:
+                engine = connect_server(driver="FreeTDS",
+                                        server=self.sql_server_str,
+                                        port=1433,
+                                        tds_version=7.1,
+                                        database=self.sql_database_str)
             engine = ensure_connection_is_engine(engine)
             self.sql_engine = engine
 
-            # TODO - SAPP -> GET TABLE NAMES
-            
+            # TODO - SAPP -> TEMP DEV CODE REMOVE
+            print(f'SQL table names: {table_tools.table_names(engine)}\n')
+            print(f'Table class names: {table_tools.table_class_names(engine)}\n')
+            #//////////////////////////////////////////////////////////////////
+
             # ensure metrics table exists on the active database server
             # assert set(self.sql_table_names).issubset(table_names(self.sql_engine)) # TODO figure this out, not currently storing sql_table_names
 
@@ -56,5 +63,7 @@ class DBHandler:
         except Exception as err:
             logging.warning('Unable to connect to RTB database.')
             logging.error(f"Received {err}")
+            print(f"Received {err}")
+            ## TODO - IF YOU DO GET HERE, do you want to abandon ship and alert?
             return
 
