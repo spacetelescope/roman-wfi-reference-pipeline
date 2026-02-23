@@ -1,10 +1,9 @@
 import os
 
-import asdf
 import numpy as np
 import pytest
-#from roman_datamodels import maker_utils as utils
 
+#from roman_datamodels import maker_utils as utils
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE, REF_TYPE_REFPIX
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
     ReferencePixel,
