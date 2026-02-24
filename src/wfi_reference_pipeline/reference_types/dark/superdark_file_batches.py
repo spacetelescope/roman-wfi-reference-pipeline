@@ -7,7 +7,6 @@ from datetime import datetime
 import asdf
 import numpy as np
 import psutil
-from astropy import units as u
 from astropy.stats import sigma_clip
 
 from wfi_reference_pipeline.constants import (
@@ -73,9 +72,11 @@ class SuperDarkBatches(SuperDark):
             sig_clip_sd_low=3.0,
             sig_clip_sd_high=3.0,
             short_batch_size=4,
-            long_batch_size=4
+            long_batch_size=4,
+            do_sigma_clipping=True,
         ):
         """
+        TODO: We will want to rearrange the variable sand figure out default values (Rick PR comment)
         This method does a file I/O open, read, and append to a temporary cube, sigma clip, and then average
         approach for every read in both short and long darks in creating the super dark cube. Starting with
         read index 0 all files that have the read index in the allowed range will be opened and the frame from
@@ -92,11 +93,16 @@ class SuperDarkBatches(SuperDark):
             Number of short dark files to process in parallel at a time.
         long_batch_size: int, default = 4
             Number of long dark files to process in parallel at a time.
+        do_sigma_clip: bool, default = True
+            Perform sigma clipping on each read before taking the mean,
+            Note that this is only optional for "Batches". "Dynamic" 
+            automatically performs sigma-clipping.
         """
         current_datetime = datetime.now()
         logging.info(f"Starting super dark batches at: {current_datetime}")
         timing_start_method_e = time.time()
         logging.info("Testing super dark method with file batches.")
+        logging.info(f"Sigma-clipping is set to {do_sigma_clipping}")
         logging.debug(f"Memory used at start of method: {get_mem_usage():.2f} GB")
         self._superdark_num_reads = max(self.short_dark_num_reads, self.long_dark_num_reads) # need this check in case no long is sent in
 
@@ -104,9 +110,8 @@ class SuperDarkBatches(SuperDark):
         # Loop over read to construct superdark of length of long dark reads.
         # Going into each file for every i'th read or read_i index.
         for read_i in range(0, self._superdark_num_reads):
-            timing_method_file_loop_start = time.time()
-            logging.debug(f"On read {read_i} of {self._superdark_num_reads}")
             print(f"On read {read_i} of {self._superdark_num_reads}")
+            logging.debug(f"On read {read_i} of {self._superdark_num_reads}")
 
             # Determine the number of files to process for the current read index.
             if read_i < self.short_dark_num_reads:
@@ -133,49 +138,48 @@ class SuperDarkBatches(SuperDark):
             # when doing long dark parallel processing.
             if self.long_dark_file_list:
                 long_dark_results = process_files_in_batches(self.long_dark_file_list,
-                                                            long_batch_size,
-                                                            read_i)
+                                                             long_batch_size,
+                                                             read_i)
+
                 for i, result in enumerate(long_dark_results, start=len(short_dark_results)):
                     if result is not None:
                         logging.debug(f"Assigning result from long dark file to index {i} in superdark"
-                                    f"for read {read_i}")
+                                      f"for read {read_i}")
                         self.read_i_from_all_files[i, :, :] = result
 
-            timing_method_file_loop_end = time.time()
-            elapsed_file_loop_time = timing_method_file_loop_end - timing_method_file_loop_start
-            logging.debug(f"File loop elapsed time: {elapsed_file_loop_time}")
+            logging.debug("File loop completed")
 
-            timing_start_sigmaclipmean = time.time()
+            if do_sigma_clipping:
+                logging.debug("Beginning sigma-clipping")
 
-            if np.isnan(self.read_i_from_all_files[i, :, :]).any():
-                logging.debug("NaNs found in read_i_from_all_files data cube")
-            logging.debug(f"Sigma clipping reads from all files for read_i: {read_i}")
-            clipped_reads = sigma_clip(self.read_i_from_all_files,
-                                       sigma_lower=sig_clip_sd_low,
-                                       sigma_upper=sig_clip_sd_high,
-                                       cenfunc="mean",
-                                       axis=0,
-                                       masked=False,
-                                       copy=False)
+                if np.isnan(self.read_i_from_all_files[i, :, :]).any():
+                    logging.debug("NaNs found in read_i_from_all_files data cube")
 
-            timing_end_sigmaclipmean = time.time()
-            time_sigmaclipmean = timing_end_sigmaclipmean - timing_start_sigmaclipmean
-            logging.debug(f"Sigma clip and average time: {time_sigmaclipmean:.2f} seconds")
+                logging.debug(f"Sigma clipping reads from all files for read_i: {read_i}")
+                clipped_reads = sigma_clip(self.read_i_from_all_files,
+                                           sigma_lower=sig_clip_sd_low,
+                                           sigma_upper=sig_clip_sd_high,
+                                           cenfunc="mean",
+                                           axis=0,
+                                           masked=False,
+                                           copy=False)
 
-            time_fileloop_and_sigmaclipmean = timing_end_sigmaclipmean - timing_method_file_loop_start
-            logging.debug(f"File loop and sigma clip and average time: {time_fileloop_and_sigmaclipmean:.2f} seconds")
+                if np.isnan(clipped_reads).any():
+                    logging.debug("NaNs found in sigma clipped reads cube.")
+                self.superdark[read_i, :, :] = np.nanmean(clipped_reads, axis=0)
 
-            if np.isnan(clipped_reads).any():
-                logging.debug("NaNs found in sigma clipped reads cube.")
-            self.superdark[read_i, :, :] = np.nanmean(clipped_reads, axis=0)
+                del clipped_reads, self.read_i_from_all_files
+                gc.collect()
 
-            logging.debug(f"Memory used at end of method: {get_mem_usage():.2f} GB")
-            del clipped_reads, self.read_i_from_all_files
-            gc.collect()
+            else:
+                self.superdark[read_i, :, :] = np.nanmean(self.read_i_from_all_files, axis=0)
+
+                del self.read_i_from_all_files
+                gc.collect()
 
         timing_end_method_e = time.time()
         elapsed_time = timing_end_method_e - timing_start_method_e
-        logging.info(f"Total time taken for method e: {elapsed_time:.2f} seconds")
+        logging.info(f"Total time taken for generate_superdark: {elapsed_time:.2f} seconds")
 
 
 def get_mem_usage():
@@ -208,14 +212,12 @@ def get_read_from_file(file_path, read_i):
     np.ndarray
         Array of data for the given read index.
     """
-
     try:
-        with asdf.open(file_path) as af:
+        with asdf.open(file_path, memmap=True) as af:
             logging.debug(f"Opening file {file_path}")
-            if isinstance(af.tree['roman']['data'], u.Quantity):  # Only access data from quantity object.
-                return af.tree['roman']['data'][read_i, :, :].value
-            else:
-                return af.tree['roman']['data'][read_i, :, :]
+            read = af.tree['roman']['data'][read_i, :, :]
+            return read
+
     except (FileNotFoundError, IOError, PermissionError, ValueError) as e:
         logging.warning(f"Could not open {file_path} - {e}")
 
