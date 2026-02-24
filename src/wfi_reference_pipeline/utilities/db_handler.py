@@ -1,10 +1,15 @@
 import logging
 
+from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
 from rtb_db.utilities import table_tools
 from rtb_db.utilities.login import connect_server
-from rtb_db.utilities.table_tools import ensure_connection_is_engine
+from rtb_db.utilities.table_tools import (
+    add_to_tables_from_class_list,
+    ensure_connection_is_engine,
+)
 
 from wfi_reference_pipeline import constants
+from wfi_reference_pipeline.database.db_entry import DBEntry
 
 
 class DBHandler:
@@ -20,18 +25,16 @@ class DBHandler:
                 f"ref_type {ref_type} not valid, must be: {constants.WFI_REF_TYPES}"
             )
 
-
         self.ref_type = ref_type
-        self.sql_engine = None
-        self.sql_server_str = sql_server_str
-        self.port = port
-        self.sql_database_str = sql_database_str
-        self.dsn_header_str = dsn_header_str
-        self.connect()
+        self.sql_id = None
+        self.db_engine = None
+        self.db_entry = DBEntry()
 
-    def connect(self):
+        self._connect(use_dsn, sql_server_str, sql_database_str, port, dsn_header_str)
+
+    def _connect(self, use_dsn, sql_server_str, sql_database_str, port, dsn_header_str):
         """Confirm if the user has access to the desired database. If so, establish a SQLalchemy connection.
-        Saves SQLalchemy engine to self.sql_engine and saves the db availability boolean to self.use_db.
+        Saves SQLalchemy engine to self.db_engine and saves the db availability boolean to self.use_db.
 
         Returns
         -------
@@ -40,24 +43,25 @@ class DBHandler:
 
         """
         try:
-            if self.dsn_header_str:
-                engine = connect_server(dsn_name=self.dsn_header_str)
+            if use_dsn:
+                engine = connect_server(dsn_name=dsn_header_str)
             else:
                 engine = connect_server(driver="FreeTDS",
-                                        server=self.sql_server_str,
-                                        port=self.port,
+                                        server=sql_server_str,
+                                        port=port,
                                         tds_version=7.1,
-                                        database=self.sql_database_str)
+                                        database=sql_database_str)
             engine = ensure_connection_is_engine(engine)
-            self.sql_engine = engine
+            self.db_engine = engine
 
             # TODO - SAPP -> TEMP DEV CODE REMOVE
             print(f'SQL table names: {table_tools.table_names(engine)}\n')
             print(f'Table class names: {table_tools.table_class_names(engine)}\n')
+            print(f'Table name from class: {RFPLogProTable.__tablename__}')
+            print(f"Table class from name: {table_tools.get_table_class_from_tablename('wfi_rfp_log_pro')}")
+            print(table_tools.get_full_table(engine, RFPLogProTable))
             #//////////////////////////////////////////////////////////////////
 
-            # ensure metrics table exists on the active database server
-            # assert set(self.sql_table_names).issubset(table_names(self.sql_engine)) # TODO figure this out, not currently storing sql_table_names
 
 
         ### TODO: This is not actually catching if the engine exists or not...
@@ -65,7 +69,16 @@ class DBHandler:
         except Exception as err:
             logging.warning('Unable to connect to RTB database.')
             logging.error(f"Received {err}")
-            print(f"Received {err}")
-            ## TODO - IF YOU DO GET HERE, do you want to abandon ship and alert?
-            return
+            raise ConnectionError(
+                f"Unable to connect to RTB database - {err}."
+            )
 
+    def new_pipeline_db_entry(self, ref_type, wfi_mode, reef_monitor):
+        # SAPP TODO - YOU ARE HERE!!!! GET AN INITIAL DATABASE ENTRY AND KEEP THE SQL ID
+        # STORE EVERYTHING YOU HAVE ALREADY PERTAINING TO THIS PIPELINE RUN
+        # CREATE A METHOD IN RTB_DB REPO THAT WILL ALLOW YOU TO UPDATE AN EXISTING ROW
+        # ONCE YOU HAVE INITIAL UPDATE AND EXISTING ROW UPDATE, TRY RUNNING AND POPULATING EVERYTHING NEEDED FROM INITIATION THROUGH PREP PIPELINE
+
+        self.db_entry.init_rfp_log_pro(ref_type, wfi_mode, reef_monitor)
+        add_to_tables_from_class_list(self.engine, [self.db_entry.rfp_log_pro])
+        #self.sql_id = self.rfp_log_pro.sql_id   # VERIFY SQL_ID EXISTS
