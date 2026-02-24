@@ -146,6 +146,7 @@ class DarkPipeline(Pipeline):
         sig_clip_sd_low=DARK_SIGMA_CLIP_SD_LOW,
         sig_clip_sd_high=DARK_SIGMA_CLIP_SD_HIGH,
         outfile=None,
+        do_sigma_clipping=True,
     ):
         f"""
         Prepares the superdark data file from an existing file list to be used as input for the `run_pipeline` method
@@ -187,6 +188,8 @@ class DarkPipeline(Pipeline):
             Number of reads for every short file
         long_dark_num_reads: int, optional default={DARK_LONG_NUM_READS}
             Number of reads for every long file
+        do_sigma_clipping: bool, optional default = True
+            Perform sigma clipping on each set of reads when generating the superdark using batches method.
 
         """
         # Gather the short_dark_file_list and long_dark_file_list to send to superdark class
@@ -262,6 +265,7 @@ class DarkPipeline(Pipeline):
                 "sig_clip_sd_high": sig_clip_sd_high,
                 "short_batch_size": 4,
                 "long_batch_size": 4,
+                "do_sigma_clipping": do_sigma_clipping,
             }  # TODO - get batch sizes from config file
 
         superdark.generate_superdark(**kwargs)
