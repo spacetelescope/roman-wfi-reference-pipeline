@@ -14,12 +14,45 @@ from wfi_reference_pipeline.database.db_entry import DBEntry
 
 class DBHandler:
     """
-    Utility class to safely handle access to the rtbdb
-    This class is designed to ONLY be initialized in the Pipeline base class
-    This class should be initialized as part of a base pipeline initialization procedure AFTER config values have been read and stored
+    Utility class to safely handle access to the RTB database.
+
+    This class encapsulates connection setup and basic pipeline entry
+    handling against the RTB DB via SQLAlchemy. It is intended to be
+    constructed by the Pipeline base class, after configuration has been
+    read and validated.
     """
 
     def __init__(self, ref_type, use_dsn, sql_server_str=None, sql_database_str=None, port=None, dsn_header_str=None):
+        """
+        Initialize a DBHandler and immediately attempt to connect to the RTB database.
+
+        Parameters
+        ----------
+        ref_type : str
+            Reference type identifier used by the pipeline.
+        use_dsn : bool
+            If True connect using a DSN name else connect using explicit server/database parameters.
+        sql_server_str : str, optional
+            SQL Server hostname or address when use_dsn is False.
+        sql_database_str : str, optional
+            Database name when use_dsn is False.
+        port : int, optional
+            SQL Server port when use_dsn is False.
+        dsn_header_str : str, optional
+            DSN name to use when use_dsn is True.
+
+        Attributes
+        ----------
+        ref_type : str
+        sql_id : Any or None
+            SQL identifier.
+        db_engine : sqlalchemy.engine.Engine or None
+            SQLAlchemy Engine once connected.
+        db_entry : DBEntry
+            Helper object to prepare and insert pipeline entries.
+        """
+
+
         if ref_type not in constants.WFI_REF_TYPES:
             raise ValueError(
                 f"ref_type {ref_type} not valid, must be: {constants.WFI_REF_TYPES}"
@@ -32,16 +65,28 @@ class DBHandler:
 
         self._connect(use_dsn, sql_server_str, sql_database_str, port, dsn_header_str)
 
+
     def _connect(self, use_dsn, sql_server_str, sql_database_str, port, dsn_header_str):
-        """Confirm if the user has access to the desired database. If so, establish a SQLalchemy connection.
-        Saves SQLalchemy engine to self.db_engine and saves the db availability boolean to self.use_db.
-
-        Returns
-        -------
-        self.use_db
-            boolean to trigger if montor should attempt to use the database
-
         """
+        Establish a connection to the RTB database and store the SQLAlchemy Engine.
+
+        Depending on ``use_dsn``, this will either connect via a named DSN or
+        directly using server parameters.
+
+        Parameters
+        ----------
+        use_dsn : bool
+            If True connect using DSN.
+        sql_server_str : str, optional
+            SQL Server string (non-DSN mode).
+        sql_database_str : str, optional
+            Database name (non-DSN mode).
+        port : int, optional
+            SQL Server port (non-DSN mode).
+        dsn_header_str : str, optional
+            DSN name (DSN mode).
+        """
+
         try:
             if use_dsn:
                 engine = connect_server(dsn_name=dsn_header_str)
@@ -54,16 +99,6 @@ class DBHandler:
             engine = ensure_connection_is_engine(engine)
             self.db_engine = engine
 
-            # TODO - SAPP -> TEMP DEV CODE REMOVE
-            print(f'SQL table names: {table_tools.table_names(engine)}\n')
-            print(f'Table class names: {table_tools.table_class_names(engine)}\n')
-            print(f'Table name from class: {RFPLogProTable.__tablename__}')
-            print(f"Table class from name: {table_tools.get_table_class_from_tablename('wfi_rfp_log_pro')}")
-            print(table_tools.get_full_table(engine, RFPLogProTable))
-            #//////////////////////////////////////////////////////////////////
-
-
-
         ### TODO: This is not actually catching if the engine exists or not...
         ### add raise exception to rtb-db login.connect_sqlalchemy
         except Exception as err:
@@ -74,11 +109,18 @@ class DBHandler:
             )
 
     def new_pipeline_db_entry(self, ref_type, wfi_mode, reef_monitor):
-        # SAPP TODO - YOU ARE HERE!!!! GET AN INITIAL DATABASE ENTRY AND KEEP THE SQL ID
-        # STORE EVERYTHING YOU HAVE ALREADY PERTAINING TO THIS PIPELINE RUN
-        # CREATE A METHOD IN RTB_DB REPO THAT WILL ALLOW YOU TO UPDATE AN EXISTING ROW
-        # ONCE YOU HAVE INITIAL UPDATE AND EXISTING ROW UPDATE, TRY RUNNING AND POPULATING EVERYTHING NEEDED FROM INITIATION THROUGH PREP PIPELINE
+        """
+        Initialize and insert a new logistics processing table row for this pipeline.
+
+        Parameters
+        ----------
+        ref_type : str
+            Reference type associated with this pipeline run.
+        wfi_mode : str
+            wfi mode associated with this pipeline run.
+        reef_monitor : bool
+            Expecting external monitoring for this run.
+        """
 
         self.db_entry.init_rfp_log_pro(ref_type, wfi_mode, reef_monitor)
-        add_to_tables_from_class_list(self.engine, [self.db_entry.rfp_log_pro])
-        #self.sql_id = self.rfp_log_pro.sql_id   # VERIFY SQL_ID EXISTS
+        add_to_tables_from_class_list(self.db_engine, [self.db_entry.rfp_log_pro])
