@@ -1,7 +1,5 @@
 import logging
 
-from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
-from rtb_db.utilities import table_tools
 from rtb_db.utilities.login import connect_server
 from rtb_db.utilities.table_tools import (
     add_to_tables_from_class_list,
