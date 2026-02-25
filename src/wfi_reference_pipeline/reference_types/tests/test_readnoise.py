@@ -12,7 +12,7 @@ from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
-# NOTE SYE: Set smaller test data size
+# Set smaller test data size
 TEST_DETECTOR_PIXEL_COUNT = 32 
 
 
@@ -58,7 +58,7 @@ def valid_ref_type_data_array():
     return np.random.random((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
 
 
-# NOTE SYE: This factory makes a new read each call
+# NOTE: This factory makes a new read each call
 #    We can introduce a _cache dictionary to store in the future if generating becomes too expensive
 #    I'm currently not concerned as long as we use the TEST_DETECTOR_PIXEL_COUNT to keep data small
 @pytest.fixture(scope="session")
@@ -126,7 +126,6 @@ class TestReadNoise:
         with pytest.raises(TypeError):
             ReadNoise(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
 
-    # NOTE SYE: Potentially switch to use the factory, though I see nothing wrong with keeping this as is
     def test_readnoise_instantiation_with_file_list(self, valid_meta_data, mocker):
         """
         Test that ReadNoise object handles file list input correctly.
