@@ -12,8 +12,7 @@ from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
-# NOTE SYE: I think it is a good idea to have a set smaller test data size
-# Move this into constants.py if it is decided we should have this for all tests
+# NOTE SYE: Set smaller test data size
 TEST_DETECTOR_PIXEL_COUNT = 32 
 
 
@@ -185,13 +184,17 @@ class TestReadNoise:
         """
         assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
 
-# NOTE SYE: I think this can be left has a integration testß
-def test_full_pipe(readnoise_object_with_file_list):
+
+def test_make_readnoise_image_sets_correct_shape_pass(readnoise_object_with_file_list):
 
     readnoise_object_with_file_list.make_readnoise_image()
 
+    assert readnoise_object_with_file_list.readnoise_image is not None
+    assert readnoise_object_with_file_list.readnoise_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+    
 
-def test_select_data_cube_from_file_list(readnoise_object_with_file_list):
+
+def test_select_data_cube_sets_correct_num_reads_pass(readnoise_object_with_file_list):
 
     # Check datacube doesn't exist
     with pytest.raises(AttributeError):
@@ -202,14 +205,14 @@ def test_select_data_cube_from_file_list(readnoise_object_with_file_list):
     assert readnoise_object_with_file_list.data_cube is not None
     assert readnoise_object_with_file_list.data_cube.num_reads == 3
 
-def test_make_rate_image_from_data_cube(readnoise_object_with_data_cube):
+def test_make_rate_image_updates_dimensions_pass(readnoise_object_with_data_cube):
 
     readnoise_object_with_data_cube.make_rate_image_from_data_cube()
 
     assert readnoise_object_with_data_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
     assert readnoise_object_with_data_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
-def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+def test_comp_ramp_res_var_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
     # Mock a datacube with the necessary parts: ramp_model
     mock_readnoise_datacube = mocker.Mock()
@@ -226,7 +229,7 @@ def test_comp_ramp_res_var(readnoise_object_with_data_cube, ref_type_data_factor
 
     assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
-def test_comp_cds_noise(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+def est_comp_cds_noise_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
     # Mock a datacube with the necessary parts: ramp_model
     mock_readnoise_datacube = mocker.Mock()
