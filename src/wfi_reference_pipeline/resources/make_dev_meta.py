@@ -38,6 +38,7 @@ from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
     WFIMetaMultiAccumulationTable,
 )
 from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
+from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
@@ -129,6 +130,23 @@ class MakeDevMeta:
 
     def _create_dev_meta_pedestal(self, meta_data):
         self.meta_pedestal = WFIMetaPedestal(*meta_data)
+
+    def _create_dev_meta_pixelarea(self, meta_data):
+        p_optical_element = "F158"  # Default optical element 
+
+        # pixel scale (Roman WFI is ~0.11 arcsec/pixel)
+        pixel_scale = 0.11 * u.arcsec
+        # Pixel area in arcsecsq
+        pixelarea_arcsecsq = (pixel_scale ** 2).to(u.arcsec**2).value
+        # Convert to steradians
+        pixelarea_steradians = (pixel_scale ** 2).to(u.sr).value
+
+        self.meta_pixelarea = WFIMetaPixelArea(
+            *meta_data,
+            pixelarea_steradians=pixelarea_steradians,
+            pixelarea_arcsecsq=pixelarea_arcsecsq,
+            ref_optical_element=p_optical_element,
+            )
 
     def _create_dev_meta_readnoise(self, meta_data):
         mode = WFI_MODE_WIM
@@ -224,6 +242,9 @@ class MakeDevMeta:
 
         if ref_type == "PEDESTAL":
             self._create_dev_meta_pedestal(meta_data_params)
+        
+        if ref_type == "PIXELAREA":
+            self._create_dev_meta_pixelarea(meta_data_params)
 
         if ref_type == "READNOISE":
             self._create_dev_meta_readnoise(meta_data_params)

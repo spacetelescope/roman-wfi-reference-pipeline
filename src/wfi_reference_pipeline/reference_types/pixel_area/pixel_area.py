@@ -1,14 +1,14 @@
 import numpy as np
 import roman_datamodels.stnode as rds
 
-from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
+from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
 
 from ..reference_type import ReferenceType
 
 
-class Pedestal(ReferenceType):
+class PixelArea(ReferenceType):
     """
-    Class Pedestal() inherits the ReferenceType() base class methods
+    Class PixelArea() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method creates the asdf reference file.
     """
@@ -19,7 +19,7 @@ class Pedestal(ReferenceType):
             file_list=None,
             ref_type_data=None,
             bit_mask=None,
-            outfile="roman_pedestal.asdf",
+            outfile="roman_pixelarea.asdf",
             clobber=False,
     ):
 
@@ -59,16 +59,18 @@ class Pedestal(ReferenceType):
         )
 
         # Default meta creation for module specific ref type.
-        if not isinstance(meta_data, WFIMetaPedestal):
+        if not isinstance(meta_data, WFIMetaPixelArea):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaPEDESTAL"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaPIXELAREA"
             )
         if len(self.meta_data.description) == 0:
-            self.meta_data.description = "Roman WFI pedestal reference file."
+            self.meta_data.description = "Roman WFI pixel area reference file."
 
-        self.pedestal = ref_type_data    
+        if ref_type_data is None:
+            ref_type_data = make_pam_array
+        self.pixel_area = ref_type_data    
 
-        self.outfile = outfile
+        self.outfile = outfile    
 
     def calculate_error(self):
         """
@@ -84,26 +86,15 @@ class Pedestal(ReferenceType):
 
     def populate_datamodel_tree(self):
         """
-        Build the Roman datamodel tree for the pedestal reference.
+        Build the Roman datamodel tree for the pixel area map reference.
         """
-        try:
-            # Placeholder until official datamodel exists
-            ped_ref = rds.Pedestal()
-        except AttributeError:
-            ped_ref = {"meta": {}, 
-                       "data": {},
-                       "dq": {}
-                       }
+        pam_ref = rds.PixelareaRef()
+        pam_ref["meta"] = self.meta_data.export_asdf_meta()
+        pam_ref["data"] = self.pixel_area
 
-        ped_ref["meta"] = self.meta_data.export_asdf_meta()
-        ped_ref["data"] = self.pedestal
-        ped_ref["dq"] = np.zeros((4096, 4096), dtype=np.uint16)
 
-        return ped_ref
-    
+def make_pam_array():
 
-def make_bias_array():
-
-    arr = np.random.uniform(0.2, 0.8, size=(4096, 4096))
+    arr = np.random.uniform(0.98, 1.02, size=(4096, 4096))
 
     return arr
