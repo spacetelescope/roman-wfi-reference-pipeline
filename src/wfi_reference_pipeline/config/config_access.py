@@ -11,6 +11,7 @@ from wfi_reference_pipeline.utilities.schemas import (
     QC_CONFIG_SCHEMA,
 )
 
+
 def _validate_rtb_db_installed():
     """
         Verify that rtb_db can be imported.
