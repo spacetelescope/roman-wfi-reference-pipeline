@@ -9,8 +9,6 @@ try:
 except ImportError:
     logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
 
-#from wfi_reference_pipeline import __version__ as rfp_version #SAPP DO DIFFERENT VERSION
-
 
 class DBEntry:
     """
@@ -43,8 +41,8 @@ class DBEntry:
                                           start_time=start_time,
                                           wfi_mode=wfi_mode,
                                           reef_monitor=reef_monitor,
-                                          rcal_version="0.0.1", # TODO get proper version
-                                          rfp_version=rfp_version,
+                                          rcal_version=romancal.__version__,
+                                          rfp_version="0.0.1", # TODO GET PROPER VERSION
                                           qc_status=DB_QC_INCOMPLETE,
                                           )
 
