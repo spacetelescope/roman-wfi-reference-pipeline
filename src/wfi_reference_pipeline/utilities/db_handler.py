@@ -1,5 +1,11 @@
 import logging
 
+from rtb_db.utilities.login import connect_server
+from rtb_db.utilities.table_tools import (
+    add_to_tables_from_class_list,
+    ensure_connection_is_engine,
+)
+
 from wfi_reference_pipeline import constants
 from wfi_reference_pipeline.database.db_entry import DBEntry
 
@@ -80,8 +86,7 @@ class DBHandler:
         """
 
         try:
-            from rtb_db.utilities.login import connect_server
-            from rtb_db.utilities.table_tools import ensure_connection_is_engine
+
             if use_dsn:
                 engine = connect_server(dsn_name=dsn_header_str)
             else:
@@ -115,6 +120,5 @@ class DBHandler:
         reef_monitor : bool
             Expecting external monitoring for this run.
         """
-        from rtb_db.utilities.table_tools import add_to_tables_from_class_list
         self.db_entry.init_rfp_log_pro(ref_type, wfi_mode, reef_monitor)
         add_to_tables_from_class_list(self.db_engine, [self.db_entry.rfp_log_pro])

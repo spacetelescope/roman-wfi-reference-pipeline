@@ -1,6 +1,8 @@
 from datetime import datetime
 
 import romancal
+from rtb_db.constants.rfp_reef import DB_QC_INCOMPLETE
+from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
 
 from wfi_reference_pipeline import __version__ as rfp_version
 
@@ -31,8 +33,6 @@ class DBEntry:
         reef_monitor : bool
             Expecting external monitoring for this run.
         """
-        from rtb_db.constants.rfp_reef import DB_QC_INCOMPLETE
-        from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
         start_time = self.get_date_time_formatted()
         self.rfp_log_pro = RFPLogProTable(ref_type=ref_type,
                                           start_time=start_time,
