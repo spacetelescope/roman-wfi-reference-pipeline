@@ -1,3 +1,4 @@
+import importlib.util
 from pathlib import Path
 
 import yaml
@@ -9,6 +10,13 @@ from wfi_reference_pipeline.utilities.schemas import (
     PIPELINES_CONFIG_SCHEMA,
     QC_CONFIG_SCHEMA,
 )
+
+def _validate_rtb_db_installed():
+    """
+        Verify that rtb_db can be imported.
+        This should only need to be used on the initial config check to see if hte user is intending to use rtbdb
+    """
+    return importlib.util.find_spec("rtb_db") is not None
 
 
 def _validate_config(config_file_dict, schema, config_location_str):
@@ -44,11 +52,15 @@ def _validate_config(config_file_dict, schema, config_location_str):
         config_dict = config_file_dict["database"]
 
         if config_dict.get("use_rtbdb"):
-            if config_dict.get("use_dsn"):
-                _dependency_check(config_dict, "dsn_header_str", "use_dsn is set to true", config_location_str)
+            if _validate_rtb_db_installed():
+                if config_dict.get("use_dsn"):
+                    _dependency_check(config_dict, "dsn_header_str", "use_dsn is set to true", config_location_str)
+                else:
+                    for key in ("sql_server_str", "sql_database_str", "port"):
+                        _dependency_check(config_dict, key, "use_dsn is set to false", config_location_str)
             else:
-                for key in ("sql_server_str", "sql_database_str", "port"):
-                    _dependency_check(config_dict, key, "use_dsn is set to false", config_location_str)
+                raise ValueError("Cannot have 'use_rtbdb' set in config file without rtb_db installed."
+                                 "Try 'pip install .[rtbdb]'")
 
 
 
