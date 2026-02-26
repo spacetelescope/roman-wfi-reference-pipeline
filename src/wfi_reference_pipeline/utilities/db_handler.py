@@ -1,10 +1,14 @@
 import logging
 
-from rtb_db.utilities.login import connect_server
-from rtb_db.utilities.table_tools import (
-    add_to_tables_from_class_list,
-    ensure_connection_is_engine,
-)
+try:
+    from rtb_db.utilities.login import connect_server
+    from rtb_db.utilities.table_tools import (
+        add_to_tables_from_class_list,
+        ensure_connection_is_engine,
+    )
+except ImportError:
+    logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
+
 
 from wfi_reference_pipeline import constants
 from wfi_reference_pipeline.database.db_entry import DBEntry

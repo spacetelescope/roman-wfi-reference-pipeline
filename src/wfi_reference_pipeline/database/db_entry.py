@@ -1,8 +1,13 @@
+import logging
 from datetime import datetime
 
 import romancal
-from rtb_db.constants.rfp_reef import DB_QC_INCOMPLETE
-from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
+
+try:
+    from rtb_db.constants.rfp_reef import DB_QC_INCOMPLETE
+    from rtb_db.table_defs.wfi_rfp.log import RFPLogProTable
+except ImportError:
+    logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
 
 from wfi_reference_pipeline import __version__ as rfp_version
 

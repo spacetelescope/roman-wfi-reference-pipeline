@@ -1,6 +1,10 @@
 import logging
 
-from rtb_db.utilities import login, rfp_tools
+try:
+    from rtb_db.utilities import login, rfp_tools
+except ImportError:
+    logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
+
 
 
 def get_ma_table_from_rtbdb(ma_table_number=None):
