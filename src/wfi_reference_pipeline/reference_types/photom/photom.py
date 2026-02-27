@@ -8,4 +8,13 @@ the data model needed.
 Also see https://github.com/spacetelescope/roman-wfi-reference-pipeline/blob/main/src/docs/how_to_make_new_reftype.txt
 which is basically a step by step procedure needed to generate a new reference type and meta handlers used for development
 and testing. 
+
+Example code to utilize meta makers:
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+
+tmp = MakeDevMeta(ref_type='PHOTOM')
+tmp_test = MakeTestMeta(ref_type='PHOTOM')
+
+print(tmp.meta_photom)
 """

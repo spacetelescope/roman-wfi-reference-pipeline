@@ -38,6 +38,7 @@ from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
     WFIMetaMultiAccumulationTable,
 )
 from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
+from wfi_reference_pipeline.resources.wfi_meta_photom import WFIMetaPhotom
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
@@ -129,6 +130,9 @@ class MakeDevMeta:
 
     def _create_dev_meta_pedestal(self, meta_data):
         self.meta_pedestal = WFIMetaPedestal(*meta_data)
+
+    def _create_dev_meta_photom(self, meta_data):
+        self.meta_photom = WFIMetaPhotom(*meta_data)
 
     def _create_dev_meta_readnoise(self, meta_data):
         mode = WFI_MODE_WIM
@@ -224,6 +228,9 @@ class MakeDevMeta:
 
         if ref_type == "PEDESTAL":
             self._create_dev_meta_pedestal(meta_data_params)
+        
+        if ref_type == "PHOTOM":
+            self._create_dev_meta_photom(meta_data_params)
 
         if ref_type == "READNOISE":
             self._create_dev_meta_readnoise(meta_data_params)
