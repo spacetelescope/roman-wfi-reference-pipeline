@@ -62,6 +62,9 @@ class DarkPipeline(Pipeline):
         super().__init__(REF_TYPE_DARK, detector)
         self.superdark_file = None
         self.config = get_pipelines_config(REF_TYPE_DARK)
+        if self.use_rtbdb:
+            # TODO - DONT HARDCODE THIS MODE OR REEF MONITOR, WHERE DO WE WANT TO GET IT FROM?
+            self.db_handler.new_pipeline_db_entry(ref_type=REF_TYPE_DARK, wfi_mode="WIM", reef_monitor=False)
 
     # @log_info
     def select_uncal_files(self):

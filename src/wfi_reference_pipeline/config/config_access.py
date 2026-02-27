@@ -1,3 +1,4 @@
+import importlib.util
 from pathlib import Path
 
 import yaml
@@ -11,7 +12,15 @@ from wfi_reference_pipeline.utilities.schemas import (
 )
 
 
-def _validate_config(config_file_dict, schema):
+def _validate_rtb_db_installed():
+    """
+        Verify that rtb_db can be imported.
+        This should only need to be used on the initial config check to see if hte user is intending to use rtbdb
+    """
+    return importlib.util.find_spec("rtb_db") is not None
+
+
+def _validate_config(config_file_dict, schema, config_location_str):
     """Check that the config.yml file contains all the needed entries with
     expected data types
 
@@ -25,8 +34,7 @@ def _validate_config(config_file_dict, schema):
     See here for more information on JSON schemas:
         https://json-schema.org/learn/getting-started-step-by-step.html
     """
-    #TODO - Schema check not currently working (as in everything passes. BAD!)
-    # Test that the provided config file dict matches the schema
+
     try:
         # Validate YAML data against the schema
         validate(instance=config_file_dict, schema=schema)
@@ -34,6 +42,27 @@ def _validate_config(config_file_dict, schema):
         raise exceptions.ValidationError(
             f"Provided config file dictionary does not match the required YML schema: {e}"
         )
+
+    # Handle errors for optional dependencies if conditions aren't met
+    def _dependency_check(config_dict, key, condition_msg, config_location_str):
+            if not config_dict.get(key):
+                raise ValueError(f"Must supply {key} if {condition_msg} in {config_location_str}")
+
+    if schema == CONFIG_SCHEMA:
+        # Verify optional database config settings
+        config_dict = config_file_dict["database"]
+
+        if config_dict.get("use_rtbdb"):
+            if _validate_rtb_db_installed():
+                if config_dict.get("use_dsn"):
+                    _dependency_check(config_dict, "dsn_header_str", "use_dsn is set to true", config_location_str)
+                else:
+                    for key in ("sql_server_str", "sql_database_str", "port"):
+                        _dependency_check(config_dict, key, "use_dsn is set to false", config_location_str)
+            else:
+                raise ValueError("Cannot have 'use_rtbdb' set in config file without rtb_db installed."
+                                 "Try 'pip install .[rtbdb]'")
+
 
 
 def _get_config(config_filename):
@@ -71,7 +100,7 @@ def _get_config(config_filename):
                 f"Incorrectly formatted {config_filename}. Please fix YML formatting: {e}"
             )
 
-    return settings
+    return settings, config_file_location
 
 
 def get_logging_config(config_file="config.yml"):
@@ -81,7 +110,7 @@ def get_logging_config(config_file="config.yml"):
     Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "config.yml".
 
     Returns
     -------
@@ -89,8 +118,8 @@ def get_logging_config(config_file="config.yml"):
         A dictionary containing the configuration settings.
     """
     # Ensure the file has all the needed entries with expected data types
-    settings = _get_config(config_file)
-    _validate_config(settings, CONFIG_SCHEMA)
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, CONFIG_SCHEMA, config_str)
     return settings["logging"]
 
 
@@ -101,16 +130,34 @@ def get_data_files_config(config_file="config.yml"):
     Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "config.yml".
 
     Returns
     -------
     dict
         A dictionary containing the configuration settings.
     """
-    settings = _get_config(config_file)
-    _validate_config(settings, CONFIG_SCHEMA)
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, CONFIG_SCHEMA, config_str)
     return settings["data_files"]
+
+def get_db_config(config_file="config.yml"):
+    """Get configuration settings from config.yml for database
+    Validate that the settings are in the correct format before returning
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default config.yml.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration settings.
+    """
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, CONFIG_SCHEMA, config_str)
+    return settings["database"]
 
 
 def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
@@ -122,7 +169,7 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     ref_type : CONSTANT
         The defined reference type from constants.py
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "pipelines_config.yml".
 
     Returns
     -------
@@ -134,8 +181,8 @@ def get_pipelines_config(ref_type, config_file="pipelines_config.yml"):
     KeyError
         If the ref_type hasn't been implemented yet
     """
-    settings = _get_config(config_file)
-    _validate_config(settings, PIPELINES_CONFIG_SCHEMA)
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, PIPELINES_CONFIG_SCHEMA, config_str)
     try:
         ref_type_config = settings[ref_type.lower()]
     except KeyError:
@@ -152,7 +199,7 @@ def get_quality_control_config(ref_type, detector=None, config_file=None):
     ref_type : CONSTANT
         The defined reference type from constants.py
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default None.
 
     Returns
     -------
@@ -170,8 +217,8 @@ def get_quality_control_config(ref_type, detector=None, config_file=None):
         if detector is None:
             raise ValueError("Must send in detector or config_file for Quality Control")
         config_file = f"quality_control_config_{detector}.yml"
-    settings = _get_config(config_file)
-    _validate_config(settings, QC_CONFIG_SCHEMA)
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, QC_CONFIG_SCHEMA, config_str)
     try:
         ref_type_config = settings[ref_type.lower()]
     except KeyError:
@@ -202,6 +249,6 @@ def get_crds_submission_config(config_file="crds_submission_config.yml"):
     ValidationError
         If the configuration does not match the CRDS_CONFIG_SCHEMA.
     """
-    settings = _get_config(config_file)
-    _validate_config(settings, CRDS_CONFIG_SCHEMA)
+    settings, config_str = _get_config(config_file)
+    _validate_config(settings, CRDS_CONFIG_SCHEMA, config_str)
     return settings

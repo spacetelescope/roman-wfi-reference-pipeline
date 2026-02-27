@@ -18,3 +18,13 @@ data_files:
   ingest_dir: "/PATH/TO/DATAFILES/INGEST"
   prep_dir: "/PATH/TO/DATAFILES/PREPPED"
   crds_ready_dir: "/PATH/TO/DATAFILES/CRDS_READY"
+
+database:
+  use_rtbdb: false
+  use_dsn: true
+  # if use_dsn == false, the following must be filled
+  sql_server_str: "<SERVER_NAME.stsci.edu>"
+  sql_database_str: "<DATABASE_NAME>"
+  port: <Port Number>
+  # if use_dsn == true, ensure you have populated ~/.odbc.ini properly and use the following
+  dsn_header_str: "<DSN_STR>" # DSN file header, should be located in ~/.odbc.ini
