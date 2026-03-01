@@ -1,0 +1,86 @@
+In a new environment run the following command on the command line:
+strun roman_elp --save-parameters roman_elp_defaults.asdf
+
+Remeber you can alyways see use strun -h to see more:
+strun -h
+
+usage: strun [--debug] [--save-parameters SAVE_PARAMETERS] [--disable-crds-steppars] [--logcfg LOGCFG] [--verbose] [--log-level LOG_LEVEL]
+             [--log-file LOG_FILE] [--log-stream LOG_STREAM]
+
+In python we now need to edit the parameters file we saved to disk. In an 
+ipython session, do the following:
+
+import asdf 
+af = asdf.open('roman_elp_defaults.asdf')
+
+To see the meta data, do:
+
+af.tree['meta']
+{'author': '<SPECIFY>',
+ 'date': '2026-02-24T20:07:08',
+ 'description': 'Parameters for calibration step romancal.pipeline.exposure_pipeline.ExposurePipeline',
+ 'instrument': {'name': '<SPECIFY>'},
+ 'origin': '<SPECIFY>',
+ 'pedigree': '<SPECIFY>',
+ 'reftype': '<SPECIFY>',
+ 'telescope': '<SPECIFY>',
+ 'useafter': '<SPECIFY>'}
+
+Need to update the meta. Here is my example meta below for a flat file pipeline pars file:
+
+af.tree["meta"]["author"] = "Richard G. Cosentino"
+af.tree["meta"]["date"] = "2026-02-23T18:53:33"
+af.tree["meta"]["description"] = ("Parameters for ExposurePipeline for WFI FLAT processing through assign wcs step.")
+af.tree["meta"]["instrument"]["name"] = "WFI"
+af.tree["meta"]["origin"] = "STScI"
+af.tree["meta"]["pedigree"] = "GROUND"
+af.tree["meta"]["reftype"] = "pars-exposurepipeline"
+af.tree["meta"]["telescope"] = "ROMAN"
+af.tree["meta"]["useafter"] = "2025-08-01T00:00:00"
+
+and now add
+af.tree["meta"]["exposure"] = {'type': 'WFI_FLAT'}
+
+Inspect the steps in the asdf parameter file:
+In [17]: af.tree['steps']
+Out[17]:
+[{'class': 'romancal.dq_init.dq_init_step.DQInitStep',
+  'name': 'dq_init',
+  'parameters': {'input_dir': '',
+   'output_dir': None,
+   'output_ext': '.asdf',
+   'output_file': None,
+   'output_use_index': True,
+   'output_use_model': False,
+   'post_hooks': [],
+   'pre_hooks': [],
+   'save_results': False,
+   'search_output_file': True,
+   'skip': False,
+   'suffix': None,
+   'update_version': False}},
+ {'class': 'romancal.saturation.saturation_step.SaturationStep',
+  'name': 'saturation',
+  'parameters': {'input_dir': '',
+   'output_dir': None,
+   'output_ext': '.asdf',
+   'output_file': None,
+   'output_use_index': True,
+   'output_use_model': False,
+   'post_hooks': [],
+   'pre_hooks': [],
+   'save_results': False,
+   'search_output_file': True,
+   'skip': False,
+   'suffix': None,
+   ...
+
+We want to change specific steps to be skipped or set 'skip': default from False, to True. 
+In python, do this with the following code:
+
+for step in af.tree["steps"]:
+    if step["name"] in ["flatfield", "photom", "source_catalog", "tweakreg"]:
+        step["parameters"]["skip"] = True
+
+Now we are ready to write out the modified file:
+af.write_to("pars-exposurepipeline.asdf")
