@@ -50,7 +50,7 @@ class Mask(ReferenceType):
     def __init__(
         self,
         meta_data,
-        file_list=[],
+        file_list=None,
         ref_type_data=None,
         bit_mask=None,
         outfile="roman_mask.asdf",
@@ -1368,18 +1368,15 @@ class Mask(ReferenceType):
         flat_filelist, dark_filelist = [], []
 
         logging.debug("Sorting the files into flats vs darks in self.file_list")
-        for file in self.file_list:
-            filename = os.path.basename(file).lower()
+        if self.file_list is not None:
+            for file in self.file_list:
+                filename = os.path.basename(file).lower()
 
-            if "prepped" in filename and "flat" in filename:
-                flat_filelist.append(file)
+                if "prepped" in filename and "flat" in filename:
+                    flat_filelist.append(file)
 
-            elif "prepped" in filename and "dark" in filename:
-                dark_filelist.append(file)
-
-        # Raise an error if no prepped files were supplied
-        if len(flat_filelist) + len(dark_filelist) == 0:
-            raise ValueError("No prepped files supplied to self.file_list!")
+                elif "prepped" in filename and "dark" in filename:
+                    dark_filelist.append(file)
 
         return flat_filelist, dark_filelist
 
