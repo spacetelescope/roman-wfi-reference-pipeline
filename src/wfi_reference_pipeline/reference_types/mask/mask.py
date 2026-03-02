@@ -66,7 +66,7 @@ class Mask(ReferenceType):
             Object of meta information converted to dictionary when writing reference file.
 
         file_list: List of strings; default = None
-            List of file names with absolute paths to Darks
+            List of file names with absolute paths to Darks and Flats
 
         ref_type_data: numpy array; default = None
             Input data cube. Intended as input for Mask not generated from a file list.
@@ -122,7 +122,6 @@ class Mask(ReferenceType):
             logging.debug("Ready to generate reference file.")
 
     def make_mask_image(self,
-                        flat_filelist=None,
                         boxwidth=4,
                         dead_sigma=5.,
                         max_low_qe_signal=0.5,
@@ -156,11 +155,6 @@ class Mask(ReferenceType):
 
         Parameters:
         -----------
-        flat_filelist : list of str or None, optional
-            List of flat-field files used to identify flat-based pixel defects
-            (e.g., DEAD, LOW_QE, OPEN, ADJ_OPEN). If None, flat-based
-            classification is skipped.
-
         boxwidth : int, optional
             Width of the boxcar smoothing kernel used when generating the
             locally-normalized flat-field image. Only used when
@@ -244,10 +238,11 @@ class Mask(ReferenceType):
             If a jump_products.fits file has already been created, this
             file is used when identifying RC and TELEGRAPH pixels in update_mask_from_darks().
         """
-        # TODO: Currently assuming that self.filelist is all darks
+        # Split self.file_list into darks and flats
+        flat_filelist, dark_filelist = self.sort_filelist()
 
         # Running update_mask_from_flats on flat_filelist if not None
-        if flat_filelist is not None:
+        if len(flat_filelist) > 0:
             logging.debug(f"Running update_mask_from_flats() on {flat_filelist}")
             self.update_mask_from_flats(filelist=flat_filelist,
                                         multip=multip,
@@ -257,9 +252,9 @@ class Mask(ReferenceType):
                                         dead_sigma=dead_sigma,
                                         max_low_qe_signal=max_low_qe_signal,
                                         min_open_adj_signal=min_open_adj_signal)
-        if self.file_list is not None:
-            logging.debug(f"Running update_mask_from_darks() on {self.file_list}")
-            self.update_mask_from_darks(filelist=self.file_list,
+        if len(dark_filelist) > 0:
+            logging.debug(f"Running update_mask_from_darks() on {dark_filelist}")
+            self.update_mask_from_darks(filelist=dark_filelist,
                                         intermediate_path=intermediate_path,
                                         superdark_path=superdark_path,
                                         sigma_thresh_jump=sigma_thresh_jump,
@@ -1360,6 +1355,33 @@ class Mask(ReferenceType):
             nreads, _, _ = data.shape
 
         return nreads
+
+    def sort_filelist(self):
+        """
+        Iterate through self.file_list and split the files into darks and flats.
+
+        Returns
+        -------
+        flat_filelist : List of prepped flat files in self.file_list
+        dark_filelist : List of prepped dark files in self.file_list
+        """
+        flat_filelist, dark_filelist = [], []
+
+        logging.debug("Sorting the files into flats vs darks in self.file_list")
+        for file in self.file_list:
+            filename = os.path.basename(file).lower()
+
+            if "prepped" in filename and "flat" in filename:
+                flat_filelist.append(file)
+
+            elif "prepped" in filename and "dark" in filename:
+                dark_filelist.append(file)
+
+        # Raise an error if no prepped files were supplied
+        if len(flat_filelist) + len(dark_filelist) == 0:
+            raise ValueError("No prepped files supplied to self.file_list!")
+
+        return flat_filelist, dark_filelist
 
     def update_mask_ref_pixels(self):
         """
