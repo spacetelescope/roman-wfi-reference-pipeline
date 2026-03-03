@@ -37,12 +37,8 @@ from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
 from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
     WFIMetaMultiAccumulationTable,
 )
-<<<<<<< pixel_area_meta
-from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
-=======
-from wfi_reference_pipeline.resources.wfi_meta_pedestal import WFIMetaPedestal
 from wfi_reference_pipeline.resources.wfi_meta_photom import WFIMetaPhotom
->>>>>>> main
+from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
@@ -243,18 +239,12 @@ class MakeDevMeta:
 
         if ref_type == "MATABLE":
             self._create_dev_meta_matable(meta_data_params)
-<<<<<<< pixel_area_meta
         
         if ref_type == "PIXELAREA":
             self._create_dev_meta_pixelarea(meta_data_params)
-=======
-
-        if ref_type == "PEDESTAL":
-            self._create_dev_meta_pedestal(meta_data_params)
         
         if ref_type == "PHOTOM":
             self._create_dev_meta_photom(meta_data_params)
->>>>>>> main
 
         if ref_type == "READNOISE":
             self._create_dev_meta_readnoise(meta_data_params)

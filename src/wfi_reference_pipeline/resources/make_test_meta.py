@@ -13,6 +13,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_LINEARITY,
     REF_TYPE_MASK,
     REF_TYPE_PIXELAREA,
+    REF_TYPE_PHOTOM,
     REF_TYPE_READNOISE,
     REF_TYPE_REFPIX,
     REF_TYPE_SATURATION,
@@ -43,6 +44,7 @@ from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
+from wfi_reference_pipeline.resources.wfi_meta_photom import WFIMetaPhotom
 from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
 from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
