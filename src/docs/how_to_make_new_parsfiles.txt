@@ -1,7 +1,7 @@
 In a new environment run the following command on the command line:
 strun roman_elp --save-parameters roman_elp_defaults.asdf
 
-Remeber you can alyways see use strun -h to see more:
+Remember you can always use strun -h to see more:
 strun -h
 
 usage: strun [--debug] [--save-parameters SAVE_PARAMETERS] [--disable-crds-steppars] [--logcfg LOGCFG] [--verbose] [--log-level LOG_LEVEL]
