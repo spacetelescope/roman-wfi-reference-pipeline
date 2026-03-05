@@ -136,7 +136,7 @@ class Mask(ReferenceType):
         # Module flow creating reference file
         if not ((isinstance(ref_type_data, np.ndarray) and
                 ref_type_data.dtype == np.uint32 and
-                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or file_list):
+                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or self.file_list):
 
             raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
 
@@ -282,7 +282,7 @@ class Mask(ReferenceType):
             file is used when identifying RC and TELEGRAPH pixels in update_mask_from_darks().
         """
         # Running update_mask_from_flats on flat_filelist if not None
-        if len(self.flat_filelist) > 0:
+        if self.flat_filelist:
             logging.debug(f"Running update_mask_from_flats() on {self.flat_filelist}")
             self.update_mask_from_flats(filelist=self.flat_filelist,
                                         multip=multip,
@@ -292,7 +292,7 @@ class Mask(ReferenceType):
                                         dead_sigma=dead_sigma,
                                         max_low_qe_signal=max_low_qe_signal,
                                         min_open_adj_signal=min_open_adj_signal)
-        if len(self.dark_filelist) > 0:
+        if self.dark_filelist:
             logging.debug(f"Running update_mask_from_darks() on {self.dark_filelist}")
             self.update_mask_from_darks(filelist=self.dark_filelist,
                                         intermediate_path=intermediate_path,
