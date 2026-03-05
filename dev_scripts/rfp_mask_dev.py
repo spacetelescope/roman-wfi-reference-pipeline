@@ -164,6 +164,29 @@ def run_mask_on_subset_of_jumps(outpath, njumps, superdark_path, jump_path):
 
     rfp_mask.generate_outfile()
 
+def check_files_sorted_correctly():
+    """
+    This function instantiates the Mask object using a list of flats and darks, 
+    as well as a single file that is considered neither prepped flat nor dark.
+    """
+    # Only need to check the paths, not create actual files
+    fake_flats = [f"fake_prepped_flat_{i}.asdf" for i in range(15)]
+    fake_darks = [f"fake_prepped_dark_{i}.asdf" for i in range(15)]
+    fake_nonconform = [f"fake_raw_flat_or_dark_{i}.asdf" for i in range(5)]
+
+    # Putting them in a single filelist arr to pass to Mask
+    fake_filelist = fake_flats + fake_darks + fake_nonconform
+
+    tmp = MakeDevMeta(ref_type="MASK")
+
+    rfp_mask = Mask(meta_data=tmp.meta_mask,
+                    file_list=fake_filelist)
+
+    print("Testing that MASK file attributes were correctly set")
+    print(f"Flat files accessed using rfp_mask.flat_filelist: {rfp_mask.flat_filelist}\n")
+    print(f"Dark files accessed using rfp_mask.dark_filelist: {rfp_mask.dark_filelist}\n")
+    print(f"Other files accessed using rfp_mask.nonconform_filelist: {rfp_mask.nonconform_filelist}")
+
 
 if __name__ == "__main__":
 
@@ -171,6 +194,9 @@ if __name__ == "__main__":
 
     filelist = glob.glob("/path/to/flat_and_dark/files/*asdf")
     outpath = "/path/to/outdir/"
+    
+    # Testing that files were sorted correctly
+    check_files_sorted_correctly()
 
     test_full_mask(outpath, filelist)
 

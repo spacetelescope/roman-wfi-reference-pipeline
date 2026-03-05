@@ -95,6 +95,12 @@ class Mask(ReferenceType):
             clobber=clobber
         )
 
+        # Initialize attributes
+        self.mask_image = None
+        self.flat_filelist = None
+        self.dark_filelist = None
+        self.nonconform_filelist = None
+
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaMask):
             raise TypeError(
@@ -106,8 +112,26 @@ class Mask(ReferenceType):
 
         logging.debug(f"Default mask reference file object: {outfile}.")
 
-        # Initialize attributes
-        self.mask_image = None
+        # If user supplied files, then sort self.file_list into self.flat_filelist and self.dark_filelist
+        if self.file_list:
+
+            self.flat_filelist = []
+            self.dark_filelist = []
+
+            # This attr stores the files that were unable to be sorted into prepped darks or flats
+            self.nonconform_filelist = []
+
+            self._sort_filelist()
+
+            if len(self.nonconform_filelist) != 0:
+                logging.info("The following files were unable to be classified as prepped darks or prepped flats: ", self.nonconform_filelist)
+
+            # If no valid dark OR flat files were supplied, cannot continue
+            if len(self.flat_filelist + self.dark_filelist) == 0:
+                raise RuntimeError("No files in self.file_list were able to be sorted into self.flat_filelist and self.dark_filelist... cannot proceed.")
+
+            logging.info("The following files were classified as prepped flats: ", self.flat_filelist)
+            logging.info("The following files were classified as prepped darks: ", self.dark_filelist)
 
         # Module flow creating reference file
         if not ((isinstance(ref_type_data, np.ndarray) and
@@ -120,6 +144,25 @@ class Mask(ReferenceType):
             logging.debug("The input 2D data array is now self.mask_image.")
             self.mask_image = ref_type_data
             logging.debug("Ready to generate reference file.")
+
+    def _sort_filelist(self):
+        """
+        Iterate through self.file_list and split the files into darks and flats.
+        Sets the dark and flat filelists as attributes to the Mask object.
+        """
+        logging.info("Sorting the files into flats vs darks in self.file_list")
+
+        for file in self.file_list:
+            filename = os.path.basename(file).lower()
+
+            if "prepped" in filename and "flat" in filename:
+                self.flat_filelist.append(file)
+
+            elif "prepped" in filename and "dark" in filename:
+                self.dark_filelist.append(file)
+
+            else:
+                self.nonconform_filelist.append(file)
 
     def make_mask_image(self,
                         boxwidth=4,
@@ -238,13 +281,10 @@ class Mask(ReferenceType):
             If a jump_products.fits file has already been created, this
             file is used when identifying RC and TELEGRAPH pixels in update_mask_from_darks().
         """
-        # Split self.file_list into darks and flats
-        flat_filelist, dark_filelist = self.sort_filelist()
-
         # Running update_mask_from_flats on flat_filelist if not None
-        if len(flat_filelist) > 0:
-            logging.debug(f"Running update_mask_from_flats() on {flat_filelist}")
-            self.update_mask_from_flats(filelist=flat_filelist,
+        if len(self.flat_filelist) > 0:
+            logging.debug(f"Running update_mask_from_flats() on {self.flat_filelist}")
+            self.update_mask_from_flats(filelist=self.flat_filelist,
                                         multip=multip,
                                         from_smoothed=from_smoothed,
                                         boxwidth=boxwidth,
@@ -252,9 +292,9 @@ class Mask(ReferenceType):
                                         dead_sigma=dead_sigma,
                                         max_low_qe_signal=max_low_qe_signal,
                                         min_open_adj_signal=min_open_adj_signal)
-        if len(dark_filelist) > 0:
-            logging.debug(f"Running update_mask_from_darks() on {dark_filelist}")
-            self.update_mask_from_darks(filelist=dark_filelist,
+        if len(self.dark_filelist) > 0:
+            logging.debug(f"Running update_mask_from_darks() on {self.dark_filelist}")
+            self.update_mask_from_darks(filelist=self.dark_filelist,
                                         intermediate_path=intermediate_path,
                                         superdark_path=superdark_path,
                                         sigma_thresh_jump=sigma_thresh_jump,
@@ -1355,30 +1395,6 @@ class Mask(ReferenceType):
             nreads, _, _ = data.shape
 
         return nreads
-
-    def sort_filelist(self):
-        """
-        Iterate through self.file_list and split the files into darks and flats.
-
-        Returns
-        -------
-        flat_filelist : List of prepped flat files in self.file_list
-        dark_filelist : List of prepped dark files in self.file_list
-        """
-        flat_filelist, dark_filelist = [], []
-
-        logging.debug("Sorting the files into flats vs darks in self.file_list")
-        if self.file_list is not None:
-            for file in self.file_list:
-                filename = os.path.basename(file).lower()
-
-                if "prepped" in filename and "flat" in filename:
-                    flat_filelist.append(file)
-
-                elif "prepped" in filename and "dark" in filename:
-                    dark_filelist.append(file)
-
-        return flat_filelist, dark_filelist
 
     def update_mask_ref_pixels(self):
         """
