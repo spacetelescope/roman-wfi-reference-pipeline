@@ -15,7 +15,7 @@ from wfi_reference_pipeline.utilities.schemas import (
 def _validate_rtb_db_installed():
     """
         Verify that rtb_db can be imported.
-        This should only need to be used on the initial config check to see if hte user is intending to use rtbdb
+        This should only need to be used on the initial config check to see if the user is intending to use rtbdb
     """
     return importlib.util.find_spec("rtb_db") is not None
 
