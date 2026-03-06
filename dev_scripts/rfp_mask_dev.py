@@ -32,7 +32,7 @@ warnings.filterwarnings(
 
 os.environ["ROMAN_VALIDATE"] = "false"
 
-def test_full_mask(outpath, flats):
+def test_full_mask(outpath, filelist):
     """
     Perform the full Mask() workflow on long darks and flats.
     This is how a user would call the Mask() module, with no
@@ -46,12 +46,11 @@ def test_full_mask(outpath, flats):
     tmp.meta_mask.description = "Testing new mask from dark modules. "
 
     rfp_mask = Mask(meta_data=tmp.meta_mask,
-                    file_list=longdarks,
+                    file_list=filelist,
                     outfile=os.path.join(outpath, f"mask_test_{DET}.asdf"),
                     clobber=True)
 
     rfp_mask.make_mask_image(from_smoothed=False,
-                             flat_filelist=flats,
                              intermediate_path=outpath)
 
     rfp_mask.generate_outfile()
@@ -155,7 +154,7 @@ def run_mask_on_subset_of_jumps(outpath, njumps, superdark_path, jump_path):
     tmp.meta_mask.description = f"Timing set_rc_tel_pixels() on file with {njumps} pixels with jumps."
 
     rfp_mask = Mask(meta_data=tmp.meta_mask,
-                    file_list=longdarks,
+                    file_list=filelist,
                     outfile=os.path.join(outpath, f"mask_test_{DET}_n{njumps}.asdf"),
                     clobber=True)
 
@@ -170,12 +169,10 @@ if __name__ == "__main__":
 
     DET = "WFI09"
 
-    longdarks = glob.glob(f"path/to/longdarks/*{DET}*.asdf")
-    flats = glob.glob(f"path/to/flats/*{DET}*.asdf")
+    filelist = glob.glob("/path/to/flat_and_dark/files/*asdf")
+    outpath = "/path/to/outdir/"
 
-    outpath = "/path/to/output"
-
-    test_full_mask(outpath)
+    test_full_mask(outpath, filelist)
 
     superdark_path = os.path.join(outpath, "superdark.asdf")
 

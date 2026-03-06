@@ -66,7 +66,7 @@ class Mask(ReferenceType):
             Object of meta information converted to dictionary when writing reference file.
 
         file_list: List of strings; default = None
-            List of file names with absolute paths to Darks
+            List of file names with absolute paths to Darks and Flats
 
         ref_type_data: numpy array; default = None
             Input data cube. Intended as input for Mask not generated from a file list.
@@ -95,6 +95,11 @@ class Mask(ReferenceType):
             clobber=clobber
         )
 
+        # Initialize attributes
+        self.mask_image = None
+        self.flat_filelist = None
+        self.dark_filelist = None
+
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaMask):
             raise TypeError(
@@ -106,23 +111,67 @@ class Mask(ReferenceType):
 
         logging.debug(f"Default mask reference file object: {outfile}.")
 
-        # Initialize attributes
-        self.mask_image = None
+        # If user supplied files, then sort self.file_list into self.flat_filelist and self.dark_filelist
+        if self.file_list:
 
-        # Module flow creating reference file
-        if not ((isinstance(ref_type_data, np.ndarray) and
-                ref_type_data.dtype == np.uint32 and
-                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or file_list):
+            self.flat_filelist = []
+            self.dark_filelist = []
 
-            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
+            self._sort_filelist()
+
+            # If no valid dark OR flat files were supplied, cannot continue
+            if not self.flat_filelist and not self.dark_filelist:
+                raise RuntimeError("No files in self.file_list were able to be sorted into self.flat_filelist and self.dark_filelist... cannot proceed.")
+
+            logging.info("The following files were classified as prepped flats: ", self.flat_filelist)
+            logging.info("The following files were classified as prepped darks: ", self.dark_filelist)
+
+        # Checking for valid input types
+        if ref_type_data is not None:
+            if not isinstance(ref_type_data, np.ndarray):
+                raise ValueError("Mask ref_type_data must be a numpy array.")
+
+            if ref_type_data.dtype != np.uint32:
+                raise ValueError("Mask ref_type_data must be of type np.uint32. Current type is:", type(ref_type_data))
+
+            if not ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT):
+                raise ValueError(f"Mask ref_type_data must have shape ({DETECTOR_PIXEL_X_COUNT}, {DETECTOR_PIXEL_Y_COUNT}). Current shape is: {ref_type_data.shape}")
+
+        if ref_type_data is None and not self.file_list:
+            raise ValueError("Mask requires user to supply either ref_type_data OR file_list.")
 
         else:
             logging.debug("The input 2D data array is now self.mask_image.")
             self.mask_image = ref_type_data
             logging.debug("Ready to generate reference file.")
 
+    def _sort_filelist(self):
+        """
+        Iterate through self.file_list and split the files into darks and flats.
+        Sets the dark and flat filelists as attributes to the Mask object.
+        If there is at least 1 file that can't be sorted, raise an error and print the
+        complete list of files that cannot be sorted. 
+        """
+        logging.info("Sorting the files into flats vs darks in self.file_list")
+
+        invalid_files = []
+
+        for file in self.file_list:
+            filename = os.path.basename(file).lower()
+
+            if "prepped" in filename and "flat" in filename:
+                self.flat_filelist.append(file)
+
+            elif "prepped" in filename and "dark" in filename:
+                self.dark_filelist.append(file)
+
+            else:
+                invalid_files.append(file)
+
+        if invalid_files:
+            raise ValueError("The following files can not be sorted in prepped flats or darks:", invalid_files)
+
     def make_mask_image(self,
-                        flat_filelist=None,
                         boxwidth=4,
                         dead_sigma=5.,
                         max_low_qe_signal=0.5,
@@ -156,11 +205,6 @@ class Mask(ReferenceType):
 
         Parameters:
         -----------
-        flat_filelist : list of str or None, optional
-            List of flat-field files used to identify flat-based pixel defects
-            (e.g., DEAD, LOW_QE, OPEN, ADJ_OPEN). If None, flat-based
-            classification is skipped.
-
         boxwidth : int, optional
             Width of the boxcar smoothing kernel used when generating the
             locally-normalized flat-field image. Only used when
@@ -244,12 +288,10 @@ class Mask(ReferenceType):
             If a jump_products.fits file has already been created, this
             file is used when identifying RC and TELEGRAPH pixels in update_mask_from_darks().
         """
-        # TODO: Currently assuming that self.filelist is all darks
-
         # Running update_mask_from_flats on flat_filelist if not None
-        if flat_filelist is not None:
-            logging.debug(f"Running update_mask_from_flats() on {flat_filelist}")
-            self.update_mask_from_flats(filelist=flat_filelist,
+        if self.flat_filelist:
+            logging.debug(f"Running update_mask_from_flats() on {self.flat_filelist}")
+            self.update_mask_from_flats(filelist=self.flat_filelist,
                                         multip=multip,
                                         from_smoothed=from_smoothed,
                                         boxwidth=boxwidth,
@@ -257,9 +299,9 @@ class Mask(ReferenceType):
                                         dead_sigma=dead_sigma,
                                         max_low_qe_signal=max_low_qe_signal,
                                         min_open_adj_signal=min_open_adj_signal)
-        if self.file_list is not None:
-            logging.debug(f"Running update_mask_from_darks() on {self.file_list}")
-            self.update_mask_from_darks(filelist=self.file_list,
+        if self.dark_filelist:
+            logging.debug(f"Running update_mask_from_darks() on {self.dark_filelist}")
+            self.update_mask_from_darks(filelist=self.dark_filelist,
                                         intermediate_path=intermediate_path,
                                         superdark_path=superdark_path,
                                         sigma_thresh_jump=sigma_thresh_jump,

@@ -23,14 +23,12 @@ def valid_ref_type_data_array():
     """Fixture for generating a valid ref_type_data array (mask image)."""
     return np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)  # Simulate a valid mask image
 
-
 @pytest.fixture
 def mask_object_with_data_array(valid_meta_data, valid_ref_type_data_array):
     """Fixture for initializing a Mask object with a valid data array."""
     mask_object_with_data_array = Mask(meta_data=valid_meta_data,
                                        ref_type_data=valid_ref_type_data_array)
     yield mask_object_with_data_array
-
 
 class TestMask:
 
@@ -105,3 +103,42 @@ class TestMask:
         Test that the default outfile name is correct.
         """
         assert mask_object_with_data_array.outfile == "roman_mask.asdf"
+
+    def test_mask_object_from_valid_filelist(self):
+        """
+        Test that a Mask object is able to correctly initialize when receiving file_list
+        of valid prepped flats, prepped darks, and unprepped other files.
+        """
+        nfiles = 15
+
+        # Only need to check the paths, not create actual files
+        fake_flats = [f"fake_prepped_flat_{i}.asdf" for i in range(nfiles)]
+        fake_darks = [f"fake_prepped_dark_{i}.asdf" for i in range(nfiles)]
+
+        # Putting them in a single filelist arr to pass to Mask
+        fake_filelist = fake_flats + fake_darks
+
+        test_meta = MakeTestMeta(ref_type=REF_TYPE_MASK)
+        rfp_mask = Mask(meta_data=test_meta.meta_mask,
+                        file_list=fake_filelist)
+        
+        assert(sorted(fake_flats) == sorted(rfp_mask.flat_filelist))
+        assert(sorted(fake_darks) == sorted(rfp_mask.dark_filelist))
+
+    def test_mask_object_from_bad_filelist(self):
+        """
+        Test that a RuntimeError is raised if no valid flat or dark files were sorted.
+        """
+        # Only need to check the paths, not create actual files
+        nfiles = 15
+        fake_flats = [f"fake_prepped_flat_{i}.asdf" for i in range(nfiles)]
+        fake_darks = [f"fake_prepped_dark_{i}.asdf" for i in range(nfiles)]
+        invalid_files = [f"bad_random_file_{i}.asdf" for i in range(nfiles)]
+
+        filelist_with_invalid_files = fake_flats + fake_darks + invalid_files
+
+        test_meta = MakeTestMeta(ref_type=REF_TYPE_MASK)
+
+        with pytest.raises(ValueError):
+            Mask(meta_data=test_meta.meta_mask,
+                 file_list=filelist_with_invalid_files)
