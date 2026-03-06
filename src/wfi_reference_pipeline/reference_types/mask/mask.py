@@ -99,7 +99,6 @@ class Mask(ReferenceType):
         self.mask_image = None
         self.flat_filelist = None
         self.dark_filelist = None
-        self.nonconform_filelist = None
 
         # Default meta creation for module specific ref type.
         if not isinstance(meta_data, WFIMetaMask):
@@ -118,27 +117,28 @@ class Mask(ReferenceType):
             self.flat_filelist = []
             self.dark_filelist = []
 
-            # This attr stores the files that were unable to be sorted into prepped darks or flats
-            self.nonconform_filelist = []
-
             self._sort_filelist()
 
-            if len(self.nonconform_filelist) != 0:
-                logging.info("The following files were unable to be classified as prepped darks or prepped flats: ", self.nonconform_filelist)
-
             # If no valid dark OR flat files were supplied, cannot continue
-            if len(self.flat_filelist + self.dark_filelist) == 0:
+            if not self.flat_filelist and not self.dark_filelist:
                 raise RuntimeError("No files in self.file_list were able to be sorted into self.flat_filelist and self.dark_filelist... cannot proceed.")
 
             logging.info("The following files were classified as prepped flats: ", self.flat_filelist)
             logging.info("The following files were classified as prepped darks: ", self.dark_filelist)
 
-        # Module flow creating reference file
-        if not ((isinstance(ref_type_data, np.ndarray) and
-                ref_type_data.dtype == np.uint32 and
-                ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)) or self.file_list):
+        # Checking for valid input types
+        if ref_type_data is not None:
+            if not isinstance(ref_type_data, np.ndarray):
+                raise ValueError("Mask ref_type_data must be a numpy array.")
 
-            raise ValueError("Mask ref_type_data must be a NumPy array of dtype uint32 and shape 4096x4096.")
+            if ref_type_data.dtype != np.uint32:
+                raise ValueError("Mask ref_type_data must be of type np.uint32. Current type is:", type(ref_type_data))
+
+            if not ref_type_data.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT):
+                raise ValueError(f"Mask ref_type_data must have shape ({DETECTOR_PIXEL_X_COUNT}, {DETECTOR_PIXEL_Y_COUNT}). Current shape is: {ref_type_data.shape}")
+
+        if ref_type_data is None and not self.file_list:
+            raise ValueError("Mask requires user to supply either ref_type_data OR file_list.")
 
         else:
             logging.debug("The input 2D data array is now self.mask_image.")
@@ -149,8 +149,12 @@ class Mask(ReferenceType):
         """
         Iterate through self.file_list and split the files into darks and flats.
         Sets the dark and flat filelists as attributes to the Mask object.
+        If there is at least 1 file that can't be sorted, raise an error and print the
+        complete list of files that cannot be sorted. 
         """
         logging.info("Sorting the files into flats vs darks in self.file_list")
+
+        invalid_files = []
 
         for file in self.file_list:
             filename = os.path.basename(file).lower()
@@ -162,7 +166,10 @@ class Mask(ReferenceType):
                 self.dark_filelist.append(file)
 
             else:
-                self.nonconform_filelist.append(file)
+                invalid_files.append(file)
+
+        if invalid_files:
+            raise ValueError("The following files can not be sorted in prepped flats or darks:", invalid_files)
 
     def make_mask_image(self,
                         boxwidth=4,
