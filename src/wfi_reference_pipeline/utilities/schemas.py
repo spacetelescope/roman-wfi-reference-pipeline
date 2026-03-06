@@ -25,6 +25,18 @@ CONFIG_SCHEMA = {
             },
             "required": ["ingest_dir", "prep_dir", "crds_ready_dir"],
         },
+        "database": {
+            "type": "object",
+            "properties": {
+                "use_rtbdb": {"type": "boolean"},
+                "use_dsn": {"type": "boolean"},
+                "sql_server_str": {"type": "string"},
+                "sql_database_str": {"type": "string"},
+                "port": {"type": "number"},
+                "dsn_header_str": {"type": "string"},
+            },
+            "required": ["use_rtbdb", "use_dsn"],
+        },
     },
     # List which entries are needed (all of them)
     "required": ["logging", "data_files"],

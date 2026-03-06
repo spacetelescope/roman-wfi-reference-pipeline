@@ -62,6 +62,9 @@ class DarkPipeline(Pipeline):
         super().__init__(REF_TYPE_DARK, detector)
         self.superdark_file = None
         self.config = get_pipelines_config(REF_TYPE_DARK)
+        if self.use_rtbdb:
+            # TODO - DONT HARDCODE THIS MODE OR REEF MONITOR, WHERE DO WE WANT TO GET IT FROM?
+            self.db_handler.new_pipeline_db_entry(ref_type=REF_TYPE_DARK, wfi_mode="WIM", reef_monitor=False)
 
     # @log_info
     def select_uncal_files(self):
@@ -291,7 +294,6 @@ class DarkPipeline(Pipeline):
             outfile=out_file_path,
             clobber=True,
         )
-        # ma_table_dict = get_ma_table_from_rtbdb(ma_table_number=3)  # TODO currently not used
         read_pattern = [[1], [2, 3], [5, 6, 7], [10]]
         rfp_dark.make_ma_table_resampled_data(read_pattern=read_pattern)
         rfp_dark.make_rate_image_from_data_cube()

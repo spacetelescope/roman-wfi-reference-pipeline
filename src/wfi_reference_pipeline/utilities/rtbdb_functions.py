@@ -1,30 +1,9 @@
 import logging
 
-from rtb_db.utilities import login, rfp_tools
-
-
-def get_ma_table_from_rtbdb(ma_table_number=None):
-    """
-    This method get_ma_table_from_rtb_db() accesses the rtb_database information on MA tables.
-
-    Parameters
-    ----------
-    ma_table_number: integer
-        Data base entry for unique MA Table number.
-
-    Returns
-    -------
-    ma_table_dict: dictionary
-        A python dictionary of MA Table information. See RTB Database examples for keys and values.
-    """
-
-    eng = login.connect_server(dsn_name='DWRINSDB')
-    ma_table_dict = rfp_tools.query_ma_table(eng, ma_table_number)
-    if ma_table_dict:
-        logging.info(
-            'Successfully read MA Table information from the RTB Database.'
-        )
-    return ma_table_dict
+try:
+    from rtb_db.utilities import login, rfp_tools
+except ImportError:
+    logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
 
 
 def make_even_spacing_read_pattern(num_resultants=None, num_rds_per_res=None):
@@ -68,6 +47,5 @@ def write_metrics_db_dark(dark_file_dict, dark_dq_dict, dark_struc_dict, dark_am
     dark_amp_dict: dict, default=None
         This is the amplifier dictionary containing various metrics of sections of pixels according to amplifier.
     """
-
     eng = login.connect_server(dsn_name='DWRINSDB')
     rfp_tools.add_new_dark_file(eng, dark_file_dict, dark_dq_dict,dark_struc_dict, dark_amp_dict)
