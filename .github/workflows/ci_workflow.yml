@@ -37,7 +37,7 @@ jobs:
       run: |
         ruff check ./src
     - name: Run pytest with coverage
-        id: run_pytest_coverage
-        uses: spacetelescope/roman-wfi-refrence-pipeline/.github/jobs/pytest@main #uses local action
-        with:
-          coverage: ${{ env.COVERAGE }}
+      id: run_pytest_coverage
+      uses: spacetelescope/roman-wfi-refrence-pipeline/.github/jobs/pytest@main #uses local action
+      with:
+        coverage: ${{ env.COVERAGE }}
