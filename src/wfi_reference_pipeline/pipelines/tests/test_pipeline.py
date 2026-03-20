@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE, WFI_DETECTORS
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
