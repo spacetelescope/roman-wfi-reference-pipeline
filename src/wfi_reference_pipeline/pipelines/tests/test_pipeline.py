@@ -39,7 +39,7 @@ def pipeline_patches(mocker):
     mocker.patch(f"{BASE}.configure_logging")
     mocker.patch(f"{BASE}.get_data_files_config", return_value=STUB_CONFIG)
     mocker.patch(f"{BASE}.get_db_config", return_value=STUB_DB_CONFIG)
-    mocker.patch(f"{BASE}.FileHandler", return_value=mocker.MagicMock())
+    mocker.patch(f"{BASE}.FileHandler")
     mocker.patch(f"{BASE}.DBHandler")
 
 # A fully initialised MinimalPipeline using WFI01 and REF_TYPE_READNOISE
@@ -125,7 +125,7 @@ def test_init_bad_config_calls_sys_exit_passes(mocker):
 
 ### Tests to fail init_quality_control since it is not implemented yet
 
-@pytest.mark.xfail(reason="init_quality_control is not implemented for REF_TYPE_READNOISE")
+@pytest.mark.xfail(raises=ValueError, reason="init_quality_control is not implemented for REF_TYPE_READNOISE")
 def test_init_quality_control_works_for_readnoise_fails(pipeline):
     pipeline.init_quality_control()
 
