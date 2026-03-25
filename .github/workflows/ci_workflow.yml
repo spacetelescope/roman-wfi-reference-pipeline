@@ -2,7 +2,10 @@
 
 name: roman-wfi-reference-pipeline
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  COVERAGE: true  
 
 jobs:
   build:
@@ -33,6 +36,8 @@ jobs:
     - name: Ruff Test
       run: |
         ruff check ./src
-    - name: Pytest with coverage
-      run: |
-        pytest --cov=wfi_reference_pipeline --cov-report=xml
+    - name: Run pytest with coverage
+      id: run_pytest_coverage
+      uses: spacetelescope/roman-wfi-reference-pipeline/.github/jobs/pytest@main #uses local action
+      with:
+        coverage: ${{ env.COVERAGE }}
