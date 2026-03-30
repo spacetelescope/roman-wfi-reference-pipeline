@@ -46,12 +46,12 @@ jobs:
       with:
         coverage: ${{ env.COVERAGE }}
 
-    - name: Generate coverage badge
+    - name: Generate coverage badge and summary
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
-    - name: Push badge to coverage-info branch
-      if: ${{ env.COVERAGE == 'true' }}
+    - name: Push badge and summary to coverage-info branch
+      if: ${{ env.COVERAGE == 'true' && github.event_name != 'pull_request' }}
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,3 +59,7 @@ jobs:
         publish_dir: .
         include_files: coverage-badge.svg, coverage.xml
         commit_message: "Update coverage badge [skip ci]"
+
+    - name: Coverage diff on PR
+      if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' }}
+      run: echo "TODO"
