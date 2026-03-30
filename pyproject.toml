@@ -45,7 +45,8 @@ test = [
     "pytest-cov",
     "pytest",
     "ruff",
-    "pytest-mock"
+    "pytest-mock",
+    "genbadge[coverage]"
 ]
 
 [project.readme]

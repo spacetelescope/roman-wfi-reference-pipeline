@@ -18,7 +18,7 @@ runs:
     - name: "Use coverage"
       shell: bash
       if: ${{ fromJSON(inputs.coverage) == true }}
-      run: echo "PYTEST_ACTION_COVERAGE_ARGS=--cov --cov-report=" >> $GITHUB_ENV
+      run: echo "PYTEST_ACTION_COVERAGE_ARGS=--cov --cov-report=xml" >> $GITHUB_ENV
     
     - name: "Dont use coverage"
       shell: bash
@@ -42,5 +42,3 @@ runs:
       run: |
         echo "# Pytest Coverage Report :bowtie: " >> $GITHUB_STEP_SUMMARY
         echo "$(coverage report --format=markdown)" >> $GITHUB_STEP_SUMMARY
-
-
