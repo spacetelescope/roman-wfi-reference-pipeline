@@ -45,7 +45,11 @@ jobs:
     - name: Run pytest with coverage
       id: run_pytest_coverage
 <<<<<<< HEAD
+<<<<<<< HEAD
       uses: ./.github/jobs/pytest
+=======
+      uses: ./.github/jobs/pytest #uses local action
+>>>>>>> da60b98 (Remove @main tag)
       with:
         coverage: ${{ env.COVERAGE }}
 
