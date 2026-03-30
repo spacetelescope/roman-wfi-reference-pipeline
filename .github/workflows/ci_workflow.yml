@@ -38,6 +38,6 @@ jobs:
         ruff check ./src
     - name: Run pytest with coverage
       id: run_pytest_coverage
-      uses: ./.github/jobs/pytest@main #uses local action
+      uses: ./.github/jobs/pytest #uses local action
       with:
         coverage: ${{ env.COVERAGE }}
