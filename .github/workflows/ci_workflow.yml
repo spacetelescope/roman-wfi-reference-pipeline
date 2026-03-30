@@ -42,7 +42,11 @@ jobs:
         ruff check ./src
     - name: Run pytest with coverage
       id: run_pytest_coverage
+<<<<<<< HEAD
       uses: ./.github/jobs/pytest
+=======
+      uses: ./.github/jobs/pytest@main #uses local action
+>>>>>>> ef1170e (Swap absolute for relative path for pytest action)
       with:
         coverage: ${{ env.COVERAGE }}
 
