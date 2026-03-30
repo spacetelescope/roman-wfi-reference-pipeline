@@ -42,4 +42,3 @@ runs:
       run: |
         echo "# Pytest Coverage Report :bowtie: " >> $GITHUB_STEP_SUMMARY
         echo "$(coverage report --format=markdown)" >> $GITHUB_STEP_SUMMARY
-
