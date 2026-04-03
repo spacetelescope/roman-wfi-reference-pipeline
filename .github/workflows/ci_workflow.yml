@@ -46,20 +46,25 @@ jobs:
       with:
         coverage: ${{ env.COVERAGE }}
 
+<<<<<<< HEAD
     - name: Generate coverage badge and summary
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+=======
+    - name: Generate coverage badge and summary -- POTENTIALLY MOVE TO STEP BELOW
+      if: ${{ env.COVERAGE == 'true' }}
+>>>>>>> 8398add (Fix with relative files in test run)
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
-    - name: Push badge and summary to coverage-info branch
-      if: ${{ env.COVERAGE == 'true' && github.event_name != 'pull_request' }}
+    - name: Push badge and summary to coverage-info branch (only on main) -- NEED TO COPY TO OTHER BRANCH
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: coverage-info
         publish_dir: .
         include_files: coverage-badge.svg, coverage.xml
-        commit_message: "Update coverage badge [skip ci]"
+        commit_message: "Update coverage badge & xml [skip ci]"
 
-    - name: Coverage diff on PR
+    - name: Coverage diff on PR (only on main for now)
       if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
       uses: ./.github/jobs/coverage_diff
