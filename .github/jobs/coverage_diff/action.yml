@@ -1,0 +1,43 @@
+# Schema: https://json.schemastore.org/github-action.json
+# This action compares coverage on a PR against a baseline stored on a branch.
+# it against the current coverage.xml, posting a comparison comment on the PR.
+name: 'Coverage Diff'
+description: 'Compare PR coverage against a baseline branch and post a summary comment on the PR'
+inputs:
+  baseline-branch:
+    description: 'Branch containing the baseline coverage.xml'
+    default: 'coverage-info'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch baseline coverage
+      id: fetch_baseline
+      shell: bash
+      run: |
+        if git fetch origin ${{ inputs.baseline-branch }} 2>/dev/null; then
+          git show origin/${{ inputs.baseline-branch }}:coverage.xml > /tmp/base-coverage.xml
+          echo "baseline_found=true" >> $GITHUB_OUTPUT
+        else
+          echo "baseline_found=false" >> $GITHUB_OUTPUT
+          echo "::warning:: Baseline branch '${{ inputs.baseline-branch }}' not found"
+        fi
+
+    - name: Run coverage diff
+      if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        pip install pycobertura --quiet
+        DIFF_OUTPUT=$(pycobertura diff /tmp/base-coverage.xml coverage.xml --no-source --format markdown || true)
+        COMMENT_BODY=$(cat <<EOF
+        ## 📊 Coverage Diff
+        ${DIFF_OUTPUT}
+        Base: \`${{ inputs.baseline-branch }}\` · PR: \`${{ github.head_ref }}\`
+        EOF
+        )
+        echo "$COMMENT_BODY" >> $GITHUB_STEP_SUMMARY
+        echo "$COMMENT_BODY" > /tmp/coverage-comment.md
+        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/coverage-comment.md
