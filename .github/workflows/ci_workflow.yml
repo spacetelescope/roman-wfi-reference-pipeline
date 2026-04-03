@@ -38,23 +38,17 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install .[test]
+        pip install -e .[test]
     - name: Ruff Test
       run: |
         ruff check ./src
     - name: Run pytest with coverage
       id: run_pytest_coverage
-<<<<<<< HEAD
-<<<<<<< HEAD
       uses: ./.github/jobs/pytest
-=======
-      uses: ./.github/jobs/pytest #uses local action
->>>>>>> da60b98 (Remove @main tag)
       with:
         coverage: ${{ env.COVERAGE }}
 
     - name: Generate coverage badge
-<<<<<<< HEAD
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
@@ -83,22 +77,3 @@ jobs:
         
         git commit -m "Update coverage badge [skip ci]"
         git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" coverage-info
-=======
-      uses: spacetelescope/roman-wfi-reference-pipeline/.github/jobs/pytest@main #uses local action
-      with:
-        coverage: ${{ env.COVERAGE }}
->>>>>>> 513b0db (Add Megan Sosey's Initial Changes)
-=======
-      if: ${{ env.COVERAGE == 'true' }}
-      run: genbadge coverage -i coverage.xml -o coverage-badge.svg
-
-    - name: Push badge to coverage-info branch
-      if: ${{ env.COVERAGE == 'true' }}
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: coverage-info
-        publish_dir: .
-        include_files: coverage-badge.svg
-        commit_message: "Update coverage badge [skip ci]"
->>>>>>> 4675f58 (Attempt to add badge with genbadge)
