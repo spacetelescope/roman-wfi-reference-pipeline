@@ -1,0 +1,44 @@
+# Schema: https://json.schemastore.org/github-action.json
+# This action will execute pytest
+# This should include a GitHub summary report in the test
+# It is up to the workflow caller to setup the environment
+name: 'Execute pytest'
+description: 'Run tests with pytest and provide GitHub Job Summaries report'
+inputs:
+  coverage:
+    description: Run coverage with pytest? 
+    default: true
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+
+    # identify if coverage should be used
+    - name: "Use coverage"
+      shell: bash
+      if: ${{ fromJSON(inputs.coverage) == true }}
+      run: echo "PYTEST_ACTION_COVERAGE_ARGS=--cov --cov-report=xml" >> $GITHUB_ENV
+    
+    - name: "Dont use coverage"
+      shell: bash
+      if: ${{ fromJSON(inputs.coverage) == false }}
+      run: echo "PYTEST_ACTION_COVERAGE_ARGS= " >> $GITHUB_ENV
+        
+
+    # pytest with the configured options and coverage
+    - name: "run pytest"
+      id: run_pytest
+      shell: bash
+      run: |
+        echo "# Pytest Results :rocket: " >> $GITHUB_STEP_SUMMARY
+        pytest --cache-clear ${{ env.PYTEST_ACTION_COVERAGE_ARGS }} >> $GITHUB_STEP_SUMMARY 
+
+    # return the report summary even if pytest fails and coverage is requested
+    - name: "Get Coverage Report"
+      id: capture_coverage
+      shell: bash
+      if: ${{ fromJSON(inputs.coverage) == true }}
+      run: |
+        echo "# Pytest Coverage Report :bowtie: " >> $GITHUB_STEP_SUMMARY
+        echo "$(coverage report --format=markdown)" >> $GITHUB_STEP_SUMMARY

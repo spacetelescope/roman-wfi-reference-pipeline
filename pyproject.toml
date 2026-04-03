@@ -45,7 +45,8 @@ test = [
     "pytest-cov",
     "pytest",
     "ruff",
-    "pytest-mock"
+    "pytest-mock",
+    "genbadge[coverage]"
 ]
 
 [project.readme]
@@ -95,6 +96,7 @@ select = ["E", "F", "I", "N"]
 ignore = ["E501"]
 
 [tool.coverage.run]
+relative_files = true
 source = ["wfi_reference_pipeline"]
 omit = [
     "**/__init__.py",

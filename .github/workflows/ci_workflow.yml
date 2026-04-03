@@ -2,7 +2,14 @@
 
 name: roman-wfi-reference-pipeline
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  COVERAGE: true  
 
 jobs:
   build:
@@ -29,10 +36,30 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install .[test]
+        pip install -e .[test]
     - name: Ruff Test
       run: |
         ruff check ./src
-    - name: Pytest with coverage
-      run: |
-        pytest --cov=wfi_reference_pipeline --cov-report=xml
+    - name: Run pytest with coverage
+      id: run_pytest_coverage
+      uses: ./.github/jobs/pytest
+      with:
+        coverage: ${{ env.COVERAGE }}
+
+    - name: Generate coverage badge and summary
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: genbadge coverage -i coverage.xml -o coverage-badge.svg
+
+    - name: Push badge and summary to coverage-info branch (only on main) -- NEED TO COPY TO OTHER BRANCH
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: coverage-info
+        publish_dir: .
+        include_files: coverage-badge.svg, coverage.xml
+        commit_message: "Update coverage badge & xml [skip ci]"
+
+    - name: Coverage diff on PR (only on main for now)
+      if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
+      uses: ./.github/jobs/coverage_diff
