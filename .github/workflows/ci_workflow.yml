@@ -46,13 +46,8 @@ jobs:
       with:
         coverage: ${{ env.COVERAGE }}
 
-<<<<<<< HEAD
     - name: Generate coverage badge and summary
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-=======
-    - name: Generate coverage badge and summary -- POTENTIALLY MOVE TO STEP BELOW
-      if: ${{ env.COVERAGE == 'true' }}
->>>>>>> 8398add (Fix with relative files in test run)
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
     - name: Push badge and summary to coverage-info branch (only on main) -- NEED TO COPY TO OTHER BRANCH
