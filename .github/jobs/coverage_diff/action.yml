@@ -31,7 +31,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: |
         pip install pycobertura --quiet
-        DIFF_OUTPUT=$(pycobertura diff /tmp/base-coverage.xml coverage.xml --no-source --format markdown || true)
+        DIFF_OUTPUT=$(pycobertura diff /tmp/base-coverage.xml coverage.xml --no-source --format markdown 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' || true)
         COMMENT_BODY=$(cat <<EOF
         ## 📊 Coverage Diff
         ${DIFF_OUTPUT}
