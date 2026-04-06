@@ -1,13 +1,13 @@
-from crds.client import api as crds_api
-import crds
-import shutil
-from datetime import datetime, UTC
-import numpy as np
 import logging
 import os
+import shutil
+from datetime import UTC, datetime
 from multiprocessing import Pool
 
+import crds
+import numpy as np
 import roman_datamodels as rdm
+from crds.client import api as crds_api
 from romancal.dq_init import DQInitStep
 from romancal.refpix import RefPixStep
 from romancal.saturation import SaturationStep
@@ -18,7 +18,6 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
 
 
 class MaskPipeline(Pipeline):
