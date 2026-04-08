@@ -51,7 +51,7 @@ jobs:
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
     - name: Push badge to coverage-info branch
-      if: ${{ env.COVERAGE == 'true' }}
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
