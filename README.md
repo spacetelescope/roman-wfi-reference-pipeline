@@ -5,7 +5,7 @@
 >
 > If you have questions, see the CONTRIBUTING.md.
 
-![Coverage](https://raw.githubusercontent.com/ye-spencer/roman-wfi-reference-pipeline/coverage-info/coverage-badge.svg)
+![Coverage](https://raw.githubusercontent.com/spacetelescope/roman-wfi-reference-pipeline/coverage-info/coverage-badge.svg)
 
 ## Installation
 
