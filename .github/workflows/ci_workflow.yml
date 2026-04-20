@@ -2,7 +2,14 @@
 
 name: roman-wfi-reference-pipeline
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  COVERAGE: true  
 
 jobs:
   build:
@@ -33,6 +40,22 @@ jobs:
     - name: Ruff Test
       run: |
         ruff check ./src
-    - name: Pytest with coverage
-      run: |
-        pytest --cov=wfi_reference_pipeline --cov-report=xml
+    - name: Run pytest with coverage
+      id: run_pytest_coverage
+      uses: ./.github/jobs/pytest
+      with:
+        coverage: ${{ env.COVERAGE }}
+
+    - name: Generate coverage badge
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: genbadge coverage -i coverage.xml -o coverage-badge.svg
+
+    - name: Push badge to coverage-info branch
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: coverage-info
+        publish_dir: .
+        include_files: coverage-badge.svg, coverage.xml
+        commit_message: "Update coverage badge [skip ci]"

@@ -60,7 +60,17 @@ class MaskPipeline(Pipeline):
         logging.info(f"Ingesting {len(files)} files: {files}")
 
     def _get_previous_mask_from_crds(self):
-        """Get the older mask from CRDS to be used in the DQInit step."""
+        """
+        Get the older mask from CRDS to be used in the DQInit step. This function uses the CRDS API
+        to download the last mask file for a given detector. 
+        The following attributes are set or used in this function: 
+            self.crds_directory : The path to the directory that the CRDS mask is downloaded to.
+                                  This directory is created in `prep_pipeline` and cleared after each run.
+            
+            self.prev_mask_filepath : The path to the given detector's CRDS mask.
+
+            self.prev_mask_image : The 2D DQ array of the previous CRDS mask.
+        """
         logging.info(f"Downloading the latest Mask file for {self.detector} from CRDS")
 
         # This is where the CRDS files will be downloaded to
@@ -72,8 +82,6 @@ class MaskPipeline(Pipeline):
             shutil.rmtree(self.crds_directory)
             os.makedirs(self.crds_directory)
 
-        # TODO should this server info be in a config file?
-        os.environ["CRDS_SERVER_URL"] = "https://roman-crds-test.stsci.edu"
         crds_api.set_crds_server(os.environ["CRDS_SERVER_URL"])
         logging.info(f"CRDS_SERVER_URL: {os.environ.get('CRDS_SERVER_URL')}")
 
@@ -132,27 +140,18 @@ class MaskPipeline(Pipeline):
 
         return prep_output_file_path
 
-    def prep_pipeline(self, prep_path):
+    def prep_pipeline(self):
         """Prepare calibration data files by running data through select romancal steps"""
-        logging.info(f"Prepping files to be run through Mask pipeline for {self.detector}")
 
-        # This will be a temp directory for IRRC corrected files
-        new_outpath = os.path.join(prep_path, "prepped_files")
-        logging.info(f"Files that have been run through romancal will be in the following directory: {new_outpath}")
-
-        if not os.path.exists(new_outpath):
-            os.makedirs(new_outpath)
-
-        self.prepped_dir = new_outpath
-
-        # This will be a temp directory for the CRDS masks
-        crds_directory = os.path.join(prep_path, "crds_mask")
+        # This will be a directory for the CRDS masks, which will be cleared each mask run
+        crds_directory = os.path.join(self.file_handler.prep_path, "crds_mask")
         if not os.path.exists(crds_directory):
             os.makedirs(crds_directory)
 
         self.crds_directory = crds_directory
         logging.info(f"Previous CRDS Mask file for {self.detector} will be in {crds_directory}")
 
+        # Download the previous mask from CRDS and store it in self.crds_directory
         self._get_previous_mask_from_crds()
 
         # Clearning up the previous run
