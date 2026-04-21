@@ -118,4 +118,12 @@ navigate to central store's roman directory, then:
 To create a new reference file type, please see [how to make a new reference type](https://github.com/spacetelescope/roman-wfi-reference-pipeline/blob/main/src/docs/how_to_make_new_reftype.txt). This allows a new
 effect or calibration reference file type to be defined within the structure of the repository. 
 
-There is also documentation on 
+## Additional Documentation
+
+For a detailed walkthrough on how to create a new reference type class, see the  
+[New Reference Type Class Example](https://github.com/rgcosentino/roman-wfi-reference-pipeline/blob/pointer_new_ref_type_readme/src/docs/new_reftype_class_example.md).
+
+Once your module is implemented, you can follow the testing guidelines and examples here:  
+[Basic Testing for New Reference Types](https://github.com/rgcosentino/roman-wfi-reference-pipeline/blob/pointer_new_ref_type_readme/src/docs/new_reftype_class_basic_tests_example.md).
+
+These resources provide step-by-step examples to help ensure both your implementation and test coverage follow the expected structure and conventions used throughout the pipeline.
