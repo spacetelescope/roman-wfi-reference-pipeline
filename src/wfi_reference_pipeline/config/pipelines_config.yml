@@ -1,2 +1,10 @@
 dark:
   multiprocess_superdark: true
+fgs_mask:
+  E_PER_DN: 2
+  DEAD_SIGMA_THR: 5.0
+  HOT_THR: 2.5 #5.0 / E_PER_DN
+  SUPERHOT_THR: 20.0 # DN
+  HIGH_CDS_THR: 11 # 22 / E_PER_DN
+  LOW_QE_THR: 0.3
+  BAD_FLAT_THR: 0.0
