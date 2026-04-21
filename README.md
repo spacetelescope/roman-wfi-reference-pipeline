@@ -112,3 +112,10 @@ See the update_reference_files.py script in examples that was done for Build 17 
 navigate to central store's roman directory, then:
 ./RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```
+
+## Creating a New Reference File Type
+
+To create a new reference file type, please see [how to make a new reference type](https://github.com/spacetelescope/roman-wfi-reference-pipeline/blob/main/src/docs/how_to_make_new_reftype.txt). This allows a new
+effect or calibration reference file type to be defined within the structure of the repository. 
+
+There is also documentation on 

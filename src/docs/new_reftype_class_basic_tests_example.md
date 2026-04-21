@@ -32,9 +32,9 @@ Always provide metadata that matches the reference type:
 def valid_meta_data():
     """Fixture for generating valid WFIMeta{RefType} metadata."""
 ```
-### 2D Data Fixture
+## 2D Data Fixture
 
-# Most reference types use a 2D image:
+### Most reference types use a 2D image:
 
 ```python
 @pytest.fixture
@@ -42,9 +42,9 @@ def valid_ref_type_data_array():
     """Fixture for generating valid 2D reference type data."""
 ```
 
-### Object Fixture
+## Object Fixture
 
-# Instantiate the {RefType} object with valid inputs:
+### Instantiate the {RefType} object with valid inputs:
 
 ```python
 @pytest.fixture
@@ -52,27 +52,27 @@ def {ref_type}_object_with_data_array(valid_meta_data, valid_ref_type_data_array
     """Fixture for initializing a {RefType} object with valid data."""
 ```
 
-### Core Tests
-## Instantiation with Valid Data
-# Object should be created successfully
-# {ref_type}_image should be initialized with correct shape
+## Core Tests
+### Instantiation with Valid Data
+#### Object should be created successfully
+#### {ref_type}_image should be initialized with correct shape
 
 ## Invalid Metadata
-# Passing incorrect metadata should raise TypeError
+#### Passing incorrect metadata should raise TypeError
 
 ## Invalid Data
-# Passing invalid data should raise TypeError
+### Passing invalid data should raise TypeError
 
 ## Data Model Population
-# populate_datamodel_tree() should return:
-#   - meta
-#   - data
-# Data should have correct shape and dtype
+### populate_datamodel_tree() should return:
+####   - meta
+####   - data
+#### Data should have correct shape and dtype
 
 ## Default Output Filename
-# Should follow convention:
+### Should follow convention:
 
-### Example Test Template
+## Example Test Template
 ```python
 import numpy as np
 import pytest
