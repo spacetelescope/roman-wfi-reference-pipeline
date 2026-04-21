@@ -3,9 +3,10 @@ from pathlib import Path
 
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
-from romancal.refpix import refpix
+from romancal.refpix import RefPixStep
 from romancal.saturation import SaturationStep
 
+from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import REF_TYPE_FGS_MASK
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.fgs_mask.fgs_mask import FGSMask
@@ -42,6 +43,7 @@ class FGSMaskPipeline(Pipeline):
     def __init__(self, detector):
         # Initialize baseclass from here for access to this class name
         super().__init__(REF_TYPE_FGS_MASK, detector)
+        self.config = get_pipelines_config(REF_TYPE_FGS_MASK)
 
     # @log_info
     def select_uncal_files(self):
@@ -88,7 +90,7 @@ class FGSMaskPipeline(Pipeline):
             # name of the last step replacing 'uncal'.asdf
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
-            result = refpix.call(result, save_results=False)
+
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
@@ -131,3 +133,12 @@ class FGSMaskPipeline(Pipeline):
         rfp_fgs_mask.generate_outfile()
         logging.info("Finished RFP to make FGS_MASK")
         print("Finished RFP to make FGS_MASK")
+
+
+    def _run_romancal(self, file, outpath):
+        """ Function to run DQInit and RefPix steps on raw data """
+        with rdm.open(file) as f:
+
+            dq_data = DQInitStep.call(f)
+            _ = RefPixStep.call(dq_data, save_results=True, output_dir=outpath)
+
