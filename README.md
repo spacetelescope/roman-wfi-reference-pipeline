@@ -113,7 +113,9 @@ navigate to central store's roman directory, then:
 ./RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```
 
-## Creating a New Reference File Type in this Repository
+## Creating a New (SOC) Calibration Reference File Type in this Repository
+
+These instructions are currently for adding new calibration reference file types are that Science Operations Center (SOC) will utilize in development with the Roman Calibration Pipeline (romancal). Instructions for external community derived products will be provided at a later date.
 
 To create a new reference file type, please see [New Reference Type Meta Data Workflow Example](src/docs/new_reftype_meta_example_workflow.md) This allows a new
 effect or calibration reference file type to be defined within the structure of the repository. 
@@ -125,3 +127,4 @@ Once your module is implemented, you can follow the testing guidelines and examp
 [Basic Testing for New Reference Types](src/docs/new_reftype_class_basic_tests_example.md).
 
 These resources provide step-by-step examples to help ensure both your implementation and test coverage follow the expected structure and conventions used throughout the pipeline.
+

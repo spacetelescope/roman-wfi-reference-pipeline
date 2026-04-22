@@ -12,7 +12,7 @@ In the pseudo code below, instances of `"ref type"` are intended to be filled ou
 - Provide, at the end of the module docstring, some generic examples of how to execute the code, including instantiation and expected input variables.
 - The `ReferenceType` base class handles many tasks for you, such as updating metadata and attributes.
 - The check performed underneath the `super()` call ensures consistency:
-  - You cannot instantiate a `Dark` with `FLAT` metadata.
+  - You cannot instantiate a `Dark` with `ref_type = Flat` metadata.
   - This validation happens before writing the reference file.
   - RAD and RDM will prevent incorrect file writes, but this check helps catch issues earlier.
 
