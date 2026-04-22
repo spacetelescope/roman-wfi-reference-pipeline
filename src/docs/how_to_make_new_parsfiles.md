@@ -55,9 +55,9 @@ Example output:
  'author': '<SPECIFY>',
  'date': '2026-02-24T20:07:08',
  'description': 'Parameters for calibration step romancal.pipeline.exposure_pipeline.ExposurePipeline',
- 'instrument': {'name': '<SPECIFY>'},
- 'origin': '<SPECIFY>',
- 'pedigree': '<SPECIFY>',
+ 'instrument': {'name': 'WFI'},
+ 'origin': '<SPECIFY>',  # Allowed values are: "STSCI", "STSCI/SOC", "IPAC/SSC"
+ 'pedigree': '<SPECIFY>', 
  'reftype': '<SPECIFY>',
  'telescope': '<SPECIFY>',
  'useafter': '<SPECIFY>'
