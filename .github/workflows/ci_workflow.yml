@@ -54,15 +54,6 @@ jobs:
 
     - name: Push badge to coverage-info branch
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-<<<<<<< HEAD
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: coverage-info
-        publish_dir: .
-        include_files: coverage-badge.svg, coverage.xml
-        commit_message: "Update coverage badge [skip ci]"
-=======
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -86,4 +77,3 @@ jobs:
         
         git commit -m "Update coverage badge [skip ci]"
         git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" coverage-info
->>>>>>> abdf529 (Attempt to replace peaceiris action)
