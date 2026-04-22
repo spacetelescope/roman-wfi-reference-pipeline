@@ -57,7 +57,7 @@ Example output:
  'description': 'Parameters for calibration step romancal.pipeline.exposure_pipeline.ExposurePipeline',
  'instrument': {'name': 'WFI'},
  'origin': '<SPECIFY>',  # Allowed values are: "STSCI", "STSCI/SOC", "IPAC/SSC"
- 'pedigree': '<SPECIFY>', 
+ 'pedigree': '<SPECIFY>',  # Per Technical Report MESA2021-01 allowed values are "DUMMY", "MODEL", "GROUND", or "INFLIGHT"
  'reftype': '<SPECIFY>',
  'telescope': '<SPECIFY>',
  'useafter': '<SPECIFY>'
