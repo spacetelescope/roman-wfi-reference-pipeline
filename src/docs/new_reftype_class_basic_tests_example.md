@@ -55,23 +55,23 @@ def {ref_type}_object_with_data_array(valid_meta_data, valid_ref_type_data_array
 ## Core Tests
 
 ### Instantiation with Valid Data
-- **Object should be created successfully**
-- **{ref_type}_image should be initialized with correct shape**
+- Object should be created successfully
+- {ref_type}_image should be initialized with correct shape
 
 ## Invalid Metadata
-- **Passing incorrect metadata should raise TypeError**
+- Passing incorrect metadata should raise TypeError
 
 ## Invalid Data
-- **Passing invalid data should raise TypeError**
+- Passing invalid data should raise TypeError
 
 ## Data Model Population
-- **populate_datamodel_tree() should return:**
+- populate_datamodel_tree() should return:
   - meta
   - data
-- **Data should have correct shape and dtype**
+- Data should have correct shape and dtype
 
 ## Default Output Filename
-- **Should follow convention:**
+- Should follow convention:
 
 ## Example Test Template
 ```python
