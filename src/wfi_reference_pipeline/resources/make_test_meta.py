@@ -5,6 +5,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_DARKDECAYSIGNAL,
     REF_TYPE_DETECTORSTATUS,
     REF_TYPE_ETC,
+    REF_TYPE_FGS_MASK,
     REF_TYPE_FLAT,
     REF_TYPE_GAIN,
     REF_TYPE_INTEGRALNONLINEARITY,
@@ -33,6 +34,7 @@ from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
+from wfi_reference_pipeline.resources.wfi_meta_fgs_mask import WFIMetaFGSMask
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
@@ -76,9 +78,12 @@ class MakeTestMeta:
 
     def _create_test_meta_detector_status(self, meta_data):
         self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
-    
+
     def _create_test_meta_etc(self, meta_data):
         self.meta_etc = WFIMetaETC(*meta_data)
+
+    def _create_test_meta_etc(self, meta_data):
+        self.meta_etc = WFIMetaFGSMask(*meta_data)
 
     def _create_test_meta_flat(self, meta_data):
         ref_optical_element = "F158"
@@ -90,7 +95,7 @@ class MakeTestMeta:
         self.meta_gain = WFIMetaGain(*meta_data)
 
     def _create_test_meta_integral_non_linearity(self, meta_data):
-        # There are 32 amplifiers to read 128 pixels at a time. 
+        # There are 32 amplifiers to read 128 pixels at a time.
         # https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
         n_channels = 32
         n_pixels_per_channel = 128
@@ -122,9 +127,9 @@ class MakeTestMeta:
 
     def _create_test_meta_mask(self, meta_data):
         self.meta_mask = WFIMetaMask(*meta_data)
-    
+
     def _create_test_meta_pixelarea(self, meta_data):
-        p_optical_element = "F158"  # Default optical element 
+        p_optical_element = "F158"  # Default optical element
 
         # pixel scale (Roman WFI is ~0.11 arcsec/pixel)
         pixel_scale = 0.11 * u.arcsec
@@ -200,9 +205,12 @@ class MakeTestMeta:
 
         if ref_type == REF_TYPE_DETECTORSTATUS:
             self._create_test_meta_detector_status(meta_data_params)
-  
+
         if ref_type == REF_TYPE_ETC:
             self._create_test_meta_etc(meta_data_params)
+
+        if ref_type == REF_TYPE_FGS_MASK:
+            self._create_test_meta_fgs_mask(meta_data_params)
 
         if ref_type == REF_TYPE_FLAT:
             self._create_test_meta_flat(meta_data_params)
