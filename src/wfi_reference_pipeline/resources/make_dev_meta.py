@@ -23,6 +23,7 @@ from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
+from wfi_reference_pipeline.resources.wfi_meta_empirical_psf import (WFIMetaEPSF)
 from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
@@ -79,6 +80,40 @@ class MakeDevMeta:
     def _create_dev_meta_detector_status(self, meta_data):
         self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
   
+    def _create_dev_meta_epsf(self, meta_data):
+        ref_optical_element = ["F062"]
+
+        oversample = 4
+        spectral_type = ["A0V", "G2V", "M5V"]
+        defocus = [0, 1, 2]
+
+        pixel_x = [4.0, 2047.5, 4091.0,
+                4.0, 2047.5, 4091.0,
+                4.0, 2047.5, 4091.0]
+
+        pixel_y = [4.0, 4.0, 4.0,
+                2047.5, 2047.5, 2047.5,
+                4091.0, 4091.0, 4091.0]
+
+        # Required by schema but missing in file
+        jitter_major = 0.0
+        jitter_minor = 0.0
+        jitter_position_angle = 0.0
+
+        epsf_meta_data = [
+            ref_optical_element,
+            oversample,
+            spectral_type,
+            defocus,
+            pixel_x,
+            pixel_y,
+            jitter_major,
+            jitter_minor,
+            jitter_position_angle,
+        ]
+
+        self.meta_epsf = WFIMetaEPSF(*meta_data, *epsf_meta_data)
+        
     def _create_dev_meta_etc(self, meta_data):
         self.meta_etc = WFIMetaETC(*meta_data)
 
@@ -215,6 +250,9 @@ class MakeDevMeta:
         if ref_type == "DETECTORSTATUS":
             self._create_dev_meta_detector_status(meta_data_params)
   
+        if ref_type == "EPSF":
+            self._create_dev_meta_epsf(meta_data_params)
+
         if ref_type == "ETC":
             self._create_dev_meta_etc(meta_data_params)
 
