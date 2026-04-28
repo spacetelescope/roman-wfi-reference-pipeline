@@ -9,7 +9,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_GAIN,
     REF_TYPE_INTEGRALNONLINEARITY,
     REF_TYPE_INVERSELINEARITY,
-    REF_TYPE_IPC,
+    REF_TYPE_INTERPIXELCAPACITANCE,
     REF_TYPE_LINEARITY,
     REF_TYPE_MASK,
     REF_TYPE_PHOTOM,
@@ -38,7 +38,9 @@ from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
     WFIMetaIntegralNonLinearity,
 )
-from wfi_reference_pipeline.resources.wfi_meta_interpixelcapacitance import WFIMetaIPC
+from wfi_reference_pipeline.resources.wfi_meta_inter_pixel_capacitance import (
+    WFIMetaInterPixelCapacitance
+)
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
     WFIMetaInverseLinearity,
 )
@@ -99,11 +101,11 @@ class MakeTestMeta:
         self.meta_integral_non_linearity = WFIMetaIntegralNonLinearity(*meta_data,
                                                                        *meta_integral_non_linearity)
 
-    def _create_test_meta_interpixelcapacitance(self, meta_data):
+    def _create_test_meta_inter_pixel_capacitance(self, meta_data):
         ref_optical_element = "F158"
 
         ipc_meta_data = [ref_optical_element]
-        self.meta_ipc = WFIMetaIPC(*meta_data, *ipc_meta_data)
+        self.meta_ipc = WFIMetaInterPixelCapacitance(*meta_data, *ipc_meta_data)
 
     def _create_test_meta_inverselinearity(self, meta_data):
         input_units = u.DN
@@ -216,8 +218,8 @@ class MakeTestMeta:
         if ref_type == REF_TYPE_INVERSELINEARITY:
             self._create_test_meta_inverselinearity(meta_data_params)
 
-        if ref_type == REF_TYPE_IPC:
-            self._create_test_meta_interpixelcapacitance(meta_data_params)
+        if ref_type == REF_TYPE_INTERPIXELCAPACITANCE:
+            self._create_test_meta_inter_pixel_capacitance(meta_data_params)
 
         if ref_type == REF_TYPE_LINEARITY:
             self._create_test_meta_linearity(meta_data_params)
