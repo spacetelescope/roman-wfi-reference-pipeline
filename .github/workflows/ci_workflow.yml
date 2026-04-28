@@ -58,9 +58,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         mkdir -p "$RUNNER_TEMP/coverage-artifacts"
-        cp coverage-badge.svg coverage.xml "$RUNNER_TEMP/coverage-artifacts/"
-
-        rm -f coverage-badge.svg coverage.xml
+        move coverage-badge.svg coverage.xml "$RUNNER_TEMP/coverage-artifacts/"
 
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -74,7 +72,7 @@ jobs:
         git checkout -B coverage-info origin/coverage-info
         git rm -rf . >/dev/null 2>&1 || true
 
-        cp "$RUNNER_TEMP/coverage-artifacts/"* .
+        mv "$RUNNER_TEMP/coverage-artifacts/"* .
         git add coverage-badge.svg coverage.xml
         
         git commit -m "Update coverage badge [skip ci]"
