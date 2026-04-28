@@ -58,7 +58,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         mkdir -p "$RUNNER_TEMP/coverage-artifacts"
-        move coverage-badge.svg coverage.xml "$RUNNER_TEMP/coverage-artifacts/"
+        mv coverage-badge.svg coverage.xml "$RUNNER_TEMP/coverage-artifacts/"
 
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
