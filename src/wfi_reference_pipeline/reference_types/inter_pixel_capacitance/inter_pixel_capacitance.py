@@ -1,8 +1,12 @@
 import logging
+
 import numpy as np
 from roman_datamodels.datamodels import IpcRefModel
 
-from wfi_reference_pipeline.resources.wfi_meta_inter_pixel_capacitance import WFIMetaInterPixelCapacitance
+from wfi_reference_pipeline.resources.wfi_meta_inter_pixel_capacitance import (
+    WFIMetaInterPixelCapacitance,
+)
+
 from ..reference_type import ReferenceType
 
 log = logging.getLogger(__name__)

@@ -1,9 +1,10 @@
-import os
 from astropy.time import Time
 
-from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import InterPixelCapacitance
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.constants import WFI_DETECTORS
+from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import (
+    InterPixelCapacitance,
+)
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 print(f"Generating {len(WFI_DETECTORS)} IPC ASDF files using the RFP...\n")
 

@@ -8,8 +8,8 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_FLAT,
     REF_TYPE_GAIN,
     REF_TYPE_INTEGRALNONLINEARITY,
-    REF_TYPE_INVERSELINEARITY,
     REF_TYPE_INTERPIXELCAPACITANCE,
+    REF_TYPE_INVERSELINEARITY,
     REF_TYPE_LINEARITY,
     REF_TYPE_MASK,
     REF_TYPE_PHOTOM,
@@ -39,7 +39,7 @@ from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
     WFIMetaIntegralNonLinearity,
 )
 from wfi_reference_pipeline.resources.wfi_meta_inter_pixel_capacitance import (
-    WFIMetaInterPixelCapacitance
+    WFIMetaInterPixelCapacitance,
 )
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
     WFIMetaInverseLinearity,
