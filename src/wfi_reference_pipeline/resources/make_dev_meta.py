@@ -23,7 +23,9 @@ from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
-from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.resources.wfi_meta_flat import (
+    WFIMetaFlat, WFIMetaLargeFlat, WFIMetaPixelFlat
+)
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
 from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
     WFIMetaIntegralNonLinearity,
@@ -85,6 +87,19 @@ class MakeDevMeta:
 
         flat_meta_data = [p_optical_element]
         self.meta_flat = WFIMetaFlat(*meta_data, *flat_meta_data)
+
+    def _create_dev_meta_large_flat(self, meta_data):
+        p_optical_element = "F158"
+
+        flat_meta_data = [p_optical_element]
+        self.meta_large_flat = WFIMetaLargeFlat(*meta_data, *flat_meta_data)
+
+    def _create_dev_meta_pixel_flat(self, meta_data):
+        p_optical_element = "F158"
+
+        flat_meta_data = [p_optical_element]
+        self.meta_pixel_flat = WFIMetaPixelFlat(*meta_data, *flat_meta_data)
+
 
     def _create_dev_meta_gain(self, meta_data):
         self.meta_gain = WFIMetaGain(*meta_data)
@@ -218,6 +233,12 @@ class MakeDevMeta:
 
         if ref_type == "FLAT":
             self._create_dev_meta_flat(meta_data_params)
+
+        if ref_type == "FLAT_LARGE":
+            self._create_dev_meta_large_flat(meta_data_params)
+
+        if ref_type == "FLAT_PIXEL":
+            self._create_dev_meta_pixel_flat(meta_data_params)
 
         if ref_type == "GAIN":
             self._create_dev_meta_gain(meta_data_params)

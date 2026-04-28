@@ -16,9 +16,9 @@ from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
 from ..reference_type import ReferenceType
 
 
-class FlatBase(ReferenceType):
+class Flat(ReferenceType):
     """
-    Base class for constructing a full focal plane flat (FlatRefModel).
+    Class for constructing a full focal plane flat (FlatRefModel).
 
     Combines:
     - Pixel flats (p-flat): per detector (18 total)
@@ -28,9 +28,9 @@ class FlatBase(ReferenceType):
     def __init__(
         self,
         meta_data,
-        pixel_flat_list=None,   # list of 18 PixelFlat objects
-        large_flat=None,        # optional LargeScaleFlat object
-        outfile="roman_combined_p_l_flat.asdf",
+        pixel_flat=None,        # pixel scale flat array
+        large_flat=None,        # large scale flat array
+        outfile="roman_flat.asdf",
         clobber=False,
     ):
         super().__init__(
@@ -41,17 +41,26 @@ class FlatBase(ReferenceType):
             clobber=clobber
         )
 
-        self.pflat_list = pixel_flat_list
+        # Default bit mask size of 4088x4088 for flat is size of science array
+        # and must be provided if not bit_mask to instantiate properly in base class.
+        if bit_mask is None:
+            bit_mask = np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.uint32)
+
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaFlat):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaFlat"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI flat reference file."
+
+        logging.debug(f"Default flat reference file object: {outfile} ")
+
+        self.pflat = pixel_flat
         self.lflat = large_flat
 
         self.combined_flat = None
         self.combined_flat_error = None
-
-        self._validate_inputs()
-
-    def _validate_inputs(self):
-        if len(self.pflat_list) != 18:
-            raise ValueError("Expected 18 PixelFlat components (one per detector).")
 
     def combine_flat_components(self):
         """
@@ -65,21 +74,11 @@ class FlatBase(ReferenceType):
         # 2. Apply L-flat correction assuming multiplicative
         # 3. Normalize
         
-
         wfi_fov_p_flat = self._assemble_detector_grid(self.pflat_list)
 
         self.combined_flat = wfi_fov_p_flat * self.lflat
 
         self.combined_flat /= np.mean(self.combined_flat) 
-
-
-    def _assemble_detector_grid(self, pflat_list):
-        """
-        Arrange 18 detector images into focal plane geometry.
-        """
-        # Placeholder layout logic
-        # return stitched_array
-        pass
 
     def calculate_error(self):
         """
@@ -94,12 +93,17 @@ class FlatBase(ReferenceType):
     def populate_datamodel_tree(self):
         """
         Flat reference file data model with combined pixel and 
-        large scale flat field array
+        large scale flat field array.
+
+        Drafting adding additional components of pixel and large scale flats to the data model
+        that aren't required but provide tracking with RDMT for ice monitoring.
         """
         flat_tree = rds.FlatRef()
         flat_tree["meta"] = self.meta_data.export_asdf_meta()
-        flat_tree["data"] = self.combined_flat.astype(np.float32)
+        flat_tree["data"] = self.combined_flat.astype(np.float32)  # This is the combined P and L flat components together for romancal and CRDS
         flat_tree["err"] = self.combined_flat_error.astype(np.float32)
         flat_tree["dq"] = self.dq_mask
+        flat_tree["pixel_flat"] = self.pflat.astype(np.float32)
+        flat_tree["large_flat"] = self.lflat.astype(np.float32)
 
         return flat_tree

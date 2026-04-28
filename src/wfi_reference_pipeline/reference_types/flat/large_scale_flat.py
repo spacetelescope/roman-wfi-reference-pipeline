@@ -3,18 +3,16 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from astropy import units as u
+from scipy.ndimage import gaussian_filter
 
 from wfi_reference_pipeline.constants import (
     SCI_PIXEL_X_COUNT,
     SCI_PIXEL_Y_COUNT,
     WFI_TYPE_IMAGE,
 )
-from wfi_reference_pipeline.reference_types.data_cube import DataCube
-from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaLargeFlat
 
 from ..reference_type import ReferenceType
-
 
 class LargeScaleFlat(ReferenceType):
     """
@@ -38,6 +36,12 @@ class LargeScaleFlat(ReferenceType):
             outfile=outfile,
             clobber=clobber
         )
+
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaLargeFlat):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaLargeFlat"
+            )
 
         self.file_lists = file_lists or []
 
@@ -90,10 +94,52 @@ class LargeScaleFlat(ReferenceType):
         pass
 
     def populate_datamodel_tree(self):
-        lflat_tree = rds.FlatRef()
-        lflat_tree["meta"] = self.meta_data.export_asdf_meta()
-        lflat_tree["data"] = self.lflat_image.astype(np.float32)
-        lflat_tree["err"] = self.lflat_error.astype(np.float32)
-        lflat_tree["dq"] = self.dq_mask
+        """
+        Large scale flat reference file component. There is no data model.
+        """
 
-        return lflat_tree
+        tree = {
+            "roman": {
+                "meta": self.meta_data.export_asdf_meta(),
+                "large_flat": self.lflat.astype(np.float32),
+            }
+        }
+
+        return tree
+    
+def simulate_lflat_superpixel_grid(self, shape=(100, 100), low=0.9, high=1.05, smooth_sigma=10):
+    """
+    Generate a simulated large-scale (superpixel) L-flat grid.
+
+    Parameters
+    ----------
+    shape : tuple
+        Output grid size (default: 100x100)
+    low : float
+        Minimum value of L-flat
+    high : float
+        Maximum value of L-flat
+    smooth_sigma : float
+        Gaussian smoothing scale to enforce large-scale structure
+
+    Returns
+    -------
+    lflat_grid : ndarray
+        Simulated smooth L-flat grid
+    """
+
+    # randomize array
+    random_l_flat = np.random.normal(loc=1.0, scale=0.02, size=shape)
+
+    # smooth to create large-scale structure
+    smooth = gaussian_filter(random_l_flat, sigma=smooth_sigma)
+
+    # normalize to [0, 1]
+    smooth_min = np.min(smooth)
+    smooth_max = np.max(smooth)
+    normalized = (smooth - smooth_min) / (smooth_max - smooth_min)
+
+    # scale to desired range [low, high]
+    lflat_grid = low + normalized * (high - low)
+
+    return lflat_grid

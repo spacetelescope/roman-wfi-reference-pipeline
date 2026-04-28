@@ -3,7 +3,6 @@ import logging
 import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
-from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
     SCI_PIXEL_X_COUNT,
@@ -11,7 +10,7 @@ from wfi_reference_pipeline.constants import (
     WFI_TYPE_IMAGE,
 )
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
-from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaFlat
+from wfi_reference_pipeline.resources.wfi_meta_flat import WFIMetaPixelFlat
 
 from ..reference_type import ReferenceType
 
@@ -45,7 +44,7 @@ class PixelFlat(ReferenceType):
             file_list=None,
             ref_type_data=None,
             bit_mask=None,
-            outfile="roman_flat.asdf",
+            outfile="roman_pixel_level_flat.asdf",
             clobber=False,
     ):
         """
@@ -73,11 +72,6 @@ class PixelFlat(ReferenceType):
         See reference_type.py base class for additional attributes and methods.
         """
 
-        # Default bit mask size of 4088x4088 for flat is size of science array
-        # and must be provided if not bit_mask to instantiate properly in base class.
-        if bit_mask is None:
-            bit_mask = np.zeros((SCI_PIXEL_X_COUNT, SCI_PIXEL_Y_COUNT), dtype=np.uint32)
-
         # Access methods of base class ReferenceType
         super().__init__(
             meta_data=meta_data,
@@ -89,12 +83,12 @@ class PixelFlat(ReferenceType):
         )
 
         # Default meta creation for module specific ref type.
-        if not isinstance(meta_data, WFIMetaFlat):
+        if not isinstance(meta_data, WFIMetaPixelFlat):
             raise TypeError(
-                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaFlat"
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaPixelFlat"
             )
         if len(self.meta_data.description) == 0:
-            self.meta_data.description = "Roman WFI flat reference file."
+            self.meta_data.description = "Roman WFI pixel component for flat reference file."
 
         logging.debug(f"Default flat reference file object: {outfile} ")
 
@@ -199,8 +193,13 @@ class PixelFlat(ReferenceType):
         logging.debug(f"Fitting data cube with fit order={fit_order}.")
         self.data_cube.fit_cube(degree=fit_order)
 
-    def make_flat_from_files(self, lo=100, hi=500, calc_error=False, nsamples=None,
-                             flat_lo=0.2, flat_hi=2.):
+    def make_flat_from_files(self, 
+                             lo=100, 
+                             hi=500, 
+                             calc_error=False, 
+                             nsamples=None,
+                             flat_lo=0.2, 
+                             flat_hi=2.):
         """
         Go through the files supplied to the module and generate a
         cube of rate images into an array. This method uses FlatDataCube
@@ -283,8 +282,11 @@ class PixelFlat(ReferenceType):
         else:
             return self.flat_image
 
-    def calculate_error(self, ind_flat_array=None,
-                        nsamples=100, nboot=10, fill_random=False):
+    def calculate_error(self, 
+                        ind_flat_array=None,
+                        nsamples=100, 
+                        nboot=10, 
+                        fill_random=False):
         """
         Calculate the uncertainty in the flat rate image using bootstrap resampling.
         If error array is None,
@@ -315,7 +317,8 @@ class PixelFlat(ReferenceType):
             flat_unc = np.nanstd(median_samples, axis=0)
             self.flat_error = flat_unc
 
-    def update_data_quality_array(self, low_qe_threshold=0.2,
+    def update_data_quality_array(self, 
+                                  low_qe_threshold=0.2,
                                   flat_hi_threshold=2.,
                                   add_low_qe_pixels=False):
         """
@@ -357,17 +360,16 @@ class PixelFlat(ReferenceType):
 
     def populate_datamodel_tree(self):
         """
-        Create data model from DMS and populate tree.
+       Pixel scale flat reference file component. There is no data model.
         """
 
-        # Construct the flat field object from the data model.
-        flat_datamodel_tree = rds.FlatRef()
-        flat_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
-        flat_datamodel_tree['data'] = self.flat_image.astype(np.float32)
-        flat_datamodel_tree['err'] = self.flat_error.astype(np.float32)
-        flat_datamodel_tree['dq'] = self.dq_mask
-
-        return flat_datamodel_tree
+        tree = {
+            "roman": {
+                "meta": self.meta_data.export_asdf_meta(),
+                "pixel_flat": self.flat_image.astype(np.float32),
+            }
+        }
+        return tree
 
     class FlatDataCube(DataCube):
         """
