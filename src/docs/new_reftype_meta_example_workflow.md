@@ -70,7 +70,7 @@ src/wfi_reference_pipeline/resources/make_dev_meta.py
 _create_dev_meta_new_effect()
 ```
 
-- In `__init__`:
+- In the `__init__` method of make_dev_meta.py:
 
 ```python
 if ref_type == "NEW_EFFECT":
@@ -92,7 +92,7 @@ src/wfi_reference_pipeline/resources/make_test_meta.py
 _create_test_meta_new_effect()
 ```
 
-- In `__init__`:
+- In the `__init__` method of make_test_meta.py:
 
 ```python
 if ref_type == "NEW_EFFECT":

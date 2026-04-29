@@ -54,6 +54,14 @@ def {ref_type}_object_with_data_array(valid_meta_data, valid_ref_type_data_array
 
 ## Core Tests
 
+Some of the basic core tests are shown below in both table and itemized details.
+
+### Core Tests Table
+
+| Test Type | Purpose of Test | Error Raised (if applicable) |
+|-----------|----------------|------------------------------|
+| Instantiation w Valid Data | (list bullet points in section) | `ValueError` if shape is incorrect |
+
 ### Instantiation with Valid Data
 - Object should be created successfully
 - {ref_type}_image should be initialized with correct shape
