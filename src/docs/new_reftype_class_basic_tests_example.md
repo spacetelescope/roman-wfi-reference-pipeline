@@ -2,7 +2,7 @@
 
 This document outlines how to construct a basic test file for a new reference type (`{RefType}`) in the WFI Reference Pipeline.
 
-Each reference type should include a corresponding test file: test_{ref_type}.py
+Each reference type should include a corresponding test file: test_{ref_type}.py that then resides in the directory /reference_types/tests/
 
 
 ---

@@ -133,13 +133,16 @@ in `constants.py`.
 
 ---
 
-### 7. Implement the Class
+### 7. Implement the Reference Type Class
 
 - Inherit from `ReferenceType`
 - Implement required methods:
   - Initialization
-  - Processing
+  - Standard processing workflow for different input data
+  - Abstract method enforcement from base class ReferenceType
   - Data model population
+
+  See the [reference type class example](https://github.com/rgcosentino/roman-wfi-reference-pipeline/blob/main/src/docs/new_reftype_class_example.md).
 
 ---
 

@@ -1,22 +1,14 @@
 # Creating and Editing a PARS (ASDF Parameter) File
 
-This guide explains how to generate and modify a `pars` file for the Roman WFI pipeline using `asdf`.
+This guide explains how to generate and modify a `pars` file for the Roman WFI pipeline using `asdf`. Parameter files or a pars file is used to override specific defaults that are inputs into specific steps. This might include skipping a step completely with a boolean, saving the output with a specific name, or overriding a default float value used to identify a hot pixel. 
+
+See [romancal pipeline parameters documentation](https://roman-pipeline.readthedocs.io/en/latest/roman/pipeline_parameters.html).
 
 ---
 
-## 1. Generate a Default PARS File
+## 1. Help Command
 
-In a new environment, run:
-
-```bash
-strun roman_elp --save-parameters roman_elp_defaults.asdf
-```
-
----
-
-## 2. Help Command
-
-To inspect available options:
+In a new environment with romancal installed from PyPi, first inspect available options through the bash terminal using strun:
 
 ```bash
 strun -h
@@ -29,6 +21,20 @@ usage: strun [--debug] [--save-parameters SAVE_PARAMETERS] [--disable-crds-stepp
              [--logcfg LOGCFG] [--verbose] [--log-level LOG_LEVEL]
              [--log-file LOG_FILE] [--log-stream]
 ```
+
+See [romancal PyPi](https://pypi.org/project/romancal/). 
+
+---
+
+## 2. Generate a Default PARS File
+
+In a new environment with romancal installed from PyPi, run:
+
+```bash
+strun roman_elp --save-parameters roman_elp_defaults.asdf
+```
+
+The save parameters flag is an optional parameter which here saves the current defaults into the file name listed after.
 
 ---
 
@@ -48,7 +54,7 @@ af = asdf.open('roman_elp_defaults.asdf')
 af.tree['meta']
 ```
 
-Example output:
+Example:
 
 ```python
 {
@@ -100,7 +106,7 @@ af.tree["meta"]["exposure"] = {"type": "WFI_FLAT"}
 af.tree["steps"]
 ```
 
-Example structure:
+Example:
 
 ```python
 [
@@ -148,7 +154,9 @@ Example structure:
 
 ## 8. Modify Pipeline Steps
 
-Skip selected steps:
+One example usage for a pars file is to skip selected steps. This might be useful when wanting to create products running to a specific point in the exposure level pipeline and then divering to a more custom approach for processing. 
+
+Shown below is an example of turning off steps by setting the skip to True:
 
 ```python
 for step in af.tree["steps"]:

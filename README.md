@@ -115,7 +115,9 @@ navigate to central store's roman directory, then:
 
 ## Creating a New (SOC) Calibration Reference File Type in this Repository
 
-These instructions are currently for adding new calibration reference file types are that Science Operations Center (SOC) will utilize in development with the Roman Calibration Pipeline (romancal). Instructions for external community derived products will be provided at a later date.
+These instructions are currently for adding new calibration reference file types are that Science Operations Center (SOC) will utilize in development with the Roman Calibration Pipeline (romancal). Instructions for external community derived products will be provided at a later date. 
+<!-- TODO: replace with updated information -->
+
 
 To create a new reference file type, please see [New Reference Type Meta Data Workflow Example](src/docs/new_reftype_meta_example_workflow.md) This allows a new
 effect or calibration reference file type to be defined within the structure of the repository. 
