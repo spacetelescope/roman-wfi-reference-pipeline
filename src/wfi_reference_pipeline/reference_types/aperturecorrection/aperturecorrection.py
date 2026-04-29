@@ -18,6 +18,17 @@ from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
 
 from ..reference_type import ReferenceType
 
+'''
+
+***************************************************************************
+***** NOTE ON INSTALLING STPSF ON VIRTUAL MACHINES AND DATA DIRECTORY *****
+***************************************************************************
+
+When pip installing stpsf, the necessary data files will be installed automatically in the default path, 
+$HOME/data/stpsf-data. The .bash_profile needs to be updated to include the environment variable
+export STPSF_PATH="$HOME/data/stpsf-data/" also. 
+'''
+
 
 class ApertureCorrection(ReferenceType):
     """
