@@ -29,7 +29,7 @@ from wfi_reference_pipeline.resources.wfi_meta_integral_non_linearity import (
     WFIMetaIntegralNonLinearity,
 )
 from wfi_reference_pipeline.resources.wfi_meta_inter_pixel_capacitance import (
-    WFIMetaInterPixelCapacitance
+    WFIMetaInterPixelCapacitance,
 )
 from wfi_reference_pipeline.resources.wfi_meta_inverselinearity import (
     WFIMetaInverseLinearity,
