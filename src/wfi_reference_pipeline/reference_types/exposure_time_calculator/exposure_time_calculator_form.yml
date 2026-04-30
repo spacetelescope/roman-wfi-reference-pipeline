@@ -20,14 +20,14 @@ common:
   readnoise_excess_scaling: 1.0
 detectors:
   WFI01:
-    saturation_on: true
-    saturation_fullwell: 60000.0
-    dark_current_on: true
-    dark_current: 0.0
-    readnoise_on: true
-    readnoise: 6.196895122528076
-    readnoise_correlation_on: false
-    flat_field_noise_on: true
+    saturation_on: true  # Saturation used in ETC
+    saturation_fullwell: 60000.0  # Median saturation limit in DN (counts)
+    dark_current_on: true  # Dark used in ETC
+    dark_current: 0.0  # Average dark in DN/s (counts/sec)
+    readnoise_on: true  # Read noise used in ETC
+    readnoise: 6.196895122528076  # Read noise value in DN (counts)
+    readnoise_correlation_on: false  
+    flat_field_noise_on: true  
     flat_field_electrons: 716.3978518135043
   WFI02:
     saturation_on: true

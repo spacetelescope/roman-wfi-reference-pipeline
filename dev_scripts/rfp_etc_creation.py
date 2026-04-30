@@ -15,7 +15,7 @@ for det in range(1, 19):
     tmp = MakeDevMeta(ref_type='ETC')
     # Update meta per detector to get the right values from the form and update description
     tmp.meta_etc.instrument_detector = f"WFI{det:02d}"
-    tmp.meta_etc.description = 'To support new ETC ref file creation by Rick Cosentino to help the ETC team use CRDS.'
+    tmp.meta_etc.description = 'To support new ETC ref file creation by Rick Cosentino to help the ETC team use CRDS. Now generated from data model.'
     # Update the file name to match the detector
     fl_name = 'new_roman_etc_' + tmp.meta_etc.instrument_detector
     # Instantiate an object and write the file out

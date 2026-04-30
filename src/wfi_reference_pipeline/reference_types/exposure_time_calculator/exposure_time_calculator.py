@@ -7,7 +7,7 @@ from pathlib import Path
 import crds
 import numpy as np
 import roman_datamodels as rdm
-import roman_datamodels.stnode as rds
+from roman_datamodels.datamodels import EtcRefModel
 import yaml
 from crds.client import api
 
@@ -103,31 +103,24 @@ class ExposureTimeCalculator(ReferenceType):
 
         return merged_form
 
+    def populate_datamodel_tree(self):
+        """
+        Build the Roman datamodel tree for the exposure time calculator
+        using the merged detector yaml form section.
+        """
+
+        etc_datamodel_tree = EtcRefModel()
+        etc_datamodel_tree['meta'] = self.meta_data.export_asdf_meta()
+        etc_datamodel_tree['form'] = self.etc_detector_form
+
+        return etc_datamodel_tree
+
     # Abstract base classes not needed for ETC config reference file
     def calculate_error(self):
         return super().calculate_error()
 
     def update_data_quality_array(self):
         return super().update_data_quality_array()
-
-    def populate_datamodel_tree(self):
-        """
-        Build the Roman datamodel tree for the exposure time calculator
-        using the merged detector yaml form section.
-        """
-        #TODO replace rds.ExposureTimeRef with the correct roman_datamodels reference class when available.
-        try:
-            etc_datamodel_tree = rds.ExposureTimeCalcRef()
-        except AttributeError:
-            # use a plain dict
-            etc_datamodel_tree = {
-                "meta": {},
-                "form": {}
-            }
-        etc_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
-        etc_datamodel_tree["form"] = self.etc_detector_form
-        return etc_datamodel_tree
-
 
 # -------------------------------
 # Standalone function to update form file
