@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install .[test]
+        pip install -e .[test]
     - name: Ruff Test
       run: |
         ruff check ./src
@@ -48,7 +48,7 @@ jobs:
       with:
         coverage: ${{ env.COVERAGE }}
 
-    - name: Generate coverage badge
+    - name: Generate coverage badge and summary
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: genbadge coverage -i coverage.xml -o coverage-badge.svg
 
@@ -77,3 +77,9 @@ jobs:
         
         git commit -m "Update coverage badge [skip ci]"
         git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" coverage-info
+
+    - name: Coverage diff on PR
+
+      if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
+      uses: ./.github/jobs/coverage_diff
+
