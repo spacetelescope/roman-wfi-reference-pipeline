@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import asdf
 import numpy as np
 from astropy.time import Time
-from romancal.lib import dqflags
+from roman_datamodels import dqflags
 
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
@@ -127,6 +127,7 @@ class ReferenceType(ABC):
     def generate_outfile(self, datamodel_tree=None, file_permission=0o666):
         """
         Writes the reference file object to the specified asdf outfile.
+        Supports both ASDF trees and Roman DataModel objects.
 
         Parameters
         ----------
@@ -135,21 +136,33 @@ class ReferenceType(ABC):
         file_permission: octal string, default = 0o666
             Default file permission is rw-rw-rw- in symbolic notation meaning:
             owner, group and others have read and write permissions.
+
         """
         if self.outfile is None:
             raise ValueError("Output file path 'outfile' is not specified.")
 
-        # Use datamodel tree if supplied. Else write tree from module.
-        af = asdf.AsdfFile()
-        if datamodel_tree:
-            af.tree = {'roman': datamodel_tree}
-        else:
-            af.tree = {'roman': self.populate_datamodel_tree()}
+        # Resolve data model or tree
+        obj = datamodel_tree if datamodel_tree else self.populate_datamodel_tree()
 
         # check to see if file currently exists
         self.check_outfile()
 
-        af.write_to(self.outfile)
+        # ============================================================
+        # CASE 1: Roman DataModel 
+        # ============================================================
+        if hasattr(obj, "save"):
+            logging.info("Detected Roman DataModel. Using .save() method.")
+            obj.save(self.outfile)
+
+        # ============================================================
+        # CASE 2: ASDF tree / stnode - need to update to all use CASE 1 now
+        # ============================================================
+        else:
+            logging.info("Detected ASDF tree. Using AsdfFile writer.")
+            af = asdf.AsdfFile()
+            af.tree = {'roman': obj}
+            af.write_to(self.outfile)
+
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
 
