@@ -1,6 +1,6 @@
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
