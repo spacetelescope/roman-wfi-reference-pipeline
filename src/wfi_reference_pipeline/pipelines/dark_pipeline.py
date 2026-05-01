@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from datetime import datetime
 
 import roman_datamodels as rdm
 from romancal.dq_init import DQInitStep
@@ -87,9 +88,11 @@ class DarkPipeline(Pipeline):
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
-        # TODO - populate routine based DB entries for rfp_log_pro
-        # self.db_handler.db_entry.rfp_log_pro.
-        self.db_handler.update_db_entry()
+        if self.db_handler:
+            # TODO - this is no longer intended to be run in segments so pipeline_cmd is no longer needed
+            self.db_handler.db_entry.pipeline_cmd = "restart_pipeline"
+            self.db_handler.db_entry.input_file_list = files
+            self.db_handler.update_db_entry()
 
     # @log_info
     def prep_pipeline(self, file_list=None):
@@ -97,6 +100,7 @@ class DarkPipeline(Pipeline):
         Prepare calibration data files by running data through select romancal steps
         """
         logging.info("DARK PREP")
+        start_time = self._get_datetime_str_formatted()
 
         # Clean up previous runs
         self.prepped_files.clear()
@@ -136,9 +140,10 @@ class DarkPipeline(Pipeline):
             self.prepped_files.append(prep_output_file_path)
         self.qc.check_prep_pipeline()  # TODO - speak with rick about what to do on QC Failures
 
-        # TODO - populate routine based DB entries for rfp_log_pro
-        # self.db_handler.db_entry.rfp_log_pro.
-        self.db_handler.update_db_entry()
+        if self.db_handler:
+            self.db_handler.db_entry.prep_start = start_time
+            self.db_handler.db_entry.prep_end = self._get_datetime_str_formatted()
+            self.db_handler.update_db_entry()
 
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
@@ -282,11 +287,13 @@ class DarkPipeline(Pipeline):
 
         # TODO - populate routine based DB entries for rfp_log_pro
         # self.db_handler.db_entry.rfp_log_pro.
+        # verify with rick, no updates in DB for superdark?
         self.db_handler.update_db_entry()
 
     # @log_info
     def run_pipeline(self, file_list=None):
         logging.info("DARK PIPE")
+        start_time = self._get_datetime_str_formatted()
 
         if file_list is not None:
             file_list = list(map(Path, file_list))
@@ -317,9 +324,11 @@ class DarkPipeline(Pipeline):
         rfp_dark.generate_outfile()
         self.qc.check_pipeline(rfp_dark)  # TODO - discuss placement of this
 
-        # TODO - populate routine based DB entries for rfp_log_pro
-        # self.db_handler.db_entry.rfp_log_pro.
-        self.db_handler.update_db_entry()
+        if self.db_handler:
+            self.db_handler.db_entry.pipe_start = start_time
+            self.db_handler.db_entry.pipe_end = self._get_datetime_str_formatted()
+            self.db_handler.update_db_entry()
+
 
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
@@ -331,9 +340,17 @@ class DarkPipeline(Pipeline):
         self.db_handler.update_db_entry()
 
     def deliver(self):
-        # TODO - populate routine based DB entries for rfp_log_pro
-        # self.db_handler.db_entry.rfp_log_pro.
-        self.db_handler.update_db_entry()
+        if self.db_handler:
+            # TODO fill in these crds times
+            # self.db_handler.db_entry.qc_status # TODO implement this in stages
+            # self.db_handler.db_entry.crds_filename
+            # self.db_handler.db_entry.crds_context
+            # self.db_handler.db_entry.crds_end_time
+            # self.db_handler.db_entry.crds_start_time
+            # self.db_handler.db_entry.crds_delivered
+            self.db_handler.db_entry.end_time = self._get_datetime_str_formatted()
+            self.db_handler.update_db_entry()
+
 
     def restart_pipeline(self):
         """
@@ -371,3 +388,8 @@ class DarkPipeline(Pipeline):
             logging.debug(f"    {file}")
 
         return short_dark_file_list, long_dark_file_list
+
+    @staticmethod
+    def _get_datetime_str_formatted():
+        now = datetime.now()
+        return now.strftime("%Y-%m-%d %H:%M:%S")
