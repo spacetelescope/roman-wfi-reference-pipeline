@@ -5,6 +5,7 @@ try:
     from rtb_db.utilities.table_tools import (
         add_to_tables_from_class_list,
         ensure_connection_is_engine,
+        merge_db_entry,
     )
 except ImportError:
     logging.warning("Attempting to import rtb_db when not available, install package using rtb_db optional dependency")
@@ -124,5 +125,10 @@ class DBHandler:
         reef_monitor : bool
             Expecting external monitoring for this run.
         """
+        # Note: Currently not wrapping in a Try.  If database issues exist, please crash loudly
         self.db_entry.init_rfp_log_pro(ref_type, wfi_mode, reef_monitor)
         add_to_tables_from_class_list(self.db_engine, [self.db_entry.rfp_log_pro])
+
+    def update_db_entry(self):
+        # Note: Currently not wrapping in a Try.  If database issues exist, please crash loudly
+        merge_db_entry(self.db_engine, self.db_entry)
