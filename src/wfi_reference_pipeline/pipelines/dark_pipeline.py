@@ -87,6 +87,9 @@ class DarkPipeline(Pipeline):
 
         self.uncal_files = files
         logging.info(f"Ingesting {len(files)} Files: {files}")
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
 
     # @log_info
     def prep_pipeline(self, file_list=None):
@@ -132,6 +135,11 @@ class DarkPipeline(Pipeline):
 
             self.prepped_files.append(prep_output_file_path)
         self.qc.check_prep_pipeline()  # TODO - speak with rick about what to do on QC Failures
+
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
+
         logging.info("Finished PREPPING files to make DARK reference file from RFP")
 
     # @log_info
@@ -272,6 +280,10 @@ class DarkPipeline(Pipeline):
         superdark.generate_outfile()
         self.superdark_file = superdark.outfile
 
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
+
     # @log_info
     def run_pipeline(self, file_list=None):
         logging.info("DARK PIPE")
@@ -304,14 +316,24 @@ class DarkPipeline(Pipeline):
         )
         rfp_dark.generate_outfile()
         self.qc.check_pipeline(rfp_dark)  # TODO - discuss placement of this
+
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
+
         logging.info("Finished RFP to make DARK")
         print("Finished RFP to make DARK")
 
     def pre_deliver(self):
-        pass
+
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
 
     def deliver(self):
-        pass
+        # TODO - populate routine based DB entries for rfp_log_pro
+        # self.db_handler.db_entry.rfp_log_pro.
+        self.db_handler.update_db_entry()
 
     def restart_pipeline(self):
         """
