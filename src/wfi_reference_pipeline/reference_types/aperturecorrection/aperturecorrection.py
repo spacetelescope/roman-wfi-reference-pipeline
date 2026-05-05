@@ -1,12 +1,8 @@
 #import logging #uncomment if ever used
 
-import asdf
 import numpy as np
 import roman_datamodels.stnode as rds
 import stpsf
-from photutils.aperture import CircularAperture, aperture_photometry
-from poppy.utils import measure_radius_at_ee, radial_profile
-
 
 from wfi_reference_pipeline.constants import (
     WFI_REF_OPTICAL_ELEMENT_DARK,
