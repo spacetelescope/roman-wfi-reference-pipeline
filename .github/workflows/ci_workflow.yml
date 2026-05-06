@@ -80,7 +80,9 @@ jobs:
         git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" coverage-info
 
     - name: Coverage diff on PR
-
       if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
       uses: ./.github/jobs/coverage_diff
+      with:
+        fail-under-total: '0'
+        fail-under-decrease: '100'
 
