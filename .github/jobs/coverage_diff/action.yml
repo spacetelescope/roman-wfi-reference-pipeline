@@ -31,32 +31,14 @@ runs:
           echo "::warning:: Baseline branch '${{ inputs.baseline-branch }}' not found"
         fi
 
-    - name: Generate HTML coverage report
-      if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
-      shell: bash
-      run: coverage html -d htmlcov
-
-    - name: Upload HTML coverage artifact
-      if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-html
-        path: htmlcov
-
     - name: Run coverage diff
       if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        ARTIFACT_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
         set +e
-        python "${{ github.action_path }}/coverage_diff.py" \
-          /tmp/base-coverage.xml \
-          coverage.xml \
-          "${{ inputs.fail-under-total }}" \
-          "${{ inputs.fail-under-decrease }}" \
-          "$ARTIFACT_URL" > /tmp/coverage-comment.md
+        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-under-decrease }}" > /tmp/coverage-comment.md
         STATUS=$?
         set -e
         cat /tmp/coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
