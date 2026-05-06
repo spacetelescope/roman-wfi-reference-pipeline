@@ -203,7 +203,7 @@ def update_etc_form_from_crds(output_dir):
     saturation_filepaths = list(results.values())
 
     # -------------------------------
-    # READNOISE: update readnoise_avg with median readnoise from data array
+    # READNOISE: update readnoise with median readnoise from data array
     # -------------------------------
     for filepath in readnoise_filepaths:
         try:
@@ -212,15 +212,15 @@ def update_etc_form_from_crds(output_dir):
                 val = float(np.median(ref.data))
             if det in detectors_form:
                 detectors_form[det].update({
-                    "readnoise_avg": val,
+                    "readnoise": val,
                     "readnoise_on": True
                 })
-                print(f"{det}: readnoise_avg -> {val:.2f}")
+                print(f"{det}: readnoise -> {val:.2f}")
         except Exception as e:
             print(f"Error reading {filepath}: {e}")
 
     # -------------------------------
-    # DARK CURRENT: update dark_current_avg with mean of dark current rate array
+    # DARK CURRENT: update dark_current with mean of dark current rate array
     # -------------------------------
     for filepath in dark_filepaths:
         try:
@@ -229,15 +229,15 @@ def update_etc_form_from_crds(output_dir):
                 val = float(np.mean(ref.dark_slope))
             if det in detectors_form:
                 detectors_form[det].update({
-                    "dark_current_avg": val,
+                    "dark_current": val,
                     "dark_current_on": True
                 })
-                print(f"{det}: dark_current_avg -> {val:.3f}")
+                print(f"{det}: dark_current -> {val:.3f}")
         except Exception as e:
             print(f"Failed to process dark current {filepath}: {e}")
 
     # -------------------------------
-    # FLAT FIELD: update ff_electrons
+    # FLAT FIELD: update flat_field_electrons
     # -------------------------------
     for filepath in flat_filepaths:
         try:
@@ -248,10 +248,10 @@ def update_etc_form_from_crds(output_dir):
                     ff_electrons = 1.0 / (std_val ** 2)
                     if det in detectors_form:
                         detectors_form[det].update({
-                            "ff_electrons": ff_electrons,
-                            "ffnoise": True
+                            "flat_field_electrons": ff_electrons,
+                            "flat_field_noise_on": True
                         })
-                        print(f"{det}: ff_electrons -> {ff_electrons:.2f}")
+                        print(f"{det}: flat_field_electrons -> {ff_electrons:.2f}")
         except Exception as e:
             print(f"Failed to process flat field {filepath}: {e}")
 
