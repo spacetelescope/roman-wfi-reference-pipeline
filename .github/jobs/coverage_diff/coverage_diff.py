@@ -49,14 +49,11 @@ for fn in sorted(set(base_files) | set(pr_files)):
     p_rate, missing = p
     if fn in base_files and abs(p_rate - b_rate) < 0.01:
         continue
-    miss = ", ".join(map(str, missing[:30])) or "—"
-    if len(missing) > 30:
-        miss += f", … (+{len(missing) - 30})"
-    rows.append(f"| `{fn}` | {b_rate:.2f}% | {p_rate:.2f}% | {p_rate - b_rate:+.2f} | {miss} |")
+    rows.append(f"| `{fn}` | {b_rate:.2f}% | {p_rate:.2f}% | {p_rate - b_rate:+.2f} |")
 
 if rows:
-    print("| File | Base | PR | Δ | Uncovered lines |")
-    print("|---|---:|---:|---:|---|")
+    print("| File | Base | PR | Δ |")
+    print("|---|---:|---:|---:|")
     print("\n".join(rows))
 else:
     print("_No files changed coverage._")
