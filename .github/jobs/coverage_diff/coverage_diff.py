@@ -14,7 +14,8 @@ def parse(path):
     files = {}
     for class_file in root.iter("class"):
         rate = float(class_file.get("line-rate", 0)) * 100
-        files[class_file.get("filename")] = rate
+        filename = class_file.get("filename").split("site-packages/", 1)[-1]
+        files[filename] = rate
     return total, files
 
 
