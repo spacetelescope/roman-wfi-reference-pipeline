@@ -84,5 +84,5 @@ jobs:
       uses: ./.github/jobs/coverage_diff
       with:
         fail-under-total: '0'
-        fail-under-decrease: '100'
+        fail-under-file-decrease: '100'
 

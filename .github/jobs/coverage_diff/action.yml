@@ -11,8 +11,8 @@ inputs:
     description: 'Fail if total PR coverage % is below this value'
     default: '0'
     required: false
-  fail-under-decrease:
-    description: 'Fail if total coverage drops by more than this many points'
+  fail-under-file-decrease:
+    description: 'Fail if any single file''s coverage drops by more than this many points'
     default: '100'
     required: false
 
@@ -38,7 +38,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: |
         set +e
-        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-under-decrease }}" > /tmp/coverage-comment.md
+        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-under-file-decrease }}" > /tmp/coverage-comment.md
         STATUS=$?
         set -e
         cat /tmp/coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
