@@ -1,6 +1,6 @@
 """Build a PR coverage-diff comment from two Cobertura XML reports.
 
-Usage: coverage_diff.py BASE_XML PR_XML FAIL_UNDER_TOTAL FAIL_UNDER_FILE_DECREASE
+Usage: coverage_diff.py BASE_XML PR_XML FAIL_UNDER_TOTAL FAIL_FILE_DECREASE
 Prints markdown to stdout. Exits 1 if a threshold is breached.
 """
 

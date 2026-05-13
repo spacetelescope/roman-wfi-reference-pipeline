@@ -8,11 +8,11 @@ inputs:
     default: 'coverage-info'
     required: false
   fail-under-total:
-    description: 'Fail if total PR coverage % is below this value'
+    description: 'Fail if total coverage % drops below this value'
     default: '0'
     required: false
-  fail-under-file-decrease:
-    description: 'Fail if any single file''s coverage drops by more than this many points'
+  fail-file-decrease:
+    description: 'Fail if the coverage for a file drops by more than this many points'
     default: '100'
     required: false
 
@@ -35,10 +35,10 @@ runs:
       if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        set +e
-        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-under-file-decrease }}" > /tmp/coverage-comment.md
+        GH_TOKEN: ${{ github.token }} # Works with default token, no special setup needed
+      run: | # set +e is used to prevent the script from exiting if the coverage diff script fails
+        set +e 
+        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-file-decrease }}" > /tmp/coverage-comment.md
         STATUS=$?
         set -e
         cat /tmp/coverage-comment.md >> "$GITHUB_STEP_SUMMARY"

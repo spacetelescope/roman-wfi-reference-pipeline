@@ -83,6 +83,5 @@ jobs:
       if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
       uses: ./.github/jobs/coverage_diff
       with:
-        fail-under-total: '0'
-        fail-under-file-decrease: '100'
-
+        fail-under-total: '0' # Will fail the PR if total coverage drops below 0%
+        fail-file-decrease: '100' # Will fail the PR if any single file's coverage drops by more than 100%
