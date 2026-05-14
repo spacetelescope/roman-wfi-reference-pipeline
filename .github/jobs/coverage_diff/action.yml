@@ -1,7 +1,8 @@
 # Schema: https://json.schemastore.org/github-action.json
-# Compares PR coverage against a baseline branch and posts a summary comment.
+# Compares PR coverage against a baseline branch and writes the diff to the run summary.
+# No PR comment: fork PRs get a read-only GITHUB_TOKEN, so `gh pr comment` fails.
 name: 'Coverage Diff'
-description: 'Compare PR coverage against a baseline branch and post a summary comment on the PR'
+description: 'Compare PR coverage against a baseline branch and write the diff to the run summary'
 inputs:
   baseline-branch:
     description: 'Branch containing the baseline coverage.xml'
@@ -42,5 +43,5 @@ runs:
         STATUS=$?
         set -e
         cat /tmp/coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
-        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/coverage-comment.md
+
         exit $STATUS
