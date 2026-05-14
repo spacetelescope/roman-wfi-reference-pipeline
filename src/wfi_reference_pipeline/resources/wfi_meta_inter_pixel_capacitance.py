@@ -6,9 +6,9 @@ from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
 
 
 @dataclass
-class WFIMetaIPC(WFIMetadata):
+class WFIMetaInterPixelCapacitance(WFIMetadata):
     """
-    Class WFIMetaIPC() Metadata Specific to IPC Reference File Type
+    Class WFIMetaInterPixelCapacitance() Metadata Specific to IPC Reference File Type
     inherits WFIMetadata
     All Fields are required and positional with base class fields first
 
@@ -19,7 +19,7 @@ class WFIMetaIPC(WFIMetadata):
 
     def __post_init__(self, ref_optical_element):
         super().__post_init__()
-        self.reference_type = constants.REF_TYPE_IPC
+        self.reference_type = constants.REF_TYPE_INTERPIXELCAPACITANCE
         self.optical_element = ref_optical_element
 
     def export_asdf_meta(self):

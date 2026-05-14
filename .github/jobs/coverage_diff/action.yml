@@ -1,0 +1,46 @@
+# Schema: https://json.schemastore.org/github-action.json
+# Compares PR coverage against a baseline branch and posts a summary comment.
+name: 'Coverage Diff'
+description: 'Compare PR coverage against a baseline branch and post a summary comment on the PR'
+inputs:
+  baseline-branch:
+    description: 'Branch containing the baseline coverage.xml'
+    default: 'coverage-info'
+    required: false
+  fail-under-total:
+    description: 'Fail if total coverage % drops below this value'
+    default: '0'
+    required: false
+  fail-file-decrease:
+    description: 'Fail if the coverage for a file drops by more than this many points'
+    default: '100'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch baseline coverage
+      id: fetch_baseline
+      shell: bash
+      run: |
+        if git fetch origin ${{ inputs.baseline-branch }} 2>/dev/null; then
+          git show origin/${{ inputs.baseline-branch }}:coverage.xml > /tmp/base-coverage.xml
+          echo "baseline_found=true" >> $GITHUB_OUTPUT
+        else
+          echo "baseline_found=false" >> $GITHUB_OUTPUT
+          echo "::warning:: Baseline branch '${{ inputs.baseline-branch }}' not found"
+        fi
+
+    - name: Run coverage diff
+      if: ${{ steps.fetch_baseline.outputs.baseline_found == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }} # Works with default token, no special setup needed
+      run: | # set +e is used to prevent the script from exiting if the coverage diff script fails
+        set +e 
+        python "${{ github.action_path }}/coverage_diff.py" /tmp/base-coverage.xml coverage.xml "${{ inputs.fail-under-total }}" "${{ inputs.fail-file-decrease }}" > /tmp/coverage-comment.md
+        STATUS=$?
+        set -e
+        cat /tmp/coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
+        gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/coverage-comment.md
+        exit $STATUS

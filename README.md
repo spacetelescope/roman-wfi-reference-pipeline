@@ -5,6 +5,7 @@
 >
 > If you have questions, see the CONTRIBUTING.md.
 
+![Coverage](https://raw.githubusercontent.com/spacetelescope/roman-wfi-reference-pipeline/coverage-info/coverage-badge.svg)
 
 ## Installation
 
@@ -57,6 +58,31 @@ You will need to set some environmental variables and create some driver configu
 
 If experiencing any issues connecting to the server, please check out the [rtbdb troubleshooting](https://grit.stsci.edu/roman/rtb-database#connecting-to-the-server-and-troubleshooting).
 
+
+## Continuous Integration
+
+The CI workflow (`.github/workflows/ci_workflow.yml`) runs on every PR and on pushes to `main`. It:
+
+1. Lints with `ruff`.
+2. Runs `pytest` with coverage.
+3. On PRs to `main`, posts a per-file coverage diff against the `coverage-info` branch (the latest `main` baseline).
+4. On pushes to `main`, updates the coverage badge and `coverage.xml` on the `coverage-info` branch.
+
+### Tuning the coverage gate
+
+The PR coverage check is configured at the bottom of `ci_workflow.yml`:
+
+```yaml
+- name: Coverage diff on PR
+  uses: ./.github/jobs/coverage_diff
+  with:
+    fail-under-total: '0'    # Fail PR if total coverage drops below this %
+    fail-file-decrease: '100' # Fail PR if any file's coverage drops more than this many points
+```
+
+Raise `fail-under-total` to enforce a minimum overall coverage. Lower `fail-file-decrease` to block PRs that significantly reduce any single file's coverage. The defaults above effectively disable the gate.
+
+The CI requires the existance of a branch named `coverage-info` which contains the baseline coverage.xml file.
 
 ## Contributing
 > [!WARNING]
@@ -111,3 +137,21 @@ See the update_reference_files.py script in examples that was done for Build 17 
 navigate to central store's roman directory, then:
 ./RFP/DEV/py_scripts_notebooks/build_pyscripts/update_all_TVAC_CRDS_ref_files.py
 ```
+
+## Creating a New (SOC) Calibration Reference File Type in this Repository
+
+These instructions are currently for adding new calibration reference file types are that Science Operations Center (SOC) will utilize in development with the Roman Calibration Pipeline (romancal). Instructions for external community derived products will be provided at a later date. 
+<!-- TODO: replace with updated information -->
+
+
+To create a new reference file type, please see [New Reference Type Meta Data Workflow Example](src/docs/new_reftype_meta_example_workflow.md) This allows a new
+effect or calibration reference file type to be defined within the structure of the repository. 
+
+For a detailed walkthrough on how to create a new reference type class, see the  
+[New Reference Type Class Example](src/docs/new_reftype_class_example.md).
+
+Once your module is implemented, you can follow the testing guidelines and examples here:  
+[Basic Testing for New Reference Types](src/docs/new_reftype_class_basic_tests_example.md).
+
+These resources provide step-by-step examples to help ensure both your implementation and test coverage follow the expected structure and conventions used throughout the pipeline.
+

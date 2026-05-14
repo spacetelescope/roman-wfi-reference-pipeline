@@ -11,7 +11,7 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
 from wfi_reference_pipeline.reference_types.gain.gain import Gain
-from wfi_reference_pipeline.reference_types.interpixelcapacitance.interpixelcapacitance import (
+from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import (
     InterPixelCapacitance,
 )
 from wfi_reference_pipeline.reference_types.inverselinearity.inverselinearity import (

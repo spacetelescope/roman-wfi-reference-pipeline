@@ -2,12 +2,22 @@
 
 name: roman-wfi-reference-pipeline
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  COVERAGE: true  
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +43,45 @@ jobs:
     - name: Ruff Test
       run: |
         ruff check ./src
-    - name: Pytest with coverage
+    - name: Run pytest with coverage
+      id: run_pytest_coverage
+      uses: ./.github/jobs/pytest
+      with:
+        coverage: ${{ env.COVERAGE }}
+
+    - name: Generate coverage badge and summary
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: genbadge coverage -i coverage.xml -o coverage-badge.svg
+
+    - name: Push badge to coverage-info branch
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        pytest --cov=wfi_reference_pipeline --cov-report=xml
+        mkdir -p "$RUNNER_TEMP/coverage-artifacts"
+        mv coverage-badge.svg coverage.xml "$RUNNER_TEMP/coverage-artifacts/"
+
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        if ! git ls-remote --exit-code --heads origin coverage-info >/dev/null 2>&1; then
+          echo "coverage-info branch does not exist on origin; skipping publish"
+          exit 0
+        fi
+
+        git fetch origin coverage-info
+        git checkout -B coverage-info origin/coverage-info
+        git rm -rf . >/dev/null 2>&1 || true
+
+        mv "$RUNNER_TEMP/coverage-artifacts/"* .
+        git add coverage-badge.svg coverage.xml
+        
+        git commit -m "Update coverage badge [skip ci]"
+        git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" coverage-info
+
+    - name: Coverage diff on PR
+      if: ${{ env.COVERAGE == 'true' && github.event_name == 'pull_request' && github.base_ref == 'main'}}
+      uses: ./.github/jobs/coverage_diff
+      with:
+        fail-under-total: '0' # Will fail the PR if total coverage drops below 0%
+        fail-file-decrease: '100' # Will fail the PR if any single file's coverage drops by more than 100%
