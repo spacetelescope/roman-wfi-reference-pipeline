@@ -137,3 +137,10 @@ class ReadnoisePipeline(Pipeline):
         rfp_readnoise.generate_outfile()
         logging.info("Finished RFP to make READNOISE")
         print("Finished RFP to make READNOISE")
+
+
+    def pre_deliver(self):
+        return super().pre_deliver()
+    
+    def deliver(self):
+        return super().deliver()
