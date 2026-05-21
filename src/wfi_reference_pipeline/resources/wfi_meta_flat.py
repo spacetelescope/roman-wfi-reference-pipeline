@@ -38,3 +38,70 @@ class WFIMetaFlat(WFIMetadata):
                            },
         }
         return asdf_meta
+
+
+@dataclass
+class WFIMetaPixelFlat(WFIMetadata):
+    """
+    Class WFIMetaPixelFlat() Metadata Specific to Pixel Level Flat Reference File Product
+    inherits WFIMetadata
+    All Fields are required and positional with base class fields first
+    """
+
+    # These are required reftype specific
+    ref_optical_element: InitVar[Optional[List[str]]] = []
+
+    def __post_init__(self, ref_optical_element):
+        super().__post_init__()
+        self.reference_type = constants.REF_TYPE_FLAT_PIXEL
+        self.optical_element = ref_optical_element
+
+    def export_asdf_meta(self):
+        asdf_meta = {
+            # Common meta
+            'reftype': self.reference_type,
+            'pedigree': self.pedigree,
+            'description': self.description,
+            'author': self.author,
+            'useafter': self.use_after,
+            'telescope': self.telescope,
+            'origin': self.origin,
+            'instrument': {'name': self.instrument,
+                           'detector': self.instrument_detector,
+                           'optical_element': self.optical_element
+                           },
+        }
+        return asdf_meta
+
+@dataclass
+class WFIMetaLargeFlat(WFIMetadata):
+    """
+    Class WFIMetaLargeFlat() Metadata Specific to Pixel Level Flat Reference File Product
+    inherits WFIMetadata
+    All Fields are required and positional with base class fields first
+    """
+
+    # These are required reftype specific
+    ref_optical_element: InitVar[Optional[List[str]]] = []
+
+    def __post_init__(self, ref_optical_element):
+        super().__post_init__()
+        self.reference_type = constants.REF_TYPE_FLAT_LARGE
+        self.optical_element = ref_optical_element
+
+    def export_asdf_meta(self):
+        asdf_meta = {
+            # Common meta
+            'reftype': self.reference_type,
+            'pedigree': self.pedigree,
+            'description': self.description,
+            'author': self.author,
+            'useafter': self.use_after,
+            'telescope': self.telescope,
+            'origin': self.origin,
+            'instrument': {'name': self.instrument,
+                           'detector': self.instrument_detector,
+                           'optical_element': self.optical_element
+                           },
+        }
+        return asdf_meta
