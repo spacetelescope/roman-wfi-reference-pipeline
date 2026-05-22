@@ -5,7 +5,6 @@ import pytest
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline
 
-
 # Constants to help with mocking
 PIPELINE_MODULE = "wfi_reference_pipeline.pipelines.readnoise_pipeline"
 BASE_MODULE = "wfi_reference_pipeline.pipelines.pipeline"
