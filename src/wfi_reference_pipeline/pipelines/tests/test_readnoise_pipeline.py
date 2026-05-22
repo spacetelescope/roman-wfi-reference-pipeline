@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from wfi_reference_pipeline.constants import REF_TYPE_READNOISE as REF_TYPE
-from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline as PipelineClass
+from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
+from wfi_reference_pipeline.pipelines.readnoise_pipeline import ReadnoisePipeline
 
 PIPELINE_MODULE = "wfi_reference_pipeline.pipelines.readnoise_pipeline"
 BASE_MODULE = "wfi_reference_pipeline.pipelines.pipeline"
@@ -24,7 +24,7 @@ def pipeline(mocker):
     mocker.patch(f"{BASE_MODULE}.get_db_config", return_value=STUB_DB_CONFIG)
     mocker.patch(f"{BASE_MODULE}.FileHandler")
     mocker.patch(f"{BASE_MODULE}.DBHandler")
-    return PipelineClass("WFI01")
+    return ReadnoisePipeline("WFI01")
 
 
 # Mock rdm.open + every romancal Step.call that prep_pipeline invokes.
@@ -66,16 +66,16 @@ def mock_run_internals(pipeline, mocker):
 # Portable across pipelines as-is.
 
 def test_init_sets_correct_ref_type(pipeline):
-    assert pipeline.ref_type == REF_TYPE
+    assert pipeline.ref_type == REF_TYPE_READNOISE
 
 
 def test_init_normalises_detector_to_uppercase(pipeline):
-    assert PipelineClass("wfi05").detector == "WFI05"
+    assert ReadnoisePipeline("wfi05").detector == "WFI05"
 
 
 def test_init_rejects_invalid_detector(pipeline):
     with pytest.raises(KeyError):
-        PipelineClass("WFI99")
+        ReadnoisePipeline("WFI99")
 
 
 # ---- select_uncal_files ---------------------------------------------------
