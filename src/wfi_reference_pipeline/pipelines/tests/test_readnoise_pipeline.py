@@ -41,14 +41,17 @@ def mock_prep_internals(mocker):
 
 ### __init__ tests ###
 
+# Pipeline should report the correct readnoise reference type
 def test_init_sets_correct_ref_type(pipeline):
     assert pipeline.ref_type == REF_TYPE_READNOISE
 
 
+# Detector IDs should be stored in a canonical uppercase
 def test_init_normalises_detector_to_uppercase(pipeline):
     assert ReadnoisePipeline("wfi05").detector == "WFI05"
 
 
+# Unknown detector IDs should be rejected
 def test_init_rejects_invalid_detector(pipeline):
     with pytest.raises(KeyError):
         ReadnoisePipeline("WFI99")
@@ -57,6 +60,7 @@ def test_init_rejects_invalid_detector(pipeline):
 ### select_uncal_files tests ###
 # More tests need to be added as the pipeline is developed about the files in uncal_files
 
+# After selection runs, uncal_files should be set even if no matching files were found
 def test_select_uncal_files_sets_uncal_files_not_none(pipeline, mocker):
     pipeline.ingest_path = mocker.MagicMock()
     pipeline.ingest_path.glob.return_value = iter([])
@@ -68,6 +72,7 @@ def test_select_uncal_files_sets_uncal_files_not_none(pipeline, mocker):
 
 ### prep_pipeline tests ###
 
+# Prep should produce exactly one prepped output per input file
 def test_prep_pipeline_produces_one_prepped_file_per_input(pipeline, mock_prep_internals):
     pipeline.file_handler.format_prep_output_file_path.side_effect = (
         lambda name: Path(f"/stub/prep/{name}")
@@ -78,6 +83,7 @@ def test_prep_pipeline_produces_one_prepped_file_per_input(pipeline, mock_prep_i
     assert len(pipeline.prepped_files) == 3
 
 
+# When no file list is passed in, prep should fall back to self.uncal_files
 def test_prep_pipeline_defaults_to_self_uncal_files(pipeline, mock_prep_internals):
     pipeline.uncal_files = ["/stub/ingest/from_self.asdf"]
     pipeline.file_handler.format_prep_output_file_path.return_value = (
@@ -89,6 +95,7 @@ def test_prep_pipeline_defaults_to_self_uncal_files(pipeline, mock_prep_internal
     assert len(pipeline.prepped_files) == 1
 
 
+# Re-running prep should clear leftover prepped files from a prior run before writing new ones
 def test_prep_pipeline_clears_stale_state(pipeline, mock_prep_internals):
     pipeline.prepped_files = ["/stub/prep/leftover.asdf"]
     pipeline.file_handler.format_prep_output_file_path.return_value = (
