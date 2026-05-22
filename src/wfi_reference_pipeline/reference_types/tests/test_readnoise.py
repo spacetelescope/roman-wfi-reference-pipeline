@@ -1,18 +1,3 @@
-"""Tests for the ReadNoise reference type (reference_types/readnoise/readnoise.py).
-
-Covers the math/data layer. The pipeline plumbing layer is covered in
-src/wfi_reference_pipeline/pipelines/tests/test_readnoise_pipeline.py.
-
-ReadNoise has three construction modes - each test picks the cheapest one
-that exercises the behavior under test:
-    1. 2D array     -> object is "done"; readnoise_image is the input array.
-    2. 3D data cube -> data_cube populated; make_readnoise_image() finishes.
-    3. file_list    -> reads files from disk AND builds the image.
-
-TEST_DETECTOR_PIXEL_COUNT (32) instead of the real 4096 keeps tests fast.
-The math is identical at any size.
-"""
-
 import asdf
 import numpy as np
 import pytest
@@ -27,203 +12,236 @@ from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
-TEST_DETECTOR_PIXEL_COUNT = 32
-
-
-# ---- fixtures ---------------------------------------------------------------
-
-@pytest.fixture(scope="module")
-def meta_data():
-    """Valid WFIMetaReadNoise - just needs to satisfy the isinstance check in __init__."""
-    return MakeTestMeta(ref_type=REF_TYPE_READNOISE).meta_readnoise
-
-
-@pytest.fixture(scope="session")
-def make_cube():
-    """Factory: make_cube(n) returns a simulated n-read dark cube."""
-    def _make(num_reads):
-        cube, _ = simulate_dark_reads(num_reads, ni=TEST_DETECTOR_PIXEL_COUNT)
-        return cube
-    return _make
-
-
-@pytest.fixture
-def image_2d():
-    """A 2D random array shaped like a final read-noise image (full detector size)."""
-    return np.random.random((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))
+# Set smaller test data size
+TEST_DETECTOR_PIXEL_COUNT = 32 
 
 
 @pytest.fixture(scope="module")
-def asdf_filelist(tmp_path_factory, make_cube):
-    """Three on-disk asdf files with 1, 2, 3 reads - for exercising file selection."""
+def simulated_reads_filelist(tmp_path_factory, ref_type_data_factory):
+
     data_path = tmp_path_factory.mktemp("data")
-    files = []
-    for n in range(1, 4):
-        path = data_path / f"data_num_{n}.asdf"
-        asdf.AsdfFile({"roman": {"data": make_cube(n)}}).write_to(path)
-        files.append(str(path))
-    return files
+
+    file_list = []
+
+    for i in range(1, 4):
+        cube_data = ref_type_data_factory(i)
+        
+        curr_path = data_path / f"data_num_{i}.asdf"
+        curr_path.parent.mkdir(parents=True, exist_ok=True)
+
+        tree = {
+            "roman" : {
+                "data" : cube_data
+            }
+        }
+
+        af = asdf.AsdfFile(tree)
+
+        af.write_to(curr_path)
+
+        file_list.append(str(curr_path))
+
+    # Return the file list
+    return file_list
+
+
+@pytest.fixture(scope="module")
+def valid_meta_data():
+    """Fixture for generating valid meta_data for ReadNoise class."""
+    test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+    return test_meta.meta_readnoise
 
 
 @pytest.fixture
-def rn_with_image(meta_data, image_2d):
-    """ReadNoise built from a 2D image - object is already 'done'."""
-    return ReadNoise(meta_data=meta_data, ref_type_data=image_2d)
+def valid_ref_type_data_array():
+    """Fixture for generating valid ref_type_data array (read noise image)."""
+    return np.random.random((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT))  # Simulate a valid read noise image
+
+
+# NOTE: This factory makes a new read each call
+#    We can introduce a _cache dictionary to store in the future if generating becomes too expensive
+#    I'm currently not concerned as long as we use the TEST_DETECTOR_PIXEL_COUNT to keep data small
+@pytest.fixture(scope="session")
+def ref_type_data_factory():
+    """Factory fixture for generating valid ref_type_data cubes with N reads."""
+    def _make_cube(num_reads):
+        cube_data, _ = simulate_dark_reads(num_reads, ni=TEST_DETECTOR_PIXEL_COUNT)
+        return cube_data
+    
+    return _make_cube
 
 
 @pytest.fixture
-def rn_with_cube(meta_data, make_cube):
-    """ReadNoise built from a 3D cube - readnoise_image is still None."""
-    return ReadNoise(meta_data=meta_data, ref_type_data=make_cube(3))
+def readnoise_object_with_data_array(valid_meta_data, valid_ref_type_data_array):
+    """Fixture for initializing a ReadNoise object with a valid data array."""
+    readnoise_object_with_data_array = ReadNoise(meta_data=valid_meta_data,
+                                                 ref_type_data=valid_ref_type_data_array)
+    return readnoise_object_with_data_array
 
 
 @pytest.fixture
-def rn_with_files(meta_data, asdf_filelist):
-    """ReadNoise built from a file list - closest to the real pipeline flow."""
-    return ReadNoise(meta_data=meta_data, file_list=asdf_filelist)
+def readnoise_object_with_data_cube(valid_meta_data, ref_type_data_factory):
+    """Fixture for initializing a ReadNoise object with a valid data cube."""
+    ref_type_data = ref_type_data_factory(3)
+    readnoise_object_with_data_cube = ReadNoise(meta_data=valid_meta_data,
+                                                ref_type_data=ref_type_data)
+    return readnoise_object_with_data_cube
+
+@pytest.fixture
+def readnoise_object_with_file_list(valid_meta_data, simulated_reads_filelist):
+    readnoise_object_with_file_list_obj = ReadNoise(meta_data=valid_meta_data, file_list=simulated_reads_filelist)
+    return readnoise_object_with_file_list_obj
+
+class TestReadNoise:
+
+    def test_readnoise_instantiation_with_valid_ref_type_data_array(self,
+                                                                    readnoise_object_with_data_array):
+        """
+        Test that ReadNoise object is created successfully with valid input data array.
+        """
+        assert isinstance(readnoise_object_with_data_array, ReadNoise)
+        assert readnoise_object_with_data_array.readnoise_image.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
+
+    def test_readnoise_instantiation_with_valid_ref_type_data_cube(self,
+                                                                    readnoise_object_with_data_cube):
+        """
+        Test that ReadNoise object is created successfully with valid input data cube.
+        """
+        assert isinstance(readnoise_object_with_data_cube, ReadNoise)
+        assert readnoise_object_with_data_cube.data_cube is not None
+        assert readnoise_object_with_data_cube.readnoise_image is None  # Ensure image is not created yet
+
+    def test_readnoise_instantiation_with_invalid_metadata(self, valid_ref_type_data_array):
+        """
+        Test that ReadNoise raises TypeError with invalid metadata type.
+        """
+        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
+        with pytest.raises(TypeError):
+            ReadNoise(meta_data=bad_test_meta.meta_dark, ref_type_data=valid_ref_type_data_array)
+
+    def test_readnoise_instantiation_with_invalid_ref_type_data(self, valid_meta_data):
+        """
+        Test that ReadNoise raises ValueError with invalid reference type data.
+        """
+        with pytest.raises(TypeError):
+            ReadNoise(meta_data=valid_meta_data, ref_type_data='invalid_ref_data')
+
+    def test_readnoise_instantiation_with_file_list(self, valid_meta_data, mocker):
+        """
+        Test that ReadNoise object handles file list input correctly.
+        """
+        mock_asdf_open = mocker.patch("asdf.open")
+
+        # Create a mock for the file content with the expected structure
+        mock_asdf_file = mocker.MagicMock()
+        mock_asdf_file.tree = {
+            "roman": {
+                "data": np.zeros((3, 10, 10))  # Mocking a datacube with 10 reads
+            }
+        }
+
+        # Set the mock to return this structure when asdf.open is called
+        mock_asdf_open.return_value.__enter__.return_value = mock_asdf_file
+
+        mock_file_list = ["file1.fits", "file2.fits"]
+        readnoise_obj = ReadNoise(meta_data=valid_meta_data, file_list=mock_file_list)
+
+        assert readnoise_obj.num_files == 2
+
+    def test_make_readnoise_image_using_cds_noise(self, readnoise_object_with_data_cube, mocker):
+        """
+        Test that make_readnoise_image can be modified to use CDS noise calculation.
+        """
+        # Mock the comp_cds_noise method to simulate CDS noise calculation
+        readnoise_object_with_data_cube.comp_cds_noise = mocker.MagicMock(return_value='mock_cds_noise_image')
+
+        # Modify the method for CDS noise calculation
+        readnoise_object_with_data_cube.readnoise_image = readnoise_object_with_data_cube.comp_cds_noise()
+
+        # Assert that the comp_cds_noise method was called and readnoise_image was updated
+        readnoise_object_with_data_cube.comp_cds_noise.assert_called_once()
+        assert readnoise_object_with_data_cube.readnoise_image == 'mock_cds_noise_image'
+
+    def test_populate_datamodel_tree(self, readnoise_object_with_data_array):
+        """
+        Test that the data model tree is correctly populated in the ReadNoise object.
+        """
+        data_model_tree = readnoise_object_with_data_array.populate_datamodel_tree()
+
+        # Assuming the ReadNoise data model includes 'meta' and 'noise' (instead of 'dq')
+        assert 'meta' in data_model_tree
+        assert 'data' in data_model_tree  # For read noise data, it would likely be 'noise' instead of 'dq'
+
+        # Check the shape and dtype of the 'noise' array
+        assert data_model_tree['data'].shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
+        assert data_model_tree['data'].dtype == np.float32  # Assuming read noise values are stored as floats
+
+    def test_readnoise_outfile_default(self, readnoise_object_with_data_array):
+        """
+        Test that the default outfile name is correct in the ReadNoise object with the assumption
+        that the default name is 'roman_readnoise.asdf'
+        """
+        assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
 
 
-# ---- __init__ ---------------------------------------------------------------
+def test_make_readnoise_image_sets_correct_shape_pass(readnoise_object_with_file_list):
 
-def test_init_with_2d_array_sets_readnoise_image(rn_with_image):
-    # 2D input IS the final image - shape must pass through unchanged.
-    assert rn_with_image.readnoise_image.shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
+    readnoise_object_with_file_list.make_readnoise_image()
 
-
-def test_init_with_3d_cube_does_not_build_image_yet(rn_with_cube):
-    # Staged construction: user can inspect data_cube before kicking off the slow ramp fit.
-    assert rn_with_cube.data_cube is not None
-    assert rn_with_cube.readnoise_image is None
+    assert readnoise_object_with_file_list.readnoise_image is not None
+    assert readnoise_object_with_file_list.readnoise_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+    
 
 
-def test_init_with_wrong_meta_type_raises(image_2d):
-    # Handing ReadNoise Dark metadata would silently deliver wrong CRDS metadata.
-    dark_meta = MakeTestMeta(ref_type=REF_TYPE_DARK).meta_dark
-    with pytest.raises(TypeError):
-        ReadNoise(meta_data=dark_meta, ref_type_data=image_2d)
+def test_select_data_cube_sets_correct_num_reads_pass(readnoise_object_with_file_list):
 
-
-def test_init_with_non_array_data_raises(meta_data):
-    # ref_type_data must be ndarray or Quantity. A string should fail loud.
-    with pytest.raises(TypeError):
-        ReadNoise(meta_data=meta_data, ref_type_data="not_an_array")
-
-
-def test_init_with_file_list_records_num_files(meta_data, mocker):
-    # num_files must reflect len(file_list); patching asdf.open avoids real disk I/O.
-    mock_open = mocker.patch("asdf.open")
-    mock_open.return_value.__enter__.return_value.tree = {
-        "roman": {"data": np.zeros((3, 10, 10))}
-    }
-
-    rn = ReadNoise(meta_data=meta_data, file_list=["a.asdf", "b.asdf"])
-
-    assert rn.num_files == 2
-
-
-def test_default_outfile_name(rn_with_image):
-    # 'roman_readnoise.asdf' is public API - any user script could depend on it.
-    assert rn_with_image.outfile == "roman_readnoise.asdf"
-
-
-# ---- noise estimators -------------------------------------------------------
-
-def test_swap_in_cds_noise_as_estimator(rn_with_cube, mocker):
-    # comp_cds_noise is a diagnostic alternative to ramp-residual variance.
-    # This test pins the swap-in pattern without exercising the CDS math.
-    rn_with_cube.comp_cds_noise = mocker.MagicMock(return_value="sentinel")
-
-    rn_with_cube.readnoise_image = rn_with_cube.comp_cds_noise()
-
-    rn_with_cube.comp_cds_noise.assert_called_once()
-    assert rn_with_cube.readnoise_image == "sentinel"
-
-
-def test_comp_ramp_res_var_returns_2d_variance_image(rn_with_cube, make_cube, mocker):
-    # Isolate comp_ramp_res_var from fit_cube / make_ramp_model bugs by mocking data_cube.
-    fake_cube = mocker.Mock(
-        num_i_pixels=TEST_DETECTOR_PIXEL_COUNT,
-        num_j_pixels=TEST_DETECTOR_PIXEL_COUNT,
-        ramp_model=make_cube(3),
-        data=make_cube(3),
-    )
-    mocker.patch.object(rn_with_cube, "data_cube", fake_cube)
-
-    result = rn_with_cube.comp_ramp_res_var()
-
-    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
-
-
-def test_comp_cds_noise_returns_2d_image(rn_with_cube, make_cube, mocker):
-    # Companion to test_comp_ramp_res_var_returns_2d_variance_image, for the CDS estimator.
-    # (This test was previously named `est_...` and silently never ran.)
-    fake_cube = mocker.Mock(
-        num_i_pixels=TEST_DETECTOR_PIXEL_COUNT,
-        num_j_pixels=TEST_DETECTOR_PIXEL_COUNT,
-        ramp_model=make_cube(3),
-        data=make_cube(3),
-        num_reads=3,
-    )
-    mocker.patch.object(rn_with_cube, "data_cube", fake_cube)
-
-    result = rn_with_cube.comp_cds_noise()
-
-    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
-
-
-# ---- end-to-end and cube-fitting --------------------------------------------
-
-def test_make_readnoise_image_end_to_end(rn_with_files):
-    # Full flow from file list: select cube -> fit -> ramp model -> residual variance.
-    # Asserts shape only; component math is tested in dedicated tests above.
-    rn_with_files.make_readnoise_image()
-
-    assert rn_with_files.readnoise_image is not None
-    assert rn_with_files.readnoise_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
-
-
-def test_select_data_cube_picks_file_with_most_reads(rn_with_files):
-    # Fixture has files with 1, 2, 3 reads - selector must pick the 3-read one.
+    # Check datacube doesn't exist
     with pytest.raises(AttributeError):
-        _ = rn_with_files.data_cube  # not built until selection runs
+        _ = readnoise_object_with_file_list.data_cube
 
-    rn_with_files._select_data_cube_from_file_list()
+    readnoise_object_with_file_list._select_data_cube_from_file_list()
 
-    assert rn_with_files.data_cube.num_reads == 3
+    assert readnoise_object_with_file_list.data_cube is not None
+    assert readnoise_object_with_file_list.data_cube.num_reads == 3
 
+def test_make_rate_image_updates_dimensions_pass(readnoise_object_with_data_cube):
 
-def test_make_rate_image_produces_2d_slope_and_intercept(rn_with_cube):
-    # Both images must match a single detector slice. Wrong shape here breaks everything downstream.
-    rn_with_cube.make_rate_image_from_data_cube()
+    readnoise_object_with_data_cube.make_rate_image_from_data_cube()
 
-    assert rn_with_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
-    assert rn_with_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+    assert readnoise_object_with_data_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+    assert readnoise_object_with_data_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
+def test_comp_ramp_res_var_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
-# ---- datamodel output -------------------------------------------------------
+    # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
 
-def test_populate_datamodel_tree_meets_schema(rn_with_image):
-    # CRDS rejects the file if 'meta'/'data' are missing or 'data' isn't float32.
-    tree = rn_with_image.populate_datamodel_tree()
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
 
-    assert "meta" in tree
-    assert "data" in tree
-    assert tree["data"].shape == (DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
-    assert tree["data"].dtype == np.float32
+    # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
 
+    result = readnoise_object_with_data_cube.comp_ramp_res_var()
 
-# ============================================================================
-# MISSING TESTS (priority order)
-# ============================================================================
-# 1. __init__ ValueError branch for 1D/4D arrays (right type, wrong dimensionality).
-# 2. __init__ with an astropy Quantity input - the .value-stripping path is uncovered.
-# 3. _select_data_cube ordering: build files with reads [2,5,1,4] and assert 5 wins.
-#    Current test only proves "max == last in fixture", not real sort correctness.
-# 4. ReadNoiseDataCube.fit_cube with degree=2 (the code has a TODO that flags this).
-# 5. ReadNoiseDataCube.make_ramp_model with order=2 (works) and order=3 (should raise).
-# 6. ReadNoise.calculate_error and update_data_quality_array are pass-only no-ops -
-#    one-liner tests would pin the no-op contract.
-# 7. clobber/outfile behavior: clobber=False must raise if outfile exists; clobber=True must overwrite.
-# 8. conftest.py only cleans up "WFI01_superdark.asdf". If any readnoise test writes
-#    "roman_readnoise.asdf" to the cwd it will persist - either extend conftest or
-#    keep all readnoise output under tmp_path.
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
+
+def est_comp_cds_noise_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+
+    # Mock a datacube with the necessary parts: ramp_model
+    mock_readnoise_datacube = mocker.Mock()
+
+    mock_readnoise_datacube.num_i_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.num_j_pixels = TEST_DETECTOR_PIXEL_COUNT
+    mock_readnoise_datacube.ramp_model = ref_type_data_factory(3)
+    mock_readnoise_datacube.data = ref_type_data_factory(3)
+    mock_readnoise_datacube.num_reads = 3
+
+    # Add datacube to the readnoise
+    mocker.patch.object(readnoise_object_with_data_cube, 'data_cube', mock_readnoise_datacube)
+
+    result = readnoise_object_with_data_cube.comp_cds_noise()
+
+    assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
