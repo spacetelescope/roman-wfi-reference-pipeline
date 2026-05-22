@@ -59,7 +59,8 @@ def test_init_rejects_invalid_detector(pipeline):
 # More tests need to be added as the pipeline is developed about the files in uncal_files
 
 def test_select_uncal_files_sets_uncal_files_not_none(pipeline, mocker):
-    mocker.patch.object(pipeline.ingest_path, "glob", return_value=iter([]))
+    pipeline.ingest_path = mocker.MagicMock()
+    pipeline.ingest_path.glob.return_value = iter([])
 
     pipeline.select_uncal_files()
 
