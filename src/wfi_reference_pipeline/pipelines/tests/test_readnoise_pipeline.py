@@ -16,9 +16,11 @@ STUB_CONFIG = {
 STUB_DB_CONFIG = {"use_rtbdb": False}
 
 
-# Pipeline instance with all base-class I/O mocked
 @pytest.fixture
 def pipeline(mocker):
+    """
+    Pipeline instance with all base-class I/O mocked
+    """
     mocker.patch(f"{BASE_MODULE}.configure_logging")
     mocker.patch(f"{BASE_MODULE}.get_data_files_config", return_value=STUB_CONFIG)
     mocker.patch(f"{BASE_MODULE}.get_db_config", return_value=STUB_DB_CONFIG)
@@ -27,10 +29,12 @@ def pipeline(mocker):
     return ReadnoisePipeline("WFI01")
 
 
-# Mock rdm.open and every romancal Step.call that prep_pipeline invokes
-# Even if it is not used as a fixture, the mocks are still ran
 @pytest.fixture
 def mock_prep_internals(mocker):
+    """
+    Mock rdm.open and every romancal Step.call that prep_pipeline invokes
+    Patches take effect for any test that requests this fixture, even if the returned object isn't referenced
+    """
     fake_result = mocker.MagicMock()
     fake_result.meta.filename = "sample_uncal.asdf"
     mocker.patch(f"{PIPELINE_MODULE}.rdm.open")
@@ -41,27 +45,36 @@ def mock_prep_internals(mocker):
 
 ### __init__ tests ###
 
-# Pipeline should report the correct readnoise reference type
 def test_init_sets_correct_ref_type_pass(pipeline):
+    """
+    Pipeline should report the correct readnoise reference type
+    """
     assert pipeline.ref_type == REF_TYPE_READNOISE
 
 
-# Detector IDs should be stored in a canonical uppercase
 def test_init_normalises_detector_to_uppercase_pass(pipeline):
+    """
+    Detector IDs should be stored in canonical uppercase
+    """
     assert ReadnoisePipeline("wfi05").detector == "WFI05"
 
 
-# Unknown detector IDs should be rejected
 def test_init_rejects_invalid_detector_pass(pipeline):
+    """
+    Unknown detector IDs should be rejected
+    """
     with pytest.raises(KeyError):
         ReadnoisePipeline("WFI99")
 
 
 ### select_uncal_files tests ###
-# More tests need to be added as the pipeline is developed about the files in uncal_files
+# TODO: More tests need to be added as the pipeline is developed about the files in uncal_files
 
-# After selection runs, uncal_files should be set even if no matching files were found
+
 def test_select_uncal_files_sets_uncal_files_not_none_pass(pipeline, mocker):
+    """
+    After selection runs, uncal_files should be set even if no matching files were found
+    """
     pipeline.ingest_path = mocker.MagicMock()
     pipeline.ingest_path.glob.return_value = iter([])
 
@@ -72,8 +85,10 @@ def test_select_uncal_files_sets_uncal_files_not_none_pass(pipeline, mocker):
 
 ### prep_pipeline tests ###
 
-# Prep should produce exactly one prepped output per input file
 def test_prep_pipeline_produces_one_prepped_file_per_input_pass(pipeline, mock_prep_internals):
+    """
+    Prep should produce exactly one prepped output per input file
+    """
     pipeline.file_handler.format_prep_output_file_path.side_effect = (
         lambda name: Path(f"/stub/prep/{name}")
     )
@@ -83,8 +98,10 @@ def test_prep_pipeline_produces_one_prepped_file_per_input_pass(pipeline, mock_p
     assert len(pipeline.prepped_files) == 3
 
 
-# When no file list is passed in, prep should fall back to self.uncal_files
 def test_prep_pipeline_defaults_to_self_uncal_files_pass(pipeline, mock_prep_internals):
+    """
+    When no file list is passed in, prep should fall back to self.uncal_files
+    """
     pipeline.uncal_files = ["/stub/ingest/from_self.asdf"]
     pipeline.file_handler.format_prep_output_file_path.return_value = (
         Path("/stub/prep/x.asdf")
@@ -95,8 +112,10 @@ def test_prep_pipeline_defaults_to_self_uncal_files_pass(pipeline, mock_prep_int
     assert len(pipeline.prepped_files) == 1
 
 
-# Re-running prep should clear leftover prepped files from a prior run before writing new ones
 def test_prep_pipeline_clears_stale_state_pass(pipeline, mock_prep_internals):
+    """
+    Re-running prep should clear leftover prepped files from a prior run before writing new ones
+    """
     pipeline.prepped_files = ["/stub/prep/leftover.asdf"]
     pipeline.file_handler.format_prep_output_file_path.return_value = (
         Path("/stub/prep/new.asdf")
@@ -109,4 +128,4 @@ def test_prep_pipeline_clears_stale_state_pass(pipeline, mock_prep_internals):
 
 
 ### run_pipeline tests ###
-# More tests need to be added as the pipeline is developed
+# TODO: More tests need to be added as the pipeline is developed

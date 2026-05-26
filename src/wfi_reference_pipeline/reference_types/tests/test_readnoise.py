@@ -18,6 +18,9 @@ TEST_DETECTOR_PIXEL_COUNT = 32
 
 @pytest.fixture(scope="module")
 def simulated_reads_filelist(tmp_path_factory, ref_type_data_factory):
+    """
+    Fixture for creating a shared directory of .asdf files
+    """
 
     data_path = tmp_path_factory.mktemp("data")
 
@@ -184,19 +187,20 @@ class TestReadNoise:
         assert readnoise_object_with_data_array.outfile == "roman_readnoise.asdf"
 
 
-# From a file list input, make_readnoise_image should produce a detector-shaped image
 def test_make_readnoise_image_sets_correct_shape_pass(readnoise_object_with_file_list):
-
+    """
+    From a file list input, make_readnoise_image should produce a detector-shaped image
+    """
     readnoise_object_with_file_list.make_readnoise_image()
 
     assert readnoise_object_with_file_list.readnoise_image is not None
     assert readnoise_object_with_file_list.readnoise_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
 
-
-# Selecting a data cube from the file list should populate data_cube with the expected number of reads
 def test_select_data_cube_sets_correct_num_reads_pass(readnoise_object_with_file_list):
-
+    """
+    Selecting a data cube from the file list should populate data_cube with the expected number of reads
+    """
     # Check datacube doesn't exist
     with pytest.raises(AttributeError):
         _ = readnoise_object_with_file_list.data_cube
@@ -206,17 +210,21 @@ def test_select_data_cube_sets_correct_num_reads_pass(readnoise_object_with_file
     assert readnoise_object_with_file_list.data_cube is not None
     assert readnoise_object_with_file_list.data_cube.num_reads == 3
 
-# Building a rate image from the data cube should populate detector-shaped rate and intercept images
-def test_make_rate_image_updates_dimensions_pass(readnoise_object_with_data_cube):
 
+def test_make_rate_image_updates_dimensions_pass(readnoise_object_with_data_cube):
+    """
+    Building a rate image from the data cube should populate detector-shaped rate and intercept images
+    """
     readnoise_object_with_data_cube.make_rate_image_from_data_cube()
 
     assert readnoise_object_with_data_cube.data_cube.rate_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
     assert readnoise_object_with_data_cube.data_cube.intercept_image.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
-# The ramp residual variance computation should return a detector-shaped array
-def test_comp_ramp_res_var_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
 
+def test_comp_ramp_res_var_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
+    """
+    The ramp residual variance computation should return a detector-shaped array
+    """
     # Mock a datacube with the necessary parts: ramp_model
     mock_readnoise_datacube = mocker.Mock()
 
@@ -232,9 +240,10 @@ def test_comp_ramp_res_var_output_matches_pixel_count_pass(readnoise_object_with
 
     assert result.shape == (TEST_DETECTOR_PIXEL_COUNT, TEST_DETECTOR_PIXEL_COUNT)
 
-# The CDS noise computation should return a detector-shaped array
 def test_comp_cds_noise_output_matches_pixel_count_pass(readnoise_object_with_data_cube, ref_type_data_factory, mocker):
-
+    """
+    The CDS noise computation should return a detector-shaped array
+    """
     # Mock a datacube with the necessary parts: ramp_model
     mock_readnoise_datacube = mocker.Mock()
 
