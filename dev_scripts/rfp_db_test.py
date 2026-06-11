@@ -25,7 +25,7 @@ def main(args=None):
     Runs ZERO steps of the wfi_reference_pipeline but will add to database.
 
     To use:
-    `python rfp_db_test.py DARK WFI01 /grp/roman/RFP/DEV/build_files/Build_26Q3_B22/roman_dark_B21_RGC_WFI01.asdf`
+    `python rfp_db_test.py DARK WFI01 /path/to/output_file.asdf`
     """
 
     parser = argparse.ArgumentParser(
