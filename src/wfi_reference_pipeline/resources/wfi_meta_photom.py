@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
+from typing import List, Optional
 
 import wfi_reference_pipeline.constants as constants
 from wfi_reference_pipeline.resources.wfi_metadata import WFIMetadata
@@ -13,9 +14,16 @@ class WFIMetaPhotom(WFIMetadata):
 
     """
 
-    def __post_init__(self):
+    # These are required reftype specific
+    # Setting the initial gain values to 1
+    ref_median_gain: InitVar[float] = 1.0
+    ref_sigma_gain: InitVar[float] = 1.0
+
+    def __post_init__(self, ref_median_gain, ref_sigma_gain):
         super().__post_init__()
         self.reference_type = constants.REF_TYPE_PHOTOM
+        self.median_gain = ref_median_gain
+        self.sigma_gain = ref_sigma_gain
 
     def export_asdf_meta(self):
         asdf_meta = {
@@ -28,7 +36,9 @@ class WFIMetaPhotom(WFIMetadata):
             'telescope': self.telescope,
             'origin': self.origin,
             'instrument': {'name': self.instrument,
-                           'detector': self.instrument_detector
+                           'detector': self.instrument_detector,
+                           'median_gain': self.median_gain,
+                           'sigma_gain': self.sigma_gain
                            },
         }
         return asdf_meta

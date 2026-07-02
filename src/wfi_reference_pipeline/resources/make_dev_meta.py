@@ -27,6 +27,7 @@ from wfi_reference_pipeline.constants import (
     WFI_PEDIGREE,
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
+    COLLECTING_AREA_M2,
 )
 from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
     WFIMetaABVegaMagnitudeOffset,
@@ -209,7 +210,11 @@ class MakeDevMeta:
         )
 
     def _create_dev_meta_photom(self, meta_data):
-        self.meta_photom = WFIMetaPhotom(*meta_data)
+        ref_median_gain = 1.0
+        ref_sigma_gain = 1.0
+
+        photom_meta_data = [ref_median_gain, ref_sigma_gain]
+        self.meta_photom = WFIMetaPhotom(*meta_data, *photom_meta_data)
 
     def _create_dev_meta_readnoise(self, meta_data):
         mode = WFI_MODE_WIM
