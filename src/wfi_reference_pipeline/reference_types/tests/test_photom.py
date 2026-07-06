@@ -25,7 +25,7 @@ def photom_object(valid_meta_data):
     return photom_object
 
 
-class TestETC:
+class TestPhotom:
 
     def test_photom_instantiation_with_valid_metadata(
         self,
@@ -36,7 +36,6 @@ class TestETC:
         """
         assert isinstance(photom_object, Photom)
         assert isinstance(photom_object.meta_data, WFIMetaPhotom)
-
 
 
     def test_photom_instantiation_with_invalid_metadata(
@@ -51,8 +50,6 @@ class TestETC:
             Photom(
                 meta_data=bad_test_meta.meta_epsf,
             )
-
-
 
 
     def test_populate_datamodel_tree(
@@ -77,7 +74,7 @@ class TestETC:
         assert 'sigma_gain' in keys
 
 
-    def test_etc_outfile_default(
+    def test_photom_outfile_default(
         self,
         photom_object,
     ):
