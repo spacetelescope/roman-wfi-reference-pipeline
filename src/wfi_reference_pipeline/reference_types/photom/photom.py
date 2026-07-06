@@ -3,44 +3,29 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import crds
 import numpy as np
 import roman_datamodels as rdm
-import crds
-from crds.client import api
-
-from astropy.stats import sigma_clipped_stats
-from astropy.io import ascii
-from astropy import units as u
-
 import synphot as syn
-# from synphot import SpectralElement
+from astropy import units as u
+from astropy.io import ascii
+from astropy.stats import sigma_clipped_stats
+from crds.client import api
+from roman_datamodels.datamodels import WfiImgPhotomRefModel
 from synphot.models import Empirical1D
 
-
-from roman_datamodels.datamodels import PixelareaRefModel, WfiImgPhotomRefModel
-
-from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import PixelArea
-
-from wfi_reference_pipeline.resources.wfi_meta_pixel_area import (
-    WFIMetaPixelArea,
+from wfi_reference_pipeline.constants import (
+    COLLECTING_AREA_M2,
+    WFI_REF_OPTICAL_ELEMENTS,
 )
-
+from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import PixelArea
+from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.resources.wfi_meta_photom import (
     WFIMetaPhotom,
 )
 
-from wfi_reference_pipeline.constants import (
-    COLLECTING_AREA_M2, WFI_REF_OPTICAL_ELEMENTS 
-)
-
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-
 from ..reference_type import ReferenceType
 
-
-### Remove these two lines
-import pdb
-print('test6 reloading')
 
 class Photom(ReferenceType):
     """Class PhotomPSF() inherits the ReferenceType() base class methods
@@ -201,10 +186,10 @@ class Photom(ReferenceType):
             eaq = eff_area_m2.to(u.m**2)            # Quantity [m^2]
 
             # Throughput = A_eff / A_coll (dimensionless ndarray)
-            T = (eaq / (COLLECTING_AREA_M2 * u.m**2)).decompose().value.astype(np.float32)
+            thru_table = (eaq / (COLLECTING_AREA_M2 * u.m**2)).decompose().value.astype(np.float32)
 
             # Build bandpass from throughput usign STsynphot function
-            band = syn.SpectralElement(Empirical1D, points=wq, lookup_table=T)
+            band = syn.SpectralElement(Empirical1D, points=wq, lookup_table=thru_table)
             pivot = band.pivot()
             unit_resp = band.unit_response(COLLECTING_AREA_M2 * u.m**2)
 

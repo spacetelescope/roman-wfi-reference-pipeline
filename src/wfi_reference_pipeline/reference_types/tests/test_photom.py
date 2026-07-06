@@ -2,9 +2,8 @@ import pytest
 
 from wfi_reference_pipeline.constants import REF_TYPE_EPSF, REF_TYPE_PHOTOM
 from wfi_reference_pipeline.reference_types.photom.photom import (
-    Photom, 
+    Photom,
 )
-
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.resources.wfi_meta_photom import (
     WFIMetaPhotom,

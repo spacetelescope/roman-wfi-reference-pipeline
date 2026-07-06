@@ -27,7 +27,6 @@ from wfi_reference_pipeline.constants import (
     WFI_PEDIGREE,
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
-    COLLECTING_AREA_M2,
 )
 from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
     WFIMetaABVegaMagnitudeOffset,
