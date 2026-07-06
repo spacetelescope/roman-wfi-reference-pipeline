@@ -301,6 +301,9 @@ def gain():
     print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
     print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
 
+    # Setting CRDS_SERVER_URL manually to Roman's
+    os.environ['CRDS_SERVER_URL'] = 'https://roman-crds.stsci.edu'
+
     crds_context = crds.get_default_context(observatory='roman', state='latest')
     print(f"CRDS context: {crds_context}")
 
