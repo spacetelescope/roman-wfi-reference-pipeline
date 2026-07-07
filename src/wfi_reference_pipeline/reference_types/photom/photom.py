@@ -28,7 +28,7 @@ from ..reference_type import ReferenceType
 
 
 class Photom(ReferenceType):
-    """Class PhotomPSF() inherits the ReferenceType() base class methods
+    """Class Photom() inherits the ReferenceType() base class methods
     where static meta data for all reference file types are written. The
     method creates the asdf reference file.
 
@@ -301,10 +301,8 @@ def gain():
     print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
     print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
 
-    # Setting CRDS_SERVER_URL manually to Roman's
-    os.environ['CRDS_SERVER_URL'] = 'https://roman-crds.stsci.edu'
-
     crds_context = crds.get_default_context(observatory='roman', state='latest')
+
     print(f"CRDS context: {crds_context}")
 
     if os.path.exists(output_dir):

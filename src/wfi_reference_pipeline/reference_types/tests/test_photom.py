@@ -1,8 +1,11 @@
 import pytest
+from unittest.mock import MagicMock
+
+import numpy as np
 
 from wfi_reference_pipeline.constants import REF_TYPE_EPSF, REF_TYPE_PHOTOM
 from wfi_reference_pipeline.reference_types.photom.photom import (
-    Photom,
+    Photom, gain
 )
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
 from wfi_reference_pipeline.resources.wfi_meta_photom import (
@@ -10,77 +13,82 @@ from wfi_reference_pipeline.resources.wfi_meta_photom import (
 )
 
 
-@pytest.fixture
-def valid_meta_data():
-    """Fixture for generating valid WFIMetaPhotom metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_PHOTOM)
-    return test_meta.meta_photom
+BASE_MODULE = 'wfi_reference_pipeline.reference_types.photom.photom'
+GAIN_DICT = {
+    'WFI01': {'median': 1.5, 'std': np.float32(0.05)}, 
+    'WFI02': {'median': 1.5, 'std': np.float32(0.05)}, 
+    'WFI03': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI04': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI05': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI06': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI07': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI08': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI09': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI10': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI11': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI12': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI13': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI14': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI15': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI16': {'median': 1.5, 'std': np.float32(0.05)},
+    'WFI17': {'median': 1.5, 'std': np.float32(0.05)},         
+    'WFI18': {'median': 1.5, 'std': np.float32(0.05)}
+}
+PHOTOM_META = MakeTestMeta(ref_type=REF_TYPE_PHOTOM)
+BAD_TEST_META = MakeTestMeta(ref_type=REF_TYPE_EPSF)
 
 
 
 @pytest.fixture
-def photom_object(valid_meta_data):
+def photom_object(mocker):
     """Fixture for initializing a Photom object with valid data."""
-    photom_object = Photom(meta_data=valid_meta_data)  
-    return photom_object
+    mocker.patch(f'{BASE_MODULE}.gain', return_value=GAIN_DICT) 
+    return Photom(meta_data=PHOTOM_META.meta_photom)
 
 
-class TestPhotom:
+# Tests
+def test_photom_instantiation_with_valid_ref_type(photom_object):
+    """
+    Test that Photom object is created successfully with valid reference type.
+    """
+    assert photom_object.meta.reference_type == REF_TYPE_PHOTOM
+ 
+        
 
-    def test_photom_instantiation_with_valid_metadata(
-        self,
-        photom_object,
-    ):
-        """
-        Test that Photom object is created successfully with valid metadata.
-        """
-        assert isinstance(photom_object, Photom)
-        assert isinstance(photom_object.meta_data, WFIMetaPhotom)
+def test_photom_instantiation_with_invalid_metadata(mocker):
+    """
+    Test that Photom raises TypeError with invalid metadata type.
+    """
 
+    mocker.patch(f'{BASE_MODULE}.gain', return_value=GAIN_DICT) 
 
-    def test_photom_instantiation_with_invalid_metadata(
-        self
-    ):
-        """
-        Test that Photom raises TypeError with invalid metadata type.
-        """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_EPSF)
-
-        with pytest.raises(TypeError):
-            Photom(
-                meta_data=bad_test_meta.meta_epsf,
-            )
+    with pytest.raises(TypeError):
+        Photom(meta_data=BAD_TEST_META.meta_epsf)
 
 
-    def test_populate_datamodel_tree(
-        self,
-        photom_object,
-    ):
-        """
-        Test that the datamodel tree is correctly populated.
-        """
-        data_model_tree = (
-            photom_object.populate_datamodel_tree()
-        )
+def test_populate_datamodel_tree(photom_object):
+    """
+    Test that the datamodel tree is correctly populated.
+    """
+    data_model_tree = (
+        photom_object.populate_datamodel_tree()
+    )
 
-        assert 'meta' in data_model_tree
-        assert 'phot_table' in data_model_tree
+    assert 'meta' in data_model_tree
+    assert 'phot_table' in data_model_tree
 
-        assert isinstance(data_model_tree['phot_table'], dict)
+    assert isinstance(data_model_tree['phot_table'], dict)
 
-        keys = data_model_tree['meta']['instrument'].keys()
-        assert 'detector' in keys
-        assert 'median_gain' in keys
-        assert 'sigma_gain' in keys
+    keys = data_model_tree['meta']['instrument'].keys()
+    assert 'detector' in keys
+    assert 'median_gain' in keys
+    assert 'sigma_gain' in keys
 
 
-    def test_photom_outfile_default(
-        self,
-        photom_object,
-    ):
-        """
-        Test that the default outfile name is correct.
-        """
-        assert (
-            photom_object.outfile == 'roman_photom_file.asdf'
-        )
+def test_photom_outfile_default(photom_object):
+    """
+    Test that the default outfile name is correct.
+    """
+    assert (
+        photom_object.outfile == 'roman_photom_file.asdf'
+    )
