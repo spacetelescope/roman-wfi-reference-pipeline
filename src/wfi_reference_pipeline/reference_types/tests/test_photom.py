@@ -1,17 +1,10 @@
-import pytest
-from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 
 from wfi_reference_pipeline.constants import REF_TYPE_EPSF, REF_TYPE_PHOTOM
-from wfi_reference_pipeline.reference_types.photom.photom import (
-    Photom, gain
-)
+from wfi_reference_pipeline.reference_types.photom.photom import Photom
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
-from wfi_reference_pipeline.resources.wfi_meta_photom import (
-    WFIMetaPhotom,
-)
-
 
 BASE_MODULE = 'wfi_reference_pipeline.reference_types.photom.photom'
 GAIN_DICT = {
