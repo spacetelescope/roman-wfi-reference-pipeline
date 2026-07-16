@@ -24,6 +24,7 @@ from wfi_reference_pipeline.constants import (
     WFI_PEDIGREE,
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
+    REF_TYPE_DESCRIPTION
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
@@ -59,7 +60,7 @@ from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
-
+from datetime import datetime, timedelta
 
 class MakeOpsMeta:
     """
@@ -216,16 +217,67 @@ class MakeOpsMeta:
         ref_type: str;
             String defining the reference file type which will determine the reference
             meta object created.
+
+        description notes:
+
+        This first bit below is for standard routine deliveries and is the reason for delivery
+        typically posted in the CRDS context update for the description for the delivery.
+            "Delivering (18) new WFI dark reference files for imaging and spectral "
+            "modes, WIM and WSM. "
+            "This delivery is a weekly routine dark reference file delivery for data "
+            "from 2026-07-08 through 2026-07-15. "
+
+        The next part of the description is for the specific files. Below is a detailed exampled
+        of what should be considered the gold standard for RFP and RTB delvieries to CRDS.
+            "Dark calibration reference file containing the dark slope, dark slope "
+            "error, and DQ arrays derived from the TVAC1 and TVAC2 Thermal Vacuum "
+            "Tests of the Roman Wide Field Instrument (WFI). The calibration combines "
+            "the Total Noise (OTP00639) and Dark (OTP00644) datasets consisting of "
+            "100 55-frame dark exposures with 3.04 s frame times for a 170.3 s total "
+            "exposure from TVAC1, plus 100 55-frame dark exposures with 3.16 s frame "
+            "times for a 177.1 s total exposure from TVAC2, and 4 350-frame long dark "
+            "exposures with 3.16 s frame times for an approximately 1110 s total "
+            "exposure from the TVAC2 Dark dataset, all acquired during the Nominal "
+            "Operations environmental plateau using the flight detectors and flight "
+            "focal plane electronics."
         """
 
+        # TODO check how to assign useafter to ref files taken throughout the week
+        date_now = datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        date_start = date_now - timedelta(days=7)
+
+        ref_type_name = REF_TYPE_DESCRIPTION[ref_type]
+
+        reason_for_delivery_string = (
+            f"Delivering (18) new WFI {ref_type_name} reference files for imaging "
+            f"and spectral modes, WIM and WSM. "
+            f"This delivery is a weekly routine {ref_type_name} reference file "
+            f"delivery for data from {date_start:%Y-%m-%d} through "
+            f"{date_now:%Y-%m-%d}. "
+        )
+
         pedigree = "INFLIGHT"
-        description = "For RFP testing."
+        DEFAULT_DESCRIPTION = "Add description."
+        description = reason_for_delivery_string + DEFAULT_DESCRIPTION
         author = "RFP Version"
-        use_after = "2026-12-01T00:00:00.000"
+        try:
+            use_after = date_start.strftime("%Y-%m-%dT%H:%M:%S.000")
+        except (AttributeError, ValueError):
+            use_after = "2026-12-01T00:00:00.000"
         telescope = "ROMAN"
         origin = "STSCI/SOC"
         instrument = "WFI"
-        detector = "WFI01"
+        detector = "WFI01"  # Default - needs to be updated and checked for each instance
+
+        """
+        TODO for later - check if default description is still in meta data and wasn't changed. Raise warning or error.
+        if DEFAULT_DESCRIPTION in description:
+            warnings.warn("Using the default placeholder description.")
+        
+        """
+
 
         if ref_type not in WFI_REF_TYPES:
             raise ValueError(f"ref_type must be one of: {WFI_REF_TYPES}")
