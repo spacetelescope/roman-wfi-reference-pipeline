@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
+    DEFAULT_DESCRIPTION,
     REF_TYPE_DARK,
     REF_TYPE_DARKDECAYSIGNAL,
     REF_TYPE_DESCRIPTION,
@@ -28,7 +29,6 @@ from wfi_reference_pipeline.constants import (
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
 )
-from wfi_reference_pipeline.constants import DEFAULT_DESCRIPTION
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
