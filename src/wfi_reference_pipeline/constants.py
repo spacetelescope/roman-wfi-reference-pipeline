@@ -115,6 +115,28 @@ REF_TYPE_SATURATION = "SATURATION"
 REF_TYPE_SIMPSF = "SIMPSF"
 REF_TYPE_SUPERBIAS = "SUPERBIAS"
 
+REF_TYPE_DESCRIPTION = {
+    REF_TYPE_DARK: "dark",
+    REF_TYPE_DARKDECAYSIGNAL: "dark decay signal",
+    REF_TYPE_DETECTORSTATUS: "detector status",
+    REF_TYPE_EPSF: "empirical PSF",
+    REF_TYPE_ETC: "exposure time calculator",
+    REF_TYPE_FGS_MASK: "FGS mask",
+    REF_TYPE_FLAT: "flat field",
+    REF_TYPE_GAIN: "gain",
+    REF_TYPE_INTEGRALNONLINEARITY: "integral nonlinearity",
+    REF_TYPE_INVERSELINEARITY: "inverse linearity",
+    REF_TYPE_INTERPIXELCAPACITANCE: "interpixel capacitance",
+    REF_TYPE_LINEARITY: "linearity",
+    REF_TYPE_MASK: "mask",
+    REF_TYPE_PIXELAREA: "pixel area",
+    REF_TYPE_PHOTOM: "photometric calibration",
+    REF_TYPE_READNOISE: "readnoise",
+    REF_TYPE_REFPIX: "reference pixel",
+    REF_TYPE_SATURATION: "saturation",
+}
+
+DEFAULT_DESCRIPTION = "Add description."
 
 WFI_REF_TYPES = {
     REF_TYPE_ABVEGAMAGNITUDEOFFSET,

@@ -28,6 +28,7 @@ from wfi_reference_pipeline.constants import (
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
 )
+from wfi_reference_pipeline.constants import DEFAULT_DESCRIPTION
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
@@ -69,9 +70,9 @@ class MakeOpsMeta:
     Class to generate any complete reference file MetaData object.
 
     Example Usage:
+    from wfi_reference_pipeline.resources.make_ops_meta import MakeOpsMeta
     ops_meta_maker = MakeOpsMeta("DARK")
     dark_meta_data = ops_meta_maker.meta_dark
-
     """
 
     def _create_ops_meta_dark(self, meta_data):
@@ -255,13 +256,12 @@ class MakeOpsMeta:
         reason_for_delivery_string = (
             f"Delivering (18) new WFI {ref_type_name} reference files for imaging "
             f"and spectral modes, WIM and WSM. "
-            f"This delivery is a weekly routine {ref_type_name} reference file "
+            f"This is a routine {ref_type_name} reference file "
             f"delivery for data from {date_start:%Y-%m-%d} through "
             f"{date_now:%Y-%m-%d}. "
         )
 
         pedigree = "INFLIGHT"
-        DEFAULT_DESCRIPTION = "Add description."
         description = reason_for_delivery_string + DEFAULT_DESCRIPTION
         author = "RFP Version"
         try:
