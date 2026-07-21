@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
+
 from astropy import units as u
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
     REF_TYPE_DARKDECAYSIGNAL,
+    REF_TYPE_DESCRIPTION,
     REF_TYPE_DETECTORSTATUS,
     REF_TYPE_EPSF,
     REF_TYPE_ETC,
@@ -24,7 +27,6 @@ from wfi_reference_pipeline.constants import (
     WFI_PEDIGREE,
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
-    REF_TYPE_DESCRIPTION
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
@@ -60,7 +62,7 @@ from wfi_reference_pipeline.resources.wfi_meta_referencepixel import (
     WFIMetaReferencePixel,
 )
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
-from datetime import datetime, timedelta
+
 
 class MakeOpsMeta:
     """
