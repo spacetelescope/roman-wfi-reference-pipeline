@@ -27,6 +27,27 @@ GAIN_DICT = {
     'WFI17': {'median': 1.5, 'std': np.float32(0.05)},         
     'WFI18': {'median': 1.5, 'std': np.float32(0.05)}
 }
+PAM_DICT = {
+    'WFI01': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13}, 
+    'WFI02': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13}, 
+    'WFI03': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI04': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI05': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI06': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI07': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI08': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI09': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI10': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI11': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI12': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI13': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI14': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI15': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI16': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},
+    'WFI17': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13},         
+    'WFI18': {'pixelarea_arcsecsq': 0.011, 'pixelarea_steradians': 2.789e-13}
+}
+
 PHOTOM_META = MakeTestMeta(ref_type=REF_TYPE_PHOTOM)
 BAD_TEST_META = MakeTestMeta(ref_type=REF_TYPE_EPSF)
 
@@ -34,8 +55,8 @@ BAD_TEST_META = MakeTestMeta(ref_type=REF_TYPE_EPSF)
 
 @pytest.fixture
 def photom_object(mocker):
-    """Fixture for initializing a Photom object with valid data."""
-    mocker.patch(f'{BASE_MODULE}.gain', return_value=GAIN_DICT) 
+    """Fixture for initializing a Photom object with valid data.""" 
+    mocker.patch(f'{BASE_MODULE}.build_gain_and_pam_dict_from_crds', return_value=[GAIN_DICT, PAM_DICT])
     return Photom(meta_data=PHOTOM_META.meta_photom)
 
 
@@ -51,9 +72,8 @@ def test_photom_instantiation_with_valid_ref_type(photom_object):
 def test_photom_instantiation_with_invalid_metadata(mocker):
     """
     Test that Photom raises TypeError with invalid metadata type.
-    """
-
-    mocker.patch(f'{BASE_MODULE}.gain', return_value=GAIN_DICT) 
+    """ 
+    mocker.patch(f'{BASE_MODULE}.build_gain_and_pam_dict_from_crds', return_value=[GAIN_DICT, PAM_DICT])
 
     with pytest.raises(TypeError):
         Photom(meta_data=BAD_TEST_META.meta_epsf)

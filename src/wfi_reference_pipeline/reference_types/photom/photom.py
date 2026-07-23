@@ -74,7 +74,11 @@ class Photom(ReferenceType):
         self.phot_table = {}
 
         # Build the gain dictionary upon the initialization  
-        self.gain = gain()
+        self.gain, self.pam = build_gain_and_pam_dict_from_crds()
+        # import pdb
+        # pdb.set_trace()
+
+        # self.gain = gain()
 
         # Check if the gain dictionary is properly populated
         # should be a dictionary containing the gain values for all 18 detectors
@@ -84,7 +88,20 @@ class Photom(ReferenceType):
             
             if len(self.gain) != 18:
                 raise ValueError('Gain dictionary does not contain information for all 18 detectors')
-                
+        elif self.gain is None:
+            raise ValueError('The PAM dictionary is empty. Check the reference file exists')                       
+
+        # Check if the pam dictionary is properly populated
+        # should be a dictionary containing the pam values for all 18 detectors
+        if self.pam is not None:
+            if not isinstance(self.pam, dict):
+                raise ValueError('The PAM must be a dictionary')
+            
+            if len(self.pam) != 18:
+                raise ValueError('PAM dictionary does not contain information for all 18 detectors')
+        elif self.pam is None:
+            raise ValueError('The PAM dictionary is empty. Check the reference file exists')                       
+        # self.pam = pam()
 
     def populate_datamodel_tree(self):
         """
@@ -169,7 +186,7 @@ class Photom(ReferenceType):
             elif filter == 'GRISM':
                 filter = 'Grism_1stOrder'
             
-            col = throughput_table[filter].data.astype(np.float64)  # safe math
+            col = throughput_table[filter].data.astype(np.float32)  # safe math
             waves_micron = throughput_table['Wave'].data * u.micron
 
             # If the input file file contains throughput and not effective area, convert the data to effective area
@@ -201,11 +218,11 @@ class Photom(ReferenceType):
             ).value
 
             # Gain
-            g = self.g
-            g_rerr = self.g_rerr
+            gain = self.g
+            gain_rerr = self.g_rerr
 
-            photmjsr = np.float32(mjy_per_dnps_per_sr * g)
-            uncertainty = np.float32(mjy_per_dnps_per_sr * g * g_rerr)
+            photmjsr = np.float32(mjy_per_dnps_per_sr * gain)
+            uncertainty = np.float32(mjy_per_dnps_per_sr * gain * gain_rerr)
 
             # >>> CRITICAL: store plain ndarrays (no units), float32, 1-D
             wavelength_arr     = wq.to_value(u.micron).astype(np.float32)  # ndarray
@@ -259,8 +276,9 @@ class Photom(ReferenceType):
 
 
         # Get the pixel area map for the detector
-        rfp_pam = pam(self.meta_data.instrument_detector)
-        self.pixel_area_sr = rfp_pam.meta_data.pixelarea_steradians
+        # rfp_pam = pam(self.meta_data.instrument_detector)
+        # self.pixel_area_sr = rfp_pam.meta_data.pixelarea_steradians
+        self.pixel_area_sr = self.pam[self.meta_data.instrument_detector]['pixelarea_steradians']
 
 
         # Get the gain value for the detector
@@ -268,8 +286,8 @@ class Photom(ReferenceType):
         self.g_rerr = float(self.gain[self.meta_data.instrument_detector]['std']) / self.g if self.g != 0 else 0.0
 
 
-        print('Building the phot_table for each element')
         for optical_element in WFI_REF_OPTICAL_ELEMENTS:
+            print(f'Building the phot_table for {optical_element}')
             self.meta_data.optical_element = optical_element
             phot_table[optical_element] = self.optical_element_helper()
 
@@ -284,10 +302,13 @@ class Photom(ReferenceType):
 # -------------------------------
 # Standalone functions for gain and pixel area map
 # -------------------------------
-def gain():
+def build_gain_and_pam_dict_from_crds():
     """
-    Grab the gain files from CRDS and compute the sigma clipped median gain
-
+    Grab the gain and pam files from CRDS. 
+    Gain: Compute the sigma clipped median gain and build the gain dictionary for all 18 detectors
+        The dictionary contains 18 entries, each entry with median and std  
+    PAM: Read the pam files and build the pam dictionary for all 18 detectors
+        The dictionary contains 18 entries, each entry with pixelarea in arcsecsq and steradians 
     """
     """
     Parameters
@@ -326,7 +347,7 @@ def gain():
 
     
     # -------------------------------
-    # Locally download the gain file
+    # Locally download the gain files
     # -------------------------------
     
     gain_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
@@ -350,17 +371,30 @@ def gain():
         except Exception as e:
             print(f"Error reading {filepath}: {e}")    
     
-    return gain_vals
+
+    # -------------------------------
+    # Locally download the pam files
+    # -------------------------------
+
+    pam_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('area').reference_names()
+    results = api.dump_references(crds_context, pam_files)
+    pam_filepaths = list(results.values())
+
+    print("Building a PAM dictionary for all 18 detectors")
+    pam_vals = {}
+    for filepath in pam_filepaths:
+        try:
+            with rdm.open(filepath) as ref:
+                det = ref.meta.instrument.detector
+                pixelarea_arcsecsq = ref.meta.photometry.pixelarea_arcsecsq
+                pixelarea_steradians = ref.meta.photometry.pixelarea_steradians
+
+                print(f"{det}: pixelarea_steradians -> {pixelarea_steradians}")
+
+                pam_vals[det] = {'pixelarea_arcsecsq': pixelarea_arcsecsq, 'pixelarea_steradians': pixelarea_steradians}
+
+        except Exception as e:
+            print(f"Error reading {filepath}: {e}")    
 
 
-def pam(det):
-    '''
-    Compute the pixel area map for a specific detector
-    '''
-
-    print(f'Computing the pixal area map for {det}')
-    tmp = MakeDevMeta(ref_type='AREA')    
-    tmp.meta_pixelarea.instrument_detector = det
-    rfp_pam = PixelArea(meta_data=tmp.meta_pixelarea)
-
-    return rfp_pam
+    return gain_vals, pam_vals
