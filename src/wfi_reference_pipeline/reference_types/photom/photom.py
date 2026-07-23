@@ -18,8 +18,6 @@ from wfi_reference_pipeline.constants import (
     COLLECTING_AREA_M2,
     WFI_REF_OPTICAL_ELEMENTS,
 )
-from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import PixelArea
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 from wfi_reference_pipeline.resources.wfi_meta_photom import (
     WFIMetaPhotom,
 )
