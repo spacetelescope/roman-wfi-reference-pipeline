@@ -275,3 +275,4 @@ def test_generate_outfile_generate_set_perms_passes(make_test_ref, valid_outfile
         assert af.tree["roman"]["metadata"]["a"] == "A"
         assert af.tree["roman"]["metadata"]["b"] == "B"
         assert af.tree["roman"]["date"] == "12-12-2025"
+        

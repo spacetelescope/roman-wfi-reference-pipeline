@@ -35,6 +35,8 @@ class ReferenceType(ABC):
         Path to the output file where the reference data will be saved.
     clobber : bool, optional
         If True, overwrites the existing outfile without warning.
+    mask_size : tuple, optional
+        Expected detector dimensions.
     """
 
     def __init__(self,
@@ -220,32 +222,26 @@ class ReferenceTypeMask(ABC):
 
     Required:
         - dark_filelist
-        - input_superslope
+        - input_super_rate
 
     Parameters
     ----------
-    meta_data : object
+    meta_data: object
         Metadata object whose reference_type must be one of
         WFI_MASK_REF_TYPES.
-
-    dark_filelist : list
+    dark_filelist: list
         List of dark files used to create a superdark.
-
-    flat_filelist : list, optional
+    flat_filelist: list, optional
         List of flat files used to create a superslope.
         Required for the monthly workflow.
-
-    input_superslope : numpy.ndarray, optional
+    input_super_rate: numpy.ndarray, optional
         Existing superslope image.
         Required for the weekly workflow.
-
-    outfile : str, optional
+    outfile: str, optional
         Output ASDF filename.
-
-    clobber : bool, optional
+    clobber: bool, optional
         Overwrite an existing output file.
-
-    mask_size : tuple, optional
+    mask_size: tuple, optional
         Expected detector dimensions.
     """
 
@@ -254,7 +250,7 @@ class ReferenceTypeMask(ABC):
         meta_data,
         dark_filelist,
         flat_filelist=None,
-        input_superslope=None,
+        input_super_rate=None,
         outfile=None,
         clobber=False,
         mask_size=(
@@ -278,7 +274,7 @@ class ReferenceTypeMask(ABC):
             )
 
         monthly = flat_filelist is not None
-        weekly = input_superslope is not None
+        weekly = input_super_rate is not None
 
         if monthly == weekly:
             raise ValueError(
@@ -297,8 +293,8 @@ class ReferenceTypeMask(ABC):
 
         if weekly:
             self._validate_image(
-                input_superslope,
-                "input_superslope",
+                input_super_rate,
+                "input_super_rate",
                 mask_size,
             )
 
@@ -306,7 +302,7 @@ class ReferenceTypeMask(ABC):
 
         self.dark_filelist = dark_filelist
         self.flat_filelist = flat_filelist
-        self.input_superslope = input_superslope
+        self.input_super_rate = input_super_rate
 
         self.outfile = outfile
         self.clobber = clobber
