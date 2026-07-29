@@ -10,10 +10,10 @@ from roman_datamodels import dqflags
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
     DETECTOR_PIXEL_Y_COUNT,
-    WFI_REF_TYPES_WITHOUT_INPUT_DATA,
-    WFI_MASK_REF_TYPES,
     REF_TYPE_FGS_MASK,
-    REF_TYPE_MASK
+    REF_TYPE_MASK,
+    WFI_MASK_REF_TYPES,
+    WFI_REF_TYPES_WITHOUT_INPUT_DATA,
 )
 
 

@@ -170,6 +170,7 @@ WFI_REF_TYPES = {
     REF_TYPE_SUPERBIAS
 }
 
+# Reference types that require no input data or use/generate models.
 WFI_REF_TYPES_WITHOUT_INPUT_DATA = {
     REF_TYPE_ABVEGAMAGNITUDEOFFSET,
     REF_TYPE_APERTURECORRECTION,
@@ -183,6 +184,7 @@ WFI_REF_TYPES_WITHOUT_INPUT_DATA = {
     REF_TYPE_SIMPSF,
 }
 
+# Reference types handled by BaseMask.
 WFI_MASK_REF_TYPES = {
     REF_TYPE_MASK,
     REF_TYPE_FGS_MASK,
