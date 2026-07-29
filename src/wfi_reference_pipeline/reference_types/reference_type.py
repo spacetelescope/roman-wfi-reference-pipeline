@@ -155,17 +155,24 @@ class ReferenceType(ABC):
         # check to see if file currently exists
         self.check_outfile()
 
-        # Resolve data model tree
+        # Resolve data model or tree
         obj = datamodel_tree if datamodel_tree else self.populate_datamodel_tree()
-        if not hasattr(obj, "save"):
-            raise TypeError(
-                f"Reference type '{self.meta_data.reference_type}' "
-                "requires a Roman DataModel with a 'save()' method."
-            )
-        logging.info(
-            "Writing Roman DataModel using .save()."
-        )
-        obj.save(self.outfile)
+
+        # ============================================================
+        # CASE 1: Roman DataModel 
+        # ============================================================
+        if hasattr(obj, "save"):
+            logging.info("Detected Roman DataModel. Using .save() method.")
+            obj.save(self.outfile)
+
+        # ============================================================
+        # CASE 2: ASDF tree / stnode - need to update to all use CASE 1 now
+        # ============================================================
+        else:
+            logging.info("Detected ASDF tree. Using AsdfFile writer.")
+            af = asdf.AsdfFile()
+            af.tree = {'roman': obj}
+            af.write_to(self.outfile)
 
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
