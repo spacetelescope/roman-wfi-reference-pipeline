@@ -152,42 +152,20 @@ class ReferenceType(ABC):
         if self.outfile is None:
             raise ValueError("Output file path 'outfile' is not specified.")
 
-        # Resolve data model or tree
-        obj = datamodel_tree if datamodel_tree else self.populate_datamodel_tree()
-
         # check to see if file currently exists
         self.check_outfile()
 
-        if self.metadata.reference_type == REF_TYPE_MASK:
-
-            if not hasattr(obj, "save"):
-                raise TypeError(
-                    "MASK reference type requires a Roman DataModel "
-                    "object with a save() method."
-                )
-
-            logging.info(
-                "Writing MASK reference using Roman DataModel save()."
+        # Resolve data model tree
+        obj = datamodel_tree if datamodel_tree else self.populate_datamodel_tree()
+        if not hasattr(obj, "save"):
+            raise TypeError(
+                f"Reference type '{self.meta_data.reference_type}' "
+                "requires a Roman DataModel with a 'save()' method."
             )
-
-            obj.save(self.outfile)
-
-        elif self.metadata.reference_type == REF_TYPE_FGS_MASK:
-
-            logging.info(
-                "Writing FGS_MASK reference using ASDF writer."
-            )
-
-            af = asdf.AsdfFile()
-            af.tree = {
-                "roman": obj
-            }
-            af.write_to(self.outfile)
-
-        else:
-            raise ValueError(
-                f"Unsupported reference type '{self.metadata.reference_type}'."
-            )
+        logging.info(
+            "Writing Roman DataModel using .save()."
+        )
+        obj.save(self.outfile)
 
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
@@ -430,21 +408,31 @@ class ReferenceTypeMask(ABC):
         # check to see if file currently exists
         self.check_outfile()
 
-        # ============================================================
-        # CASE 1: For Mask Ref Type which has a data model
-        # ============================================================
-        if hasattr(obj, "save"):
-            logging.info("Detected Roman DataModel. Using .save() method.")
+        if self.metadata.reference_type == REF_TYPE_MASK:
+            if not hasattr(obj, "save"):
+                raise TypeError(
+                    "MASK reference type requires a Roman DataModel "
+                    "object with a save() method."
+                )
+            logging.info(
+                "Writing MASK reference using Roman DataModel save()."
+            )
             obj.save(self.outfile)
 
-        # ============================================================
-        # CASE 2: For FGSMask Ref Type which DOES NOT have a data model
-        # ============================================================
-        else:
-            logging.info("Detected ASDF tree. Using AsdfFile writer.")
+        elif self.metadata.reference_type == REF_TYPE_FGS_MASK:
+            logging.info(
+                "Writing FGS_MASK reference using ASDF writer."
+            )
             af = asdf.AsdfFile()
-            af.tree = {'roman': obj}
+            af.tree = {
+                "roman": obj
+            }
             af.write_to(self.outfile)
+
+        else:
+            raise ValueError(
+                f"Unsupported reference type '{self.metadata.reference_type}' using ReferenceTypeMask()."
+            )
 
         os.chmod(self.outfile, file_permission)
         logging.info(f"Saved {self.outfile}")
