@@ -278,7 +278,7 @@ class ReferenceTypeMask(ABC):
         ),
     ):
 
-        self._validate_metadata(metadata)
+        self._validate_meta_data(meta_data)
 
         self._validate_file_list(
             dark_filelist,
@@ -329,12 +329,12 @@ class ReferenceTypeMask(ABC):
 
         self.dqflag_defs = dqflags.pixel
 
-    def _validate_metadata(self, meta_data):
-        """Validate the metadata object."""
+    def _validate_meta_data(self, meta_data):
+        """Validate the meta data object."""
 
         if not hasattr(meta_data, "reference_type"):
             raise TypeError(
-                "'metadata' must contain a 'reference_type' attribute."
+                "'meta data' must contain a 'reference_type' attribute."
             )
 
         if meta_data.reference_type not in WFI_MASK_REF_TYPES:
@@ -455,4 +455,3 @@ class ReferenceTypeMask(ABC):
         Enforcing data model validation before writing file and used in schema testing.
         """
         pass
-    
