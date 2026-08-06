@@ -210,7 +210,7 @@ class MakeOpsMeta:
     def _create_ops_meta_saturation(self, meta_data):
         self.meta_saturation = WFIMetaSaturation(*meta_data)
 
-    def __init__(self, ref_type):
+    def __init__(self, ref_type, routine_delivery_type=True):
         """
         Generates a reference type specific MetaData object relevant to the ref_type
         parameter.
@@ -220,6 +220,12 @@ class MakeOpsMeta:
         ref_type: str;
             String defining the reference file type which will determine the reference
             meta object created.
+        routine_delivery_type: boolean;
+            A True or False setting for routine high cadence delivery by the RFP, such 
+            as weekly darks or monthly flats, vs low cadence once a year deliveries such
+            as yearly linearity reference file.
+            #TODO Work out with service accounts and automated pipeline run starts. Consider
+            using either routine = True, or have a cadence variable like weekly, monthly or other.
 
         description notes:
 
@@ -253,13 +259,23 @@ class MakeOpsMeta:
 
         ref_type_name = REF_TYPE_DESCRIPTION[ref_type]
 
-        reason_for_delivery_string = (
-            f"Delivering (18) new WFI {ref_type_name} reference files for imaging "
-            f"and spectral modes, WIM and WSM. "
-            f"This is a routine {ref_type_name} reference file "
-            f"delivery for data from {date_start:%Y-%m-%d} through "
-            f"{date_now:%Y-%m-%d}. "
-        )
+
+        if routine_delivery_type:
+            reason_for_delivery_string = (
+                f"Delivering (18) new WFI {ref_type_name} reference files for imaging "
+                f"and spectral modes, WIM and WSM. "
+                f"This is a routine {ref_type_name} reference file "
+                f"delivery for data from {date_start:%Y-%m-%d} through "
+                f"{date_now:%Y-%m-%d}. "
+            )
+        else:
+            reason_for_delivery_string = (
+                f"Delivering (18) new WFI {ref_type_name} reference files for imaging "
+                f"and spectral modes, WIM and WSM. "
+                f"This is a {ref_type_name} reference file "
+                f"delivery for data from {date_start:%Y-%m-%d} through "
+                f"{date_now:%Y-%m-%d}. "
+            )
 
         pedigree = "INFLIGHT"
         description = reason_for_delivery_string + DEFAULT_DESCRIPTION
