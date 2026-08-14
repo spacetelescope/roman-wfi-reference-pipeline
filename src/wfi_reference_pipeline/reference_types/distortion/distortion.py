@@ -1,14 +1,16 @@
 import asdf
 import numpy as np
-import roman_datamodels.stnode as rds
+from roman_datamodels.datamodels import DistortionRefModel
 
 # from astropy.modeling import fitting  TODO- uncomment when needed
 # from astropy.stats import sigma_clip  TODO - uncomment when needed
 from astropy import units as u
 from astropy.modeling.models import Mapping, Polynomial2D, Shift
-from soc_roman_tools.siaf import siaf
+import pysiaf
+import logging
 
 from ..reference_type import ReferenceType
+from wfi_reference_pipeline.resources.wfi_meta_distortion import WFIMetaDistortion
 
 # from ..utilities.reference_catalog import ReferenceCatalog  TODO - Verify Existence
 
@@ -20,27 +22,30 @@ class Distortion(ReferenceType):
     method make_distortion() creates the ASDF distortion reference file.
     """
 
-    def __init__(self, cdt_model, meta_data, bit_mask=None, outfile=None,
+    def __init__(self, 
+                 meta_data,
+                 bit_mask=None, 
+                 outfile=None,
                  clobber=False):
         # If no output file name given, set default file name.
         self.outfile = outfile if outfile else 'roman_distortion.asdf'
 
         # Access methods of base class ReferenceType
-        super(Distortion, self).__init__(cdt_model, meta_data, bit_mask=bit_mask,
+        super(Distortion, self).__init__(meta_data,  
+                                         bit_mask=bit_mask,
                                          clobber=clobber)
 
-        # Update metadata with distortion file type info if not included.
-        if 'description' not in self.meta.keys():
-            self.meta['description'] = 'Roman WFI distortion reference file.'
-        else:
-            pass
-        if 'reftype' not in self.meta.keys():
-            self.meta['reftype'] = 'DISTORTION'
-        else:
-            pass
+        # Default meta creation for module specific ref type.
+        if not isinstance(meta_data, WFIMetaDistortion):
+            raise TypeError(
+                f"Meta Data has reftype {type(meta_data)}, expecting WFIMetaDistortion"
+            )
+        if len(self.meta_data.description) == 0:
+            self.meta_data.description = "Roman WFI distortion reference file."
 
-        self.meta['input_units'] = u.pixel
-        self.meta['output_units'] = u.arcsec
+        logging.debug(f"Default distortion reference file object: {outfile} ")
+
+
 
     def make_siaf_distortion(self, detector):
         """
@@ -63,7 +68,12 @@ class Distortion(ReferenceType):
         self.check_output_file(self.outfile)
 
         # Read in the Roman SIAF. Use the default version from soc_roman_tools.
-        siaf_data = siaf.RomanSiaf().read_roman_siaf()
+        siaf_data = pysiaf.siaf.Siaf('roman', 
+                                     filename='newsiaf_20260727.xml', 
+                                     basepath='/grp/roman/RFP/DEV/build_files/Build_26Q4_B23/', 
+                                     AperNames=None)
+        # instrument = 'roman', filename = xml file name, basepath = path to where xml file is but without file name
+        #siaf_data = siaf.RomanSiaf().read_roman_siaf()
         aperture = siaf_data[f'{detector}_FULL']
 
         # Find the shift between (x_sci, y_sci) = (0, 0) and the reference location.
@@ -73,8 +83,8 @@ class Distortion(ReferenceType):
         # Retrieve the distortion coefficients. We define the forward coefficients
         # to be Sci -> Idl and the inverse to be Idl -> Sci. We need both sets
         # of coefficients.
-        x_for, y_for = siaf.get_distortion_coeffs(f'{detector}_FULL')
-        x_inv, y_inv = siaf.get_distortion_coeffs(f'{detector}_FULL', inverse=True)
+        x_for, y_for = pysiaf.get_distortion_coeffs(f'{detector}_FULL')
+        x_inv, y_inv = pysiaf.get_distortion_coeffs(f'{detector}_FULL', inverse=True)
 
         # Retrieve V frame information.
         v3_angle = np.radians(aperture.V3IdlYAngle)
@@ -132,8 +142,13 @@ class Distortion(ReferenceType):
         self.data = index_shift & index_shift | x_center & y_center | \
             core_model | v2_ref & v3_ref
 
-    def make_distortion_from_stars(self, detector, img, refcat_path,
-                                   degree=5, init_as_siaf=True, niter=10,
+    def make_distortion_from_stars(self, 
+                                   detector, 
+                                   img, 
+                                   refcat_path,
+                                   degree=5, 
+                                   init_as_siaf=True, 
+                                   niter=10,
                                    **match_kwargs):
         """
         The method make_distortion_from_stars generates a distortion ASDF file with
@@ -272,11 +287,25 @@ class Distortion(ReferenceType):
         self.data = index_shift & index_shift | x_center & y_center | \
             core_model | v2_ref & v3_ref
 
-    def save_file(self):
-        distortion_file = rds.DistortionRef()
-        distortion_file['coordinate_distortion_transform'] = self.data
-        distortion_file['meta'] = self.meta
-        # Add in the meta data and history to the ASDF tree.
-        af = asdf.AsdfFile()
-        af.tree = {'roman': distortion_file}
-        af.write_to(self.outfile)
+    def calculate_error(self):
+        """
+        Abstract method not applicable.
+        """
+        pass
+
+    def update_data_quality_array(self):
+        """
+        Abstract method not utilized.
+        """
+        pass
+
+    def populate_datamodel_tree(self):
+        """
+        Build the Roman datamodel tree for the detector status reference.
+        """
+        distortion_datamodel_tree = DistortionRefModel()
+        distortion_datamodel_tree["meta"] = self.meta_data.export_asdf_meta()
+        distortion_datamodel_tree['coordinate_distortion_transform'] = self.data
+
+        return distortion_datamodel_tree
+    

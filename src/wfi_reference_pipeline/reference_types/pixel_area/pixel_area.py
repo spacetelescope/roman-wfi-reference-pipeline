@@ -92,6 +92,9 @@ class PixelArea(ReferenceType):
         if len(self.meta_data.description) == 0:
             self.meta_data.description = "Roman WFI pixel area reference file."
 
+        # siaf_data = pysiaf.siaf.Siaf(instrument, filename=None, basepath=None, AperNames=None)
+        # instrument = 'roman', filename = xml file name, basepath = path to where xml file is but without file name
+
         self.siaf = pysiaf.Siaf("Roman")
 
         detector = self.meta_data.instrument_detector

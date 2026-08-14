@@ -6,6 +6,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_DARK,
     REF_TYPE_DARKDECAYSIGNAL,
     REF_TYPE_DETECTORSTATUS,
+    REF_TYPE_DISTORTION,
     REF_TYPE_EPSF,
     REF_TYPE_ETC,
     REF_TYPE_FGS_MASK,
@@ -40,6 +41,9 @@ from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
     WFIMetaDetectorStatus,
+)
+from wfi_reference_pipeline.resources.wfi_meta_distortion import (
+    WFIMetaDistortion,
 )
 from wfi_reference_pipeline.resources.wfi_meta_empirical_psf import WFIMetaEPSF
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
@@ -101,6 +105,19 @@ class MakeDevMeta:
 
     def _create_dev_meta_detector_status(self, meta_data):
         self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
+
+    def _create_dev_meta_distortion(self, meta_data):
+        ref_optical_element = "F158"
+        p_optical_element = [ "F062", "F087", "F106", "F129", "F146", "F158", "F184", "F213", "GRISM", "PRISM", "DARK", ]
+        input_units = u.pix
+        output_units = u.DN
+
+        distortion_meta_data = [input_units, 
+                                output_units, 
+                                ref_optical_element,
+                                p_optical_element,
+                                ] 
+        self.meta_distortion = WFIMetaDistortion(*meta_data, *distortion_meta_data)
   
     def _create_dev_meta_epsf(self, meta_data):
         ref_optical_element = "F062"
@@ -288,6 +305,9 @@ class MakeDevMeta:
 
         if ref_type == REF_TYPE_DETECTORSTATUS:
             self._create_dev_meta_detector_status(meta_data_params)
+
+        if ref_type == REF_TYPE_DISTORTION:
+            self._create_dev_meta_distortion(meta_data_params)
 
         if ref_type == REF_TYPE_EPSF:
             self._create_dev_meta_epsf(meta_data_params)
