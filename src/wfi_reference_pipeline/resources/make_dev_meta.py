@@ -110,7 +110,7 @@ class MakeDevMeta:
         ref_optical_element = "F158"
         p_optical_element = [ "F062", "F087", "F106", "F129", "F146", "F158", "F184", "F213", "GRISM", "PRISM", "DARK", ]
         input_units = u.pix
-        output_units = u.DN
+        output_units = u.arcsec
 
         distortion_meta_data = [input_units, 
                                 output_units, 

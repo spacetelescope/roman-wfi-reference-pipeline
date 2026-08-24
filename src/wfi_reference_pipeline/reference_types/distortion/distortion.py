@@ -64,9 +64,6 @@ class Distortion(ReferenceType):
         -------
         None
         """
-        # Check if the output file exists, and take appropriate action.
-        self.check_output_file(self.outfile)
-
         # Read in the Roman SIAF. Use the default version from soc_roman_tools.
         siaf_data = pysiaf.siaf.Siaf('roman', 
                                      filename='newsiaf_20260727.xml', 

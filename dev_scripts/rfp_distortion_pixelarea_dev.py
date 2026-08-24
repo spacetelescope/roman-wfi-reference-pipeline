@@ -7,31 +7,22 @@ from astropy import units as u
 from astropy.time import Time
 from astropy.modeling import models
 
-meta_distortion = {
-    "author": "Richard G Cosentino",
-    "description": (
-        "The Geometric Distortion reference file on Roman "
-        "CRDS reflects newest changes to the pysiaf package corresponding to versions v0.27.0."
-    ),
-    "input_units": u.pix,
-    "instrument": {
-        "detector": "WFI01",
-        "name": "WFI",
-        "optical_element": "F158",
-        "p_optical_element": (
-            "F062|F087|F106|F129|F146|F158|F184|F213|GRISM|PRISM|DARK|"
-        ),
-    },
-    "origin": "STSCI",
-    "output_units": u.arcsec,
-    "pedigree": "GROUND",
-    "reftype": "DISTORTION",
-    "telescope": "ROMAN",
-    "useafter": Time("2026-08-14T00:00:00.000", format="isot"),
-}
 
+tmp = MakeDevMeta(ref_type="DISTORTION")
+tmp.meta_distortion.author = "Richard G Cosentino"
+tmp.meta_distortion.description = (
+    "The Geometric Distortion reference file on Roman "
+    "CRDS reflects newest changes to the pysiaf package "
+    "corresponding to versions v0.27.0."
+)
+tmp.meta_distortion.useafter = Time(
+    "2026-08-14T00:00:00.000",
+    format="isot",
+)
+tmp.meta_distortion.pedigree = "GROUND"
 
-print("The default metadata values are: ", tmp.meta_distortion)
+tmp.meta_distortion.export_asdf_meta()
 
-rfp_distortion
+rfp_distortion = Distortion(meta_data=tmp.meta_distortion)
+rfp_distortion.make_siaf_distortion(rfp_distortion.meta_data.instrument_detector)
 
