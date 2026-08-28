@@ -1,0 +1,22 @@
+name: photom_rfp
+channels:
+  - conda-forge
+dependencies:
+  - pip>=23.3
+  - astropy>=5.3.4
+  - matplotlib>=3.8
+  - seaborn>=0.13.2
+  - numpy>=1.26.0
+  - python>=3.12
+  - scipy>=1.11.4
+  - jupyterlab>=4.0.11
+  - pandas>=2.1.4
+  - asdf
+  - pip:
+      - roman-datamodels>=0.29.0
+      - crds==12.0.9
+      - pysiaf>=0.24.1
+      - python-dateutil
+      - rad>=0.23.0
+      - synphot>=1.5.0
+ 
