@@ -589,7 +589,7 @@ class ReferenceTypeMask(ABC):
             raise ValueError("Output file path 'outfile' is not specified.")
 
         # Resolve data model or tree
-        obj = datamodel_tree if datamodel_tree else self._populate_datamodel_tree()
+        obj = datamodel_tree if datamodel_tree else self.populate_datamodel_tree()
 
         # check to see if file currently exists
         self._check_outfile()
