@@ -45,11 +45,11 @@ class Pipeline(ABC):
         try:
             # Initialize logging named for the derived class
             configure_logging(f"{self.__class__.__name__}")
+            ref_type_detector_path = Path(f"{self.ref_type}") / Path(f"{self.detector}")
             self._data_files_config = get_data_files_config()
-            self.ingest_path = Path(self._data_files_config["ingest_dir"])
-            self.prep_path = Path(self._data_files_config["prep_dir"]) / Path(f"{self.ref_type}") / Path(f"{self.detector}")
-            self.pipeline_out_path = Path(
-                self._data_files_config["crds_ready_dir"])
+            self.ingest_path = Path(self._data_files_config["ingest_dir"]) # TODO - Should ingest_path be set up to be ref_type_detector specific?
+            self.prep_path = Path(self._data_files_config["prep_dir"]) / ref_type_detector_path
+            self.pipeline_out_path = Path(self._data_files_config["crds_ready_dir"]) / ref_type_detector_path
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
             sys.exit()
