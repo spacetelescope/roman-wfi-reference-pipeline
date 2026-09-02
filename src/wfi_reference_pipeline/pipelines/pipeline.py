@@ -47,7 +47,7 @@ class Pipeline(ABC):
             configure_logging(f"{self.__class__.__name__}")
             self._data_files_config = get_data_files_config()
             self.ingest_path = Path(self._data_files_config["ingest_dir"])
-            self.prep_path = Path(self._data_files_config["prep_dir"])
+            self.prep_path = Path(self._data_files_config["prep_dir"]) / Path(f"{self.ref_type}") / Path(f"{self.detector}")
             self.pipeline_out_path = Path(
                 self._data_files_config["crds_ready_dir"])
         except (FileNotFoundError, ValueError) as e:
