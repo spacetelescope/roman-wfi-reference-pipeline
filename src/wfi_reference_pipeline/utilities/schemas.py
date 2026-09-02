@@ -20,10 +20,10 @@ CONFIG_SCHEMA = {
             "type": "object",
             "properties": {
                 "ingest_dir": {"type": "string"},
-                "prep_dir": {"type": "string"},
+                "prep_dir_root": {"type": "string"},
                 "crds_ready_dir": {"type": "string"},
             },
-            "required": ["ingest_dir", "prep_dir", "crds_ready_dir"],
+            "required": ["ingest_dir", "prep_dir_root", "crds_ready_dir"],
         },
         "database": {
             "type": "object",
