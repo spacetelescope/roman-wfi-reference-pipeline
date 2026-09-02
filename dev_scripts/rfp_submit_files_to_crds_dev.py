@@ -16,7 +16,7 @@ update_dict = False
 config = get_crds_submission_config()
 
 # Gather new files based on the pattern in the config file
-new_files = glob.glob(config['files_to_submit']['crds_ready_dir'] + '/MASK/GSFC/*.asdf')
+new_files = glob.glob(config['files_to_submit']['crds_ready_dir'] + '/MASK/GSFC/*.asdf') # TODO - get crds_read_dir from config.yml
 new_files.sort()
 
 # Initialize the WFISubmit instance
