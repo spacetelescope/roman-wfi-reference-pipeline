@@ -34,7 +34,7 @@ rfp_dark_pipe_only = 0
 if rfp_dark_pipe_only == 1:
 
     #ingest prepped data
-    prep_dir = get_data_files_config()["prep_dir"]
+    prep_dir = get_data_files_config()["prep_dir_root"]
     prep_path = Path(prep_dir)
 
     # Get all dark files in the directory
@@ -53,7 +53,7 @@ if rfp_tvac_list_run_prep == 1:
     dark_pipe.prep_pipeline(file_list=files)
     print(f"pipeline prepped!!")
 
-    prep_dir = get_data_files_config()["prep_dir"]
+    prep_dir = get_data_files_config()["prep_dir_root"]
     prep_path = Path(prep_dir)
     prepped_asdf_files = prep_path.glob(f"TVAC2_NOMOPS_WFIDAR_*DARK_PREPPED.asdf")
     file_list = list(prepped_asdf_files)

@@ -1,7 +1,7 @@
 import glob
 import time
 
-from wfi_reference_pipeline.config.config_access import get_crds_submission_config
+from wfi_reference_pipeline.config.config_access import get_data_files_config
 from wfi_reference_pipeline.utilities.manifest import (
     make_manifest,
     print_manifest,
@@ -13,10 +13,10 @@ from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 update_dict = False
 
 # Load configuration settings
-config = get_crds_submission_config()
+rfp_output_dir_root = get_data_files_config()["rfp_output_dir_root"]
 
 # Gather new files based on the pattern in the config file
-new_files = glob.glob(config['files_to_submit']['crds_ready_dir'] + '/MASK/GSFC/*.asdf')
+new_files = glob.glob(rfp_output_dir_root + '/MASK/GSFC/*.asdf') # Note, this /MASK/DETECTOR should be saved in the self of the pipeline object
 new_files.sort()
 
 # Initialize the WFISubmit instance

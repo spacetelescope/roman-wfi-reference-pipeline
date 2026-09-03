@@ -1,6 +1,3 @@
-files_to_submit:
-  crds_ready_dir: "/PATH/TO/DIR"
-
 form_info:
   instrument: 'WFI'
   deliverer: "User updated information."
