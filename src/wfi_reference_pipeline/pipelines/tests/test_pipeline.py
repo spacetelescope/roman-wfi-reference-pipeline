@@ -19,8 +19,8 @@ STUB_REFERENCE_TYPE = REF_TYPE_READNOISE
 STUB_DETECTOR = "WFI01"
 STUB_CONFIG = {
     "ingest_dir": "/stub/ingest",
-    "prep_dir": "/stub/prep",
-    "crds_ready_dir": "/stub/crds_ready",
+    "prep_dir_root": "/stub/prep",
+    "crds_ready_dir_root": "/stub/crds_ready",
 }
 
 STUB_DB_CONFIG = {
@@ -101,11 +101,11 @@ def test_init_ingest_path_from_config_passes(pipeline):
 
 
 def test_init_prep_path_from_config_passes(pipeline):
-    assert pipeline.prep_path == Path(STUB_CONFIG["prep_dir"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
+    assert pipeline.prep_path == Path(STUB_CONFIG["prep_dir_root"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
 
 
 def test_init_pipeline_out_path_from_config_passes(pipeline):
-    assert pipeline.pipeline_out_path == Path(STUB_CONFIG["crds_ready_dir"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
+    assert pipeline.pipeline_out_path == Path(STUB_CONFIG["crds_ready_dir_root"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
 
 
 ### Config Failure Tests ###

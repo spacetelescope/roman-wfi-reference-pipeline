@@ -49,7 +49,7 @@ class Pipeline(ABC):
             self._data_files_config = get_data_files_config()
             self.ingest_path = Path(self._data_files_config["ingest_dir"]) # TODO - Should ingest_path be set up to be ref_type_detector specific?
             self.prep_path = Path(self._data_files_config["prep_dir_root"]) / ref_type_detector_path
-            self.pipeline_out_path = Path(self._data_files_config["crds_ready_dir"]) / ref_type_detector_path
+            self.pipeline_out_path = Path(self._data_files_config["crds_ready_dir_root"]) / ref_type_detector_path
         except (FileNotFoundError, ValueError) as e:
             print(f"ERROR READING CONFIG FILE - {e}")
             sys.exit()
