@@ -13,10 +13,10 @@ from wfi_reference_pipeline.utilities.submit_files_to_crds import WFISubmit
 update_dict = False
 
 # Load configuration settings
-crds_dir_root = get_data_files_config()["crds_ready_dir_root"]
+rfp_output_dir_root = get_data_files_config()["rfp_output_dir_root"]
 
 # Gather new files based on the pattern in the config file
-new_files = glob.glob(crds_dir_root + '/MASK/GSFC/*.asdf') # Note, this /MASK/DETECTOR should be saved in the self of the pipeline object
+new_files = glob.glob(rfp_output_dir_root + '/MASK/GSFC/*.asdf') # Note, this /MASK/DETECTOR should be saved in the self of the pipeline object
 new_files.sort()
 
 # Initialize the WFISubmit instance
