@@ -14,11 +14,13 @@ class MinimalPipeline(Pipeline):
     def pre_deliver(self): pass
     def deliver(self): pass
 
-# Fake 
+# Fake
+STUB_REFERENCE_TYPE = REF_TYPE_READNOISE
+STUB_DETECTOR = "WFI01"
 STUB_CONFIG = {
     "ingest_dir": "/stub/ingest",
-    "prep_dir": "/stub/prep",
-    "crds_ready_dir": "/stub/crds_ready",
+    "prep_dir_root": "/stub/prep",
+    "rfp_output_dir_root": "/stub/crds_ready",
 }
 
 STUB_DB_CONFIG = {
@@ -45,13 +47,13 @@ def pipeline_patches(mocker):
 # A fully initialised MinimalPipeline using WFI01 and REF_TYPE_READNOISE
 @pytest.fixture
 def pipeline(pipeline_patches):
-    return MinimalPipeline(REF_TYPE_READNOISE, "WFI01")
+    return MinimalPipeline(STUB_REFERENCE_TYPE, STUB_DETECTOR)
 
 
 
 def test_cannot_instantiate_pipeline_directly_passes(pipeline_patches):
     with pytest.raises(TypeError):
-        Pipeline(REF_TYPE_READNOISE, "WFI01")
+        Pipeline(STUB_REFERENCE_TYPE, STUB_DETECTOR)
 
 
 ### Tests on Proper Attributes Set ###
@@ -60,23 +62,23 @@ def test_cannot_instantiate_pipeline_directly_passes(pipeline_patches):
 @pytest.mark.parametrize("detector", sorted(WFI_DETECTORS))
 def test_init_all_valid_detectors_accepted_passes(detector, pipeline_patches):
     """Every detector in WFI_DETECTORS should initialise without error."""
-    p = MinimalPipeline(REF_TYPE_READNOISE, detector)
+    p = MinimalPipeline(STUB_REFERENCE_TYPE, detector)
     assert p.detector == detector.upper()
 
 
 def test_init_mixed_case_detector_normalised_passes(pipeline_patches):
-    p = MinimalPipeline(REF_TYPE_READNOISE, "Wfi05")
+    p = MinimalPipeline(STUB_REFERENCE_TYPE, "Wfi05")
     assert p.detector == "WFI05"
 
 
 def test_init_invalid_detector_raises_key_error_passes(pipeline_patches):
     with pytest.raises(KeyError):
-        MinimalPipeline(REF_TYPE_READNOISE, "WFI99")
+        MinimalPipeline(STUB_REFERENCE_TYPE, "WFI99")
 
 
 def test_init_empty_detector_raises_key_error_passes(pipeline_patches):
     with pytest.raises(KeyError):
-        MinimalPipeline(REF_TYPE_READNOISE, "")
+        MinimalPipeline(STUB_REFERENCE_TYPE, "")
 
 
 ### Tests on Proper Attributes Set ###
@@ -99,11 +101,11 @@ def test_init_ingest_path_from_config_passes(pipeline):
 
 
 def test_init_prep_path_from_config_passes(pipeline):
-    assert pipeline.prep_path == Path(STUB_CONFIG["prep_dir"])
+    assert pipeline.prep_path == Path(STUB_CONFIG["prep_dir_root"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
 
 
 def test_init_pipeline_out_path_from_config_passes(pipeline):
-    assert pipeline.pipeline_out_path == Path(STUB_CONFIG["crds_ready_dir"])
+    assert pipeline.pipeline_out_path == Path(STUB_CONFIG["rfp_output_dir_root"]) / Path(f"{STUB_REFERENCE_TYPE}") / Path(f"{STUB_DETECTOR}")
 
 
 ### Config Failure Tests ###

@@ -20,10 +20,10 @@ CONFIG_SCHEMA = {
             "type": "object",
             "properties": {
                 "ingest_dir": {"type": "string"},
-                "prep_dir": {"type": "string"},
-                "crds_ready_dir": {"type": "string"},
+                "prep_dir_root": {"type": "string"},
+                "rfp_output_dir_root": {"type": "string"},
             },
-            "required": ["ingest_dir", "prep_dir", "crds_ready_dir"],
+            "required": ["ingest_dir", "prep_dir_root", "rfp_output_dir_root"],
         },
         "database": {
             "type": "object",
@@ -46,13 +46,6 @@ CONFIG_SCHEMA = {
 CRDS_CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
-        "files_to_submit": {
-            "type": "object",
-            "properties": {
-                "crds_ready_dir": {"type": "string"},
-            },
-            "required": ["crds_ready_dir"],
-        },
         "form_info": {
             "type": "object",
             "properties": {
@@ -109,7 +102,7 @@ CRDS_CONFIG_SCHEMA = {
             ],
         },
     },
-    "required": ["files_to_submit", "form_info"],
+    "required": ["form_info"],
 }
 
 # Define the schema for pipelines_config.yml

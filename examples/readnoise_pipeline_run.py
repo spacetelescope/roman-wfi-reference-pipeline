@@ -54,7 +54,7 @@ rfp_readnoise_pipe_only = 0
 if rfp_readnoise_pipe_only == 1:
 
     #ingest prepped data
-    prep_dir = get_data_files_config()["prep_dir"]
+    prep_dir = get_data_files_config()["prep_dir_root"]
     prep_path = Path(prep_dir)
 
     # Get all readnoise files in the directory
