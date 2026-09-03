@@ -10,8 +10,8 @@ PIPELINE_MODULE = "wfi_reference_pipeline.pipelines.dark_pipeline"
 BASE_MODULE = "wfi_reference_pipeline.pipelines.pipeline"
 STUB_CONFIG = {
     "ingest_dir": "/stub/ingest",
-    "prep_dir": "/stub/prep",
-    "crds_ready_dir": "/stub/crds_ready",
+    "prep_dir_root": "/stub/prep",
+    "crds_ready_dir_root": "/stub/crds_ready",
 }
 STUB_DB_CONFIG = {"use_rtbdb": False}
 
