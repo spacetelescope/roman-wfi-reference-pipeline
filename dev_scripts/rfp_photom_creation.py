@@ -1,4 +1,4 @@
-from wfi_reference_pipeline.reference_types.photom.photom import Photom, build_gain_and_pam_dict_from_crds
+from wfi_reference_pipeline.reference_types.photom.photom import Photom
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # First create a MakeDevMeta object and update some metadata

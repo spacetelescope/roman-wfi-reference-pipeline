@@ -174,6 +174,20 @@ af.write_to("pars-exposurepipeline.asdf")
 
 ---
 
+
+## 10. Run STCAL with the PARS File
+
+The pars file itself has the pipeline class to run stcal accordingly. Use the 
+command below and then the pars file on an input asdf file to run the 
+exposure level pipeline with the parameters specified in the pars file.
+
+```python
+strun pars-exposurepipeline.asdf input_uncal.asdf
+```
+
+---
+
+
 ## Summary
 
 This workflow:
@@ -182,5 +196,5 @@ This workflow:
 - Opens and inspects ASDF structure
 - Updates metadata
 - Modifies pipeline step execution
-- Writes out a customized parameter file
+- Writes out a customized parameter file and how to use it
 ```
