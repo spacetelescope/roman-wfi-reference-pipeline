@@ -33,10 +33,14 @@ class QualityControl(_ObjectConfig):
                     dqinit: true
                     saturation: true
                     refpix: true
+                    darkdecay: true
+                    wfi18transient: true
         Then our QC object will generate:
             qc.prep_pipeline.checks.dqinit == true
             qc.prep_pipeline.checks.saturation == true
             qc.prep_pipeline.checks.refpix == true
+            qc.prep_pipeline.checks.darkdecay == true
+            qc.prep_pipeline.checks.wfi18transient == true
 
     Input Parameters:
         ref_type: reference type from constants.py
@@ -90,6 +94,9 @@ class QualityControl(_ObjectConfig):
         if type(status) is str:
             if status == "SKIPPED":
                 qc_status = QC_CHECK_INCOMPLETE
+            elif status == 'N/A':
+                # Step not applicable to this detector (e.g. wfi18_transient on non-WFI18)
+                qc_status = QC_CHECK_SUCCEED
             elif status == "INCOMPLETE":
                 qc_status = QC_CHECK_INCOMPLETE
             elif status == "COMPLETE":

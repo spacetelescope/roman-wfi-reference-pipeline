@@ -40,6 +40,8 @@ def mock_prep_internals(mocker):
     mocker.patch(f"{PIPELINE_MODULE}.rdm.open")
     mocker.patch(f"{PIPELINE_MODULE}.DQInitStep.call", return_value=fake_result)
     mocker.patch(f"{PIPELINE_MODULE}.SaturationStep.call", return_value=fake_result)
+    mocker.patch(f"{PIPELINE_MODULE}.DarkDecayStep.call", return_value=fake_result)
+    mocker.patch(f"{PIPELINE_MODULE}.WFI18TransientStep.call", return_value=fake_result)
     mocker.patch(f"{PIPELINE_MODULE}.LinearityStep.call", return_value=fake_result)
 
 

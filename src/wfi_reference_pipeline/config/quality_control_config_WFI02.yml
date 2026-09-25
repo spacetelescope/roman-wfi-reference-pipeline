@@ -12,6 +12,9 @@ dark:
       dqinit: true
       saturation: true
       refpix: true
+      darkdecay: true
+      wfi18transient: true
+      rampfit: true
   pipeline:
     checks:
       mean_dark_rate: true
@@ -43,6 +46,8 @@ flat:
       dqinit: true
       saturation: true
       refpix: true
+      darkdecay: true
+      wfi18transient: true
       linearity: true
       darkcurrent: true
       rampfit: true
@@ -70,6 +75,8 @@ readnoise:
       dqinit: true
       saturation: true
       refpix: true
+      darkdecay: true
+      wfi18transient: true
       linearity: true
   pipeline:
     checks:

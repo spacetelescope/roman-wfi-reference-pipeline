@@ -2,9 +2,11 @@ import logging
 from pathlib import Path
 
 import roman_datamodels as rdm
+from romancal.dark_decay import DarkDecayStep
 from romancal.dq_init import DQInitStep
 from romancal.refpix import RefPixStep
 from romancal.saturation import SaturationStep
+from romancal.wfi18_transient import WFI18TransientStep
 
 from wfi_reference_pipeline.config.config_access import get_pipelines_config
 from wfi_reference_pipeline.constants import (
@@ -128,6 +130,14 @@ class DarkPipeline(Pipeline):
             result = RefPixStep.call(result, save_results=False)
             self.qc.update_prep_pipeline_file_status(
                 file, "refpix", result.meta.cal_step["refpix"]
+            )
+            result = DarkDecayStep.call(result, save_results=False)
+            self.qc.update_prep_pipeline_file_status(
+                file, "darkdecay", result.meta.cal_step["dark_decay"]
+            )
+            result = WFI18TransientStep.call(result, save_results=False)
+            self.qc.update_prep_pipeline_file_status(
+                file, "wfi18transient", result.meta.cal_step["wfi18_transient"]
             )
 
             prep_output_file_path = self.file_handler.format_prep_output_file_path(

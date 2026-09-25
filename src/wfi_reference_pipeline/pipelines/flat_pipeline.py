@@ -84,7 +84,7 @@ class FlatPipeline(Pipeline):
 
             # If save_result = True, then the input asdf file is written to disk,
             # in the current directory, with the name of the last step replacing 'uncal'.asdf
-            if in_file["meta"]["cal_step"]["dark"] == "INCOMPLETE":
+            if in_file["meta"]["cal_step"]["dq_init"] == "INCOMPLETE":
                 result = DQInitStep.call(in_file, save_results=False)
             if in_file["meta"]["cal_step"]["refpix"] == "INCOMPLETE":
                 result = RefPixStep.call(result, save_results=False)

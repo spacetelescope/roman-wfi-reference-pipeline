@@ -2,9 +2,11 @@ import logging
 from pathlib import Path
 
 import roman_datamodels as rdm
+from romancal.dark_decay import DarkDecayStep
 from romancal.dq_init import DQInitStep
 from romancal.linearity import LinearityStep
 from romancal.saturation import SaturationStep
+from romancal.wfi18_transient import WFI18TransientStep
 
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
@@ -89,7 +91,8 @@ class ReadnoisePipeline(Pipeline):
             result = DQInitStep.call(in_file, save_results=False)
             result = SaturationStep.call(result, save_results=False)
             result = LinearityStep.call(result, save_results=False)
-
+            result = DarkDecayStep.call(result, save_results=False)
+            result = WFI18TransientStep.call(result, save_results=False)
             prep_output_file_path = self.file_handler.format_prep_output_file_path(
                 result.meta.filename
             )
