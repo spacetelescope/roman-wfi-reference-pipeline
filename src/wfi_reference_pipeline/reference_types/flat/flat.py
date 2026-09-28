@@ -347,13 +347,9 @@ class Flat(ReferenceType):
                 self.flat_error = np.nanstd(ind_flat_array, axis=0)
 
     def update_data_quality_array(self, low_qe_threshold=0.2,
-                                  flat_hi_threshold=2.,
-                                  add_low_qe_pixels=False):
+                                  flat_hi_threshold=2.):
         """
         Update data quality array bit mask with flag integer value.
-
-        If add_low_qr_pixels is True, a random number of loq quantum efficiency pixels
-        will be inserted into self.flat_image.
 
         Parameters
         ----------
@@ -364,27 +360,18 @@ class Flat(ReferenceType):
         add_low_qe_pixels: bool; default = False,
         """
 
-        if add_low_qe_pixels:
-            # TODO remove random loq qe pixels from flat_rate_image
-            # Generate between 200-300 pixels with low qe for DMS builds
-            rand_num_lowqe = np.random.randint(200, 300)
-            coords_x = np.random.randint(0, SCI_PIXEL_X_COUNT, rand_num_lowqe)
-            coords_y = np.random.randint(0, SCI_PIXEL_Y_COUNT, rand_num_lowqe)
-            rand_low_qe_values = np.random.randint(
-                5, 20, rand_num_lowqe) / 100.  # low eq in range 0.05 - 0.2
-            self.flat_image[coords_x, coords_y] = rand_low_qe_values
         logging.info(
             'Flagging unreliable flat pixels')
         # Flag bad pixels
         self.dq_mask[np.isnan(self.flat_image)
-                  ] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+                  ] |= self.dqflag_defs['UNRELIABLE_FLAT'].value
         self.dq_mask[self.flat_image >
-                  flat_hi_threshold] += self.dqflag_defs['UNRELIABLE_FLAT'].value
+                  flat_hi_threshold] |= self.dqflag_defs['UNRELIABLE_FLAT'].value
         logging.info(
             'Flagging low quantum efficiency pixels and updating DQ array.')
         # Locate low qe pixel ni,nj positions in 2D array
         self.dq_mask[self.flat_image <
-                  low_qe_threshold] += self.dqflag_defs['LOW_QE'].value
+                  low_qe_threshold] |= self.dqflag_defs['LOW_QE'].value
 
     def populate_datamodel_tree(self):
         """
@@ -540,8 +527,11 @@ def _process_single_sca(ifp, sca, fname, tmp_cube, t_start, resolved_file_map=No
         return ifp - 1, tmp_cube
 
     # 1. Resolve filename using a pre-mapped dictionary if available
-    fname_aux = fname.replace(f'WFI{sca:02d}', f'WFI{ifp:02d}')
-    
+    if 'WFI' in fname:
+        fname_aux = fname.replace(f'WFI{sca:02d}', f'WFI{ifp:02d}')
+    elif 'wfi' in fname:
+        fname_aux = fname.replace(f'wfi{sca:02d}', f'wfi{ifp:02d}')
+
     if not os.path.exists(fname_aux):
         if resolved_file_map and (ifp, fname) in resolved_file_map:
             fname_aux = resolved_file_map[(ifp, fname)]
