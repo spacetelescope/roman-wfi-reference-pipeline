@@ -8,9 +8,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
     REF_TYPE_REFPIX,
     WFI_DETECTORS,
-    WFI_REF_TYPES,
 )
-
 from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
 from wfi_reference_pipeline.pipelines.flat_pipeline import FlatPipeline
 from wfi_reference_pipeline.pipelines.mask_pipeline import MaskPipeline
