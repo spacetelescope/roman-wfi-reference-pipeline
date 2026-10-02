@@ -46,22 +46,22 @@ jobs:
         if: (github.repository == 'spacetelescope/roman-wfi-reference-pipeline') && (github.event_name == 'release')
         run: |
           echo "TAG=${{ github.ref }}" >> $GITHUB_ENV
-          echo "Release being made from ${{ env.TAG }} "
+          echo "Release being made from ${{ github.ref }} "
       - name: Get Release Tag from User
         if: (github.repository == 'spacetelescope/roman-wfi-reference-pipeline') && (github.event_name == 'workflow_dispatch')
         run: |
           echo "TAG=${{ needs.validate.outputs.job_tag }}" >> $GITHUB_ENV
-          echo "Release being made from ${{ env.TAG }} "
+          echo "Release being made from ${{ github.ref }} "
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ github.ref }}
           persist-credentials: false
           fetch-depth: 0
           fetch-tags: true
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: ${{ vars.PYTHON_VERSION }}
+          python-version: 3
 
       - name: Build the package
         run: |
@@ -78,7 +78,7 @@ jobs:
 
   publish-to-testpypi:
     needs: [build]
-    if: (github.repository == 'spacetelescope/roman-wfi-reference-pipeline')
+    if: ${{ !cancelled() && github.repository == 'spacetelescope/roman-wfi-reference-pipeline' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
@@ -107,7 +107,7 @@ jobs:
 
   publish-to-pypi:
     needs: [build, publish-to-testpypi]
-    if: (!cancelled() && github.repository == 'spacetelescope/roman-wfi-reference-pipeline')
+    if: ${{ !cancelled() && github.repository == 'spacetelescope/roman-wfi-reference-pipeline' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
