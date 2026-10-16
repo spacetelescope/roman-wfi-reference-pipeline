@@ -8,6 +8,8 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.time import Time
 from roman_datamodels import dqflags
+import subprocess
+
 
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
@@ -19,6 +21,17 @@ from wfi_reference_pipeline.constants import (
     WFI_MODE_WIM,
     WFI_REF_TYPES_WITHOUT_INPUT_DATA,
 )
+
+CRDS_OBSERVATORY = "roman"
+CRDS_MASK_REFTYPE = "mask"
+N_WFI_DETECTORS = 18
+
+# Process-wide caches. Building ReferenceType objects for WFI01..WFI18 in one
+# session triggers a single CRDS sync and a single bulk download of all mask
+# files; every later instance just looks its detector up in the dict.
+_CRDS_SYNCED_CONTEXTS = set()
+_CRDS_MASK_FILES = {}  # {crds_context: {"WFI01": "/local/path/roman_wfi_mask_xxxx.asdf", ...}}
+ 
 
 
 class ReferenceType(ABC):
@@ -50,7 +63,9 @@ class ReferenceType(ABC):
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
-                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
+                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT),
+                 get_crds_mask=False,
+                 crds_context=None,
                  ):
 
         have_file_list = False
@@ -82,12 +97,20 @@ class ReferenceType(ABC):
         self.outfile = outfile
         self.clobber = clobber
         self.mask_size = mask_size
+        self.crds_context = crds_context
 
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 
         # Handle bit_mask initialization
         self.dq_mask = self._initialize_mask(bit_mask)
+
+        # Optional CRDS bad pixel mask for this detector
+        self.crds_bad_pixel_map = None
+        self.crds_mask_file = None
+        if get_crds_mask:
+            self.load_crds_mask()
+
 
     def _initialize_mask(self, bit_mask):
         """
@@ -113,6 +136,39 @@ class ReferenceType(ABC):
             return bit_mask
         else:
             return np.zeros(self.mask_size, dtype=np.uint32)
+
+    def load_crds_mask(self, crds_context=None):
+        """
+        Retrieve the CRDS MASK reference file for this detector and store its
+        DQ array in self.crds_bad_pixel_map (uint32) and its path in
+        self.crds_mask_file.
+ 
+        The first call in a Python session syncs CRDS and downloads the mask
+        files for all detectors; later calls reuse them.
+ 
+        Parameters
+        ----------
+        crds_context : str or None, optional
+            Overrides self.crds_context for this call.
+ 
+        Returns
+        -------
+        numpy.ndarray
+            The bad pixel map.
+        """
+        detector = getattr(self.meta_data, "instrument_detector", None)
+        if detector is None:
+            raise ValueError(
+                "Loading the CRDS mask requires meta_data.instrument_detector to be set."
+            )
+ 
+        context = crds_context if crds_context is not None else self.crds_context
+        self.crds_bad_pixel_map, self.crds_mask_file = load_crds_bad_pixel_map(
+            detector, crds_context=context
+        )
+        logging.info(f"Loaded CRDS bad pixel map for {detector} from {self.crds_mask_file}")
+        return self.crds_bad_pixel_map
+    
 
     def check_outfile(self):
         """
