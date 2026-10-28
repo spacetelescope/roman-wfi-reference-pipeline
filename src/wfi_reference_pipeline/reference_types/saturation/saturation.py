@@ -123,6 +123,12 @@ class Saturation(ReferenceType):
 
         self.saturation_image = saturation_threshold * np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 
+        # To improve the extended saturation flagging in romancal, set the reference pixels to INT16 MAX
+        self.saturation_image[:4, :] = 65535
+        self.saturation_image[-4:, :] = 65535
+        self.saturation_image[:, :4] = 65535
+        self.saturation_image[:, -4:] = 65535
+
     def calculate_error(self):
         """
         Abstract method not applicable to Saturation.
