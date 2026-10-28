@@ -301,7 +301,7 @@ class Photom(ReferenceType):
 
 
 
-
+#TODO should we put this in CRDS Utils or leave in photom?
 # -------------------------------
 # Standalone functions for gain and pixel area map
 # -------------------------------
