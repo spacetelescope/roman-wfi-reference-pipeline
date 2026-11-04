@@ -71,13 +71,24 @@ def prep_single(fname):
     """
     in_file = rdm.open(fname)
 
-    # Skip these by default
-    elp_kwargs =  {"steps": {
-                   "source_catalog": {"skip": True},
-                   "tweakreg": {"skip": True},
-                   "flatfield": {"skip": True},
-                   "photom": {"skip": True},
-                  }
+    # Run romancal steps from exposure level pipeline. Skip steps set to True.
+    elp_kwargs = {
+        "steps": {
+            "dq_init": {"skip": False},
+            "saturation": {"skip": False},
+            "refpix": {"skip": False},
+            "dark_decay": {"skip": False},
+            "wfi18_transient": {"skip": False},
+            "linearity": {"skip": False},
+            "rampfit": {"skip": False},
+            "dark_current": {"skip": False},
+            "assign_wcs": {"skip": False},
+            "flatfield": {"skip": True},
+            "photom": {"skip": True},
+            "source_catalog": {"skip": True},
+            "tweakreg": {"skip": True},
+        }
+    }
 
     # Check if any of the steps are done so they can be skipped 
     for key in in_file.meta.cal_step.keys():
