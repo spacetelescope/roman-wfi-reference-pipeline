@@ -8,6 +8,7 @@ from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
     DETECTOR_PIXEL_Y_COUNT,
     REF_PIX_BORDER_COUNT,
+    SATURATION_MAX_THRESHOLD,
 )
 from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturation
 
@@ -129,16 +130,16 @@ class Saturation(ReferenceType):
             raise ValueError("Saturation threshold must be a float or an integer.")
 
         # Check for a valid theshold value
-        if saturation_threshold < 1 or saturation_threshold > np.iinfo(np.uint16).max:
+        if saturation_threshold < 1 or saturation_threshold > SATURATION_MAX_THRESHOLD:
             raise ValueError("Saturation threshold must be 1 or less than unit16 maximum value 66535.")
 
         self.saturation_image = saturation_threshold * np.ones((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.float32)
 
-        # To improve the extended saturation flagging in romancal, set the reference pixels to INT16 MAX or 65535
-        self.saturation_image[:REF_PIX_BORDER_COUNT, :] = np.iinfo(np.uint16).max
-        self.saturation_image[-REF_PIX_BORDER_COUNT:, :] = np.iinfo(np.uint16).max
-        self.saturation_image[:, :REF_PIX_BORDER_COUNT] = np.iinfo(np.uint16).max
-        self.saturation_image[:, -REF_PIX_BORDER_COUNT:] = np.iinfo(np.uint16).max
+        # To improve the extended saturation flagging in romancal, set the reference pixel border to 65535 or 16 bit signed integer limit - np.iinfo(np.uint16).max
+        self.saturation_image[:REF_PIX_BORDER_COUNT, :] = SATURATION_MAX_THRESHOLD
+        self.saturation_image[-REF_PIX_BORDER_COUNT:, :] = SATURATION_MAX_THRESHOLD
+        self.saturation_image[:, :REF_PIX_BORDER_COUNT] = SATURATION_MAX_THRESHOLD
+        self.saturation_image[:, -REF_PIX_BORDER_COUNT:] = SATURATION_MAX_THRESHOLD
 
     def calculate_error(self):
         """

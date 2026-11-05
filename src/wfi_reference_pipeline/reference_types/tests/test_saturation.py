@@ -7,6 +7,7 @@ from wfi_reference_pipeline.constants import (
     REF_PIX_BORDER_COUNT,
     REF_TYPE_READNOISE,
     REF_TYPE_SATURATION,
+    SATURATION_MAX_THRESHOLD,
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
@@ -63,7 +64,7 @@ class TestSaturation:
         and the 4-pixel reference pixel border to 65535.
         """
         threshold = 60000
-        border_value = np.iinfo(np.uint16).max
+        border_value = SATURATION_MAX_THRESHOLD
 
         saturation_object_with_data_array.make_saturation_image(saturation_threshold=threshold)
         saturation_image = saturation_object_with_data_array.saturation_image
