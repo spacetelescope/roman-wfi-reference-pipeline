@@ -52,7 +52,9 @@ class Dark(ReferenceType):
         bit_mask=None,
         outfile="roman_dark.asdf",
         clobber=False,
-        ma_table_id=None
+        ma_table_id=None,
+        get_crds_mask=False,
+        crds_context=None,
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -76,6 +78,11 @@ class Dark(ReferenceType):
             will be raised if duplicate file found.
         ma_table_id: integer, default = None in which case is the diagnostic table (ID 9010)
             Unique MA table ID number in the MA table reference file
+        get_crds_mask: bool; default = False
+            True to retrieve the CRDS MASK reference file for meta_data.instrument_detector 
+            and store its DQ array in self.crds_bad_pixel_map. See ReferenceType.
+        crds_context: str; default = None
+            CRDS context used with get_crds_mask, e.g. 'roman_0042.pmap'. None uses the latest.
         ---------
 
         See reference_type.py base class for additional attributes and methods.
@@ -89,6 +96,8 @@ class Dark(ReferenceType):
             bit_mask=bit_mask,
             outfile=outfile,
             clobber=clobber,
+            get_crds_mask=get_crds_mask,
+            crds_context=crds_context,
         )
 
         # Default meta creation for module specific ref type.

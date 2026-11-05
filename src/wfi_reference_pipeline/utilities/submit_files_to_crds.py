@@ -1,3 +1,6 @@
+#TODO Brad should we combine this into CRDS utils that I just made above?
+
+
 """
 Module for submitting reference files to CRDS. This will auto-populate
 the information for the reference file submission.
