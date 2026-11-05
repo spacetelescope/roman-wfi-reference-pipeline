@@ -4,8 +4,10 @@ import pytest
 from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
     DETECTOR_PIXEL_Y_COUNT,
+    REF_PIX_BORDER_COUNT,
     REF_TYPE_READNOISE,
     REF_TYPE_SATURATION,
+    SATURATION_MAX_THRESHOLD,
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
 from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
@@ -58,10 +60,22 @@ class TestSaturation:
 
     def test_make_saturation_image(self, saturation_object_with_data_array):
         """
-        Test that the make_saturation_image method creates an image of the correct uniform value.
+        Test that make_saturation_image sets science pixels to the threshold
+        and the 4-pixel reference pixel border to 65535.
         """
-        saturation_object_with_data_array.make_saturation_image(saturation_threshold=60000)
-        assert np.all(saturation_object_with_data_array.saturation_image == 60000)
+        threshold = 60000
+        border_value = SATURATION_MAX_THRESHOLD
+
+        saturation_object_with_data_array.make_saturation_image(saturation_threshold=threshold)
+        saturation_image = saturation_object_with_data_array.saturation_image
+
+        # Science pixels are set to the requested threshold
+        assert np.all(saturation_image[REF_PIX_BORDER_COUNT:-REF_PIX_BORDER_COUNT, REF_PIX_BORDER_COUNT:-REF_PIX_BORDER_COUNT] == threshold)
+
+        # All reference pixels on the border are set to the uint16 maximum
+        border_mask = np.ones(saturation_image.shape, dtype=bool)
+        border_mask[REF_PIX_BORDER_COUNT:-REF_PIX_BORDER_COUNT, REF_PIX_BORDER_COUNT:-REF_PIX_BORDER_COUNT] = False
+        assert np.all(saturation_image[border_mask] == border_value)
 
     def test_make_saturation_image_with_invalid_input(self, saturation_object_with_data_array):
         """
