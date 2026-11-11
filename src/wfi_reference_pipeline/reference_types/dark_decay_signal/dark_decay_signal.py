@@ -13,18 +13,15 @@ log = logging.getLogger(__name__)
 
 class DarkDecaySignal(ReferenceType):
     """
-    Creates a Roman WFI Dark Decay Signal reference file that stores
-    amplitude and time constant for all detectors
-
-    No array maps are created — this is a detector-level table from Betti et al. 2025
+    Creates a Roman WFI Dark Decay Signal reference file from hard coded dictionary
+    in this module that contains amplitude and time constant for all detectors.
     
     Example code to generate file:
     from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal import DarkDecaySignal
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.resources.make_ops_meta import MakeOpsMeta
 
-    tmp = MakeDevMeta(ref_type='DARKDECAYSIGNAL')
+    tmp = MakeOpsMeta(ref_type='DARKDECAYSIGNAL', instrument_detector='WFI07')
     tmp.meta_dark_decay_signal.pedigree = 'GROUND'
-    tmp.meta_dark_decay_signal.instrument_detector = 'WFI01'
     tmp.meta_dark_decay_signal.use_after = '2023-08-01T00:00:00.000'
     tmp.meta_dark_decay_signal.author = 'Rick Cosentino'
     tmp.meta_dark_decay_signal.description = 'New calibration reference file that has properties of amplitude 
@@ -33,7 +30,8 @@ class DarkDecaySignal(ReferenceType):
     rfp_dark_decay.generate_outfile()
 
     See Betti, Sarah, et al. 2025, The Statistical Properties of Dark Ramps for the Roman-WFI Detectors, 
-    Technical Report Roman-STScI-000814 (Baltimore: STScI)
+    Technical Report Roman-STScI-000814 (Baltimore: STScI). Table 2, columns TVAC1+2 for Amplitude (DN)
+    and Decay Time Constant (s).
     """
 
     def __init__(self,
