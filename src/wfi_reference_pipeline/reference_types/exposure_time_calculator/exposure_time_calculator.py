@@ -14,14 +14,12 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
     REF_TYPE_SATURATION,
 )
-
 from wfi_reference_pipeline.reference_types.gain.gain import (
     GAIN_CORRECTION_FACTOR,
 )
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
-
 from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
 
 from ..reference_type import ReferenceType
