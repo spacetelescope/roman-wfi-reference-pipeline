@@ -1,4 +1,4 @@
-#TODO Brad should we combine this into CRDS utils that I just made above?
+#TODO Brad should we combine this into CRDS utils somehow or our delivery system perhaps?
 
 
 """

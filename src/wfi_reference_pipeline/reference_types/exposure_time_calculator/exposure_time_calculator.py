@@ -1,15 +1,19 @@
 
 import os
-import shutil
-import subprocess
 from pathlib import Path
 
-import crds
 import numpy as np
 import roman_datamodels as rdm
 import yaml
-from crds.client import api
 from roman_datamodels.datamodels import EtcRefModel
+
+from wfi_reference_pipeline.constants import (
+    REF_TYPE_DARK,
+    REF_TYPE_FLAT,
+    REF_TYPE_GAIN,
+    REF_TYPE_READNOISE,
+    REF_TYPE_SATURATION,
+)
 
 from wfi_reference_pipeline.reference_types.gain.gain import (
     GAIN_CORRECTION_FACTOR,
@@ -18,10 +22,14 @@ from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
 
+from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
+
 from ..reference_type import ReferenceType
 
 ETC_FORM = (Path(__file__).parent / "exposure_time_calculator_form.yml").resolve()
 
+# Optical element whose CRDS flats are used for the flat field values in the ETC form.
+ETC_FLAT_OPTICAL_ELEMENT = "F062"
 
 class ExposureTimeCalculator(ReferenceType):
     """
@@ -128,44 +136,14 @@ class ExposureTimeCalculator(ReferenceType):
 # -------------------------------
 # Standalone function to update form file
 # -------------------------------
-def update_etc_form_from_crds(output_dir):
+def update_etc_form_from_crds():
     """
     Update ETC YAML form with predetermined metrics for readnoise, dark current, and flat field
     values for each WFI detector from CRDS reference files.
+    
+    Reference files are retrieved with CrdsHandler from the latest CRDS context: for each
+    reftype, the file that applies now for each of the 18 detectors. Files are cached in CRDS_PATH.
     """
-    """
-    Load the ETC YAML form and set CRDS server & cache path.
-
-    Parameters
-    ----------
-    output_dir : str
-        Path to the directory where CRDS reference files will be cached/downloaded.
-    """
-
-    print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
-    print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
-    #TODO Test a specific context here or might have to update env var
-    crds_context = crds.get_default_context()
-    print(f"CRDS context: {crds_context}")
-
-    if os.path.exists(output_dir):
-        print(f"Deleting existing output directory: {output_dir}")
-        shutil.rmtree(output_dir)
-
-    print(f"Creating output directory: {output_dir}")
-    os.makedirs(output_dir, exist_ok=True)
-
-    print("Syncing CRDS reference files...")
-    try:
-        result = subprocess.run(
-            ["crds", "sync", "--all"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running crds sync: {e.stderr}")
 
     if not os.path.exists(ETC_FORM):
         raise FileNotFoundError(f"ETC form file not found at {ETC_FORM}")
@@ -177,32 +155,21 @@ def update_etc_form_from_crds(output_dir):
     detectors_form = form.get("detectors", {})
 
     # -------------------------------
-    # Locally download all reference files needed to update ETC config
+    # Locally download all reference files needed to update ETC config, one per detector
     # -------------------------------
-    
+    crds_handler = CrdsHandler()
+
     # ETC operates in e- and e-/s
     # All detector parameters need to be gain-corrected
-    gain_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
-    results = api.dump_references(crds_context, gain_files)
-    gain_filepaths = list(results.values())
-
-    readnoise_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('readnoise').reference_names()
-    results = api.dump_references(crds_context, readnoise_files)
-    readnoise_filepaths = list(results.values())
-
-    dark_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('dark').reference_names()
-    results = api.dump_references(crds_context, dark_files)
-    dark_filepaths = list(results.values())
-
-    # TODO figure out a way to just download one optical element for all 18 detectors using this
-    # or some modification to this code
-    flat_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('flat').reference_names()
-    results = api.dump_references(crds_context, flat_files)
-    flat_filepaths = list(results.values())
-
-    saturation_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('saturation').reference_names()
-    results = api.dump_references(crds_context, saturation_files)
-    saturation_filepaths = list(results.values())
+    gain_filepaths = list(crds_handler.get_reference_files(REF_TYPE_GAIN).values())
+    readnoise_filepaths = list(crds_handler.get_reference_files(REF_TYPE_READNOISE).values())
+    dark_filepaths = list(crds_handler.get_reference_files(REF_TYPE_DARK).values())
+    flat_filepaths = list(
+        crds_handler.get_reference_files(
+            REF_TYPE_FLAT, optical_element=ETC_FLAT_OPTICAL_ELEMENT
+        ).values()
+    )
+    saturation_filepaths = list(crds_handler.get_reference_files(REF_TYPE_SATURATION).values())
 
 
     # -------------------------------
@@ -278,7 +245,7 @@ def update_etc_form_from_crds(output_dir):
     for filepath in flat_filepaths:
         try:
             with rdm.open(filepath) as ref:
-                if ref.meta.instrument.optical_element == 'F062':
+                if ref.meta.instrument.optical_element == ETC_FLAT_OPTICAL_ELEMENT:
                     det = ref.meta.instrument.detector
                     ff_electrons = 1000000      # Hard-coding to a nominal value as of 06/08/2026
                     '''

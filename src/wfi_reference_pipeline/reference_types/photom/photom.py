@@ -1,21 +1,16 @@
-import os
-import shutil
-import subprocess
-from pathlib import Path
-
-import crds
 import numpy as np
 import pandas as pd
 import roman_datamodels as rdm
 import synphot as syn
 from astropy import units as u
 from astropy.stats import sigma_clipped_stats
-from crds.client import api
 from roman_datamodels.datamodels import WfiImgPhotomRefModel
 from synphot.models import Empirical1D
 
 from wfi_reference_pipeline.constants import (
     COLLECTING_AREA_M2,
+    REF_TYPE_GAIN,
+    REF_TYPE_PIXELAREA,
     WFI_REF_OPTICAL_ELEMENTS,
 )
 from wfi_reference_pipeline.reference_types.gain.gain import (
@@ -24,6 +19,7 @@ from wfi_reference_pipeline.reference_types.gain.gain import (
 from wfi_reference_pipeline.resources.wfi_meta_photom import (
     WFIMetaPhotom,
 )
+from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
 
 from ..reference_type import ReferenceType
 
@@ -301,7 +297,7 @@ class Photom(ReferenceType):
 
 
 
-#TODO the CRDS retrieval below can use CrdsHandler().get_reference_files("gain") / ("area")
+
 # -------------------------------
 # Standalone functions for gain and pixel area map
 # -------------------------------
@@ -312,50 +308,22 @@ def build_gain_and_pam_dict_from_crds():
         The dictionary contains 18 entries, each entry with median and std  
     PAM: Read the pam files and build the pam dictionary for all 18 detectors
         The dictionary contains 18 entries, each entry with pixelarea in arcsecsq and steradians 
-    """
-    """
-    Parameters
-    ----------
-    output_dir : str
-        Path to the directory where CRDS reference files will be cached/downloaded.
-    """
-
-    output_dir = (Path(__file__).parent / 'cache').resolve()
-
-    print("CRDS_SERVER_URL:", os.environ.get("CRDS_SERVER_URL"))
-    print("CRDS_PATH:", os.environ.get("CRDS_PATH"))
-
-    crds_context = crds.get_default_context(observatory='roman', state='latest')
-
-    print(f"CRDS context: {crds_context}")
-
-    if os.path.exists(output_dir):
-        print(f"Deleting existing output directory: {output_dir}")
-        shutil.rmtree(output_dir)
-
-    print(f"Creating output directory: {output_dir}")
-    os.makedirs(output_dir, exist_ok=True)
-
-    print("Syncing CRDS reference files...")
-    try:
-        result = subprocess.run(
-            ["crds", "sync", "--all"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running crds sync: {e.stderr}")
-
     
-    # -------------------------------
-    # Locally download the gain files
-    # -------------------------------
+    Returns
+    -------
+    gain_vals: dict
+        {detector: {'median': gain_corrected, 'std': std}}
+    pam_vals: dict
+        {detector: {'pixelarea_arcsecsq': ..., 'pixelarea_steradians': ...}}
+    """
     
-    gain_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('gain').reference_names()
-    results = api.dump_references(crds_context, gain_files)
-    gain_filepaths = list(results.values())
+    # ----------------------------------------------------
+    # Locally download the gain and pixel area map files
+    # ----------------------------------------------------
+
+    crds_handler = CrdsHandler()
+    gain_filepaths = list(crds_handler.get_reference_files(REF_TYPE_GAIN).values())
+    pam_filepaths = list(crds_handler.get_reference_files(REF_TYPE_PIXELAREA).values())
 
     print("Building a gain dictionary for all 18 detectors")
     gain_vals = {}          # Create an empty dictionary to store the gain values for each detector
@@ -377,15 +345,6 @@ def build_gain_and_pam_dict_from_crds():
                 gain_vals[det] = {'median': val_corrected, 'std': std}
         except Exception as e:
             print(f"Error reading {filepath}: {e}")    
-    
-
-    # -------------------------------
-    # Locally download the pam files
-    # -------------------------------
-
-    pam_files = crds.rmap.load_mapping(crds.get_default_context()).get_imap('wfi').get_rmap('area').reference_names()
-    results = api.dump_references(crds_context, pam_files)
-    pam_filepaths = list(results.values())
 
     print("Building a PAM dictionary for all 18 detectors")
     pam_vals = {}

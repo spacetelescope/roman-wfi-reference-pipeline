@@ -20,34 +20,20 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_MASK,
     WFI_DETECTORS,
     WFI_TYPE_IMAGE,
+    WFI_TYPES,
 )
 
-
-CRDS_OBSERVATORY = "roman"
-CRDS_INSTRUMENT = "wfi"
- 
-# rmap selection keys this module knows how to fill in.
-CRDS_DETECTOR_KEY = "ROMAN.META.INSTRUMENT.DETECTOR"
-CRDS_START_TIME_KEY = "ROMAN.META.EXPOSURE.START_TIME"
-CRDS_EXPOSURE_TYPE_KEY = "ROMAN.META.EXPOSURE.TYPE"
- 
-# All selections currently assume imaging mode.
-CRDS_EXPOSURE_TYPE = WFI_TYPE_IMAGE
-SUPPORTED_PARKEYS = {CRDS_DETECTOR_KEY, CRDS_START_TIME_KEY, CRDS_EXPOSURE_TYPE_KEY}
- 
-# Process-wide caches: one sync per context, one bulk download per
-# (context, reftype). Instances for WFI01..WFI18 reuse the same lookup.
-_SYNCED_CONTEXTS = set()
-_REFERENCE_FILES = {}  # {(crds_context, reftype): {"WFI01": "/path/file.asdf", ...}}
  
 class CrdsHandler:
     """
     Class to retrieve existing reference files from CRDS.
  
-    Generic over reference type, so the same code serves MASK (Dark) and
-    GAIN / AREA (Photom, ETC), or any reftype whose rmap selects on detector,
-    exposure type and USEAFTER. Exposure type is assumed to be imaging mode
-    (WFI_IMAGE) for now.
+    Generic over reference type, so the same code serves MASK (Dark),
+    GAIN / AREA (Photom) and GAIN / READNOISE / DARK / FLAT / SATURATION (ETC),
+    or any reftype whose rmap selects on detector, exposure type, optical
+    element and USEAFTER. Exposure type defaults to imaging mode (WFI_IMAGE)
+    and can be set per handler. Optical element is passed in for rmaps that
+    need it (e.g. FLAT).
  
     For each detector, CRDS's own rmap rules choose the file that applies now:
     the file with the latest USEAFTER at or before the current time. Only those
@@ -62,10 +48,14 @@ class CrdsHandler:
         from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
         crds_handler = CrdsHandler()                            # latest context
         crds_handler = CrdsHandler(crds_context='roman_0042.pmap')  # specific context
+        crds_handler = CrdsHandler(exposure_type=WFI_TYPE_GRISM)    # non-imaging exposure type
  
         # {detector: local_file_path} for all detectors
         gain_files = crds_handler.get_reference_files('gain')
         area_files = crds_handler.get_reference_files('area')   # or REF_TYPE_PIXELAREA
+ 
+        # FLAT selects on optical element too, so name one
+        flat_files = crds_handler.get_reference_files('flat', optical_element='F062')
  
         # Local path of one detector's file
         mask_file = crds_handler.get_reference_file('mask', 'WFI07')
@@ -74,23 +64,46 @@ class CrdsHandler:
         bad_pixel_map, mask_file = crds_handler.get_bad_pixel_map('WFI07')
      """
 
-    # Class-level caches shared by all instances: one sync per context,
-    # one bulk download per (context, reftype).
-    _synced_contexts = set()
-    _reference_files = {}  # {(crds_context, reftype): {"WFI01": "/path/file.asdf", ...}}
+    OBSERVATORY = "roman"
+    INSTRUMENT = "wfi"
+ 
+    # rmap selection keys the handler knows how to fill in.
+    DETECTOR_KEY = "ROMAN.META.INSTRUMENT.DETECTOR"
+    START_TIME_KEY = "ROMAN.META.EXPOSURE.START_TIME"
+    EXPOSURE_TYPE_KEY = "ROMAN.META.EXPOSURE.TYPE"
+    OPTICAL_ELEMENT_KEY = "ROMAN.META.INSTRUMENT.OPTICAL_ELEMENT"
+    SUPPORTED_PARKEYS = frozenset(
+        {DETECTOR_KEY, START_TIME_KEY, EXPOSURE_TYPE_KEY, OPTICAL_ELEMENT_KEY}
+    )
 
-    def __init__(self, crds_context=None):
+    # Class-level caches shared by all instances: one sync per context,
+    # one bulk download per (context, reftype, exposure_type, optical_element).
+
+    _synced_contexts = set()
+    _reference_files = {}  # {(crds_context, reftype, exposure_type, optical_element): {"WFI01": "/path/file.asdf", ...}}
+
+    def __init__(self, crds_context=None, exposure_type=WFI_TYPE_IMAGE):
         """
         Parameters
         ----------
         crds_context: str or None, optional
             CRDS context, e.g. 'roman_0042.pmap'. None uses the latest
             operational Roman context.
+        exposure_type: str, optional
+            Exposure type used for rmaps that select on it (e.g. DARK,
+            READNOISE). One of WFI_TYPES; default WFI_TYPE_IMAGE.
         """
+        if exposure_type not in WFI_TYPES:
+            raise ValueError(
+                f"exposure_type must be one of {sorted(WFI_TYPES)}. Got {exposure_type}."
+            )
         self.crds_context = self._resolve_context(crds_context)
-        logging.info(f"CrdsHandler using CRDS context {self.crds_context}")
+        self.exposure_type = exposure_type
+        logging.info(
+            f"CrdsHandler using CRDS context {self.crds_context}, exposure type {self.exposure_type}"
+        )
 
-    def get_reference_files(self, ref_type, refresh=False):
+    def get_reference_files(self, ref_type, optical_element=None, refresh=False):
         """
         Download the CRDS `ref_type` file that applies now for each detector and
         return a {detector: local_path} dictionary.
@@ -105,6 +118,10 @@ class CrdsHandler:
         ref_type: str
             RFP ref type constant (e.g. REF_TYPE_PIXELAREA) or CRDS reftype
             name (e.g. 'gain', 'area', 'mask'). See CRDS_REF_TYPE_MAP.
+        optical_element: str or None, optional
+            Optical element, e.g. 'F062'. Required for reftypes whose rmap
+            selects on optical element (e.g. FLAT); ignored with a warning
+            for reftypes whose rmap does not.
         refresh: bool, optional
             If True, ignore the in-process cache and re-check CRDS.
  
@@ -115,18 +132,21 @@ class CrdsHandler:
             {'WFI01': '/crds_cache/references/roman/wfi/roman_wfi_gain_0012.asdf', ...}
         """
         reftype = self._to_crds_reftype(ref_type)
-        key = (self.crds_context, reftype)
+        if optical_element is not None:
+            optical_element = optical_element.upper()
+        key = (self.crds_context, reftype, self.exposure_type, optical_element)
+ 
  
         if not refresh and key in CrdsHandler._reference_files:
             return CrdsHandler._reference_files[key]
  
         # 1. Sync, then let CRDS pick one file per detector for the current time
-        selected = self._select_reference_files(reftype)
- 
+        selected = self._select_reference_files(reftype, optical_element)
+
         # 2. Which of the selected files are already downloaded?
         local_paths, missing = {}, []
         for name in sorted(set(selected.values())):
-            path = crds_config.locate_file(name, CRDS_OBSERVATORY)
+            path = crds_config.locate_file(name, self.OBSERVATORY)
             if os.path.exists(path):
                 local_paths[name] = path
             else:
@@ -153,16 +173,17 @@ class CrdsHandler:
         return files
  
 
-    def get_reference_file(self, ref_type, detector):
+    def get_reference_file(self, ref_type, detector, optical_element=None):
         """
         Local path of the CRDS `ref_type` file for one detector (e.g. 'WFI01').
- 
+        See `get_reference_files` for optical_element.
+
         Raises
         ------
         KeyError
             If CRDS has no applicable file for the detector.
         """
-        files = self.get_reference_files(ref_type)
+        files = self.get_reference_files(ref_type, optical_element=optical_element)
         if detector not in files:
             raise KeyError(
                 f"No CRDS {ref_type} file for detector {detector}. Available: {sorted(files)}"
@@ -192,11 +213,11 @@ class CrdsHandler:
             bad_pixel_map = np.array(ref.dq, dtype=np.uint32)
         return bad_pixel_map, path
  
-    @staticmethod
-    def _resolve_context(crds_context=None):
+    @classmethod
+    def _resolve_context(cls, crds_context=None):
         """Return crds_context, or the latest operational Roman context if None."""
         if crds_context is None:
-            crds_context = crds.get_default_context(observatory=CRDS_OBSERVATORY, state="latest")
+            crds_context = crds.get_default_context(observatory=cls.OBSERVATORY, state="latest")
         return crds_context
  
     @staticmethod
@@ -236,7 +257,7 @@ class CrdsHandler:
                 "Continuing with the local CRDS cache / server."
             )
  
-    def _select_reference_files(self, reftype):
+    def _select_reference_files(self, reftype, optical_element=None):
         """
         Ask CRDS which file of `reftype` applies to each detector right now.
  
@@ -244,15 +265,18 @@ class CrdsHandler:
         the file with the latest USEAFTER at or before the current time. A file
         whose USEAFTER is in the future is not selected. Nothing is downloaded.
  
-        Selection assumes imaging mode: for rmaps that also select on exposure
-        type (e.g. DARK, READNOISE), ROMAN.META.EXPOSURE.TYPE is set to
-        WFI_IMAGE.
- 
+        For rmaps that also select on exposure type (e.g. DARK, READNOISE),
+        ROMAN.META.EXPOSURE.TYPE is set to self.exposure_type (WFI_IMAGE by
+        default). For rmaps that select on optical element (e.g. FLAT),
+        ROMAN.META.INSTRUMENT.OPTICAL_ELEMENT is set to optical_element.
+
         Parameters
         ----------
         reftype: str
             CRDS reftype, e.g. 'mask', 'gain', 'area'.
- 
+        optical_element: str or None, optional
+            Optical element, e.g. 'F062'.
+            
         Returns
         -------
         dict
@@ -264,25 +288,38 @@ class CrdsHandler:
         ------
         ValueError
             If the reftype's rmap selects on anything other than detector,
-            start time and exposure type (e.g. FLAT also selects on optical
-            element), since the handler cannot fill in those values.
+            start time, exposure type and optical element, or selects on
+            optical element and none was given.
         """
         self._sync_context()
  
         rmap = (
             crds.rmap.load_mapping(self.crds_context)
-            .get_imap(CRDS_INSTRUMENT)
+            .get_imap(self.INSTRUMENT)
             .get_rmap(reftype)
         )
 
  
         required = set(rmap.get_required_parkeys())
-        unsupported = required - SUPPORTED_PARKEYS
+        unsupported = required - self.SUPPORTED_PARKEYS
         if unsupported:
             raise ValueError(
-                f"The {reftype} rmap also selects on {sorted(unsupported)}; "
-                "CrdsHandler only supports detector, start time and exposure type."
+                f"The {reftype} rmap also selects on {sorted(unsupported)}; CrdsHandler "
+                "only supports detector, start time, exposure type and optical element."
             )
+ 
+        selects_on_optical_element = self.OPTICAL_ELEMENT_KEY in required
+        if selects_on_optical_element and optical_element is None:
+            raise ValueError(
+                f"The {reftype} rmap selects on optical element; pass optical_element, "
+                "e.g. optical_element='F062'."
+            )
+        if optical_element is not None and not selects_on_optical_element:
+            logging.warning(
+                f"The {reftype} rmap does not select on optical element; "
+                f"ignoring optical_element={optical_element}."
+            )
+
  
         # CRDS standard date form, e.g. '2026-10-21 16:12:00'
         now = Time.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -291,16 +328,19 @@ class CrdsHandler:
         selected = {}
         for detector in sorted(WFI_DETECTORS):
             header = {
-                CRDS_DETECTOR_KEY: detector,
-                CRDS_START_TIME_KEY: now,
-                CRDS_EXPOSURE_TYPE_KEY: CRDS_EXPOSURE_TYPE,
+                self.DETECTOR_KEY: detector,
+                self.START_TIME_KEY: now,
+                self.EXPOSURE_TYPE_KEY: self.exposure_type,
             }
+            if selects_on_optical_element:
+                header[self.OPTICAL_ELEMENT_KEY] = optical_element
             # get_best_ref returns a basename, None, or a "NOT FOUND ..." string
             bestref = rmap.get_best_ref(header)
             if not bestref or bestref.startswith("NOT FOUND"):
+                element = f" {optical_element}" if selects_on_optical_element else ""
                 logging.warning(
-                    f"No CRDS {reftype} file for {detector} in {self.crds_context}: {bestref}"
-                )
+                    f"No CRDS {reftype}{element} file for {detector} in {self.crds_context}: {bestref}"
+                    )
                 continue
             selected[detector] = bestref
  
