@@ -301,7 +301,7 @@ class Photom(ReferenceType):
 
 
 
-#TODO should we put this in CRDS Utils or leave in photom?
+#TODO the CRDS retrieval below can use CrdsHandler().get_reference_files("gain") / ("area")
 # -------------------------------
 # Standalone functions for gain and pixel area map
 # -------------------------------

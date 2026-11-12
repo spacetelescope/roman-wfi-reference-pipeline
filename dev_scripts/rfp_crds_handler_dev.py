@@ -10,3 +10,13 @@ rfp_dark_wfi01 = Dark(tmp.meta_dark, ref_type_data=sim_dev_rate_image, get_crds_
 
 tmp2 = MakeOpsMeta(ref_type='DARK', instrument_detector='WFI07')
 rfp_dark_wfi07 = Dark(tmp2.meta_dark, ref_type_data=sim_dev_rate_image, get_crds_mask=True)
+
+
+# CrdsHandler on its own: {detector: local_path} dictionaries for any per-detector reftype.
+# Uses the latest CRDS context unless one is passed, e.g. CrdsHandler(crds_context='roman_0042.pmap')
+from wfi_reference_pipeline.constants import REF_TYPE_PIXELAREA
+from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
+ 
+crds_handler = CrdsHandler()
+gain_files = crds_handler.get_reference_files('gain')
+area_files = crds_handler.get_reference_files(REF_TYPE_PIXELAREA)  # same as 'area'

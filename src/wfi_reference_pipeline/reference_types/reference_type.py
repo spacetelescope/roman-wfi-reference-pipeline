@@ -19,7 +19,6 @@ from wfi_reference_pipeline.constants import (
     WFI_MODE_WIM,
     WFI_REF_TYPES_WITHOUT_INPUT_DATA,
 )
-from wfi_reference_pipeline.utilities.crds_utils import load_crds_bad_pixel_map
 
 
 class ReferenceType(ABC):
@@ -42,13 +41,6 @@ class ReferenceType(ABC):
         If True, overwrites the existing outfile without warning.
     mask_size: tuple, optional
         Expected detector dimensions.
-    get_crds_mask: bool, optional
-        If True, retrieve the CRDS MASK reference file for
-        ``meta_data.instrument_detector`` and store its DQ array in
-        ``self.crds_bad_pixel_map``. Default False.
-    crds_context: str or None, optional
-        CRDS context used when retrieving CRDS reference files, e.g.
-        ``'roman_0042.pmap'``. Defaults to the latest operational context.
 
 
     Attributes
@@ -65,26 +57,11 @@ class ReferenceType(ABC):
         Whether an existing ``outfile`` is overwritten.
     mask_size: tuple
         Expected detector dimensions, used as the shape of ``dq_mask``.
-    crds_context: str or None
-        The ``crds_context`` passed in. Used by `load_crds_mask` when it is
-        called without its own context.
     dqflag_defs: roman_datamodels.dqflags.pixel
         Pixel data quality flag definitions from ``roman_datamodels``.
     dq_mask: numpy.ndarray
         uint32 data quality mask. The ``bit_mask`` passed in, or an array of
         zeros with shape ``mask_size`` if none was given.
-    crds_bad_pixel_map: numpy.ndarray or None
-        uint32 DQ array from the CRDS MASK file, shape (4096, 4096).
-        None unless ``get_crds_mask=True`` or `load_crds_mask` was called.
-    crds_mask_file: str or None
-        Local path of the CRDS MASK file that ``crds_bad_pixel_map`` came from.
-
-    Notes
-    -----
-    Retrieving the CRDS mask needs CRDS_SERVER_URL and CRDS_PATH set in the
-    environment. The first instance in a Python session syncs CRDS and
-    downloads the MASK files for all 18 detectors; every later instance
-    reuses them without contacting the server.
     """
 
     def __init__(self,
@@ -95,8 +72,6 @@ class ReferenceType(ABC):
                  outfile=None,
                  clobber=False,
                  mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT),
-                 get_crds_mask=False,
-                 crds_context=None,
                  ):
 
         have_file_list = False
@@ -128,19 +103,12 @@ class ReferenceType(ABC):
         self.outfile = outfile
         self.clobber = clobber
         self.mask_size = mask_size
-        self.crds_context = crds_context
 
         # Load DQ flag definitions from romancal
         self.dqflag_defs = dqflags.pixel
 
         # Handle bit_mask initialization
         self.dq_mask = self._initialize_mask(bit_mask)
-
-        # Optional CRDS bad pixel mask for this detector
-        self.crds_bad_pixel_map = None
-        self.crds_mask_file = None
-        if get_crds_mask:
-            self.load_crds_mask()
 
 
     def _initialize_mask(self, bit_mask):
@@ -168,38 +136,6 @@ class ReferenceType(ABC):
         else:
             return np.zeros(self.mask_size, dtype=np.uint32)
 
-    def load_crds_mask(self, crds_context=None):
-        """
-        Retrieve the CRDS MASK reference file for this detector and store its
-        DQ array in self.crds_bad_pixel_map (uint32) and its path in
-        self.crds_mask_file.
- 
-        The first call in a Python session syncs CRDS and downloads the mask
-        files for all detectors; later calls reuse them.
- 
-        Parameters
-        ----------
-        crds_context : str or None, optional
-            Overrides self.crds_context for this call.
- 
-        Returns
-        -------
-        numpy.ndarray
-            The bad pixel map.
-        """
-        detector = getattr(self.meta_data, "instrument_detector", None)
-        if detector is None:
-            raise ValueError(
-                "Loading the CRDS mask requires meta_data.instrument_detector to be set."
-            )
- 
-        context = crds_context if crds_context is not None else self.crds_context
-        self.crds_bad_pixel_map, self.crds_mask_file = load_crds_bad_pixel_map(
-            detector, crds_context=context
-        )
-        logging.info(f"Loaded CRDS bad pixel map for {detector} from {self.crds_mask_file}")
-        return self.crds_bad_pixel_map
-    
 
     def check_outfile(self):
         """
@@ -336,13 +272,6 @@ class ReferenceTypeMask(ABC):
         Overwrite an existing output file.
     mask_size: tuple, optional
         Expected detector dimensions.
-    get_crds_mask: bool, optional
-        If True, retrieve the CRDS MASK reference file for
-        ``meta_data.instrument_detector`` and store its DQ array in
-        ``self.crds_bad_pixel_map``. Default False.
-    crds_context: str or None, optional
-        CRDS context used when retrieving CRDS reference files, e.g.
-        ``'roman_0042.pmap'``. Defaults to the latest operational context.
 
 
     Attributes
@@ -380,14 +309,6 @@ class ReferenceTypeMask(ABC):
     super_rate_path: str
         Path of the super rate file written to ``outdir``. Only set when the
         super rate is built from ``flat_filelist``.
-    crds_context: str or None
-        The ``crds_context`` passed in. Used by `load_crds_mask` when it is
-        called without its own context.
-    crds_bad_pixel_map: numpy.ndarray or None
-        uint32 DQ array from the CRDS MASK file, shape (4096, 4096).
-        None unless ``get_crds_mask=True`` or `load_crds_mask` was called.
-    crds_mask_file: str or None
-        Local path of the CRDS MASK file that ``crds_bad_pixel_map`` came from.
     """
 
     def __init__(
@@ -400,12 +321,7 @@ class ReferenceTypeMask(ABC):
         input_user_mask=None,
         outfile=None,
         clobber=False,
-        mask_size=(
-            DETECTOR_PIXEL_X_COUNT,
-            DETECTOR_PIXEL_Y_COUNT,
-        ),
-        get_crds_mask=False,
-        crds_context=None,
+        mask_size=(DETECTOR_PIXEL_X_COUNT,DETECTOR_PIXEL_Y_COUNT,),
     ):
 
         self._validate_meta_data(meta_data)
@@ -445,8 +361,6 @@ class ReferenceTypeMask(ABC):
         self.clobber = clobber
         self.mask_size = mask_size
 
-        self.crds_context = crds_context
-
         self.outdir = os.path.dirname(self.outfile)
 
 #TODO consider moving these out of the init method because of how long they take
@@ -462,12 +376,6 @@ class ReferenceTypeMask(ABC):
                             "Mask requires user to supply either input_user_mask, super dark, "
                             "super rate image, or dark/flat file_list."
                         )
-        
-        # Optional CRDS bad pixel mask for this detector
-        self.crds_bad_pixel_map = None
-        self.crds_mask_file = None
-        if get_crds_mask:
-            self.load_crds_mask()
 
     def _prep_super_dark(self, prep_path):
         """
@@ -702,37 +610,6 @@ class ReferenceTypeMask(ABC):
                 f"{expected_shape}. Got {image.shape}."
             )
 
-    def load_crds_mask(self, crds_context=None):
-        """
-        Retrieve the CRDS MASK reference file for this detector and store its
-        DQ array in self.crds_bad_pixel_map (uint32) and its path in
-        self.crds_mask_file.
- 
-        The first call in a Python session syncs CRDS and downloads the mask
-        files for all detectors; later calls reuse them.
- 
-        Parameters
-        ----------
-        crds_context : str or None, optional
-            Overrides self.crds_context for this call.
- 
-        Returns
-        -------
-        numpy.ndarray
-            The bad pixel map.
-        """
-        detector = getattr(self.meta_data, "instrument_detector", None)
-        if detector is None:
-            raise ValueError(
-                "Loading the CRDS mask requires meta_data.instrument_detector to be set."
-            )
- 
-        context = crds_context if crds_context is not None else self.crds_context
-        self.crds_bad_pixel_map, self.crds_mask_file = load_crds_bad_pixel_map(
-            detector, crds_context=context
-        )
-        logging.info(f"Loaded CRDS bad pixel map for {detector} from {self.crds_mask_file}")
-        return self.crds_bad_pixel_map
 
     def _check_outfile(self):
         """

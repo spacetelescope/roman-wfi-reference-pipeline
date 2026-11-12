@@ -11,6 +11,7 @@ from wfi_reference_pipeline.constants import (
 )
 from wfi_reference_pipeline.reference_types.data_cube import DataCube
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
+from wfi_reference_pipeline.utilities.crds_handler import CrdsHandler
 from wfi_reference_pipeline.utilities.ma_table_handler import MATableHandler
 
 from ..reference_type import ReferenceType
@@ -54,7 +55,6 @@ class Dark(ReferenceType):
         clobber=False,
         ma_table_id=None,
         get_crds_mask=False,
-        crds_context=None,
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -79,10 +79,9 @@ class Dark(ReferenceType):
         ma_table_id: integer, default = None in which case is the diagnostic table (ID 9010)
             Unique MA table ID number in the MA table reference file
         get_crds_mask: bool; default = False
-            True to retrieve the CRDS MASK reference file for meta_data.instrument_detector 
-            and store its DQ array in self.crds_bad_pixel_map. See ReferenceType.
-        crds_context: str; default = None
-            CRDS context used with get_crds_mask, e.g. 'roman_0042.pmap'. None uses the latest.
+            True to retrieve the CRDS MASK reference file for meta_data.instrument_detector
+            from the latest CRDS context using CrdsHandler. The DQ array is stored in
+            self.crds_bad_pixel_map and the local file path in self.crds_mask_file.
         ---------
 
         See reference_type.py base class for additional attributes and methods.
@@ -96,8 +95,6 @@ class Dark(ReferenceType):
             bit_mask=bit_mask,
             outfile=outfile,
             clobber=clobber,
-            get_crds_mask=get_crds_mask,
-            crds_context=crds_context,
         )
 
         # Default meta creation for module specific ref type.
@@ -122,6 +119,12 @@ class Dark(ReferenceType):
 
         # Setting the MA table ID
         self.ma_table_id = ma_table_id
+
+        # Optional CRDS bad pixel mask for this detector
+        self.crds_bad_pixel_map = None
+        self.crds_mask_file = None
+        if get_crds_mask:
+            self._load_crds_mask() 
 
         # Module flow for creating reference file.
         # The fle list should only be one file, the super dark file.
@@ -154,6 +157,24 @@ class Dark(ReferenceType):
                 self.dark_rate_image = ref_type_data
             else:
                 raise ValueError("Input data must be a 2D or 3D numpy array.")
+            
+    def _load_crds_mask(self):
+        """
+        Retrieve the CRDS MASK reference file for this detector with CrdsHandler and
+        store its DQ array in self.crds_bad_pixel_map (uint32) and its path in
+        self.crds_mask_file.
+ 
+        The first call in a Python session syncs CRDS and downloads the mask
+        files for all detectors; later calls reuse them.
+        """
+        detector = getattr(self.meta_data, "instrument_detector", None)
+        if detector is None:
+            raise ValueError(
+                "Loading the CRDS mask requires meta_data.instrument_detector to be set."
+            )
+ 
+        self.crds_bad_pixel_map, self.crds_mask_file = CrdsHandler().get_bad_pixel_map(detector)
+        logging.info(f"Loaded CRDS bad pixel map for {detector} from {self.crds_mask_file}")
 
     def _get_data_cube_from_superdark_file(self):
         """

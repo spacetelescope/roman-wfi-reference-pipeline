@@ -57,8 +57,6 @@ class ReadNoise(ReferenceType):
         bit_mask=None,
         outfile="roman_readnoise.asdf",
         clobber=False,
-        get_crds_mask=False,
-        crds_context=None,  
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -80,11 +78,6 @@ class ReadNoise(ReferenceType):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
-        get_crds_mask: bool; default = False
-            True to retrieve the CRDS MASK reference file for meta_data.instrument_detector 
-            and store its DQ array in self.crds_bad_pixel_map. See ReferenceType.
-        crds_context: str; default = None
-            CRDS context used with get_crds_mask, e.g. 'roman_0042.pmap'. None uses the latest.
         ---------
 
         See reference_type.py base class for additional attributes and methods.
@@ -98,8 +91,6 @@ class ReadNoise(ReferenceType):
             bit_mask=bit_mask,
             outfile=outfile,
             clobber=clobber,
-            get_crds_mask=get_crds_mask,
-            crds_context=crds_context,
         )
 
         # Default meta creation for module specific ref type.

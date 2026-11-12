@@ -120,6 +120,23 @@ REF_TYPE_SATURATION = "SATURATION"
 REF_TYPE_SIMPSF = "SIMPSF"
 REF_TYPE_SUPERBIAS = "SUPERBIAS"
 
+
+# RFP ref type -> CRDS reftype (rmap name) used by CrdsHandler.
+# e.g. CrdsHandler().get_reference_files(REF_TYPE_PIXELAREA) selects from the 'area' rmap.
+CRDS_REF_TYPE_MAP = {
+    REF_TYPE_DARK: "dark",
+    REF_TYPE_FLAT: "flat",
+    REF_TYPE_GAIN: "gain",
+    REF_TYPE_INVERSELINEARITY: "inverselinearity",
+    REF_TYPE_LINEARITY: "linearity",
+    REF_TYPE_MASK: "mask",
+    REF_TYPE_PIXELAREA: "area",
+    REF_TYPE_READNOISE: "readnoise",
+    REF_TYPE_REFPIX: "refpix",
+    REF_TYPE_SATURATION: "saturation",
+}
+
+
 REF_TYPE_DESCRIPTION = {
     REF_TYPE_DARK: "dark",
     REF_TYPE_DARKDECAYSIGNAL: "dark decay signal",
