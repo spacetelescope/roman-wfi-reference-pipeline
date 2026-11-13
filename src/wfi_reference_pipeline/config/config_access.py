@@ -71,7 +71,7 @@ def _get_config(config_filename):
      Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load from this folder, e.g. "crds_config.yml".
 
     Returns
     -------
@@ -226,19 +226,19 @@ def get_quality_control_config(ref_type, detector=None, config_file=None):
     return ref_type_config
 
 
-def get_crds_submission_config(config_file="crds_submission_config.yml"):
+def get_crds_config(config_file="crds_config.yml"):
     """
-    Get configuration settings from crds_submission_config.yml.
+    Get all CRDS settings from crds_config.yml, validated against CRDS_CONFIG_SCHEMA.
 
     Parameters
     ----------
     config_file : str, optional
-        The name of the configuration file to load, by default "crds_submission_config.yml".
+        The name of the configuration file to load, by default "crds_config.yml".
 
     Returns
     -------
     dict
-        A dictionary containing the configuration settings.
+        The whole file: {"crds_handler": {...}, "submission_form": {...}}.
 
     Raises
     ------
@@ -252,3 +252,56 @@ def get_crds_submission_config(config_file="crds_submission_config.yml"):
     settings, config_str = _get_config(config_file)
     _validate_config(settings, CRDS_CONFIG_SCHEMA, config_str)
     return settings
+
+
+def get_crds_submission_config(config_file="crds_config.yml"):
+    """
+    Get the CRDS submission form defaults from the submission_form section of crds_config.yml.
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_config.yml".
+
+    Returns
+    -------
+    dict
+        The submission_form settings: instrument, deliverer, file_type, description, etc.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the configuration file is not found.
+    ValueError
+        If the YAML file is incorrectly formatted.
+    ValidationError
+        If the configuration does not match the CRDS_CONFIG_SCHEMA.
+    """
+    return get_crds_config(config_file)["submission_form"]
+
+
+def get_crds_handler_config(config_file="crds_config.yml"):
+    """
+    Get CrdsHandler settings from the crds_handler section of crds_config.yml.
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The name of the configuration file to load, by default "crds_config.yml".
+
+    Returns
+    -------
+    dict
+        The crds_handler settings: server_url, crds_path, crds_context,
+        context_state, exposure_type and sync_mappings.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the configuration file is not found.
+    ValueError
+        If the YAML file is incorrectly formatted.
+    ValidationError
+        If the configuration does not match the CRDS_CONFIG_SCHEMA.
+    """
+    return get_crds_config(config_file)["crds_handler"]

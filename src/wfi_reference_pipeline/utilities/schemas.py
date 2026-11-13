@@ -1,3 +1,5 @@
+from wfi_reference_pipeline.constants import WFI_TYPES
+
 from .quality_control.schema.dark_qc_schema import QC_CONFIG_SCHEMA_DARK
 from .quality_control.schema.flat_qc_schema import QC_CONFIG_SCHEMA_FLAT
 from .quality_control.schema.readnoise_qc_schema import QC_CONFIG_SCHEMA_READNOISE
@@ -42,67 +44,95 @@ CONFIG_SCHEMA = {
     "required": ["logging", "data_files"],
 }
 
-# Define the schema for crds_submission_config.yml
+# Schema for the crds_handler section of crds_config.yml
+CRDS_HANDLER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "server_url": {"type": ["string", "null"], "pattern": "^https?://"},
+        "crds_path": {"type": ["string", "null"], "minLength": 1},
+        # A Roman pipeline mapping, e.g. roman_0042.pmap, or null for the server default
+        "crds_context": {"type": ["string", "null"], "pattern": "^roman_[0-9]{4}\\.pmap$"},
+        "context_state": {"type": "string", "minLength": 1},
+        "exposure_type": {"type": "string", "enum": sorted(WFI_TYPES)},
+        "sync_mappings": {"type": "boolean"},
+    },
+    "required": [
+        "server_url",
+        "crds_path",
+        "crds_context",
+        "context_state",
+        "exposure_type",
+        "sync_mappings",
+    ],
+    # Catch misspelled settings instead of silently ignoring them
+    "additionalProperties": False,
+}
+
+# Schema for the submission_form section of crds_config.yml
+CRDS_SUBMISSION_FORM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "instrument": {"type": "string"},
+        "deliverer": {"type": "string"},
+        "other_email": {"type": "string"},
+        "file_type": {"type": "string"},
+        "history_updated": {"type": "boolean"},
+        "pedigree_updated": {"type": "boolean"},
+        "keywords_checked": {"type": "boolean"},
+        "descrip_updated": {"type": "boolean"},
+        "useafter_updated": {"type": "boolean"},
+        "useafter_matches": {"type": "string"},
+        "compliance_verified": {"type": "string"},
+        "etc_delivery": {"type": "boolean"},
+        "calpipe_version": {"type": "string"},
+        "replacement_files": {"type": "boolean"},
+        "old_reference_files": {"type": "string"},
+        "replacing_badfiles": {"type": "string"},
+        "jira_issue": {"type": "string"},
+        "table_rows_changed": {"type": "string"},
+        "reprocess_affected": {"type": "boolean"},
+        "modes_affected": {"type": "string"},
+        "change_level": {"type": "string"},
+        "correctness_testing": {"type": "string"},
+        "additional_considerations": {"type": "string"},
+        "description": {"type": "string"},
+    },
+    "required": [
+        "instrument",
+        "deliverer",
+        "other_email",
+        "file_type",
+        "history_updated",
+        "pedigree_updated",
+        "keywords_checked",
+        "descrip_updated",
+        "useafter_updated",
+        "useafter_matches",
+        "compliance_verified",
+        "etc_delivery",
+        "calpipe_version",
+        "replacement_files",
+        "old_reference_files",
+        "replacing_badfiles",
+        "jira_issue",
+        "table_rows_changed",
+        "reprocess_affected",
+        "modes_affected",
+        "change_level",
+        "correctness_testing",
+        "additional_considerations",
+        "description",
+    ],
+}
+
+# Define the schema for crds_config.yml
 CRDS_CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
-        "form_info": {
-            "type": "object",
-            "properties": {
-                "instrument": {"type": "string"},
-                "deliverer": {"type": "string"},
-                "other_email": {"type": "string"},
-                "file_type": {"type": "string"},
-                "history_updated": {"type": "boolean"},
-                "pedigree_updated": {"type": "boolean"},
-                "keywords_checked": {"type": "boolean"},
-                "descrip_updated": {"type": "boolean"},
-                "useafter_updated": {"type": "boolean"},
-                "useafter_matches": {"type": "string"},
-                "compliance_verified": {"type": "string"},
-                "etc_delivery": {"type": "boolean"},
-                "calpipe_version": {"type": "string"},
-                "replacement_files": {"type": "boolean"},
-                "old_reference_files": {"type": "string"},
-                "replacing_badfiles": {"type": "string"},
-                "jira_issue": {"type": "string"},
-                "table_rows_changed": {"type": "string"},
-                "reprocess_affected": {"type": "boolean"},
-                "modes_affected": {"type": "string"},
-                "change_level": {"type": "string"},
-                "correctness_testing": {"type": "string"},
-                "additional_considerations": {"type": "string"},
-                "description": {"type": "string"},
-            },
-            "required": [
-                "instrument",
-                "deliverer",
-                "other_email",
-                "file_type",
-                "history_updated",
-                "pedigree_updated",
-                "keywords_checked",
-                "descrip_updated",
-                "useafter_updated",
-                "useafter_matches",
-                "compliance_verified",
-                "etc_delivery",
-                "calpipe_version",
-                "replacement_files",
-                "old_reference_files",
-                "replacing_badfiles",
-                "jira_issue",
-                "table_rows_changed",
-                "reprocess_affected",
-                "modes_affected",
-                "change_level",
-                "correctness_testing",
-                "additional_considerations",
-                "description",
-            ],
-        },
+        "crds_handler": CRDS_HANDLER_SCHEMA,
+        "submission_form": CRDS_SUBMISSION_FORM_SCHEMA,
     },
-    "required": ["form_info"],
+    "required": ["crds_handler", "submission_form"],
 }
 
 # Define the schema for pipelines_config.yml
