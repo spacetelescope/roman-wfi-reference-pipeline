@@ -1,4 +1,3 @@
-from copy import deepcopy
 
 import numpy as np
 import roman_datamodels as rdm
@@ -7,8 +6,8 @@ from astropy import units as u
 from crds import getreferences
 from stpsf import roman
 
- 
 from .detector_response import apply_ipc, apply_prf
+
 
 # ============================================================
 # Utilities help functions
