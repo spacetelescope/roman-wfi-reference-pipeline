@@ -5,9 +5,10 @@ import roman_datamodels as rdm
 import stsynphot as stsyn
 from astropy import units as u
 from crds import getreferences
-from scipy import ndimage
 from stpsf import roman
 
+ 
+from .detector_response import apply_ipc, apply_prf
 
 # ============================================================
 # Utilities help functions
@@ -65,37 +66,6 @@ def build_source_dictionary(
         }
     return source_dict
 
-# ============================================================
-# IPC / PRF
-# ============================================================
-def apply_ipc(
-    psf_array,
-    oversample=4,
-    ipc_kernel=None,
-):
-
-    prf = np.ones((oversample, oversample))
-    result_prf = ndimage.convolve(
-        psf_array,
-        prf,
-        mode="constant",
-        cval=0,
-    )
-
-    if ipc_kernel is None:
-        return result_prf.astype(np.float32)
-    ipc_sparse = np.zeros(
-        (oversample * 2 + 1, oversample * 2 + 1)
-    )
-    ipc_sparse[::oversample, ::oversample] = ipc_kernel
-    result = ndimage.convolve(
-        result_prf,
-        ipc_sparse,
-        mode="constant",
-        cval=0,
-    )
-
-    return result.astype(np.float32)
 
 # ============================================================
 # Core PSF Generator
@@ -114,7 +84,6 @@ def generate_wfi_psf_library(
     nlambda=10,
     include_extended_psf=True,
     extended_fov_pixels=3641,
-    include_noipc=True,
     use_crds_ipc=True,
     ipc_file=None,
     verbose=True,
@@ -127,9 +96,7 @@ def generate_wfi_psf_library(
     dict
         Dictionary containing:
             psf
-            psf_noipc
             extended_psf
-            extended_psf_noipc
             metadata
     """
 
@@ -173,8 +140,8 @@ def generate_wfi_psf_library(
 
     if ipc_file is not None:
         ipc_dm = rdm.open(ipc_file)
-        ipc_kernel = ipc_dm.data
-
+        # Normalized to sum to 1 inside apply_ipc / build_ipc_kernel
+        ipc_kernel = np.asarray(ipc_dm.data, dtype=np.float64)
     # --------------------------------------------------------
     # Allocate arrays
     # --------------------------------------------------------
@@ -191,10 +158,7 @@ def generate_wfi_psf_library(
         ),
         dtype=np.float32,
     )
-    psf_noipc = None
 
-    if include_noipc:
-        psf_noipc = np.zeros_like(psf)
 
     # --------------------------------------------------------
     # Main PSF loop
@@ -236,17 +200,14 @@ def generate_wfi_psf_library(
                     nlambda=nlambda,
                 )
 
-                stamp = result["OVERSAMP"].data.astype(
-                    np.float32
+                # Pixel response first, then IPC.
+                stamp_prf = apply_prf(
+                    result["OVERSAMP"].data,
+                    oversample=oversample,
                 )
 
-                if include_noipc:
-                    psf_noipc[fidx, sidx, pidx] = deepcopy(
-                        stamp
-                    )
-
                 psf[fidx, sidx, pidx] = apply_ipc(
-                    deepcopy(stamp),
+                    stamp_prf,
                     oversample=oversample,
                     ipc_kernel=ipc_kernel,
                 )
@@ -255,7 +216,6 @@ def generate_wfi_psf_library(
     # Extended PSF
     # --------------------------------------------------------
     extended_psf = None
-    extended_psf_noipc = None
 
     if include_extended_psf:
 
@@ -278,15 +238,13 @@ def generate_wfi_psf_library(
             monochromatic=wave,
             oversample=1,
         )
-        ext_stamp = ext["OVERSAMP"].data.astype(
-            np.float32
+        ext_prf = apply_prf(
+            ext["OVERSAMP"].data,
+            oversample=oversample,
         )
 
-        if include_noipc:
-            extended_psf_noipc = deepcopy(ext_stamp)
-
         extended_psf = apply_ipc(
-            deepcopy(ext_stamp),
+            ext_prf,
             oversample=oversample,
             ipc_kernel=ipc_kernel,
         )
@@ -296,9 +254,7 @@ def generate_wfi_psf_library(
     # --------------------------------------------------------
     return {
         "psf": psf,
-        "psf_noipc": psf_noipc,
         "extended_psf": extended_psf,
-        "extended_psf_noipc": extended_psf_noipc,
         "metadata": {
             "detector": detector,
             "optical_element": optical_element,

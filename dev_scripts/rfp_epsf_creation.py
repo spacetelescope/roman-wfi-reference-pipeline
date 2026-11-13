@@ -28,6 +28,20 @@ PIXEL_Y = [
 ]
 
 
+OVERSAMPLE = 4
+ 
+DESCRIPTION = (
+    "Roman WFI empirical PSF (ePSF) library simulated with STPSF. Arrays are "
+    "(focus, spectral type, grid position, y, x) on a grid oversampled by "
+    f"{OVERSAMPLE}. Each STPSF model is convolved with the detector pixel "
+    f"response, a {OVERSAMPLE + 1}x{OVERSAMPLE + 1} kernel of ones with "
+    "half-weight edge rows/columns, so each value is the flux in a native pixel "
+    "centred at that oversampled position (each PSF sums to ~oversample**2). "
+    "psf and extended_psf are then convolved with the CRDS IPC kernel "
+    "renormalized to sum to 1. Both kernels are odd-sized and centred, so the "
+    "PSF centering is unchanged from the STPSF model."
+)
+
 def process_detector_filter(detector, optical_element):
     """
     Generate the PSF object library per detector and filter
@@ -39,6 +53,8 @@ def process_detector_filter(detector, optical_element):
 
     meta.pixel_x = PIXEL_X
     meta.pixel_y = PIXEL_Y
+    meta.oversample = OVERSAMPLE
+    meta.description = DESCRIPTION
 
     result = generate_wfi_psf_library(
         detector=detector,
@@ -49,9 +65,8 @@ def process_detector_filter(detector, optical_element):
         temperatures=[9550, 5778, 2900],
         logg_values=[3.95, 4.44, 5.0],
         defocus_values=[0, 1, 2],
-        oversample=4,
+        oversample=OVERSAMPLE,
         include_extended_psf=True,
-        include_noipc=True,
     )
 
     output_dir = Path("/grp/roman/RFP/DEV/scratch")
@@ -64,8 +79,6 @@ def process_detector_filter(detector, optical_element):
         meta_data=meta,
         psf=result["psf"],
         extended_psf=result["extended_psf"],
-        psf_noipc=result["psf_noipc"],
-        extended_psf_noipc=result["extended_psf_noipc"],
         outfile=outfile,
         clobber=True,
     )
