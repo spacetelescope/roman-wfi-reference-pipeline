@@ -1,9 +1,3 @@
-"""
-Handler for retrieving existing Roman WFI reference files from CRDS.
- 
-Requires CRDS_SERVER_URL and CRDS_PATH to be set in the environment.
-"""
- 
 import logging
 import os
 import subprocess
@@ -26,6 +20,9 @@ from wfi_reference_pipeline.constants import (
  
 class CrdsHandler:
     """
+    Handler for retrieving existing Roman WFI reference files from CRDS.
+    Requires CRDS_SERVER_URL and CRDS_PATH to be set in the environment.
+
     Class to retrieve existing reference files from CRDS.
  
     Generic over reference type, so the same code serves MASK (Dark),

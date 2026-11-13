@@ -21,21 +21,21 @@ common:
 detectors:
   WFI01:
     saturation_on: true
-    saturation_fullwell: 100000  # Typical fullwell depth. Used to determine the saturation by the ETC
-    dark_current_on: true  # Dark used in ETC
-    dark_current: 0.01  # Median dark value in electrons/s
-    readnoise_on: true  # Read noise used in ETC
-    readnoise: 11.44  # Median read noise value in electrons
+    saturation_fullwell: 100000
+    dark_current_on: true
+    dark_current: 0.01
+    readnoise_on: true
+    readnoise: 11.943
     readnoise_correlation_on: false
     flat_field_noise_on: true
-    flat_field_electrons: 1000000  # Total number of electrons in the superflat. Used to determine the flat fielding error by the ETC
+    flat_field_electrons: 1000000
   WFI02:
     saturation_on: true
     saturation_fullwell: 100000
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.77
+    readnoise: 9.647
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -45,7 +45,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 10.0
+    readnoise: 9.994
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -55,7 +55,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 10.36
+    readnoise: 10.424
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -65,7 +65,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.6
+    readnoise: 9.428
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -75,7 +75,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.24
+    readnoise: 9.183
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -85,7 +85,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.21
+    readnoise: 8.977
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -95,7 +95,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 8.55
+    readnoise: 8.471
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -105,7 +105,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 8.93
+    readnoise: 8.741
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -115,7 +115,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 10.69
+    readnoise: 10.598
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -125,7 +125,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.62
+    readnoise: 9.412
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -135,7 +135,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.48
+    readnoise: 9.367
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -145,7 +145,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 10.99
+    readnoise: 11.024
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -155,7 +155,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.21
+    readnoise: 9.082
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -165,7 +165,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.1
+    readnoise: 8.936
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -175,7 +175,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 9.38
+    readnoise: 9.227
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -185,7 +185,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 8.83
+    readnoise: 8.839
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
@@ -195,7 +195,7 @@ detectors:
     dark_current_on: true
     dark_current: 0.01
     readnoise_on: true
-    readnoise: 8.68
+    readnoise: 8.65
     readnoise_correlation_on: false
     flat_field_noise_on: true
     flat_field_electrons: 1000000
