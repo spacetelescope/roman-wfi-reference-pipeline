@@ -23,7 +23,7 @@ from wfi_reference_pipeline.constants import (
 )
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 class MaskPipeline(Pipeline):
@@ -131,7 +131,7 @@ class MaskPipeline(Pipeline):
         """Run the Mask pipeline on self.prepped_files."""
         logging.info(f"Beginning to run Mask pipeline for {self.detector}")
 
-        tmp = MakeDevMeta(ref_type=self.ref_type)
+        tmp = MakeMeta(ref_type=self.ref_type, instrument_detector=self.detector)
 
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_mask.mode,

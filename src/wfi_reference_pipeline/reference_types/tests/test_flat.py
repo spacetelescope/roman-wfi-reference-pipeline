@@ -10,7 +10,7 @@ from wfi_reference_pipeline.constants import (
     SCI_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 skip_on_github = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",
@@ -20,7 +20,7 @@ skip_on_github = pytest.mark.skipif(
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid meta_data for Flat class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_FLAT)
+    test_meta = MakeMeta(ref_type=REF_TYPE_FLAT, instrument_detector="WFI01")
     return test_meta.meta_flat
 
 
@@ -74,7 +74,7 @@ class TestFlat:
         """
         Test that Flat raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_DARK, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             Flat(meta_data=bad_test_meta.meta_dark,
                  ref_type_data=valid_ref_type_data_array)

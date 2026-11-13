@@ -4,7 +4,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_EPSF, REF_TYPE_ETC
 from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_time_calculator import (
     ExposureTimeCalculator,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
     WFIMetaETC,
 )
@@ -13,7 +13,7 @@ from wfi_reference_pipeline.resources.wfi_meta_exposure_time_calculator import (
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaETC metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_ETC)
+    test_meta = MakeMeta(ref_type=REF_TYPE_ETC, instrument_detector="WFI01")
     return test_meta.meta_etc
 
 
@@ -45,7 +45,7 @@ class TestETC:
         """
         Test that ETC raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_EPSF)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_EPSF, instrument_detector="WFI01")
 
         with pytest.raises(TypeError):
             ExposureTimeCalculator(

@@ -2,7 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # This directory has irrc corrected asdf files from TVAC1 total noise test with no light
 tvac1_totalnoise_dir = '/PATH/TO/GROUND_TESTS/TVAC1/ASDF_IRRCcorr/NOM_OPS/OTP00639_All_TV1a_R1_MCEB_IRRCcorr/'
@@ -45,7 +45,7 @@ if make_files:
         output_dir = '/PATH/TO/TVAC/TVAC1/rfp_readnoise_first_pass/'
         outfile = output_dir + 'roman_tvac1_readnoise_rfp_first_pass_'+wfi_id + '.asdf'
 
-        tmp = MakeDevMeta(ref_type='READNOISE')
+        tmp = MakeMeta(ref_type='READNOISE', instrument_detector='WFI01')
         tmp.meta_readnoise.use_after = '2023-08-01T00:00:00.000'
         tmp.meta_readnoise.description = 'Made from TVAC1 Total Noise test data from activity ' \
                                         'OTP00639_All_TV1a_R1_MCEB that had 1/f noise with the IRRC removed.'

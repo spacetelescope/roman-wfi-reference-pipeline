@@ -1,8 +1,8 @@
 from wfi_reference_pipeline.reference_types.photom.photom import Photom
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
-# First create a MakeDevMeta object and update some metadata
-tmp = MakeDevMeta(ref_type='PHOTOM')
+# First create a MakeMeta object and update some metadata
+tmp = MakeMeta(ref_type='PHOTOM', instrument_detector='WFI01')
 print("The default metadata values are: ", tmp.meta_photom)
 
 # Manually setting various metadata

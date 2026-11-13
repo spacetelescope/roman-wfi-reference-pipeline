@@ -12,18 +12,10 @@ Subpackages
 Submodules
 ----------
 
-wfi\_reference\_pipeline.resources.make\_dev\_meta module
----------------------------------------------------------
+wfi\_reference\_pipeline.resources.make\_meta module
+----------------------------------------------------
 
-.. automodule:: wfi_reference_pipeline.resources.make_dev_meta
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-wfi\_reference\_pipeline.resources.make\_test\_meta module
-----------------------------------------------------------
-
-.. automodule:: wfi_reference_pipeline.resources.make_test_meta
+.. automodule:: wfi_reference_pipeline.resources.make_meta
    :members:
    :undoc-members:
    :show-inheritance:

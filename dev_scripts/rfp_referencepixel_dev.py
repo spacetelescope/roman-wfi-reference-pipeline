@@ -6,7 +6,7 @@ from wfi_reference_pipeline.constants import DETECTOR_PIXEL_X_COUNT
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
     ReferencePixel,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities import logging_functions
 
 logging_functions.configure_logging('wfi_refpixel_example')
@@ -20,10 +20,10 @@ detector = 'WFI09'
 
 outfile = '/PATH/TO/scratch/rfp_referencepixel_dev_file_TVAC.asdf'
 
-# Use dev meta maker for REFPIX
-tmp = MakeDevMeta(ref_type='REFPIX')
+# Use meta maker for REFPIX
+tmp = MakeMeta(ref_type='REFPIX', instrument_detector='WFI01')
 # get the meta data
-refpixel_dev_meta = tmp.meta_referencepixel
+refpixel_meta = tmp.meta_referencepixel
 
 tmppath = '/PATH/TO/scratch/'
 skip_first_frame = False
@@ -32,7 +32,7 @@ skip_first_frame = False
 print('-' * 80)
 print('Dev to make ReferencePixel coefficienct with a list of files.')
 # Instantiate rfp referencepixel object.
-rfp_refpix1 = ReferencePixel(meta_data=refpixel_dev_meta,
+rfp_refpix1 = ReferencePixel(meta_data=refpixel_meta,
                 file_list=total_noise_files,
                 outfile=outfile,
                 clobber=True)
@@ -47,7 +47,7 @@ print('Dev to make ReferencePixel coefficienct with one file.')
 outfile = '/PATH/TO/scratch/rfp_referencepixel_dev_file_TVAC2.asdf'
 
 # Instantiate rfp referencepixel object.
-rfp_refpix2 = ReferencePixel(meta_data=refpixel_dev_meta,
+rfp_refpix2 = ReferencePixel(meta_data=refpixel_meta,
                 file_list=total_noise_files[0],
                 outfile=outfile,
                 clobber=True)
@@ -58,13 +58,13 @@ rfp_refpix2.generate_outfile()
 # #####################
 print('-' * 80)
 print('Dev to make ReferencePixel coefficients from a 3D datacube (i.e. one exposure).')
-tmp_class = ReferencePixel(meta_data=refpixel_dev_meta,
+tmp_class = ReferencePixel(meta_data=refpixel_meta,
                 file_list=total_noise_files[0],
                 outfile=outfile,
                 clobber=True)
 data = tmp_class.get_data_cube_from_dark_file(total_noise_files[0], skip_first_frame=skip_first_frame)
 
-rfp_refpix3 = ReferencePixel(meta_data=refpixel_dev_meta,
+rfp_refpix3 = ReferencePixel(meta_data=refpixel_meta,
                 ref_type_data=data,
                 outfile=outfile,
                 clobber=True)
@@ -74,7 +74,7 @@ rfp_refpix3.generate_outfile()
 #####################
 print('-' * 80)
 print('Dev to make ReferencePixel coefficients from a 4D datacube (i.e. multiple exposures).')
-tmp_class = ReferencePixel(meta_data=refpixel_dev_meta,
+tmp_class = ReferencePixel(meta_data=refpixel_meta,
                 file_list=total_noise_files[0:2],
                 outfile=outfile,
                 clobber=True)
@@ -83,7 +83,7 @@ for i, fil in enumerate(total_noise_files[0:2]):
     data = tmp_class.get_data_cube_from_dark_file(fil, skip_first_frame=skip_first_frame)
     large_data[i,:,:,:] = data
 
-rfp_refpix4 = ReferencePixel(meta_data=refpixel_dev_meta,
+rfp_refpix4 = ReferencePixel(meta_data=refpixel_meta,
                 ref_type_data=large_data,
                 outfile=outfile,
                 clobber=True)

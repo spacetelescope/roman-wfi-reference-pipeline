@@ -2,7 +2,7 @@ from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_ti
     ExposureTimeCalculator,
     update_etc_form_from_crds,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # First step in this process is to update the yml form in the repo or write it somewhere else locally.
 update_etc_form_from_crds("/PATH/TO/OUTPUT/DIRECTORY") # TODO - send in output directory
@@ -12,7 +12,7 @@ update_etc_form_from_crds("/PATH/TO/OUTPUT/DIRECTORY") # TODO - send in output d
 
 for det in range(1, 19):
     # Create meta data object for ETC ref file
-    tmp = MakeDevMeta(ref_type='ETC')
+    tmp = MakeMeta(ref_type='ETC', instrument_detector='WFI01')
     # Update meta per detector to get the right values from the form and update description
     tmp.meta_etc.instrument_detector = f"WFI{det:02d}"
     tmp.meta_etc.description = 'To support new ETC ref file creation by Rick Cosentino to help the ETC team use CRDS. Now generated from data model.'

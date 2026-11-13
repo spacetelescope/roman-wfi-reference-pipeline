@@ -9,13 +9,13 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
 )
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid meta_data for the Mask class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_MASK)
+    test_meta = MakeMeta(ref_type=REF_TYPE_MASK, instrument_detector="WFI01")
     return test_meta.meta_mask
 
 @pytest.fixture
@@ -74,7 +74,7 @@ class TestMask:
         """
         Test that Mask raises ValueError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(ValueError):
             Mask(meta_data=bad_test_meta.meta_readnoise, input_user_mask=valid_input_user_mask_array)
 

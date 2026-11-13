@@ -25,7 +25,7 @@ from wfi_reference_pipeline.reference_types.dark.superdark_dynamic import (
 from wfi_reference_pipeline.reference_types.dark.superdark_file_batches import (
     SuperDarkBatches,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.filename_parser import FilenameParser
 from wfi_reference_pipeline.utilities.rtbdb_functions import get_datetime_db_format
 
@@ -308,7 +308,7 @@ class DarkPipeline(Pipeline):
         else:
             file_list = [self.superdark_file]
 
-        tmp = MakeDevMeta(ref_type=self.ref_type)
+        tmp = MakeMeta(ref_type=self.ref_type, instrument_detector=self.detector)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_dark.mode,
             tmp.meta_dark.instrument_detector,

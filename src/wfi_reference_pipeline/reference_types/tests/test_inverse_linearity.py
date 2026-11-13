@@ -10,13 +10,13 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.reference_types.inverse_linearity.inverse_linearity import (
     InverseLinearity,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaInverseLinearity metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_INVERSELINEARITY)
+    test_meta = MakeMeta(ref_type=REF_TYPE_INVERSELINEARITY, instrument_detector="WFI01")
     return test_meta.meta_inverselinearity
 
 
@@ -76,7 +76,7 @@ class TestInverseLinearity:
         """
         Test that InverseLinearity raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
 
         with pytest.raises(TypeError):
             InverseLinearity(

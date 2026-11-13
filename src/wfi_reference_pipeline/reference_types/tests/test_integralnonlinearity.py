@@ -5,13 +5,13 @@ from wfi_reference_pipeline.constants import REF_TYPE_INTEGRALNONLINEARITY
 from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import (
     IntegralNonLinearity,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaIntegralNonLinearity metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_INTEGRALNONLINEARITY)
+    test_meta = MakeMeta(ref_type=REF_TYPE_INTEGRALNONLINEARITY, instrument_detector="WFI01")
     return test_meta.meta_integral_non_linearity
 
 

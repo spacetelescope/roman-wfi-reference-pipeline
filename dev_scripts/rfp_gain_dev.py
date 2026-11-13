@@ -5,14 +5,14 @@ from wfi_reference_pipeline.constants import (
                 DETECTOR_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.gain.gain import Gain
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 print('-' * 80)
 
 print('Dev script to make Gain reference file with user input.')
 outfile = '/PATH/TO/scratch/rfp_gain_dev_file_TVAC.asdf'
-# Use dev meta maker for GAIN
-tmp = MakeDevMeta(ref_type='GAIN')
+# Use meta maker for GAIN
+tmp = MakeMeta(ref_type='GAIN', instrument_detector='WFI01')
 # Example how to change the useafter in the meta data.
 tmp.meta_gain.use_after = '2024-01-01T00:00:00.000'
 # Create a gain array

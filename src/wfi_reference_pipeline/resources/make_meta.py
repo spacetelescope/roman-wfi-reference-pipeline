@@ -6,10 +6,13 @@ from astropy import units as u
 from wfi_reference_pipeline.constants import (
     DEFAULT_DESCRIPTION,
     DEFAULT_DESCRIPTION_SENTINEL,
+    REF_TYPE_ABVEGAMAGNITUDEOFFSET,
+    REF_TYPE_APERTURECORRECTION,
     REF_TYPE_DARK,
     REF_TYPE_DARKDECAYSIGNAL,
     REF_TYPE_DESCRIPTION,
     REF_TYPE_DETECTORSTATUS,
+    REF_TYPE_DISTORTION,
     REF_TYPE_EPSF,
     REF_TYPE_ETC,
     REF_TYPE_FGS_MASK,
@@ -20,6 +23,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_INVERSELINEARITY,
     REF_TYPE_LINEARITY,
     REF_TYPE_MASK,
+    REF_TYPE_MULTIACCUMULATIONTABLE,
     REF_TYPE_PHOTOM,
     REF_TYPE_PIXELAREA,
     REF_TYPE_READNOISE,
@@ -31,12 +35,21 @@ from wfi_reference_pipeline.constants import (
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
 )
+from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
+    WFIMetaABVegaMagnitudeOffset,
+)
+from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
+    WFIMetaApertureCorrection,
+)
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
     WFIMetaDarkDecaySignal,
 )
 from wfi_reference_pipeline.resources.wfi_meta_detector_status import (
     WFIMetaDetectorStatus,
+)
+from wfi_reference_pipeline.resources.wfi_meta_distortion import (
+    WFIMetaDistortion,
 )
 from wfi_reference_pipeline.resources.wfi_meta_empirical_psf import (
     WFIMetaEPSF,
@@ -58,6 +71,9 @@ from wfi_reference_pipeline.resources.wfi_meta_inverse_linearity import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_linearity import WFIMetaLinearity
 from wfi_reference_pipeline.resources.wfi_meta_mask import WFIMetaMask
+from wfi_reference_pipeline.resources.wfi_meta_multiaccumulationtable import (
+    WFIMetaMultiAccumulationTable,
+)
 from wfi_reference_pipeline.resources.wfi_meta_photom import WFIMetaPhotom
 from wfi_reference_pipeline.resources.wfi_meta_pixel_area import WFIMetaPixelArea
 from wfi_reference_pipeline.resources.wfi_meta_readnoise import WFIMetaReadNoise
@@ -69,17 +85,28 @@ from wfi_reference_pipeline.resources.wfi_meta_saturation import WFIMetaSaturati
 ROUTINE_DELIVERY_CADENCES = {"weekly", "monthly"}
 CADENCE_DAYS = {"weekly": 7, "monthly": 30}
 
-class MakeOpsMeta:
+class MakeMeta:
     """
     Class to generate any complete reference file MetaData object.
 
     Example Usage:
-    from wfi_reference_pipeline.resources.make_ops_meta import MakeOpsMeta
-    ops_meta_maker = MakeOpsMeta("DARK", "WFI07")
-    dark_meta_data = ops_meta_maker.meta_dark
+    from wfi_reference_pipeline.constants import REF_TYPE_DARK
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
+    meta_maker = MakeMeta(REF_TYPE_DARK, "WFI07")
+    dark_meta_data = meta_maker.meta_dark
+
+    The meta object is stored as an attribute named for the reference type,
+    e.g. meta_dark, meta_flat, meta_readnoise. Edit its fields (pedigree,
+    description, use_after, ...) before passing it to a reference type class.
     """
 
-    def _create_ops_meta_dark(self, meta_data):
+    def _create_meta_abvegaoffset(self, meta_data):
+        self.meta_abvegaoffset = WFIMetaABVegaMagnitudeOffset(*meta_data)
+
+    def _create_meta_aperturecorrection(self, meta_data):
+        self.meta_aperturecorrection = WFIMetaApertureCorrection(*meta_data)
+
+    def _create_meta_dark(self, meta_data):
         mode = WFI_MODE_WIM
         type = WFI_TYPE_IMAGE
         ref_optical_element = ["F158"]
@@ -87,13 +114,26 @@ class MakeOpsMeta:
         dark_meta_data = [mode, type, ref_optical_element]
         self.meta_dark = WFIMetaDark(*meta_data, *dark_meta_data)
 
-    def _create_ops_meta_dark_decay_signal(self, meta_data):
+    def _create_meta_dark_decay_signal(self, meta_data):
         self.meta_dark_decay_signal = WFIMetaDarkDecaySignal(*meta_data)
 
-    def _create_ops_meta_detector_status(self, meta_data):
+    def _create_meta_detector_status(self, meta_data):
         self.meta_detector_status = WFIMetaDetectorStatus(*meta_data)
+
+    def _create_meta_distortion(self, meta_data):
+        ref_optical_element = "F158"
+        p_optical_element = [ "F062", "F087", "F106", "F129", "F146", "F158", "F184", "F213", "GRISM", "PRISM", "DARK", ]
+        input_units = u.pix
+        output_units = u.arcsec
+
+        distortion_meta_data = [input_units,
+                                output_units,
+                                ref_optical_element,
+                                p_optical_element,
+                                ]
+        self.meta_distortion = WFIMetaDistortion(*meta_data, *distortion_meta_data)
     
-    def _create_ops_meta_epsf(self, meta_data):
+    def _create_meta_epsf(self, meta_data):
         ref_optical_element = "F062"
 
         oversample = 4
@@ -127,22 +167,22 @@ class MakeOpsMeta:
 
         self.meta_epsf = WFIMetaEPSF(*meta_data, *epsf_meta_data)
 
-    def _create_ops_meta_etc(self, meta_data):
+    def _create_meta_etc(self, meta_data):
         self.meta_etc = WFIMetaETC(*meta_data)
 
-    def _create_ops_meta_fgs_mask(self, meta_data):
+    def _create_meta_fgs_mask(self, meta_data):
         self.meta_fgs_mask = WFIMetaFGSMask(*meta_data)
 
-    def _create_ops_meta_flat(self, meta_data):
+    def _create_meta_flat(self, meta_data):
         ref_optical_element = "F158"
 
         flat_meta_data = [ref_optical_element]
         self.meta_flat = WFIMetaFlat(*meta_data, *flat_meta_data)
 
-    def _create_ops_meta_gain(self, meta_data):
+    def _create_meta_gain(self, meta_data):
         self.meta_gain = WFIMetaGain(*meta_data)
 
-    def _create_ops_meta_integral_non_linearity(self, meta_data):
+    def _create_meta_integral_non_linearity(self, meta_data):
         # There are 32 amplifiers to read 128 pixels at a time.
         # https://roman-docs.stsci.edu/data-handbook/wfi-data-levels-and-products/coordinate-systems
         n_channels = 32
@@ -152,13 +192,13 @@ class MakeOpsMeta:
         self.meta_integral_non_linearity = WFIMetaIntegralNonLinearity(*meta_data,
                                                                        *meta_integral_non_linearity)
 
-    def _create_ops_meta_inter_pixel_capacitance(self, meta_data):
+    def _create_meta_inter_pixel_capacitance(self, meta_data):
         ref_optical_element = "F158"
 
         ipc_meta_data = [ref_optical_element]
         self.meta_ipc = WFIMetaInterPixelCapacitance(*meta_data, *ipc_meta_data)
 
-    def _create_ops_meta_inverse_linearity(self, meta_data):
+    def _create_meta_inverse_linearity(self, meta_data):
         input_units = u.DN
         output_units = u.DN
 
@@ -166,17 +206,20 @@ class MakeOpsMeta:
         self.meta_inverselinearity = WFIMetaInverseLinearity(*meta_data,
                                                              *inverselinearity_meta_data)
 
-    def _create_ops_meta_linearity(self, meta_data):
+    def _create_meta_linearity(self, meta_data):
         input_units = u.DN
         output_units = u.DN
 
         linearity_meta_data = [input_units, output_units]
         self.meta_linearity = WFIMetaLinearity(*meta_data, *linearity_meta_data)
 
-    def _create_ops_meta_mask(self, meta_data):
+    def _create_meta_mask(self, meta_data):
         self.meta_mask = WFIMetaMask(*meta_data)
 
-    def _create_ops_meta_pixelarea(self, meta_data):
+    def _create_meta_matable(self, meta_data):
+        self.meta_matable = WFIMetaMultiAccumulationTable(*meta_data)
+
+    def _create_meta_pixelarea(self, meta_data):
         p_optical_element = "F158"  # Default optical element
 
         # pixel scale (Roman WFI is ~0.11 arcsec/pixel)
@@ -193,17 +236,17 @@ class MakeOpsMeta:
             ref_optical_element=p_optical_element,
             )
 
-    def _create_ops_meta_photom(self, meta_data):
+    def _create_meta_photom(self, meta_data):
         self.meta_photom = WFIMetaPhotom(*meta_data)
 
-    def _create_ops_meta_readnoise(self, meta_data):
+    def _create_meta_readnoise(self, meta_data):
         mode = WFI_MODE_WIM
         type = WFI_TYPE_IMAGE
 
         readnoise_meta_data = [mode, type]
         self.meta_readnoise = WFIMetaReadNoise(*meta_data, *readnoise_meta_data)
 
-    def _create_ops_meta_referencepixel(self, meta_data):
+    def _create_meta_referencepixel(self, meta_data):
         input_units = u.DN
         output_units = u.DN
 
@@ -211,7 +254,7 @@ class MakeOpsMeta:
         self.meta_referencepixel = WFIMetaReferencePixel(*meta_data,
                                                          *referencepixel_meta_data)
 
-    def _create_ops_meta_saturation(self, meta_data):
+    def _create_meta_saturation(self, meta_data):
         self.meta_saturation = WFIMetaSaturation(*meta_data)
 
     def __init__(
@@ -347,56 +390,68 @@ class MakeOpsMeta:
         meta_data_params = [ref_type, pedigree, description, author,
                             use_after, telescope, origin, instrument, instrument_detector]
 
+        if ref_type == REF_TYPE_ABVEGAMAGNITUDEOFFSET:
+            self._create_meta_abvegaoffset(meta_data_params)
+
+        if ref_type == REF_TYPE_APERTURECORRECTION:
+            self._create_meta_aperturecorrection(meta_data_params)
+
         if ref_type == REF_TYPE_DARK:
-            self._create_ops_meta_dark(meta_data_params)
+            self._create_meta_dark(meta_data_params)
 
         if ref_type == REF_TYPE_DARKDECAYSIGNAL:
-            self._create_ops_meta_dark_decay_signal(meta_data_params)
+            self._create_meta_dark_decay_signal(meta_data_params)
 
         if ref_type == REF_TYPE_DETECTORSTATUS:
-            self._create_ops_meta_detector_status(meta_data_params)
+            self._create_meta_detector_status(meta_data_params)
+
+        if ref_type == REF_TYPE_DISTORTION:
+            self._create_meta_distortion(meta_data_params)
   
         if ref_type == REF_TYPE_EPSF:
-            self._create_ops_meta_epsf(meta_data_params)
+            self._create_meta_epsf(meta_data_params)
 
         if ref_type == REF_TYPE_ETC:
-            self._create_ops_meta_etc(meta_data_params)
+            self._create_meta_etc(meta_data_params)
 
         if ref_type == REF_TYPE_FGS_MASK:
-            self._create_ops_meta_fgs_mask(meta_data_params)
+            self._create_meta_fgs_mask(meta_data_params)
 
         if ref_type == REF_TYPE_FLAT:
-            self._create_ops_meta_flat(meta_data_params)
+            self._create_meta_flat(meta_data_params)
 
         if ref_type == REF_TYPE_GAIN:
-            self._create_ops_meta_gain(meta_data_params)
+            self._create_meta_gain(meta_data_params)
 
         if ref_type == REF_TYPE_INTEGRALNONLINEARITY:
-            self._create_ops_meta_integral_non_linearity(meta_data_params)
+            self._create_meta_integral_non_linearity(meta_data_params)
 
         if ref_type == REF_TYPE_INVERSELINEARITY:
-            self._create_ops_meta_inverse_linearity(meta_data_params)
+            self._create_meta_inverse_linearity(meta_data_params)
 
         if ref_type == REF_TYPE_INTERPIXELCAPACITANCE:
-            self._create_ops_meta_inter_pixel_capacitance(meta_data_params)
+            self._create_meta_inter_pixel_capacitance(meta_data_params)
 
         if ref_type == REF_TYPE_LINEARITY:
-            self._create_ops_meta_linearity(meta_data_params)
+            self._create_meta_linearity(meta_data_params)
 
         if ref_type == REF_TYPE_MASK:
-            self._create_ops_meta_mask(meta_data_params)
+            self._create_meta_mask(meta_data_params)
+
+        if ref_type == REF_TYPE_MULTIACCUMULATIONTABLE:
+            self._create_meta_matable(meta_data_params)
 
         if ref_type == REF_TYPE_PIXELAREA:
-            self._create_ops_meta_pixelarea(meta_data_params)
+            self._create_meta_pixelarea(meta_data_params)
 
         if ref_type == REF_TYPE_PHOTOM:
-            self._create_ops_meta_photom(meta_data_params)
+            self._create_meta_photom(meta_data_params)
 
         if ref_type == REF_TYPE_READNOISE:
-            self._create_ops_meta_readnoise(meta_data_params)
+            self._create_meta_readnoise(meta_data_params)
 
         if ref_type == REF_TYPE_REFPIX:
-            self._create_ops_meta_referencepixel(meta_data_params)
+            self._create_meta_referencepixel(meta_data_params)
 
         if ref_type == REF_TYPE_SATURATION:
-            self._create_ops_meta_saturation(meta_data_params)
+            self._create_meta_saturation(meta_data_params)

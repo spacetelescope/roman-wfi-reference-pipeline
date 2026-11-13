@@ -20,7 +20,7 @@ from wfi_reference_pipeline.constants import (
 )
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.fgs_mask.fgs_mask import FGSMask
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 class FGSMaskPipeline(Pipeline):
@@ -112,7 +112,7 @@ class FGSMaskPipeline(Pipeline):
         """
         logging.info("FGS_MASK PIPE")
 
-        tmp = MakeDevMeta(ref_type=self.ref_type)
+        tmp = MakeMeta(ref_type=self.ref_type, instrument_detector=self.detector)
 
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_fgs_mask.mode,

@@ -20,9 +20,9 @@ class DarkDecaySignal(ReferenceType):
     
     Example code to generate file:
     from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal import DarkDecaySignal
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
-    tmp = MakeDevMeta(ref_type='DARKDECAYSIGNAL')
+    tmp = MakeMeta(ref_type='DARKDECAYSIGNAL', instrument_detector='WFI01')
     tmp.meta_dark_decay_signal.pedigree = 'GROUND'
     tmp.meta_dark_decay_signal.instrument_detector = 'WFI01'
     tmp.meta_dark_decay_signal.use_after = '2023-08-01T00:00:00.000'

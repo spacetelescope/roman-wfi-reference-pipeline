@@ -9,7 +9,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
 )
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 # Set smaller test data size
@@ -51,7 +51,7 @@ def simulated_reads_filelist(tmp_path_factory, ref_type_data_factory):
 @pytest.fixture(scope="module")
 def valid_meta_data():
     """Fixture for generating valid meta_data for ReadNoise class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+    test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
     return test_meta.meta_readnoise
 
 
@@ -118,7 +118,7 @@ class TestReadNoise:
         """
         Test that ReadNoise raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_DARK, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             ReadNoise(meta_data=bad_test_meta.meta_dark, ref_type_data=valid_ref_type_data_array)
 

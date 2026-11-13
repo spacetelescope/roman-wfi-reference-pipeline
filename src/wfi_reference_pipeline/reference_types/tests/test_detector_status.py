@@ -4,13 +4,13 @@ from wfi_reference_pipeline.constants import REF_TYPE_DETECTORSTATUS
 from wfi_reference_pipeline.reference_types.detector_status.detector_status import (
     DetectorStatus,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaDetectorStatus metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_DETECTORSTATUS)
+    test_meta = MakeMeta(ref_type=REF_TYPE_DETECTORSTATUS, instrument_detector="WFI01")
     return test_meta.meta_detector_status
 
 
@@ -35,7 +35,7 @@ class TestDetectorStatus:
         """
         Test that DetectorStatus raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type="DARKDECAYSIGNAL")  # wrong ref type but a ref type that also does not require input data
+        bad_test_meta = MakeMeta(ref_type="DARKDECAYSIGNAL", instrument_detector="WFI01")  # wrong ref type but a ref type that also does not require input data
         with pytest.raises(TypeError):
             DetectorStatus(meta_data=bad_test_meta.meta_dark_decay_signal)
 

@@ -33,7 +33,7 @@ from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import
     ReferencePixel,
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 skip_on_github = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",
@@ -52,7 +52,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='DARK')
+        tmp = MakeMeta(ref_type='DARK', instrument_detector='WFI01')
         test_data = np.ones((3, 3, 3),
                             dtype=np.float32)
 
@@ -77,7 +77,7 @@ class TestSchema():
         """
 
         # Make test meta
-        tmp = MakeTestMeta(ref_type='DARKDECAYSIGNAL')
+        tmp = MakeMeta(ref_type='DARKDECAYSIGNAL', instrument_detector='WFI01')
 
         # Make RFP DarkDecaySignal reference file object for testing
         rfp_dark_decay = DarkDecaySignal(
@@ -102,7 +102,7 @@ class TestSchema():
         """
 
         # Make test meta
-        tmp = MakeTestMeta(ref_type='DETECTORSTATUS')
+        tmp = MakeMeta(ref_type='DETECTORSTATUS', instrument_detector='WFI01')
 
         # Make RFP DetectorStatus reference file object for testing
         rfp_detector_status = DetectorStatus(
@@ -127,7 +127,7 @@ class TestSchema():
         """
 
         # Make test meta
-        tmp = MakeTestMeta(ref_type='ETC')
+        tmp = MakeMeta(ref_type='ETC', instrument_detector='WFI01')
 
         # Make RFP ExposureTimeCalculator reference file object for testing
         rfp_etc = ExposureTimeCalculator(
@@ -151,7 +151,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='FLAT')
+        tmp = MakeMeta(ref_type='FLAT', instrument_detector='WFI01')
         test_data = np.ones((3, 3), dtype=np.float32)
 
         # Make RFP Flat reference file object for testing.
@@ -174,7 +174,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='GAIN')
+        tmp = MakeMeta(ref_type='GAIN', instrument_detector='WFI01')
         test_data = 2*np.ones((3, 3), dtype=np.float32)
 
         # Make RFP Gain reference file object for testing.
@@ -196,7 +196,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='IPC')
+        tmp = MakeMeta(ref_type='IPC', instrument_detector='WFI01')
         test_data = np.ones((3, 3), dtype=np.float32)
 
         # Make RFP IPC reference file object for testing.
@@ -217,7 +217,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='INVERSELINEARITY')
+        tmp = MakeMeta(ref_type='INVERSELINEARITY', instrument_detector='WFI01')
 
         # Make RFP Inverse Linearity reference file object for testing.
         test_data = np.ones((7, 1, 1),
@@ -241,7 +241,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='LINEARITY')
+        tmp = MakeMeta(ref_type='LINEARITY', instrument_detector='WFI01')
 
         # Make RFP Linearity reference file object for testing.
         test_data = np.ones((7, 1, 1),
@@ -265,7 +265,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='MASK')
+        tmp = MakeMeta(ref_type='MASK', instrument_detector='WFI01')
         test_mask = np.zeros((DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT), dtype=np.uint32)
 
         # Make RFP Mask reference file object for testing.
@@ -288,7 +288,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='READNOISE')
+        tmp = MakeMeta(ref_type='READNOISE', instrument_detector='WFI01')
         test_data = np.ones((1, 1), dtype=np.float32)
 
         # Make RFP Read Noise reference file object for testing.
@@ -309,7 +309,7 @@ class TestSchema():
         """
 
         # Make reftype specific data class object and export meta data as dict.
-        tmp = MakeTestMeta(ref_type='REFPIX')
+        tmp = MakeMeta(ref_type='REFPIX', instrument_detector='WFI01')
 
         # Make RFP Reference Pixel reference file object for testing.
         shape = (2, 4096, 4224)
@@ -332,7 +332,7 @@ class TestSchema():
         """
 
         # Make test meta and data.
-        tmp = MakeTestMeta(ref_type='SATURATION')
+        tmp = MakeMeta(ref_type='SATURATION', instrument_detector='WFI01')
         test_data = np.ones((3, 3), dtype=np.float32)
 
         # Make RFP Saturation reference file object for testing.

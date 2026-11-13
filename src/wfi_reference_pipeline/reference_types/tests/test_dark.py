@@ -11,7 +11,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
 )
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 skip_on_github = pytest.mark.skipif(
@@ -22,7 +22,7 @@ skip_on_github = pytest.mark.skipif(
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid meta_data for Dark class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_DARK)
+    test_meta = MakeMeta(ref_type=REF_TYPE_DARK, instrument_detector="WFI01")
     return test_meta.meta_dark
 
 
@@ -75,7 +75,7 @@ class TestDark:
         """
         Test that Flat raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             Dark(meta_data=bad_test_meta.meta_readnoise, ref_type_data=dark_object_with_data_cube)
 

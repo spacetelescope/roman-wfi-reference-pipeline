@@ -65,7 +65,7 @@ class EmpiricalPSF(ReferenceType):
     def _update_meta_data(self):
         """
         Update meta data for pixel lists if different from what is the standard 
-        in the dev meta maker.
+        in MakeMeta.
         """
 
         self.meta.pixel_x = list(

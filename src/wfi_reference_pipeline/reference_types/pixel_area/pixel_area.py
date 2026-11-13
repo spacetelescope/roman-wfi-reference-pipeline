@@ -28,11 +28,12 @@ class PixelArea(ReferenceType):
     --------
 
     from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import PixelArea
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
-    tmp = MakeDevMeta(ref_type="PIXELAREA")
+    tmp = MakeMeta(ref_type="AREA", instrument_detector="WFI01")
     tmp.meta_pixelarea
-    WFIMetaPixelArea(reference_type='PIXELAREA', pedigree='DUMMY', description='For RFP Development and DMS Build Support.', author='RFP', _use_after=<Time object: scale='utc' format='isot' value=2023-01-01T00:00:00.000>, telescope='ROMAN', origin='STSCI', instrument='WFI', instrument_detector='WFI01', pixelarea_steradians=np.float64(2.844036095230844e-13), pixelarea_arcsecsq=np.float64(0.0121))
+    # WFIMetaPixelArea for WFI01 with ref_optical_element F158 and the nominal
+    # 0.11 arcsec pixel: pixelarea_arcsecsq=0.0121, pixelarea_steradians~2.844e-13
 
     rfp_pam = PixelArea(meta_data=tmp.meta_pixelarea)
 

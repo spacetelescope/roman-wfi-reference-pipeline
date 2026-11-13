@@ -5,7 +5,7 @@ from astropy.time import Time
 from wfi_reference_pipeline.reference_types.aperturecorrection.aperturecorrection import (
     ApertureCorrection,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities import logging_functions
 
 # configure a logging file
@@ -14,7 +14,7 @@ logging_functions.configure_logging("wfi_aperture_correction_creation")
 write_path = Path('/PATH/TO/scratch/') # Set the write path to be in the RFP scratch directory.
 
 # Start by making the generic Meta data for all the files
-tmp = MakeDevMeta(ref_type='APCORR')
+tmp = MakeMeta(ref_type='APCORR', instrument_detector='WFI01')
 tmp.meta_aperturecorrection.author = 'Richard Cosentino'
 tmp.meta_aperturecorrection.use_after = Time('2020-01-01T00:00:00.000')
 tmp.meta_aperturecorrection.pedigree = "SIMULATION"
