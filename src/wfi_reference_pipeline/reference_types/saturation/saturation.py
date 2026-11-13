@@ -57,6 +57,7 @@ class Saturation(ReferenceType):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
+        ---------
 
         See reference_type.py base class for additional attributes and methods.
         """
@@ -68,7 +69,7 @@ class Saturation(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber
+            clobber=clobber,
         )
 
         # Default meta creation for module specific ref type.

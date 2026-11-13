@@ -77,6 +77,7 @@ class Mask(ReferenceTypeMask):
         clobber: Boolean; default = False
             True to overwrite outfile if outfile already exists. False will not overwrite and exception
             will be raised if duplicate file found.
+        
         ---------
         See reference_type.py base class for additional attributes and methods.
         """

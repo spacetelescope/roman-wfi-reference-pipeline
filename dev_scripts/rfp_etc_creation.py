@@ -5,7 +5,7 @@ from wfi_reference_pipeline.reference_types.exposure_time_calculator.exposure_ti
 from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
 
 # First step in this process is to update the yml form in the repo or write it somewhere else locally.
-update_etc_form_from_crds("/PATH/TO/OUTPUT/DIRECTORY") # TODO - send in output directory
+update_etc_form_from_crds()  # CRDS files are cached in CRDS_PATH
 
 # Once the yml form has been updated properly from the files on CRDS from the latest context one
 # can start making etc asdf files ready for CRDS delivery

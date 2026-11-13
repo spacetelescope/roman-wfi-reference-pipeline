@@ -1,3 +1,6 @@
+#TODO Brad should we combine this into CRDS utils somehow or our delivery system perhaps?
+
+
 """
 Module for submitting reference files to CRDS. This will auto-populate
 the information for the reference file submission.
@@ -46,7 +49,7 @@ class WFISubmit:
 
         if form_info is None:
             # Load submission information from the config file if not provided
-            self.submission_dict = get_crds_submission_config()["form_info"]
+            self.submission_dict = get_crds_submission_config()
         else:
             self.submission_dict = form_info
 

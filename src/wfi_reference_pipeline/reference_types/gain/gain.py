@@ -62,7 +62,7 @@ class Gain(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber
+            clobber=clobber,
         )
 
         # Default meta creation for module specific ref type.

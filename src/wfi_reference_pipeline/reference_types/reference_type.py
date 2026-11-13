@@ -27,20 +27,41 @@ class ReferenceType(ABC):
 
     Parameters
     ----------
-    meta_data : object
+    meta_data: object
         Reference type specific meta data object.
-    file_list : list or None, optional
+    file_list: list or None, optional
         List of files to be used for creating the reference file.
-    ref_type_data : numpy.ndarray or None, optional
+    ref_type_data: numpy.ndarray or None, optional
         Data array for the reference type.
-    bit_mask : numpy.ndarray or None, optional
+    bit_mask: numpy.ndarray or None, optional
         Bit mask array corresponding to the data. If provided, it should match the shape of `ref_type_data`.
-    outfile : str or None, optional
+    outfile: str or None, optional
         Path to the output file where the reference data will be saved.
-    clobber : bool, optional
+    clobber: bool, optional
         If True, overwrites the existing outfile without warning.
-    mask_size : tuple, optional
+    mask_size: tuple, optional
         Expected detector dimensions.
+
+
+    Attributes
+    ----------
+    meta_data: object
+        The reference type specific meta data object passed in. If
+        ``meta_data.use_after`` was given as a string, it has been converted
+        to an ``astropy.time.Time`` object.
+    file_list: list or None
+        The ``file_list`` passed in.
+    outfile: str or None
+        Path of the output reference file.
+    clobber: bool
+        Whether an existing ``outfile`` is overwritten.
+    mask_size: tuple
+        Expected detector dimensions, used as the shape of ``dq_mask``.
+    dqflag_defs: roman_datamodels.dqflags.pixel
+        Pixel data quality flag definitions from ``roman_datamodels``.
+    dq_mask: numpy.ndarray
+        uint32 data quality mask. The ``bit_mask`` passed in, or an array of
+        zeros with shape ``mask_size`` if none was given.
     """
 
     def __init__(self,
@@ -50,7 +71,7 @@ class ReferenceType(ABC):
                  bit_mask=None,
                  outfile=None,
                  clobber=False,
-                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT)
+                 mask_size=(DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT),
                  ):
 
         have_file_list = False
@@ -89,6 +110,7 @@ class ReferenceType(ABC):
         # Handle bit_mask initialization
         self.dq_mask = self._initialize_mask(bit_mask)
 
+
     def _initialize_mask(self, bit_mask):
         """
         Initialize the bit mask based on provided parameters.
@@ -113,6 +135,7 @@ class ReferenceType(ABC):
             return bit_mask
         else:
             return np.zeros(self.mask_size, dtype=np.uint32)
+
 
     def check_outfile(self):
         """
@@ -249,6 +272,43 @@ class ReferenceTypeMask(ABC):
         Overwrite an existing output file.
     mask_size: tuple, optional
         Expected detector dimensions.
+
+
+    Attributes
+    ----------
+    meta_data: object
+        The metadata object passed in. Its reference_type is one of
+        WFI_MASK_REF_TYPES.
+    dark_filelist: list or None
+        The ``dark_filelist`` passed in.
+    flat_filelist: list or None
+        The ``flat_filelist`` passed in.
+    super_dark: numpy.ndarray or None
+        The ``input_super_dark`` passed in, or the super dark built from
+        ``dark_filelist`` when none was given.
+    super_rate: numpy.ndarray or None
+        The ``input_super_rate`` passed in, or the super rate image built from
+        ``flat_filelist`` when none was given.
+    mask_image: numpy.ndarray
+        uint32 data quality mask, shape (DETECTOR_PIXEL_Y_COUNT,
+        DETECTOR_PIXEL_X_COUNT). The ``input_user_mask`` passed in, or zeros
+        if none was given. Bad pixels found by the dark / flat workflow are
+        added to it.
+    outfile: str or None
+        Path of the output reference file.
+    clobber: bool
+        Whether an existing ``outfile`` is overwritten.
+    mask_size: tuple
+        Expected detector dimensions.
+    outdir: str
+        Directory of ``outfile``. Intermediate super dark and super rate
+        files are written here.
+    superdark_path: str
+        Path of the super dark file written to ``outdir``. Only set when the
+        super dark is built from ``dark_filelist``.
+    super_rate_path: str
+        Path of the super rate file written to ``outdir``. Only set when the
+        super rate is built from ``flat_filelist``.
     """
 
     def __init__(
@@ -261,10 +321,7 @@ class ReferenceTypeMask(ABC):
         input_user_mask=None,
         outfile=None,
         clobber=False,
-        mask_size=(
-            DETECTOR_PIXEL_X_COUNT,
-            DETECTOR_PIXEL_Y_COUNT,
-        ),
+        mask_size=(DETECTOR_PIXEL_X_COUNT,DETECTOR_PIXEL_Y_COUNT,),
     ):
 
         self._validate_meta_data(meta_data)
@@ -306,6 +363,7 @@ class ReferenceTypeMask(ABC):
 
         self.outdir = os.path.dirname(self.outfile)
 
+#TODO consider moving these out of the init method because of how long they take
         # Creating super darks / rates as necessary
         if self.super_dark is None and self.dark_filelist:
             self.super_dark = self._prep_super_dark(self.outdir)
@@ -318,7 +376,6 @@ class ReferenceTypeMask(ABC):
                             "Mask requires user to supply either input_user_mask, super dark, "
                             "super rate image, or dark/flat file_list."
                         )
-
 
     def _prep_super_dark(self, prep_path):
         """
@@ -552,6 +609,7 @@ class ReferenceTypeMask(ABC):
                 f"'{image_name}' must have shape "
                 f"{expected_shape}. Got {image.shape}."
             )
+
 
     def _check_outfile(self):
         """

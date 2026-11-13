@@ -1,0 +1,57 @@
+# CRDS settings for the reference file pipeline, validated against CRDS_CONFIG_SCHEMA
+# in utilities/schemas.py.
+#   crds_handler:    retrieving existing reference files (utilities/crds_handler.py)
+#   submission_form: delivering reference files to CRDS (utilities/submit_files_to_crds.py)
+
+# -------------------------------
+# CrdsHandler settings
+# -------------------------------
+# Precedence for each setting: CrdsHandler(...) argument > this file > environment
+# (server_url and crds_path only: the environment variable wins over this file).
+crds_handler:
+  # CRDS server and local cache. Used only when CRDS_SERVER_URL / CRDS_PATH are not
+  # already set in the environment. null = leave it to the environment.
+  server_url: null  # e.g. https://roman-crds.stsci.edu
+  crds_path: null   # e.g. /PATH/TO/crds_cache
+
+  # CRDS context. null asks the server for its default context in context_state.
+  # Set a context (e.g. roman_0042.pmap) to pin every CrdsHandler to it.
+  crds_context: null
+  context_state: latest
+
+  # Exposure type for rmaps that select on it (e.g. DARK, READNOISE).
+  # One of WFI_IMAGE, WFI_GRISM, WFI_PRISM.
+  exposure_type: WFI_IMAGE
+
+  # Run `crds sync --contexts <context>` before selecting files. Set false to use
+  # only what is already in the local CRDS cache.
+  sync_mappings: true
+
+# -------------------------------
+# CRDS submission form defaults, used by WFISubmit when form_info is not passed in
+# -------------------------------
+submission_form:
+  instrument: 'WFI'
+  deliverer: "User updated information."
+  other_email: "User updated information."
+  file_type: "User updated information."
+  history_updated: true
+  pedigree_updated: true
+  keywords_checked: true
+  descrip_updated: true
+  useafter_updated: true
+  useafter_matches: "User updated information."
+  compliance_verified: "User updated information."
+  etc_delivery: false
+  calpipe_version: "User updated information."
+  replacement_files: false
+  old_reference_files: ""
+  replacing_badfiles: "User updated information."
+  jira_issue: "User updated information."
+  table_rows_changed: "User updated information."
+  reprocess_affected: false
+  modes_affected: "User updated information."
+  change_level: "MODERATE"
+  correctness_testing: "None"
+  additional_considerations: "None"
+  description: "User updated information."

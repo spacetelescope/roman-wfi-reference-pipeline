@@ -50,7 +50,7 @@ class Flat(ReferenceType):
             bit_mask=None,
             outfile="roman_flat.asdf",
             clobber=False,
-            file_map=None
+            file_map=None,
     ):
         """
         The __init__ method initializes the class with proper input variables needed by the ReferenceType()
@@ -91,7 +91,7 @@ class Flat(ReferenceType):
             ref_type_data=ref_type_data,
             bit_mask=bit_mask,
             outfile=outfile,
-            clobber=clobber
+            clobber=clobber,
         )
 
         # Default meta creation for module specific ref type.

@@ -120,6 +120,34 @@ REF_TYPE_SATURATION = "SATURATION"
 REF_TYPE_SIMPSF = "SIMPSF"
 REF_TYPE_SUPERBIAS = "SUPERBIAS"
 
+
+# RFP ref type -> CRDS reftype (rmap name) used by CrdsHandler.
+# e.g. CrdsHandler().get_reference_files(REF_TYPE_PIXELAREA) selects from the 'area' rmap.
+CRDS_REF_TYPE_MAP = {
+    REF_TYPE_DARK: "dark",
+    REF_TYPE_FLAT: "flat",
+    REF_TYPE_GAIN: "gain",
+    REF_TYPE_INVERSELINEARITY: "inverselinearity",
+    REF_TYPE_LINEARITY: "linearity",
+    REF_TYPE_MASK: "mask",
+    REF_TYPE_PIXELAREA: "area",
+    REF_TYPE_READNOISE: "readnoise",
+    REF_TYPE_REFPIX: "refpix",
+    REF_TYPE_SATURATION: "saturation",
+}
+
+# CRDS names for Roman WFI, used by CrdsHandler. Fixed by CRDS, not user settings;
+# CrdsHandler settings (context, exposure type, sync) live in config/crds_config.yml.
+CRDS_OBSERVATORY = "roman"
+CRDS_INSTRUMENT = "wfi"
+
+# rmap selection keys (parkeys) CrdsHandler knows how to fill in.
+CRDS_DETECTOR_KEY = "ROMAN.META.INSTRUMENT.DETECTOR"
+CRDS_START_TIME_KEY = "ROMAN.META.EXPOSURE.START_TIME"
+CRDS_EXPOSURE_TYPE_KEY = "ROMAN.META.EXPOSURE.TYPE"
+CRDS_OPTICAL_ELEMENT_KEY = "ROMAN.META.INSTRUMENT.OPTICAL_ELEMENT"
+
+
 REF_TYPE_DESCRIPTION = {
     REF_TYPE_DARK: "dark",
     REF_TYPE_DARKDECAYSIGNAL: "dark decay signal",
