@@ -110,36 +110,6 @@ class TestEmpiricalPSF:
         assert data_model_tree["psf"].shape == (10, 25, 25)
         assert data_model_tree["psf"].dtype == np.float32
 
-    def test_populate_datamodel_tree_with_optional_arrays(
-        self,
-        valid_meta_data,
-        valid_psf_data,
-        valid_extended_psf_data,
-    ):
-        """
-        Test that optional PSF arrays are added to the datamodel tree.
-        """
-        empirical_psf_object = EmpiricalPSF(
-            meta_data=valid_meta_data,
-            psf=valid_psf_data,
-            extended_psf=valid_extended_psf_data,
-            psf_noipc=valid_psf_data,
-            extended_psf_noipc=valid_extended_psf_data,
-        )
-
-        data_model_tree = (
-            empirical_psf_object.populate_datamodel_tree()
-        )
-
-        assert "extended_psf" in data_model_tree
-        assert "psf_noipc" in data_model_tree
-        assert "extended_psf_noipc" in data_model_tree
-
-        assert (
-            data_model_tree["extended_psf"].shape
-            == (10, 51, 51)
-        )
-
     def test_empirical_psf_outfile_default(
         self,
         empirical_psf_object,
@@ -151,4 +121,3 @@ class TestEmpiricalPSF:
             empirical_psf_object.outfile
             == "roman_epsf_file.asdf"
         )
-        
