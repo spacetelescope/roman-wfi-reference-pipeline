@@ -29,7 +29,7 @@ PIXEL_Y = [
 
 
 OVERSAMPLE = 4
- 
+
 DESCRIPTION = (
     "Roman WFI empirical PSF (ePSF) library simulated with STPSF. Arrays are "
     "(focus, spectral type, grid position, y, x) on a grid oversampled by "
@@ -64,7 +64,7 @@ def process_detector_filter(detector, optical_element):
         spectral_types=["A0V", "G2V", "M5V"],
         temperatures=[9550, 5778, 2900],
         logg_values=[3.95, 4.44, 5.0],
-        defocus_values=[0, 1, 2],
+        defocus_values=[0],
         oversample=OVERSAMPLE,
         include_extended_psf=True,
     )
@@ -72,7 +72,7 @@ def process_detector_filter(detector, optical_element):
     output_dir = Path("/grp/roman/RFP/DEV/scratch")
     outfile = output_dir / (
         f"wfi{detector:02d}_"
-        f"{optical_element.lower()}_epsf.asdf"
+        f"{optical_element.lower()}_epsf_RGC20261115.asdf"
     )
 
     epsf = EmpiricalPSF(
