@@ -151,3 +151,4 @@ class TestEmpiricalPSF:
             empirical_psf_object.outfile
             == "roman_epsf_file.asdf"
         )
+        
