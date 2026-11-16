@@ -29,6 +29,7 @@ PIXEL_Y = [
 
 
 OVERSAMPLE = 4
+DEFOCUS = [0]
 
 DESCRIPTION = (
     "Roman WFI empirical PSF (ePSF) library simulated with STPSF. Arrays are "
@@ -41,6 +42,7 @@ DESCRIPTION = (
     "renormalized to sum to 1. Both kernels are odd-sized and centred, so the "
     "PSF centering is unchanged from the STPSF model."
 )
+
 
 def process_detector_filter(detector, optical_element):
     """
@@ -55,6 +57,7 @@ def process_detector_filter(detector, optical_element):
     meta.pixel_y = PIXEL_Y
     meta.oversample = OVERSAMPLE
     meta.description = DESCRIPTION
+    meta.defocus = DEFOCUS
 
     result = generate_wfi_psf_library(
         detector=detector,
@@ -64,7 +67,7 @@ def process_detector_filter(detector, optical_element):
         spectral_types=["A0V", "G2V", "M5V"],
         temperatures=[9550, 5778, 2900],
         logg_values=[3.95, 4.44, 5.0],
-        defocus_values=[0],
+        defocus_values=DEFOCUS,
         oversample=OVERSAMPLE,
         include_extended_psf=True,
     )
@@ -83,7 +86,10 @@ def process_detector_filter(detector, optical_element):
         clobber=True,
     )
 
-    return epsf, epsf.generate_outfile()
+    epsf.generate_outfile()
+ 
+    # Return only the path so finished arrays are not sent back to the client
+    return str(outfile)
 
 
 # ============================================================
@@ -130,7 +136,7 @@ def main(n_workers=0):
     # PARALLEL MODE
     # --------------------------------------------------------
     print(f"Running in PARALLEL mode with {n_workers} workers.")
-    client = Client(n_workers=n_workers, threads_per_worker=1)
+    client = Client(n_workers=n_workers, threads_per_worker=1, memory_limit="8GB")
     print(f"Dask dashboard: {client.dashboard_link}")
     tasks = []
 
@@ -144,11 +150,12 @@ def main(n_workers=0):
                     optical_element,
                 )
             )
-    client.gather(tasks)
+    results = client.gather(tasks, errors="skip")
+    print(f"Wrote {len(results)} of {len(tasks)} files.")
     client.close()
 
 
 if __name__ == "__main__":
 
-    # default mode is serial and not parallelized
-    main(n_workers=20)
+    # n_workers=0 runs serially; 8 workers covers 1 detector x 8 filters
+    main(n_workers=8)
