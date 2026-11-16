@@ -504,10 +504,6 @@ def test_seed_applied_once_per_sca(monkeypatch, output_dir, config_dict):
 def _load_real_dark_config():
     import yaml
     config_path = Path(__file__).resolve().parents[1] / "simulate_darks_config.yml"
-
-    for key, value in section.items():
-        assert isinstance(value, (int, float)), f"{key}={value!r} is not a number"
-
     with open(config_path) as f:
         config = yaml.safe_load(f)
     # A detector listed with nothing after it (e.g. "1:") loads as None and uses the defaults.
@@ -517,6 +513,7 @@ def _load_real_dark_config():
 
 def test_real_config_parses_numbers():
     config, overrides = _load_real_dark_config()
+
     for section in [config["defaults"], *overrides.values()]:
         for key, value in section.items():
             assert isinstance(value, (int, float)), f"{key}={value!r} is not a number"
