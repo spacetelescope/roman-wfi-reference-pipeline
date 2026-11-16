@@ -12,6 +12,71 @@ from wfi_reference_pipeline.constants import (
 )
 
 
+def _pixel_count(mean_count, count_var, rng=np.random):
+    """Number of pixels to inject; YAML values like 1e6 arrive as strings or floats."""
+    mean_count = int(float(mean_count))
+    if float(count_var) == 0:
+        return mean_count
+    return max(0, round(rng.normal(mean_count, float(count_var))))
+
+def make_dark_rate_image(
+    ni=DETECTOR_PIXEL_X_COUNT,
+    dark_rate=0.01,
+    dark_rate_var=0.001,
+    hot_pix_rate=0.25,
+    hot_pix_rate_var=0.10,
+    num_hot_pix=2000,
+    num_hot_pix_var=0,
+    warm_pix_rate=0.050,
+    warm_pix_rate_var=0.010,
+    num_warm_pix=1000,
+    num_warm_pix_var=0,
+    dead_pix_rate=0.0001,
+    dead_pix_rate_var=0.00001,
+    num_dead_pix=500,
+    num_dead_pix_var=0,
+    seed=None,
+):
+    
+    """
+    Dark rate image [ni, ni] with randomly placed hot, warm, and dead pixels.
+    The parameters are the same as in simulate_dark_reads. With a seed the image,
+    including where every hot, warm, and dead pixel lands, is identical on every
+    call, so one detector can keep the same pixel population across exposures.
+    The seed uses its own random generator and does not touch np.random's global state.
+    """
+    rng = np.random.RandomState(seed) if seed is not None else np.random
+    rate_image = rng.normal(dark_rate, scale=dark_rate_var, size=(ni, ni))
+    for rate, rate_var, count, count_var in (
+        (hot_pix_rate, hot_pix_rate_var, num_hot_pix, num_hot_pix_var),
+        (warm_pix_rate, warm_pix_rate_var, num_warm_pix, num_warm_pix_var),
+        (dead_pix_rate, dead_pix_rate_var, num_dead_pix, num_dead_pix_var),
+    ):
+        n_pix = _pixel_count(count, count_var, rng)
+        coords_x = rng.randint(0, ni, n_pix)
+        coords_y = rng.randint(0, ni, n_pix)
+        rate_image[coords_x, coords_y] = rng.normal(rate, scale=rate_var, size=n_pix)
+    return rate_image
+
+
+def make_read_noise_image(
+    ni=DETECTOR_PIXEL_X_COUNT,
+    read_noise=4.0,
+    read_noise_var=1.0,
+    seed=None,
+):
+    """
+    Per-pixel read noise map [ni, ni] in DN: the standard deviation of the noise
+    in a single read for each pixel, drawn from Normal(read_noise, read_noise_var)
+    and clipped at 0. With a seed the map is identical on every call, so a detector
+    keeps the same noisy and quiet pixels across exposures. The seed uses its own
+    random generator and does not touch np.random's global state.
+    """
+    rng = np.random.RandomState(seed) if seed is not None else np.random
+    noise_image = rng.normal(read_noise, scale=read_noise_var, size=(ni, ni))
+    return np.clip(noise_image, 0, None).astype(np.float32)
+
+
 def simulate_dark_reads(
     n_reads,
     read_pattern=None,
@@ -33,14 +98,19 @@ def simulate_dark_reads(
     num_dead_pix_var=0,
     noise_mean=0.001,
     noise_std=0.0005,
+    rate_image=None,
+    read_noise=0.0,
+    read_noise_var=0.0,
+    read_noise_image=None,
+    bias_level=0.0,
 ):
     """
     Function to create a dark read cube with random number of hot, warm, and dead pixels.
-
     Parameters
     ----------
     n_reads: int;
         The number of reads to be simulated into a cube of n_reads x ni x ni.
+        The number of reads to simulate. Must equal read_pattern[-1][-1] when read_pattern is given.
     read_pattern: list of lists; Default=None (Diagnostic table)
         Nested list of lists with integers for averaging reads into resultants.
     ni: int: default = DETECTOR_PIXEL_X_COUNT;
@@ -48,12 +118,15 @@ def simulate_dark_reads(
     exp_time: float; default = WFI_FRAME_TIME[WFI_MODE_WIM]
         WIM exposure time is set to default from constants.py in seconds.
     dark_rate: float; default = 0.005
+    dark_rate: float; default = 0.01
         The simulated detector dark rate in e/p/s electrons per pixel per second.
     dark_rate_var: float; default = 0.001
         The variance in the simulated dark rate.
     hot_pix_rate: float; default = 0.015
+    hot_pix_rate: float; default = 0.25
         The simulated hot pixel rate in e/p/s.
     hot_pix_rate_var: float; default = 0.010
+    hot_pix_rate_var: float; default = 0.10
         The variance in the simulated hot pixel rate.
     num_hot_pix: int; default = 2000
         Average random number of hot pixels injected into dark rate image.
@@ -80,10 +153,27 @@ def simulate_dark_reads(
     noise_std: float; default = 0.0005
         The standard deviation in the Gaussian spread or width of
         frame noise added to the noise mean for the array.
+    rate_image: ndarray [ni, ni]; default = None
+        Reuse an existing dark rate image (e.g. from make_dark_rate_image with a
+        detector seed) so hot, warm, and dead pixels stay in place across exposures.
+        If given, the dark/hot/warm/dead pixel parameters are ignored. If None, a new
+        rate image is made from those parameters.
+    read_noise: float; default = 0.0
+        Mean single-read read noise in DN. If > 0 and read_noise_image is None, a
+        per-pixel read noise map is made with make_read_noise_image.
+    read_noise_var: float; default = 0.0
+        Pixel-to-pixel spread (standard deviation) of the read noise in DN.
+    read_noise_image: ndarray [ni, ni]; default = None
+        Per-pixel single-read read noise in DN (e.g. from make_read_noise_image with a
+        detector seed). Each read gets Normal(0, read_noise_image) added, so averaging
+        n reads into a resultant lowers its noise by about sqrt(n).
+    bias_level: float; default = 0.0
+        Bias in DN set at the start of the exposure (the reset level). Every read
+        carries it, so it stays in every resultant and keeps noise from going below 0.
 
     Returns
     ----------
-    read_cube [n_reads, DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT], rate_image [DETECTOR_PIXEL_X_COUNT, DETECTOR_PIXEL_Y_COUNT]
+    resampled_data [n_resultants, ni, ni] (or [n_reads, ni, ni] with no read_pattern), rate_image [ni, ni]
     """
 
     logging.info("Making dark read cube.")
@@ -108,84 +198,62 @@ def simulate_dark_reads(
     else:
         raise ValueError("Invalid WFI frame time.")
 
-    # Initialize rate image.
-    rate_image = np.random.normal(dark_rate, scale=dark_rate_var, size=(ni, ni))
+    if rate_image is None:
+        rate_image = make_dark_rate_image(
+            ni=ni,
+            dark_rate=dark_rate, dark_rate_var=dark_rate_var,
+            hot_pix_rate=hot_pix_rate, hot_pix_rate_var=hot_pix_rate_var,
+            num_hot_pix=num_hot_pix, num_hot_pix_var=num_hot_pix_var,
+            warm_pix_rate=warm_pix_rate, warm_pix_rate_var=warm_pix_rate_var,
+            num_warm_pix=num_warm_pix, num_warm_pix_var=num_warm_pix_var,
+            dead_pix_rate=dead_pix_rate, dead_pix_rate_var=dead_pix_rate_var,
+            num_dead_pix=num_dead_pix, num_dead_pix_var=num_dead_pix_var,
+        )
+    elif rate_image.shape != (ni, ni):
+        raise ValueError(f"rate_image shape {rate_image.shape} does not match ({ni}, {ni}).")
 
-    # Determine the number of hot pixels.
-    if num_hot_pix_var == 0:
-        hot_pix_count = num_hot_pix
-    else:
-        hot_pix_count = round(random.gauss(num_hot_pix, num_hot_pix_var))
-
-    # Get locations and apply hot pixels to rate image.
-    coords_x = np.random.randint(0, ni, hot_pix_count)
-    coords_y = np.random.randint(0, ni, hot_pix_count)
-    hot_pixels = np.random.normal(
-        hot_pix_rate, scale=hot_pix_rate_var, size=hot_pix_count
-    )
-    rate_image[coords_x, coords_y] = hot_pixels
-
-    # Determine the number of warm pixels.
-    if num_warm_pix_var == 0:
-        warm_pix_count = num_warm_pix
-    else:
-        warm_pix_count = round(random.gauss(num_warm_pix, num_warm_pix_var))
-
-    # Get locations and apply warm pixels to rate image.
-    coords_x = np.random.randint(0, ni, warm_pix_count)
-    coords_y = np.random.randint(0, ni, warm_pix_count)
-    warm_pixels = np.random.normal(
-        warm_pix_rate, scale=warm_pix_rate_var, size=warm_pix_count
-    )
-    rate_image[coords_x, coords_y] = warm_pixels
-
-    # Determine the number of dead pixels.
-    if num_dead_pix_var == 0:
-        dead_pix_count = num_dead_pix
-    else:
-        dead_pix_count = round(random.gauss(num_dead_pix, num_dead_pix_var))
-
-    # Get locations and apply dead pixels to rate image.
-    coords_x = np.random.randint(0, ni, dead_pix_count)
-    coords_y = np.random.randint(0, ni, dead_pix_count)
-    dead_pixels = np.random.normal(
-        dead_pix_rate, scale=dead_pix_rate_var, size=dead_pix_count
-    )
-    rate_image[coords_x, coords_y] = dead_pixels
-
-    # Create the read cube using the rate image and noise per read.
-    read_cube = np.zeros((n_reads, ni, ni), dtype=np.float32)  # Initialize read cube
-
-    for read_r in range(0, n_reads):
-        # Create read cube by simulating data in reads and add noise.
-        rn = np.random.normal(
-            loc=noise_mean, scale=noise_std, size=(ni, ni)
-        ) # Random noise term to add; simulate a read noise.
-        read_cube[read_r, :, :] = (read_r + 1) * exp_time * rate_image + rn 
+    if read_noise_image is None and read_noise > 0:
+        read_noise_image = make_read_noise_image(ni, read_noise, read_noise_var)
+    if read_noise_image is not None:
+        if read_noise_image.shape != (ni, ni):
+            raise ValueError(
+                f"read_noise_image shape {read_noise_image.shape} does not match ({ni}, {ni})."
+            )
+        print(f"Adding read noise: median {np.median(read_noise_image):.2f} DN per read.")
+    if bias_level:
+        print(f"Adding a bias of {bias_level} DN at the start of the exposure.")
 
 
-    if read_pattern: 
-        # Non-diagnostic tables         
-        # Need to re-sample the reads
+    def _simulate_read(read_num):
+        # Bias from the start of the exposure + signal accumulated up to this read
+        # + a random noise term for this read.
+        rn = np.random.normal(loc=noise_mean, scale=noise_std, size=(ni, ni))
+        if read_noise_image is not None:
+            rn += read_noise_image * np.random.standard_normal(size=(ni, ni))
+        return bias_level + read_num * exp_time * rate_image + rn
+
+    if read_pattern:
+        # Non-diagnostic tables: average reads into resultants.
         n_resultants = len(read_pattern)
         if n_reads != read_pattern[-1][-1]:
             # Check to make sure n_reads match the last frame in the read_pattern
-            # If fails, stop here
             raise ValueError('n_reads does not match with the last frame number in read_pattern.')
-        else:
-            # Re-sample to average reads into resultants
-            resampled_data = np.zeros((n_resultants,ni, ni), dtype=np.float32)
-
-            for resultant_i, read_pattern_frames in enumerate(read_pattern):
-                # Average the data by summing read by read and dividing by number of reads
-                for read_i in read_pattern_frames:
-                    print(f'read_i: {read_i}, read_pattern_frames: {read_pattern_frames}')
-                    resampled_data[resultant_i] += read_cube[read_i - 1]  # Adjusted for 0 indexing
-                resampled_data[resultant_i] /= len(read_pattern_frames)
+        
+        print(f"Simulating {n_reads} reads of {ni} x {ni} pixels.")
+        print(f"Averaging {n_reads} reads into {n_resultants} resultants using the read pattern.")
+        # Build each resultant as its reads are made, so the full
+        # n_reads x ni x ni read cube is never held in memory.
+        resampled_data = np.zeros((n_resultants, ni, ni), dtype=np.float32)
+        for resultant_i, read_pattern_frames in enumerate(read_pattern):
+            for read_num in read_pattern_frames:
+                resampled_data[resultant_i] += _simulate_read(read_num)
+            resampled_data[resultant_i] /= len(read_pattern_frames)
     else:
-        # Diagnostic tables
-        # Returning the read_cube as is as the 'resampled_data'
-        resampled_data = read_cube        
+        # Diagnostic tables: every read is its own resultant.
+        print(f"Simulating {n_reads} reads of {ni} x {ni} pixels.")
+        resampled_data = np.zeros((n_reads, ni, ni), dtype=np.float32)
+        for read_r in range(n_reads):
+            resampled_data[read_r] = _simulate_read(read_r + 1) 
 
     return resampled_data, rate_image
 

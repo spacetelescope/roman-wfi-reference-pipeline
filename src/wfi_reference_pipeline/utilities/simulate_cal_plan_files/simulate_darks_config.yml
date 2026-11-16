@@ -1,44 +1,100 @@
 defaults:
-  dark_rate: 1.01  # DN/s
-  dark_rate_var: 1.001  # DN/s
-  hot_pix_rate: 5.25  # DN/s
-  hot_pix_rate_var: 1.10  # DN/s
-  num_hot_pix: 2000  # Number of pixels
-  num_hot_pix_var: 0  # Number of pixels
-  warm_pix_rate: 2.050  # DN/s
-  warm_pix_rate_var: 1.010  # DN/s
-  num_warm_pix: 1000  # Number of pixels
+  dark_rate: 0.01  # DN/s and the actual is 0.01 DN/s
+  dark_rate_var: 0.005  # DN/s
+  hot_pix_rate: 1.7  # DN/s from Harish the min hot dark rate is 0.3 DN/s and the upper limit for really hot is 3.0 DN/s
+  hot_pix_rate_var: 0.3  # DN/s the hot pix rate with this variance has about 99.7% of hot pixels with a rate between 0.3-3.0 DN/s
+  # there still can be negative random rates here but because we see these in telegraph, I'm leaving as is
+  num_hot_pix: 30000  # Number of pixels
+  num_hot_pix_var: 0  # Number of pixels, keep zero so counts are set per detector exactly
+  warm_pix_rate: 0.06  # DN/s
+  warm_pix_rate_var: 0.0  # DN/s
+  num_warm_pix: 60000  # Number of pixels
   num_warm_pix_var: 0  # Number of pixels
-  dead_pix_rate: .0001  # DN/s
+  dead_pix_rate: 0.0001  # DN/s
   dead_pix_rate_var: 0.00001  # DN/s
-  num_dead_pix: 5000  # Number of pixels
-  num_dead_pix_var: 100  # Number of pixels
+  num_dead_pix: 10000  # Number of pixels
+  num_dead_pix_var: 0  # Number of pixels
   noise_mean: 0.001  # DN
-  noise_std: 0.0005  # DN
+  noise_std: 0.001  # DN
+  read_noise: 5.0  # DN; mean single-read read noise per pixel
+  read_noise_var: 1.0  # DN; pixel-to-pixel spread, so ~99.7% of pixels have 2-8 DN read noise.
+  # Each pixel's read noise level is fixed per detector (same in every exposure);
+  # every read still gets a new random draw at that level. Not time dependent.
+  bias_level: 2000  # DN; set at the start of each exposure and carried by every read
 
+  # Seed for each detector's rate image is rate_image_seed + detector number
+  # (WFI01 -> 1001, ..., WFI18 -> 1018). The rate image fixes where every hot, warm,
+  # and dead pixel is, so those pixels are identical in every exposure of a detector,
+  # in both the weekly and long darks. Set rate_image_seed under one detector to
+  # use that exact seed instead.
+  rate_image_seed: 1000
+  # Optional: seed for the read noise. Applied once per detector, so runs are
+  # reproducible while each exposure still gets different noise.
+  # seed: 42
+
+
+# Every detector sets its own hot, warm, and dead pixel counts so the populations
+# differ between detectors. WFI08 is the one detector with a high number of dead pixels.
 sca_overrides:
 # detector WFI01 is normal
+  1:
 
 # WFI02 is a hot rate detector
   2:
-    dark_rate: 1.40  # DN/s
+    dark_rate: 1.0  # DN/s
+
 # WFI03 is a detector with A LOT of HOT PIXELS
   3:
-    num_hot_pix: 1e6  # Number of pixels
+    num_hot_pix: 1000000  # Number of pixels
+
 # WFI04 is a warm detector
   4:
-    warm_pix_rate: 1.01  # DN/s
+    dark_rate: 0.07  # DN/s
+
 # WFI05 is a detector with A LOT of WARM PIXELS
   5:
-    num_warm_pix: 3e6  # Number of pixels
+    num_warm_pix: 3000000
+  
 # WFI06 is a detector with a really low dark rate
   6:
-    dark_rate: 0.1  # DN/s
+    dark_rate: 0.008  # DN/s
     dark_rate_var: 0  # DN/s
+
+# Not touching WFI07
+  7:
+
 # WF008 has had problems before with a stuck bit so putting A LOT of DEAD PIXELS
   8:
-    num_dead_pix: 6e6  # Number of pixels
-# WFI18 has the anomaly on the lower portion of the detector so let's give it a high number of dead and hot pixels
+    num_dead_pix: 900000
+
+  9:
+    num_hot_pix: 700000
+
+  10:
+    num_hot_pix: 60000
+
+  11:
+    num_warm_pix: 300000
+
+  12:
+    num_warm_pix: 20000
+
+  13:
+
+  14:
+
+  15:
+
+  16:
+
+  17:
+
+
+# WFI18 has the anomaly on the lower portion of the detector, so it gets a higher
+# dark rate, a noise offset, and extra hot pixels
   18:
-    dark_rate: 1.2  # DN/s
-    noise_mean: 1.1  # DN
+    dark_rate: 2.1  # DN/s
+    noise_mean: 0.1  # DN
+    num_hot_pix: 5000
+    num_warm_pix: 3000
+    num_dead_pix: 1000

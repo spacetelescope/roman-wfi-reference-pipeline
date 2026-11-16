@@ -8,12 +8,41 @@ import pytest
 
 from wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan import (
     BaseDarkSimulation,
+    LongDarkSimulation,
     WeeklyDarkSimulation,
 )
 
 # ============================================================
 # Fixtures
 # ============================================================
+
+
+# Stand-in read patterns so tests never hit CRDS.
+FAKE_READ_PATTERNS = {
+    1010: [[1], [2, 3], [4, 5, 6], [7, 8, 9, 10], [11, 12], [13], [14, 15], [16]],
+    9003: [[i] for i in range(1, 56)],
+}
+
+class FakeMATableHandler:
+    def _get_table_specific_info(self, ma_table_id=9010):
+        return FAKE_READ_PATTERNS[ma_table_id], None
+    
+@pytest.fixture(autouse=True)
+def fake_ma_table_handler(monkeypatch):
+    monkeypatch.setattr(BaseDarkSimulation, "_ma_table_handler", FakeMATableHandler())
+
+@pytest.fixture(autouse=True)
+def fake_rate_image(monkeypatch):
+    """Small, seed-tagged rate images: value = seed, plus the params used to make it."""
+    made = []
+    def fake_make(seed=None, **params):
+        made.append({"seed": seed, **params})
+        return np.full((4, 4), float(seed))
+    monkeypatch.setattr(
+        "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan.make_dark_rate_image",
+        fake_make,
+    )
+    return made
 
 @pytest.fixture
 def output_dir(tmp_path):
@@ -102,12 +131,58 @@ def test_get_ma_table_config_weekly(basic_dark):
 
     cfg = basic_dark._get_ma_table_config()
 
-    assert cfg["truncate"] is None
-    assert cfg["n_reads"] == 8
+    assert cfg["read_pattern"] == FAKE_READ_PATTERNS[1010]
+    assert cfg["n_resultants"] == 8
+    assert cfg["n_reads"] == FAKE_READ_PATTERNS[1010][-1][-1]
 
+def test_get_ma_table_config_truncated(output_dir):
+    sim = BaseDarkSimulation(
+        output_dir=output_dir,
+        program="00999",
+        start_time="2026-01-01T00:00:00",
+        num_exposures=1,
+        scas=[1],
+        ma_table_number=9003,
+        truncate=15,
+    )
+    cfg = sim._get_ma_table_config()
+    assert cfg["n_resultants"] == 15
+    assert cfg["n_reads"] == 15
+
+def test_long_dark_uses_diagnostic_table(output_dir):
+    sim = LongDarkSimulation(output_dir=output_dir, scas=[1])
+    assert sim.ma_table_number == 9003
+    assert sim.truncate == 15
+    assert sim._get_ma_table_config()["n_reads"] == 15
+
+def test_run_romanisim_truncate_flag(monkeypatch, output_dir):
+    mock_run = MagicMock()
+    mock_run.return_value.returncode = 0
+    monkeypatch.setattr("subprocess.run", mock_run)
+    sim = LongDarkSimulation(output_dir=output_dir, scas=[1])
+    sim._run_romanisim(Path("t.asdf"), sim.start_time, sca=1)
+    cmd = mock_run.call_args[0][0]
+    assert cmd[cmd.index("--truncate") + 1] == "15"
+    assert cmd[cmd.index("--ma_table_number") + 1] == "9003"
+
+def test_post_process_passes_read_pattern(monkeypatch, tmp_path, basic_dark):
+    captured = {}
+    def fake_simulate(n_reads, read_pattern=None, **kwargs):
+        captured["n_reads"] = n_reads
+        captured["read_pattern"] = read_pattern
+        return np.ones((len(read_pattern), 4, 4)), None
+    monkeypatch.setattr(
+        "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan.simulate_dark_reads",
+        fake_simulate,
+    )
+    mock_ctx = MagicMock()
+    mock_ctx.__enter__.return_value.tree = {"roman": {"meta": {"instrument": {}}}}
+    monkeypatch.setattr("asdf.open", lambda *a, **k: mock_ctx)
+    basic_dark._post_process(filename=tmp_path / "fake.asdf", sca=1)
+    assert captured["read_pattern"] == FAKE_READ_PATTERNS[1010]
+    assert captured["n_reads"] == captured["read_pattern"][-1][-1]
 
 def test_invalid_ma_table(output_dir):
-
     sim = BaseDarkSimulation(
         output_dir=output_dir,
         program="00999",
@@ -332,3 +407,152 @@ def test_post_process_smoke(monkeypatch, tmp_path, basic_dark):
     )
 
     assert "data" in mock_asdf.tree["roman"]
+
+
+# ============================================================
+# Rate image reuse, seeding, and integer conversion
+# ============================================================
+def _patch_asdf(monkeypatch, store):
+    ctx = MagicMock()
+    ctx.__enter__.return_value.tree = store
+    monkeypatch.setattr("asdf.open", lambda *a, **k: ctx)
+
+def test_post_process_reuses_rate_image_per_sca(monkeypatch, tmp_path, basic_dark, fake_rate_image):
+    seen = []
+    def fake_simulate(n_reads, read_pattern=None, rate_image=None, **kwargs):
+        seen.append(rate_image)
+        return np.ones((len(read_pattern), 4, 4)), rate_image
+    monkeypatch.setattr(
+        "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan.simulate_dark_reads",
+        fake_simulate,
+    )
+    _patch_asdf(monkeypatch, {"roman": {"meta": {"instrument": {}}}})
+    basic_dark._post_process(tmp_path / "a.asdf", sca=1)
+    basic_dark._post_process(tmp_path / "b.asdf", sca=1)
+    basic_dark._post_process(tmp_path / "c.asdf", sca=3)
+    assert len(fake_rate_image) == 2               # one rate image per SCA, not per exposure
+    assert seen[0] is seen[1]                      # both SCA 1 exposures use the same one
+    assert seen[0][0, 0] == 1001                   # default seed 1000 + SCA 1
+    assert seen[2][0, 0] == 1003                   # SCA 3 has its own
+
+def test_rate_image_same_across_simulations(output_dir):
+    weekly = WeeklyDarkSimulation(output_dir=output_dir, scas=[7])
+    long = LongDarkSimulation(output_dir=output_dir, scas=[7])
+    assert weekly._get_rate_image_seed(7) == long._get_rate_image_seed(7)
+    np.testing.assert_array_equal(weekly._get_rate_image(7, {}), long._get_rate_image(7, {}))
+
+def test_rate_image_seed_from_config(monkeypatch, output_dir):
+    config = {
+        "defaults": {"rate_image_seed": 500},
+        "sca_overrides": {2: {"rate_image_seed": 77}},
+    }
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas=[1, 2], ma_table_number=1010, config_file="dummy.yml",
+    )
+    assert sim._get_rate_image_seed(1) == 501
+    assert sim._get_rate_image_seed(2) == 77
+    assert "rate_image_seed" not in sim._get_sca_dark_params(2)
+
+def test_rate_image_uses_detector_counts(monkeypatch, output_dir, fake_rate_image):
+    config = {
+        "defaults": {"num_hot_pix": 10, "noise_std": 2.0},
+        "sca_overrides": {4: {"num_hot_pix": 99, "num_dead_pix": 5}},
+    }
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas=[4], ma_table_number=1010, config_file="dummy.yml",
+    )
+    sim._get_rate_image(4, sim._get_sca_dark_params(4))
+    assert fake_rate_image[-1]["num_hot_pix"] == 99
+    assert fake_rate_image[-1]["num_dead_pix"] == 5
+    assert "noise_std" not in fake_rate_image[-1]   # noise settings are not rate image settings
+
+def test_post_process_clips_and_rounds_to_uint16(monkeypatch, tmp_path, basic_dark):
+    cube = np.array([-3.5, 0.4, 0.6, 70000.0], dtype=np.float32).reshape(4, 1, 1)
+    monkeypatch.setattr(
+        "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan.simulate_dark_reads",
+        lambda n_reads, **kwargs: (cube, None),
+    )
+    store = {"roman": {"meta": {"instrument": {}}}}
+    _patch_asdf(monkeypatch, store)
+    basic_dark._post_process(tmp_path / "a.asdf", sca=1)
+    data = store["roman"]["data"]
+    assert data.dtype == np.uint16
+    assert data.ravel().tolist() == [0, 0, 1, 65535]
+
+
+def _load_real_dark_config():
+    import yaml
+    config_path = Path(__file__).resolve().parents[1] / "simulate_darks_config.yml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    # A detector listed with nothing after it (e.g. "1:") loads as None and uses the defaults.
+    overrides = {sca: (entry or {}) for sca, entry in (config.get("sca_overrides") or {}).items()}
+    return config, overrides
+
+
+def test_real_config_parses_numbers():
+    config, overrides = _load_real_dark_config()
+
+    for section in [config["defaults"], *overrides.values()]:
+        for key, value in section.items():
+            assert isinstance(value, (int, float)), f"{key}={value!r} is not a number"
+
+
+def test_real_config_detector_populations(monkeypatch, output_dir):
+    config, overrides = _load_real_dark_config()
+    defaults = config["defaults"]
+    def value(sca, key):
+        return overrides.get(sca, {}).get(key, defaults[key])
+    # Every detector gets its own rate image seed, so hot/warm/dead pixel
+    # locations differ between detectors even when their counts are the defaults.
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas="ALL_WFI", ma_table_number=1010, config_file="dummy.yml",
+    )
+    seeds = [sim._get_rate_image_seed(sca) for sca in range(1, 19)]
+    assert len(set(seeds)) == 18
+
+    # Exactly one detector has a high number of dead pixels.
+    dead = np.array([float(value(sca, "num_dead_pix")) for sca in range(1, 19)])
+    assert (dead > 10 * np.median(dead)).sum() == 1
+
+    # Counts are exact (no random spread) so they stay fixed per detector.
+    for k in ("num_hot_pix_var", "num_warm_pix_var", "num_dead_pix_var"):
+        assert defaults[k] == 0
+
+
+def test_read_noise_map_fixed_per_sca(monkeypatch, tmp_path, output_dir):
+    config = {"defaults": {"read_noise": 4.0, "read_noise_var": 1.0, "bias_level": 2000}}
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas=[1, 2], ma_table_number=1010, config_file="dummy.yml",
+    )
+    made, calls = [], []
+    def fake_noise_map(seed=None, **kwargs):
+        made.append({"seed": seed, **kwargs})
+        return np.full((4, 4), float(seed))
+    def fake_simulate(n_reads, read_pattern=None, rate_image=None, read_noise_image=None, **kwargs):
+        calls.append({"read_noise_image": read_noise_image, **kwargs})
+        return np.full((len(read_pattern), 4, 4), 2000.0), rate_image
+    module = "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan"
+    monkeypatch.setattr(f"{module}.make_read_noise_image", fake_noise_map)
+    monkeypatch.setattr(f"{module}.simulate_dark_reads", fake_simulate)
+    _patch_asdf(monkeypatch, {"roman": {"meta": {"instrument": {}}}})
+    sim._post_process(tmp_path / "a.asdf", sca=1)
+    sim._post_process(tmp_path / "b.asdf", sca=1)
+    sim._post_process(tmp_path / "c.asdf", sca=2)
+    assert [m["seed"] for m in made] == [101001, 101002]   # one map per SCA, not per exposure
+    assert made[0]["read_noise"] == 4.0 and made[0]["read_noise_var"] == 1.0
+    assert calls[0]["read_noise_image"] is calls[1]["read_noise_image"]
+    assert calls[0]["bias_level"] == 2000
+    assert "read_noise" not in calls[0] and "read_noise_var" not in calls[0]
+
+    
+def test_no_read_noise_map_without_config(basic_dark):
+    assert basic_dark._get_read_noise_image(1, {}) is None
