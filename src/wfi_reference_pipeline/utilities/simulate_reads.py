@@ -11,6 +11,7 @@ from wfi_reference_pipeline.constants import (
     WFI_MODE_WSM,
 )
 
+
 def _pixel_count(mean_count, count_var, rng=np.random):
     """Number of pixels to inject; YAML values like 1e6 arrive as strings or floats."""
     mean_count = int(float(mean_count))

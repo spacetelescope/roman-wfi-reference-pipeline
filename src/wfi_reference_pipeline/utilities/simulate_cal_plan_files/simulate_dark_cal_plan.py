@@ -14,6 +14,7 @@ from wfi_reference_pipeline.utilities.simulate_reads import (
     make_dark_rate_image,
     simulate_dark_reads,
 )
+
 # Parameters that define a detector's rate image (where hot/warm/dead pixels are and their rates).
 RATE_IMAGE_PARAMS = set(inspect.signature(make_dark_rate_image).parameters) - {"seed"}
 
