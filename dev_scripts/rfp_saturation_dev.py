@@ -5,14 +5,14 @@ from wfi_reference_pipeline.constants import (
                             DETECTOR_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 print('-' * 80)
 
 print('Dev script to make Saturation reference file with user input.')
 outfile = '/PATH/TO/scratch/rfp_saturation_dev_file_TVAC.asdf'
-# Use dev meta maker for SATURATION.
-tmp = MakeDevMeta(ref_type='SATURATION')
+# Use meta maker for SATURATION.
+tmp = MakeMeta(ref_type='SATURATION', instrument_detector='WFI01')
 # Example how to change the useafter in the meta data.
 tmp.meta_saturation.use_after = '2024-01-01T00:00:00.000'
 # Create an empty mask array.
@@ -32,8 +32,8 @@ print('-' * 80)
 
 print('Dev script to make Saturation reference file for romancal development on CRDS')
 outfile2 = '/PATH/TO/scratch/rfp_saturation_dev_file_CRDS.asdf'
-# Use dev meta maker for SATURATION
-tmp2 = MakeDevMeta(ref_type='SATURATION')
+# Use meta maker for SATURATION
+tmp2 = MakeMeta(ref_type='SATURATION', instrument_detector='WFI01')
 # Create some sort of data. The ReferenceType base class needs to be instantiated
 # with an array or a file list. The Saturation() module does not yet have the file
 # list implementation.

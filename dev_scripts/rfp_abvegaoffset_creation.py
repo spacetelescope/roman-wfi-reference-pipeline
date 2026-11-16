@@ -5,7 +5,7 @@ from astropy.time import Time
 from wfi_reference_pipeline.reference_types.abvegamagnitudeoffset.abvegamagnitudeoffset import (
     ABVegaMagnitudeOffset,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities import logging_functions
 
 # configure a logging file
@@ -14,7 +14,7 @@ logging_functions.configure_logging("wfi_ABVega_mag_offset_creation")
 write_path = Path('/PATH/TO/scratch/') # Set the write path to be in the RFP scratch directory.
 
 # Start by making the generic Meta data for all the files
-tmp = MakeDevMeta(ref_type='ABVEGAOFFSET')
+tmp = MakeMeta(ref_type='ABVEGAOFFSET', instrument_detector='WFI01')
 tmp.meta_abvegaoffset.author = 'Author Name'
 tmp.meta_abvegaoffset.use_after = Time('2020-01-01T00:00:00.000')
 tmp.meta_abvegaoffset.pedigree = "GROUND"

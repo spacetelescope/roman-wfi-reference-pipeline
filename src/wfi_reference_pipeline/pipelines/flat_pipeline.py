@@ -12,7 +12,7 @@ from romancal.saturation import SaturationStep
 from wfi_reference_pipeline.constants import REF_TYPE_FLAT
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.flat.flat import Flat
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # from wfi_reference_pipeline.utilities.logging_functions import log_info
 
@@ -124,7 +124,7 @@ class FlatPipeline(Pipeline):
                 raise ValueError(
                     "Prepare file or pass a (pre-processed) file list")
 
-        tmp = MakeDevMeta(ref_type=self.ref_type)
+        tmp = MakeMeta(ref_type=self.ref_type, instrument_detector=self.detector)
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_flat.optical_element,
             tmp.meta_flat.instrument_detector,

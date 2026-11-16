@@ -10,9 +10,7 @@ from wfi_reference_pipeline.constants import (
 from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import (
     PixelArea,
 )
-from wfi_reference_pipeline.resources.make_test_meta import (
-    MakeTestMeta,
-)
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
@@ -20,7 +18,7 @@ def valid_meta_data():
     """
     Fixture for generating valid WFIMetaPixelArea metadata.
     """
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_PIXELAREA)
+    test_meta = MakeMeta(ref_type=REF_TYPE_PIXELAREA, instrument_detector="WFI01")
     return test_meta.meta_pixelarea
 
 
@@ -87,8 +85,8 @@ class TestPixelArea:
         with invalid metadata type.
         """
 
-        bad_test_meta = MakeTestMeta(
-            ref_type=REF_TYPE_READNOISE
+        bad_test_meta = MakeMeta(
+            ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01"
         )
 
         with pytest.raises(TypeError):

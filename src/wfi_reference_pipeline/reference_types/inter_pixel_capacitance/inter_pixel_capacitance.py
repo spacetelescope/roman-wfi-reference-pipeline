@@ -19,8 +19,8 @@ class InterPixelCapacitance(ReferenceType):
 
     example code:
     from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import InterPixelCapacitance
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
-    tmp = MakeDevMeta(ref_type='IPC')
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
+    tmp = MakeMeta(ref_type='IPC', instrument_detector='WFI01')
     rfp_ipc = InterPixelCapacitance(meta_data=tmp.meta_ipc)
     rfp_ipc.generate_outfile()
     """

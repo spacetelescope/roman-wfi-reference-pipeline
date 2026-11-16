@@ -10,13 +10,13 @@ from wfi_reference_pipeline.constants import (
     SATURATION_MAX_THRESHOLD,
 )
 from wfi_reference_pipeline.reference_types.saturation.saturation import Saturation
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid meta_data for the SAturation class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_SATURATION)
+    test_meta = MakeMeta(ref_type=REF_TYPE_SATURATION, instrument_detector="WFI01")
     return test_meta.meta_saturation
 
 
@@ -47,7 +47,7 @@ class TestSaturation:
         """
         Test that Saturation raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             Saturation(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data_array)
 

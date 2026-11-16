@@ -19,9 +19,9 @@ class DetectorStatus(ReferenceType):
     Example code for file creation:
 
     from wfi_reference_pipeline.reference_types.detector_status.detector_status import DetectorStatus
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
-    tmp = MakeDevMeta(ref_type='DETECTORSTATUS')
+    tmp = MakeMeta(ref_type='DETECTORSTATUS', instrument_detector='WFI01')
     tmp.meta_detector_status.pedigree = 'GROUND'
     tmp.meta_detector_status.instrument_detector = 'WFI01'
     tmp.meta_detector_status.use_after = '2023-08-01T00:00:00.000'

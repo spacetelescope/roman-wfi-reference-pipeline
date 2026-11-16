@@ -29,7 +29,7 @@ class StubReferenceType(ReferenceType):
         }
         return tree 
 
-# NOTE: not using make_test_meta because we want to make invalid metadata, also because we don't want to add another metadata type for Stub (maybe add in test)
+# NOTE: not using MakeMeta because we want to make invalid metadata, also because we don't want to add another metadata type for Stub (maybe add in test)
 
 @pytest.fixture(scope="session")
 def valid_test_metadata():

@@ -11,7 +11,7 @@ from romancal.wfi18_transient import WFI18TransientStep
 from wfi_reference_pipeline.constants import REF_TYPE_READNOISE
 from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # from wfi_reference_pipeline.utilities.logging_functions import log_info
 
@@ -119,10 +119,10 @@ class ReadnoisePipeline(Pipeline):
         else:
             file_list = self.prepped_files
 
-        tmp = MakeDevMeta(
-            ref_type=self.ref_type
-        )  # TODO replace with MakeMeta which gets actual information from files
-        # readnoise_dev_meta = tmp.meta_readnoise.export_asdf_meta()
+        tmp = MakeMeta(
+            ref_type=self.ref_type, instrument_detector=self.detector
+        )  # TODO populate the meta data from the input files
+        # readnoise_meta = tmp.meta_readnoise.export_asdf_meta()
         out_file_path = self.file_handler.format_pipeline_output_file_path(
             tmp.meta_readnoise.mode,
             tmp.meta_readnoise.instrument_detector,

@@ -8,7 +8,7 @@ from astropy.time import Time
 from wfi_reference_pipeline.constants import REF_TYPE_DARK, WFI_FRAME_TIME, WFI_MODE_WIM
 from wfi_reference_pipeline.pipelines.dark_pipeline import DarkPipeline
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.data_functions import get_science_pixels_cube
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
@@ -179,7 +179,7 @@ def generate_long_dark_files(output_dir, n_files=2, n_reads=20):
 
 # Validate SuperDark function or class Rick pseudo code
 def test_validate_superdark_sigma_clip_short_only_values_pass(short_files):
-    test_meta = MakeTestMeta(REF_TYPE_DARK)
+    test_meta = MakeMeta(REF_TYPE_DARK, "WFI01")
 
     # Set sigma clipping level to 1 (keep them the same when doing this test)
     sigma_clip_low_bound = 1
@@ -209,7 +209,7 @@ def test_validate_superdark_sigma_clip_short_only_values_pass(short_files):
 
 
 def test_validate_superdark_sigma_clip_values_pass(short_files, long_files):
-    test_meta = MakeTestMeta(REF_TYPE_DARK)
+    test_meta = MakeMeta(REF_TYPE_DARK, "WFI01")
 
     # Set sigma clipping level 3 sigma (keep them the same when doing this test)
     sigma_clip_low_bound = 3

@@ -4,14 +4,14 @@ from wfi_reference_pipeline.constants import WFI_DETECTORS
 from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import (
     InterPixelCapacitance,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 print(f"Generating {len(WFI_DETECTORS)} IPC ASDF files using the RFP...\n")
 
 for detector in WFI_DETECTORS:
 
     # Create metadata object
-    tmp = MakeDevMeta(ref_type="IPC")
+    tmp = MakeMeta(ref_type="IPC", instrument_detector="WFI01")
 
     # Update metadata fields
     tmp.meta_ipc.instrument_detector = detector

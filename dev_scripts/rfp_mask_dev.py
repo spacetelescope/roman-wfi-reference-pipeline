@@ -12,7 +12,7 @@ from asdf.exceptions import AsdfPackageVersionWarning
 from astropy.io import fits
 
 from wfi_reference_pipeline.reference_types.mask.mask import Mask
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # If True, re-run the telegraph and RC identification step on decreasing numbers of jumpy pixels.
 # The number of jumpy pixels will decrease by a factor of 10 until < 100
@@ -38,7 +38,7 @@ def test_full_mask(outpath, filelist):
     This is how a user would call the Mask() module, with no
     modifications to the algorithm parameters.
     """
-    tmp = MakeDevMeta(ref_type="MASK")
+    tmp = MakeMeta(ref_type="MASK", instrument_detector="WFI01")
 
     tmp.meta_mask.use_after = '2020-05-01T00:00:00.000'
     tmp.meta_mask.author = "A user"
@@ -146,7 +146,7 @@ def run_mask_on_subset_of_jumps(outpath, njumps, superdark_path, jump_path):
     made from the test_full_mask() run.
     """
 
-    tmp = MakeDevMeta(ref_type="MASK")
+    tmp = MakeMeta(ref_type="MASK", instrument_detector="WFI01")
 
     tmp.meta_mask.use_after = '2020-05-01T00:00:00.000'
     tmp.meta_mask.author = "A user"

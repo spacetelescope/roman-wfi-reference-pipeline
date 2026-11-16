@@ -8,7 +8,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_READNOISE, REF_TYPE_REFPIX
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
     ReferencePixel,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 skip_on_github = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",
@@ -18,7 +18,7 @@ skip_on_github = pytest.mark.skipif(
 @pytest.fixture(scope="module")
 def valid_meta_data():
     """Fixture for generating valid meta_data for ReferencePixel class."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_REFPIX)
+    test_meta = MakeMeta(ref_type=REF_TYPE_REFPIX, instrument_detector="WFI01")
     return test_meta.meta_referencepixel
 
 @pytest.fixture(scope="module")
@@ -55,7 +55,7 @@ class TestRefPix:
         """
         Test that RefPix raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             ReferencePixel(meta_data=bad_test_meta.meta_readnoise, ref_type_data=refpix_object_with_data_cube)
 

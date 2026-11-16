@@ -15,13 +15,13 @@ class IntegralNonLinearity(ReferenceType):
     method creates the asdf reference file.
 
     Example creation
-    from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+    from wfi_reference_pipeline.resources.make_meta import MakeMeta
     from wfi_reference_pipeline.reference_types.integral_non_linearity.integral_non_linearity import IntegralNonLinearity
 
     arr - assumed here to be a numpy array that is derived in the instrument coordinate reference frame and properly
     transformed into the science coordinate reference frame for ingestion into the class.
 
-    tmp = MakeDevMeta(ref_type='INTEGRALNONLINEARITY')
+    tmp = MakeMeta(ref_type='INTEGRALNONLINEARITY', instrument_detector='WFI01')
     rfp_inl = IntegralNonLinearity(meta_data=tmp.meta_integral_non_linearity,
                                 ref_type_data=arr)
     rfp_inl.generate_outfile()

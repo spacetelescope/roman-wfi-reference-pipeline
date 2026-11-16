@@ -8,7 +8,7 @@ from wfi_reference_pipeline.reference_types.empirical_psf.empirical_psf import (
 from wfi_reference_pipeline.reference_types.empirical_psf.psf_lib_generator import (
     generate_wfi_psf_library,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 FILTERS = [
     "F062", "F087", "F106", "F129",
@@ -32,7 +32,7 @@ def process_detector_filter(detector, optical_element):
     """
     Generate the PSF object library per detector and filter
     """
-    meta = MakeDevMeta(ref_type="EPSF").meta_epsf
+    meta = MakeMeta(ref_type="EPSF", instrument_detector="WFI01").meta_epsf
 
     meta.instrument_detector = f"WFI{detector:02d}"
     meta.optical_element = optical_element

@@ -6,7 +6,7 @@ from wfi_reference_pipeline.pipelines.pipeline import Pipeline
 from wfi_reference_pipeline.reference_types.referencepixel.referencepixel import (
     ReferencePixel,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 # from wfi_reference_pipeline.utilities.logging_functions import log_info
 
@@ -88,7 +88,7 @@ class RefPixPipeline(Pipeline):
         else:
             file_list = self.prepped_files
 
-        tmp = MakeDevMeta(ref_type=self.ref_type)
+        tmp = MakeMeta(ref_type=self.ref_type, instrument_detector=self.detector)
 
         # TODO: how do we make sure that the WFI name is correct in the out_file_path?
         out_file_path = self.file_handler.format_pipeline_output_file_path(

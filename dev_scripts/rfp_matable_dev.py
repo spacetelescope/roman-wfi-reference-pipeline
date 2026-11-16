@@ -1,13 +1,13 @@
 from wfi_reference_pipeline.reference_types.multiaccumulationtable.multiaccumulationtable import (
     MultiAccumulationTable,
 )
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 outfile = '/PATH/TO/scratch/rfp_matable_dev_file_revG_w_dms_tests.asdf'
 
 input_file = 'PATH/TO/ma_table_ref_20250701_rev_post-G_dev.yaml'
 
-tmp = MakeDevMeta(ref_type='MATABLE')
+tmp = MakeMeta(ref_type='MATABLE', instrument_detector='WFI01')
 tmp.meta_matable.author = 'William C. Schultz'
 tmp.meta_matable.description = "Implementation of Revision G tables and shifting the table numbers to match the flight paradigm. Revision F tables are left untouched for supporting previous MRTs. DMS testing tables 109 and 110 are also included. This reference file coincides with PRD release 20 and the PSS patch to update the MA tables.\nThe MA tables are agnostic of the detector and thus the value of the detector in the meta data (WFI01) should be ignored."
 tmp.meta_matable.pedigree = "GROUND"

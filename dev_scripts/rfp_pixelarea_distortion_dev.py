@@ -2,12 +2,12 @@ from astropy.time import Time
 
 from wfi_reference_pipeline.reference_types.distortion.distortion import Distortion
 from wfi_reference_pipeline.reference_types.pixel_area.pixel_area import PixelArea
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 for i in range(1, 19):
     wfi_id = f'WFI{i:02}'
 
-    tmp = MakeDevMeta(ref_type="DISTORTION")
+    tmp = MakeMeta(ref_type="DISTORTION", instrument_detector="WFI01")
     tmp.meta_distortion.author = "Richard G Cosentino"
     tmp.meta_distortion.description = (
         "The Geometric Distortion reference file on Roman "
@@ -35,7 +35,7 @@ for i in range(1, 19):
 for i in range(1, 19):
     wfi_id = f'WFI{i:02}'
 
-    tmp = MakeDevMeta(ref_type="AREA")
+    tmp = MakeMeta(ref_type="AREA", instrument_detector="WFI01")
     tmp.meta_pixelarea.author = "Richard G Cosentino"
     tmp.meta_pixelarea.description = (
         "The Pixel Area reference file on Roman "

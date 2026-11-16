@@ -56,51 +56,42 @@ class WFIMetaNewEffect(WFIMetadata):
 
 ---
 
-### 3. Add Development Metadata Support
+### 3. Add Metadata Support to MakeMeta
 
 Update:
 
 ```
-src/wfi_reference_pipeline/resources/make_dev_meta.py
+src/wfi_reference_pipeline/resources/make_meta.py
 ```
 
 - Add:
 
 ```python
-_create_dev_meta_new_effect()
+_create_meta_new_effect()
 ```
 
-- In the `__init__` method of make_dev_meta.py:
+- In the `__init__` method of make_meta.py:
 
 ```python
 if ref_type == "NEW_EFFECT":
 ```
 
----
+- Add the new reference type to `REF_TYPE_DESCRIPTION` in `constants.py`. `MakeMeta` uses it
+  to build the delivery description and raises a `KeyError` for a reference type without one.
 
-### 4. Add Testing Metadata Support
-
-Update:
-
-```
-src/wfi_reference_pipeline/resources/make_test_meta.py
-```
-
-- Add:
+`MakeMeta` is used everywhere metadata is needed: operational pipelines, dev scripts,
+notebooks and tests. For example:
 
 ```python
-_create_test_meta_new_effect()
-```
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
-- In the `__init__` method of make_test_meta.py:
-
-```python
-if ref_type == "NEW_EFFECT":
+tmp = MakeMeta(ref_type="NEW_EFFECT", instrument_detector="WFI01")
+meta = tmp.meta_new_effect
 ```
 
 ---
 
-### 5. Create the Reference Type Module
+### 4. Create the Reference Type Module
 
 Create:
 
@@ -121,7 +112,7 @@ class NewEffect(ReferenceType):
 
 ---
 
-### 6. Handle Input Data Requirements
+### 5. Handle Input Data Requirements
 
 If no input data is required, update:
 
@@ -133,7 +124,7 @@ in `constants.py`.
 
 ---
 
-### 7. Implement the Reference Type Class
+### 6. Implement the Reference Type Class
 
 - Inherit from `ReferenceType`
 - Implement required methods:
@@ -146,7 +137,7 @@ in `constants.py`.
 
 ---
 
-### 8. Add Tests
+### 7. Add Tests
 
 Create:
 

@@ -5,7 +5,7 @@ from wfi_reference_pipeline.constants import REF_TYPE_EPSF, REF_TYPE_GAIN
 from wfi_reference_pipeline.reference_types.empirical_psf.empirical_psf import (
     EmpiricalPSF,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.resources.wfi_meta_empirical_psf import (
     WFIMetaEPSF,
 )
@@ -14,7 +14,7 @@ from wfi_reference_pipeline.resources.wfi_meta_empirical_psf import (
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaEPSF metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_EPSF)
+    test_meta = MakeMeta(ref_type=REF_TYPE_EPSF, instrument_detector="WFI01")
     return test_meta.meta_epsf
 
 
@@ -60,7 +60,7 @@ class TestEmpiricalPSF:
         """
         Test that EmpiricalPSF raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_GAIN)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_GAIN, instrument_detector="WFI01")
 
         with pytest.raises(TypeError):
             EmpiricalPSF(

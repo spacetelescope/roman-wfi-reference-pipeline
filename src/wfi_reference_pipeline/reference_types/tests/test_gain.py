@@ -8,13 +8,13 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
 )
 from wfi_reference_pipeline.reference_types.gain.gain import Gain
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaGain metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_GAIN)
+    test_meta = MakeMeta(ref_type=REF_TYPE_GAIN, instrument_detector="WFI01")
     return test_meta.meta_gain
 
 
@@ -44,7 +44,7 @@ class TestGain:
         """
         Test that Gain raises TypeError with invalid metadata type.
         """
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             Gain(meta_data=bad_test_meta.meta_readnoise, ref_type_data=valid_ref_type_data_array)
 

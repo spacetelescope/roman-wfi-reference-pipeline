@@ -1,13 +1,13 @@
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 print('-' * 80)
 
 print('Dev to make Dark with number of reads per resultant and number of resultants for even spacing.')
 outfile = '/PATH/TO/scratch/rfp_dark_dev_file_TVAC.asdf'
-# Use dev meta maker for DARK
-tmp = MakeDevMeta(ref_type='DARK')
+# Use meta maker for DARK
+tmp = MakeMeta(ref_type='DARK', instrument_detector='WFI01')
 # Simulate a cube of dark reads.
 sim_dev_cube, sim_dev_rate_image = simulate_dark_reads(55)
 # Instantiate rfp dark object.
@@ -31,8 +31,8 @@ print('-' * 80)
 
 print('Dev to make Dark from read pattern uneven spacing.')
 outfile2 = '/PATH/TO/scratch/rfp_dark_dev_file_CRDS.asdf'
-# Use dev meta to instantiate rfp dark object.
-tmp2 = MakeDevMeta(ref_type='DARK')
+# Use meta maker to instantiate rfp dark object.
+tmp2 = MakeMeta(ref_type='DARK', instrument_detector='WFI01')
 # Simulate a cube of dark reads.
 sim_dev_cube2, sim_dev_rate_image2 = simulate_dark_reads(48)
 # Instantiate rfp dark object.
@@ -71,8 +71,8 @@ print('-' * 80)
 
 print('Dev to make Dark from read pattern with uneven spacing for RDMT-local Hack Day.')
 outfile = '/PATH/TO/scratch/rfp_dark_dev_file.asdf'
-# Use dev meta to instantiate rfp dark object.
-tmp3 = MakeDevMeta(ref_type='DARK')
+# Use meta maker to instantiate rfp dark object.
+tmp3 = MakeMeta(ref_type='DARK', instrument_detector='WFI01')
 # Simulate a cube of dark reads.
 sim_dev_cube3, sim_dev_rate_image3 = simulate_dark_reads(18)
 # Instantiate rfp dark object.

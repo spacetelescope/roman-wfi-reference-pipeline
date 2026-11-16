@@ -5,15 +5,15 @@ from wfi_reference_pipeline.constants import (
                           DETECTOR_PIXEL_Y_COUNT,
 )
 from wfi_reference_pipeline.reference_types.readnoise.readnoise import ReadNoise
-from wfi_reference_pipeline.resources.make_dev_meta import MakeDevMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
 
 print('-' * 80)
 
 print('Dev script to make Read Noise reference file with user input.')
 outfile = '/PATH/TO/scratch/rfp_readnoise_dev_file_TVAC.asdf'
-# Use dev meta maker for READNOISE
-tmp = MakeDevMeta(ref_type='READNOISE')
+# Use meta maker for READNOISE
+tmp = MakeMeta(ref_type='READNOISE', instrument_detector='WFI01')
 # Example how to change the useafter in the meta data.
 tmp.meta_readnoise.use_after = '2024-01-01T00:00:00.000'
 # Create user input rate image - imagine this is your TVAC analysis read noise image.
@@ -34,8 +34,8 @@ print('-' * 80)
 print('Dev script to make Read Noise reference file for romancal development on CRDS')
 print('Give ReadNoise a simulated dark cube or an exposure up the ramp.')
 outfile = '/PATH/TO/scratch/rfp_readnoise_dev_CRDS.asdf'
-# Use dev meta maker for READNOISE
-tmp2 = MakeDevMeta(ref_type='READNOISE')
+# Use meta maker for READNOISE
+tmp2 = MakeMeta(ref_type='READNOISE', instrument_detector='WFI01')
 # Set simulated cube read noise variance for testing ReadNoise().
 sim_readnoise_std = 5
 # Create simulated data cube. Adjust parameters as desired.

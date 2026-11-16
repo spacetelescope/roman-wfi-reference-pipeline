@@ -6,13 +6,13 @@ from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal 
     DarkDecaySignal,
     get_darkdecay_values,
 )
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMetaDarkDecaySignal metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_DARKDECAYSIGNAL)
+    test_meta = MakeMeta(ref_type=REF_TYPE_DARKDECAYSIGNAL, instrument_detector="WFI01")
     return test_meta.meta_dark_decay_signal
 
 

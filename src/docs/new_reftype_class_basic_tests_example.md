@@ -93,13 +93,13 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
 )
 from wfi_reference_pipeline.reference_types.{ref_type}.{ref_type} import {RefType}
-from wfi_reference_pipeline.resources.make_test_meta import MakeTestMeta
+from wfi_reference_pipeline.resources.make_meta import MakeMeta
 
 
 @pytest.fixture
 def valid_meta_data():
     """Fixture for generating valid WFIMeta{RefType} metadata."""
-    test_meta = MakeTestMeta(ref_type=REF_TYPE_{REF_TYPE})
+    test_meta = MakeMeta(ref_type=REF_TYPE_{REF_TYPE}, instrument_detector="WFI01")
     return test_meta.meta_{ref_type}
 
 
@@ -133,7 +133,7 @@ class Test{RefType}:
 
     def test_{ref_type}_instantiation_with_invalid_metadata(self, valid_ref_type_data_array):
         """Test that invalid metadata raises TypeError."""
-        bad_test_meta = MakeTestMeta(ref_type=REF_TYPE_READNOISE)
+        bad_test_meta = MakeMeta(ref_type=REF_TYPE_READNOISE, instrument_detector="WFI01")
         with pytest.raises(TypeError):
             {RefType}(
                 meta_data=bad_test_meta.meta_readnoise,
