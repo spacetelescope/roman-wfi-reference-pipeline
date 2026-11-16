@@ -469,6 +469,7 @@ def test_rate_image_uses_detector_counts(monkeypatch, output_dir, fake_rate_imag
     assert fake_rate_image[-1]["num_hot_pix"] == 99
     assert fake_rate_image[-1]["num_dead_pix"] == 5
     assert "noise_std" not in fake_rate_image[-1]   # noise settings are not rate image settings
+
 def test_post_process_clips_and_rounds_to_uint16(monkeypatch, tmp_path, basic_dark):
     cube = np.array([-3.5, 0.4, 0.6, 70000.0], dtype=np.float32).reshape(4, 1, 1)
     monkeypatch.setattr(
@@ -500,30 +501,45 @@ def test_seed_applied_once_per_sca(monkeypatch, output_dir, config_dict):
     assert seeds == [123]
     assert "seed" not in sim._get_sca_dark_params(1)
 
-def test_real_config_parses_numbers():
+def _load_real_dark_config():
     import yaml
     config_path = Path(__file__).resolve().parents[1] / "simulate_darks_config.yml"
-    config = yaml.safe_load(open(config_path))
-    for section in [config["defaults"], *config["sca_overrides"].values()]:
+
+    for key, value in section.items():
+        assert isinstance(value, (int, float)), f"{key}={value!r} is not a number"
+
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    # A detector listed with nothing after it (e.g. "1:") loads as None and uses the defaults.
+    overrides = {sca: (entry or {}) for sca, entry in (config.get("sca_overrides") or {}).items()}
+    return config, overrides
+
+
+def test_real_config_parses_numbers():
+    config, overrides = _load_real_dark_config()
+    for section in [config["defaults"], *overrides.values()]:
         for key, value in section.items():
             assert isinstance(value, (int, float)), f"{key}={value!r} is not a number"
 
-def test_real_config_detector_populations():
-    import yaml
-    config_path = Path(__file__).resolve().parents[1] / "simulate_darks_config.yml"
-    config = yaml.safe_load(open(config_path))
-    overrides = config["sca_overrides"]
-    # Every detector sets its own counts.
-    assert sorted(overrides) == list(range(1, 19))
-    keys = ("num_hot_pix", "num_warm_pix", "num_dead_pix")
-    for sca in range(1, 19):
-        assert all(k in overrides[sca] for k in keys), f"WFI{sca:02d} missing counts"
-    # Populations differ between detectors.
-    populations = [tuple(overrides[sca][k] for k in keys) for sca in range(1, 19)]
-    assert len(set(populations)) == 18
-    # Exactly one detector has a high number of dead pixels.
-    dead = np.array([overrides[sca]["num_dead_pix"] for sca in range(1, 19)])
+
+def test_real_config_detector_populations(monkeypatch, output_dir):
+    config, overrides = _load_real_dark_config()
+    defaults = config["defaults"]
+    def value(sca, key):
+        return overrides.get(sca, {}).get(key, defaults[key])
+    # Every detector gets its own rate image seed, so hot/warm/dead pixel
+    # locations differ between detectors even when their counts are the defaults.
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas="ALL_WFI", ma_table_number=1010, config_file="dummy.yml",
+    )
+    seeds = [sim._get_rate_image_seed(sca) for sca in range(1, 19)]
+    assert len(set(seeds)) == 18
+
+    dead = np.array([float(value(sca, "num_dead_pix")) for sca in range(1, 19)])
     assert (dead > 10 * np.median(dead)).sum() == 1
+
     # Counts are exact (no random spread) so they stay fixed per detector.
     for k in ("num_hot_pix_var", "num_warm_pix_var", "num_dead_pix_var"):
-        assert config["defaults"][k] == 0
+        assert defaults[k] == 0
