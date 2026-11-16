@@ -187,11 +187,11 @@ class BaseDarkSimulation:
         if self.config is None:
             return {}
 
-        params = dict(self.config.get("defaults", {}))
+        params = dict(self.config.get("defaults" or {}))  # can leave yaml for each detector WFIXX
 
-        sca_overrides = self.config.get("sca_overrides", {})
-        if sca in sca_overrides:
-            params.update(sca_overrides[sca])
+        # A detector listed with nothing after it (e.g. "1:") loads as None: use the defaults.
+        sca_overrides = self.config.get("sca_overrides") or {}
+        params.update(sca_overrides.get(sca) or {})
 
         # Seeds are handled in _post_process / _get_rate_image, not passed on.
         params.pop("seed", None)
@@ -313,7 +313,6 @@ class BaseDarkSimulation:
         # Apply seeded rate image for detectors if available
         dark_cube, _ = simulate_dark_reads(
             n_reads=cfg["n_reads"],
-            **dark_params,
             read_pattern=cfg["read_pattern"],
             rate_image=rate_image,
             **noise_params,
