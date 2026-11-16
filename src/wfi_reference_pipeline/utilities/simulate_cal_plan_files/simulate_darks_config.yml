@@ -2,12 +2,12 @@ defaults:
   dark_rate: 0.01  # DN/s and the actual is 0.01 DN/s
   dark_rate_var: 0.005  # DN/s
   hot_pix_rate: 1.7  # DN/s from Harish the min hot dark rate is 0.3 DN/s and the upper limit for really hot is 3.0 DN/s
-  hot_pix_rate_var: 0.5  # DN/s the hot pix rate with this variance has about 99.7% of hot pixels with a rate between 0.3-3.0 DN/s
+  hot_pix_rate_var: 0.3  # DN/s the hot pix rate with this variance has about 99.7% of hot pixels with a rate between 0.3-3.0 DN/s
   # there still can be negative random rates here but because we see these in telegraph, I'm leaving as is
   num_hot_pix: 30000  # Number of pixels
   num_hot_pix_var: 0  # Number of pixels, keep zero so counts are set per detector exactly
   warm_pix_rate: 0.06  # DN/s
-  warm_pix_rate_var: 0.01  # DN/s
+  warm_pix_rate_var: 0.0  # DN/s
   num_warm_pix: 60000  # Number of pixels
   num_warm_pix_var: 0  # Number of pixels
   dead_pix_rate: 0.0001  # DN/s
@@ -49,7 +49,7 @@ sca_overrides:
 
 # WFI04 is a warm detector
   4:
-    warm_pix_rate: 0.07  # DN/s
+    dark_rate: 0.07  # DN/s
 
 # WFI05 is a detector with A LOT of WARM PIXELS
   5:
