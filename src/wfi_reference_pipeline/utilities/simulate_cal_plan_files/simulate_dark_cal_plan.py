@@ -12,11 +12,17 @@ from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
 from wfi_reference_pipeline.utilities.ma_table_handler import MATableHandler
 from wfi_reference_pipeline.utilities.simulate_reads import (
     make_dark_rate_image,
+    make_read_noise_image,
     simulate_dark_reads,
 )
 
 # Parameters that define a detector's rate image (where hot/warm/dead pixels are and their rates).
 RATE_IMAGE_PARAMS = set(inspect.signature(make_dark_rate_image).parameters) - {"seed"}
+
+# Parameters that define a detector's per-pixel read noise map.
+READ_NOISE_PARAMS = {"read_noise", "read_noise_var"}
+# Offset so the read noise map uses a different seed than the rate image of the same SCA.
+READ_NOISE_SEED_OFFSET = 100000
 
 """
 Because of memory constraints for an unknown reason right now,
@@ -71,6 +77,7 @@ class BaseDarkSimulation:
         self.truncate = truncate
         self._ma_table_config = None
         self._rate_images = {}  # SCA -> dark rate image, the same for every exposure
+        self._read_noise_images = {}  # SCA -> read noise map, the same for every exposure
         self._noise_seeded_scas = set()
         self.level = level
         self.cal_level = "cal" if level == 2 else "uncal"
@@ -187,7 +194,7 @@ class BaseDarkSimulation:
         if self.config is None:
             return {}
 
-        params = dict(self.config.get("defaults" or {}))  # can leave yaml for each detector WFIXX
+        params = dict(self.config.get("defaults") or {})  # can leave yaml for each detector WFIXX
 
         # A detector listed with nothing after it (e.g. "1:") loads as None: use the defaults.
         sca_overrides = self.config.get("sca_overrides") or {}
@@ -237,6 +244,24 @@ class BaseDarkSimulation:
             print(f"Making WFI{sca:02d} dark rate image with seed {seed}.")
             self._rate_images[sca] = make_dark_rate_image(seed=seed, **rate_params)
         return self._rate_images[sca]
+
+
+    def _get_read_noise_image(self, sca, dark_params):
+        """
+        The SCA's per-pixel read noise map, or None if read_noise is not configured.
+        Seeded from the SCA's rate image seed (plus an offset), so it is identical for
+        every exposure of that SCA, like the rate image.
+        """
+        if float(dark_params.get("read_noise", 0) or 0) <= 0:
+            return None
+        if sca not in self._read_noise_images:
+            noise_kwargs = {k: dark_params[k] for k in READ_NOISE_PARAMS if k in dark_params}
+            if "ni" in dark_params:
+                noise_kwargs["ni"] = dark_params["ni"]
+            seed = self._get_rate_image_seed(sca) + READ_NOISE_SEED_OFFSET
+            print(f"Making WFI{sca:02d} read noise map with seed {seed}.")
+            self._read_noise_images[sca] = make_read_noise_image(seed=seed, **noise_kwargs)
+        return self._read_noise_images[sca]
     
     # ---------------------------------------------------------
     # Romanisim commands and filename
@@ -294,8 +319,11 @@ class BaseDarkSimulation:
 
         cfg = self._get_ma_table_config()
 
-        # Same rate image (hot/warm/dead pixel population) for every exposure of this SCA.
+        # Same rate image (hot/warm/dead pixel population) and read noise map
+        # for every exposure of this SCA.
         rate_image = self._get_rate_image(sca, dark_params)
+        read_noise_image = self._get_read_noise_image(sca, dark_params)
+
         # Optional read-noise seed, applied once per SCA so each exposure's noise differs.
         if sca not in self._noise_seeded_scas:
             seed = self._get_sca_seed(sca)
@@ -305,8 +333,11 @@ class BaseDarkSimulation:
         # Simulate every read, then average them into resultants per the read pattern.
         # The rate image parameters are not needed once the rate image is given.
         # ni stays so the cube matches the rate image size.
+        # The read noise map replaces read_noise / read_noise_var.
         noise_params = {
-            k: v for k, v in dark_params.items() if k not in RATE_IMAGE_PARAMS - {"ni"}
+            k: v
+            for k, v in dark_params.items()
+            if k not in (RATE_IMAGE_PARAMS | READ_NOISE_PARAMS) - {"ni"}
         }
 
         # Simulate every read, then average them into resultants per the read pattern.
@@ -315,6 +346,7 @@ class BaseDarkSimulation:
             n_reads=cfg["n_reads"],
             read_pattern=cfg["read_pattern"],
             rate_image=rate_image,
+            read_noise_image=read_noise_image,
             **noise_params,
         )
 

@@ -59,6 +59,24 @@ def make_dark_rate_image(
     return rate_image
 
 
+def make_read_noise_image(
+    ni=DETECTOR_PIXEL_X_COUNT,
+    read_noise=4.0,
+    read_noise_var=1.0,
+    seed=None,
+):
+    """
+    Per-pixel read noise map [ni, ni] in DN: the standard deviation of the noise
+    in a single read for each pixel, drawn from Normal(read_noise, read_noise_var)
+    and clipped at 0. With a seed the map is identical on every call, so a detector
+    keeps the same noisy and quiet pixels across exposures. The seed uses its own
+    random generator and does not touch np.random's global state.
+    """
+    rng = np.random.RandomState(seed) if seed is not None else np.random
+    noise_image = rng.normal(read_noise, scale=read_noise_var, size=(ni, ni))
+    return np.clip(noise_image, 0, None).astype(np.float32)
+
+
 def simulate_dark_reads(
     n_reads,
     read_pattern=None,
@@ -81,6 +99,10 @@ def simulate_dark_reads(
     noise_mean=0.001,
     noise_std=0.0005,
     rate_image=None,
+    read_noise=0.0,
+    read_noise_var=0.0,
+    read_noise_image=None,
+    bias_level=0.0,
 ):
     """
     Function to create a dark read cube with random number of hot, warm, and dead pixels.
@@ -136,6 +158,18 @@ def simulate_dark_reads(
         detector seed) so hot, warm, and dead pixels stay in place across exposures.
         If given, the dark/hot/warm/dead pixel parameters are ignored. If None, a new
         rate image is made from those parameters.
+    read_noise: float; default = 0.0
+        Mean single-read read noise in DN. If > 0 and read_noise_image is None, a
+        per-pixel read noise map is made with make_read_noise_image.
+    read_noise_var: float; default = 0.0
+        Pixel-to-pixel spread (standard deviation) of the read noise in DN.
+    read_noise_image: ndarray [ni, ni]; default = None
+        Per-pixel single-read read noise in DN (e.g. from make_read_noise_image with a
+        detector seed). Each read gets Normal(0, read_noise_image) added, so averaging
+        n reads into a resultant lowers its noise by about sqrt(n).
+    bias_level: float; default = 0.0
+        Bias in DN set at the start of the exposure (the reset level). Every read
+        carries it, so it stays in every resultant and keeps noise from going below 0.
 
     Returns
     ----------
@@ -178,10 +212,25 @@ def simulate_dark_reads(
     elif rate_image.shape != (ni, ni):
         raise ValueError(f"rate_image shape {rate_image.shape} does not match ({ni}, {ni}).")
 
+    if read_noise_image is None and read_noise > 0:
+        read_noise_image = make_read_noise_image(ni, read_noise, read_noise_var)
+    if read_noise_image is not None:
+        if read_noise_image.shape != (ni, ni):
+            raise ValueError(
+                f"read_noise_image shape {read_noise_image.shape} does not match ({ni}, {ni})."
+            )
+        print(f"Adding read noise: median {np.median(read_noise_image):.2f} DN per read.")
+    if bias_level:
+        print(f"Adding a bias of {bias_level} DN at the start of the exposure.")
+
+
     def _simulate_read(read_num):
-        # Signal accumulated up to this read plus a random noise term for the read.
+        # Bias from the start of the exposure + signal accumulated up to this read
+        # + a random noise term for this read.
         rn = np.random.normal(loc=noise_mean, scale=noise_std, size=(ni, ni))
-        return read_num * exp_time * rate_image + rn
+        if read_noise_image is not None:
+            rn += read_noise_image * np.random.standard_normal(size=(ni, ni))
+        return bias_level + read_num * exp_time * rate_image + rn
 
     if read_pattern:
         # Non-diagnostic tables: average reads into resultants.

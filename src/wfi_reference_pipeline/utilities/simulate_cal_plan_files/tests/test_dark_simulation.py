@@ -483,23 +483,6 @@ def test_post_process_clips_and_rounds_to_uint16(monkeypatch, tmp_path, basic_da
     assert data.dtype == np.uint16
     assert data.ravel().tolist() == [0, 0, 1, 65535]
 
-def test_seed_applied_once_per_sca(monkeypatch, output_dir, config_dict):
-    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config_dict)
-    sim = BaseDarkSimulation(
-        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
-        num_exposures=1, scas=[1], ma_table_number=1010, config_file="dummy.yml",
-    )
-    seeds = []
-    monkeypatch.setattr(np.random, "seed", lambda s: seeds.append(s))
-    monkeypatch.setattr(
-        "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan.simulate_dark_reads",
-        lambda n_reads, rate_image=None, **kwargs: (np.ones((8, 2, 2)), rate_image),
-    )
-    _patch_asdf(monkeypatch, {"roman": {"meta": {"instrument": {}}}})
-    sim._post_process(output_dir / "a.asdf", sca=1)
-    sim._post_process(output_dir / "b.asdf", sca=1)
-    assert seeds == [123]
-    assert "seed" not in sim._get_sca_dark_params(1)
 
 def _load_real_dark_config():
     import yaml
@@ -534,9 +517,42 @@ def test_real_config_detector_populations(monkeypatch, output_dir):
     seeds = [sim._get_rate_image_seed(sca) for sca in range(1, 19)]
     assert len(set(seeds)) == 18
 
+    # Exactly one detector has a high number of dead pixels.
     dead = np.array([float(value(sca, "num_dead_pix")) for sca in range(1, 19)])
     assert (dead > 10 * np.median(dead)).sum() == 1
 
     # Counts are exact (no random spread) so they stay fixed per detector.
     for k in ("num_hot_pix_var", "num_warm_pix_var", "num_dead_pix_var"):
         assert defaults[k] == 0
+
+
+def test_read_noise_map_fixed_per_sca(monkeypatch, tmp_path, output_dir):
+    config = {"defaults": {"read_noise": 4.0, "read_noise_var": 1.0, "bias_level": 2000}}
+    monkeypatch.setattr(BaseDarkSimulation, "_load_config", lambda self, _: config)
+    sim = BaseDarkSimulation(
+        output_dir=output_dir, program="00999", start_time="2026-01-01T00:00:00",
+        num_exposures=1, scas=[1, 2], ma_table_number=1010, config_file="dummy.yml",
+    )
+    made, calls = [], []
+    def fake_noise_map(seed=None, **kwargs):
+        made.append({"seed": seed, **kwargs})
+        return np.full((4, 4), float(seed))
+    def fake_simulate(n_reads, read_pattern=None, rate_image=None, read_noise_image=None, **kwargs):
+        calls.append({"read_noise_image": read_noise_image, **kwargs})
+        return np.full((len(read_pattern), 4, 4), 2000.0), rate_image
+    module = "wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_dark_cal_plan"
+    monkeypatch.setattr(f"{module}.make_read_noise_image", fake_noise_map)
+    monkeypatch.setattr(f"{module}.simulate_dark_reads", fake_simulate)
+    _patch_asdf(monkeypatch, {"roman": {"meta": {"instrument": {}}}})
+    sim._post_process(tmp_path / "a.asdf", sca=1)
+    sim._post_process(tmp_path / "b.asdf", sca=1)
+    sim._post_process(tmp_path / "c.asdf", sca=2)
+    assert [m["seed"] for m in made] == [101001, 101002]   # one map per SCA, not per exposure
+    assert made[0]["read_noise"] == 4.0 and made[0]["read_noise_var"] == 1.0
+    assert calls[0]["read_noise_image"] is calls[1]["read_noise_image"]
+    assert calls[0]["bias_level"] == 2000
+    assert "read_noise" not in calls[0] and "read_noise_var" not in calls[0]
+
+    
+def test_no_read_noise_map_without_config(basic_dark):
+    assert basic_dark._get_read_noise_image(1, {}) is None
