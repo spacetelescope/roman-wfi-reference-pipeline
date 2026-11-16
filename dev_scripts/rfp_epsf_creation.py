@@ -87,7 +87,7 @@ def process_detector_filter(detector, optical_element):
     )
 
     epsf.generate_outfile()
- 
+
     # Return only the path so finished arrays are not sent back to the client
     return str(outfile)
 
@@ -97,7 +97,7 @@ def process_detector_filter(detector, optical_element):
 # ============================================================
 def main(n_workers=0):
 
-    detectors = range(1, 2) # change to do all detectors when ready
+    detectors = range(2, 19) # change to do all detectors when ready
     # and then parallelize
     # --------------------------------------------------------
     # SERIAL MODE (n_workers = 0)
