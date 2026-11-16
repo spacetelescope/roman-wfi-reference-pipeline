@@ -50,8 +50,12 @@ class EmpiricalPSF(ReferenceType):
 
         self.meta = meta_data
         self.outfile = outfile
-        self.psf = psf
-        self.extended_psf = extended_psf
+        self.psf = psf.astype(np.float32, copy=False)
+        self.extended_psf = (
+            None
+            if extended_psf is None
+            else np.asarray(extended_psf).astype(np.float32, copy=False)
+        )
 
         self._update_meta_data()
 
@@ -86,12 +90,12 @@ class EmpiricalPSF(ReferenceType):
 
         epsf_datamodel_tree = EpsfRefModel()
         epsf_datamodel_tree["meta"] = self.meta.export_asdf_meta()
-        epsf_datamodel_tree["psf"] = self.psf
+        epsf_datamodel_tree["psf"] = self.psf.astype(np.float32, copy=False)
 
         if self.extended_psf is not None:
             epsf_datamodel_tree[
                 "extended_psf"
-            ] = self.extended_psf
+            ] = self.extended_psf.astype(np.float32, copy=False)
 
         return epsf_datamodel_tree
     

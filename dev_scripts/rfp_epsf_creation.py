@@ -130,7 +130,7 @@ def main(n_workers=0):
     # PARALLEL MODE
     # --------------------------------------------------------
     print(f"Running in PARALLEL mode with {n_workers} workers.")
-    client = Client(n_workers=n_workers)
+    client = Client(n_workers=n_workers, threads_per_worker=1)
     print(f"Dask dashboard: {client.dashboard_link}")
     tasks = []
 
@@ -151,4 +151,4 @@ def main(n_workers=0):
 if __name__ == "__main__":
 
     # default mode is serial and not parallelized
-    main(n_workers=0)
+    main(n_workers=20)
