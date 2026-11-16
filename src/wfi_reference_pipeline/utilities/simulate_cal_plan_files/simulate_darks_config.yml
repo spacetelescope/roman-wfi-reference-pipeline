@@ -1,10 +1,10 @@
 defaults:
   dark_rate: 1.01  # DN/s
-  dark_rate_var: 1.001  # DN/s
+  dark_rate_var: 0.1  # DN/s
   hot_pix_rate: 5.25  # DN/s
   hot_pix_rate_var: 1.10  # DN/s
   num_hot_pix: 2000  # Number of pixels
-  num_hot_pix_var: 0  # Number of pixels
+  num_hot_pix_var: 0  # Number of pixels, keep zero so counts are set per detector exactly
   warm_pix_rate: 2.050  # DN/s
   warm_pix_rate_var: 1.010  # DN/s
   num_warm_pix: 1000  # Number of pixels
@@ -12,33 +12,110 @@ defaults:
   dead_pix_rate: .0001  # DN/s
   dead_pix_rate_var: 0.00001  # DN/s
   num_dead_pix: 5000  # Number of pixels
-  num_dead_pix_var: 100  # Number of pixels
+  num_dead_pix_var: 0  # Number of pixels
   noise_mean: 0.001  # DN
   noise_std: 0.0005  # DN
 
+  # Seed for each detector's rate image is rate_image_seed + detector number
+  # (WFI01 -> 1001, ..., WFI18 -> 1018). The rate image fixes where every hot, warm,
+  # and dead pixel is, so those pixels are identical in every exposure of a detector,
+  # in both the weekly and long darks. Set rate_image_seed under one detector to
+  # use that exact seed instead.
+  rate_image_seed: 1000
+  # Optional: seed for the read noise. Applied once per detector, so runs are
+  # reproducible while each exposure still gets different noise.
+  # seed: 42
+
+
+# Every detector sets its own hot, warm, and dead pixel counts so the populations
+# differ between detectors. WFI08 is the one detector with a high number of dead pixels.
 sca_overrides:
 # detector WFI01 is normal
+  1:
+    num_hot_pix: 2000
+    num_warm_pix: 1000
+    num_dead_pix: 500
 
 # WFI02 is a hot rate detector
   2:
     dark_rate: 1.40  # DN/s
+    num_hot_pix: 2400
+    num_warm_pix: 1300
+    num_dead_pix: 650
 # WFI03 is a detector with A LOT of HOT PIXELS
   3:
-    num_hot_pix: 1e6  # Number of pixels
+    num_hot_pix: 1000000  # Number of pixels
+    num_warm_pix: 900
+    num_dead_pix: 420
 # WFI04 is a warm detector
   4:
-    warm_pix_rate: 1.01  # DN/s
+    warm_pix_rate: 1.2  # DN/s
+    num_hot_pix: 1800
+    num_warm_pix: 150000
+    num_dead_pix: 580
 # WFI05 is a detector with A LOT of WARM PIXELS
   5:
     num_warm_pix: 3e6  # Number of pixels
+    num_hot_pix: 2200
+    num_warm_pix: 3000000
+    num_dead_pix: 460
 # WFI06 is a detector with a really low dark rate
   6:
     dark_rate: 0.1  # DN/s
     dark_rate_var: 0  # DN/s
+    num_hot_pix: 1500
+    num_warm_pix: 800
+    num_dead_pix: 300
+
+# Not touching WFI07
+
 # WF008 has had problems before with a stuck bit so putting A LOT of DEAD PIXELS
   8:
-    num_dead_pix: 6e6  # Number of pixels
-# WFI18 has the anomaly on the lower portion of the detector so let's give it a high number of dead and hot pixels
+    num_hot_pix: 2100
+    num_warm_pix: 1200
+    num_dead_pix: 6000000
+  9:
+    num_hot_pix: 1700
+    num_warm_pix: 950
+    num_dead_pix: 520
+  10:
+    num_hot_pix: 2300
+    num_warm_pix: 1250
+    num_dead_pix: 480
+  11:
+    num_hot_pix: 1900
+    num_warm_pix: 1050
+    num_dead_pix: 700
+  12:
+    num_hot_pix: 2800
+    num_warm_pix: 1400
+    num_dead_pix: 550
+  13:
+    num_hot_pix: 1600
+    num_warm_pix: 850
+    num_dead_pix: 380
+  14:
+    num_hot_pix: 2450
+    num_warm_pix: 1150
+    num_dead_pix: 610
+  15:
+    num_hot_pix: 2050
+    num_warm_pix: 1350
+    num_dead_pix: 440
+  16:
+    num_hot_pix: 1750
+    num_warm_pix: 900
+    num_dead_pix: 670
+  17:
+    num_hot_pix: 2700
+    num_warm_pix: 1450
+    num_dead_pix: 530
+
+# WFI18 has the anomaly on the lower portion of the detector, so it gets a higher
+# dark rate, a noise offset, and extra hot pixels
   18:
     dark_rate: 1.2  # DN/s
     noise_mean: 1.1  # DN
+    num_hot_pix: 5000
+    num_warm_pix: 1600
+    num_dead_pix: 590

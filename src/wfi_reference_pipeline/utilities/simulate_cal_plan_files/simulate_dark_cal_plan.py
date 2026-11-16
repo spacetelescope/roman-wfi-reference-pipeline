@@ -1,3 +1,4 @@
+import inspect
 import subprocess
 from pathlib import Path
 
@@ -8,7 +9,13 @@ import yaml
 from astropy.time import Time
 
 from wfi_reference_pipeline.constants import WFI_FRAME_TIME, WFI_MODE_WIM
-from wfi_reference_pipeline.utilities.simulate_reads import simulate_dark_reads
+from wfi_reference_pipeline.utilities.ma_table_handler import MATableHandler
+from wfi_reference_pipeline.utilities.simulate_reads import (
+    make_dark_rate_image,
+    simulate_dark_reads,
+)
+# Parameters that define a detector's rate image (where hot/warm/dead pixels are and their rates).
+RATE_IMAGE_PARAMS = set(inspect.signature(make_dark_rate_image).parameters) - {"seed"}
 
 """
 Because of memory constraints for an unknown reason right now,
@@ -21,12 +28,12 @@ Example useage:
 from wfi_reference_pipeline.utilities.simulate_cal_plan_files.simulate_cal_plan import *
 
 output_dir = "/grp/roman/RFP/DEV/sim_inflight_calplan/romanisim_darks"
-config_file = "simulated_darks_config.yml"
-short = ShortDarkSimulation(output_dir,
-                            config_file=config_file,
-                            scas=["WFI01", "WFI07"], or scas="ALL_WFI"
-                            auto_run=True
-                            )
+config_file = "simulate_darks_config.yml"
+weekly = WeeklyDarkSimulation(output_dir,
+                              config_file=config_file,
+                              scas=["WFI01", "WFI07"], or scas="ALL_WFI"
+                              auto_run=True
+                              )
 """
 
 
@@ -34,6 +41,12 @@ class BaseDarkSimulation:
     """
     Base class for short and long classes to make simulations.
     """
+
+    # One MATableHandler (CRDS lookup) shared by every simulation instance.
+    _ma_table_handler = None
+    # Detector N's rate image seed is DEFAULT_RATE_IMAGE_SEED + N unless the config sets
+    # rate_image_seed, so hot/warm/dead pixel locations are fixed per detector.
+    DEFAULT_RATE_IMAGE_SEED = 1000
 
     def __init__(
         self,
@@ -44,6 +57,7 @@ class BaseDarkSimulation:
         scas="ALL_WFI",
         optical_element="F213",
         ma_table_number=None,  # DIAGNOSTIC = 9003, IM_135_8 = 1010
+        truncate=None,  # Keep only the first N resultants (romanisim --truncate)
         level=1,
         config_file=None,
     ):
@@ -53,6 +67,10 @@ class BaseDarkSimulation:
         self.num_exposures = num_exposures
         self.optical_element = optical_element
         self.ma_table_number = ma_table_number
+        self.truncate = truncate
+        self._ma_table_config = None
+        self._rate_images = {}  # SCA -> dark rate image, the same for every exposure
+        self._noise_seeded_scas = set()
         self.level = level
         self.cal_level = "cal" if level == 2 else "uncal"
 
@@ -64,21 +82,47 @@ class BaseDarkSimulation:
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    @classmethod
+    def _get_ma_table_handler(cls):
+        """
+        Retrieve the MA table reference file from CRDS once and reuse it.
+        """
+
+        if cls._ma_table_handler is None:
+            cls._ma_table_handler = MATableHandler()
+        return cls._ma_table_handler
+
     def _get_ma_table_config(self):
         """
-        Map MA table number → (truncate, n_reads)
+        Look up the read pattern for self.ma_table_number in the MA table
+        reference file and apply self.truncate if set.
+        Returns
+        -------
+        dict with:
+            "read_pattern": list of lists of 1-indexed read numbers per resultant
+            "n_reads": total number of reads = read_pattern[-1][-1]
+            "n_resultants": len(read_pattern)
         """
-
-        ma_map = {
-            1010: {"truncate": None, "n_reads": 8},  # IM_135_8 (Weekly)
-            9003: {"truncate": 55, "n_reads": 15},  # DIAGNOSTIC (Long)
+        if self._ma_table_config is not None:
+            return self._ma_table_config
+        handler = self._get_ma_table_handler()
+        try:
+            read_pattern, _ = handler._get_table_specific_info(self.ma_table_number)
+        except (KeyError, TypeError, ValueError) as err:
+            raise ValueError(
+                f"MA table {self.ma_table_number} not found in the MA table reference file"
+            ) from err
+        # Plain Python ints so simulate_dark_reads can index and compare them.
+        read_pattern = [[int(read) for read in resultant] for resultant in read_pattern]
+        if self.truncate is not None:
+            read_pattern = read_pattern[: self.truncate]
+        self._ma_table_config = {
+            "read_pattern": read_pattern,
+            "n_reads": read_pattern[-1][-1],
+            "n_resultants": len(read_pattern),
         }
 
-        if self.ma_table_number not in ma_map:
-            raise ValueError(f"Unsupported MA table: {self.ma_table_number}")
-
-        return ma_map[self.ma_table_number]
-
+        return self._ma_table_config
 
     # ---------------------------------------------------------
     # Get the WFI and SCAs to simulate
@@ -148,13 +192,51 @@ class BaseDarkSimulation:
         if sca in sca_overrides:
             params.update(sca_overrides[sca])
 
-        # Optional deterministic seed per SCA
-        seed = params.pop("seed", None)
-        if seed is not None:
-            np.random.seed(seed)
+        # Seeds are handled in _post_process / _get_rate_image, not passed on.
+        params.pop("seed", None)
+        params.pop("rate_image_seed", None)
 
         return params
 
+    def _get_sca_seed(self, sca):
+        """
+        Read-noise seed for an SCA from the config (sca_overrides first, then defaults), or None.
+        """
+        if self.config is None:
+            return None
+        sca_overrides = self.config.get("sca_overrides", {}) or {}
+        if "seed" in (sca_overrides.get(sca) or {}):
+            return sca_overrides[sca]["seed"]
+        return (self.config.get("defaults", {}) or {}).get("seed")
+    
+    def _get_rate_image_seed(self, sca):
+        """
+        Rate image seed for an SCA. A per-SCA rate_image_seed is used as is;
+        otherwise it is (defaults rate_image_seed or DEFAULT_RATE_IMAGE_SEED) + sca.
+        The same SCA always gets the same seed, and different SCAs get different seeds.
+        """
+        config = self.config or {}
+        sca_overrides = config.get("sca_overrides", {}) or {}
+        if "rate_image_seed" in (sca_overrides.get(sca) or {}):
+            return int(sca_overrides[sca]["rate_image_seed"])
+        base = (config.get("defaults", {}) or {}).get(
+            "rate_image_seed", self.DEFAULT_RATE_IMAGE_SEED
+        )
+        return int(base) + sca
+    
+    def _get_rate_image(self, sca, dark_params):
+        """
+        The SCA's dark rate image: hot, warm, and dead pixel locations and rates.
+        Made from the SCA's seed, so it is identical for every exposure of that SCA,
+        including across the weekly and long dark simulations and across runs.
+        """
+        if sca not in self._rate_images:
+            rate_params = {k: v for k, v in dark_params.items() if k in RATE_IMAGE_PARAMS}
+            seed = self._get_rate_image_seed(sca)
+            print(f"Making WFI{sca:02d} dark rate image with seed {seed}.")
+            self._rate_images[sca] = make_dark_rate_image(seed=seed, **rate_params)
+        return self._rate_images[sca]
+    
     # ---------------------------------------------------------
     # Romanisim commands and filename
     # ---------------------------------------------------------
@@ -185,10 +267,8 @@ class BaseDarkSimulation:
             "--ma_table_number", str(self.ma_table_number),
         ]
 
-        cfg = self._get_ma_table_config()
-
-        if cfg["truncate"] is not None:
-            command += ["--truncate", str(cfg["truncate"])]
+        if self.truncate is not None:
+            command += ["--truncate", str(self.truncate)]
 
         command.append(str(filename))
 
@@ -213,10 +293,34 @@ class BaseDarkSimulation:
 
         cfg = self._get_ma_table_config()
 
+        # Same rate image (hot/warm/dead pixel population) for every exposure of this SCA.
+        rate_image = self._get_rate_image(sca, dark_params)
+        # Optional read-noise seed, applied once per SCA so each exposure's noise differs.
+        if sca not in self._noise_seeded_scas:
+            seed = self._get_sca_seed(sca)
+            if seed is not None:
+                np.random.seed(seed)
+            self._noise_seeded_scas.add(sca)
+        # Simulate every read, then average them into resultants per the read pattern.
+        # The rate image parameters are not needed once the rate image is given.
+        # ni stays so the cube matches the rate image size.
+        noise_params = {
+            k: v for k, v in dark_params.items() if k not in RATE_IMAGE_PARAMS - {"ni"}
+        }
+
+        # Simulate every read, then average them into resultants per the read pattern.
+        # Apply seeded rate image for detectors if available
         dark_cube, _ = simulate_dark_reads(
             n_reads=cfg["n_reads"],
             **dark_params,
+            read_pattern=cfg["read_pattern"],
+            rate_image=rate_image,
+            **noise_params,
         )
+
+        # Round and clip before the integer cast: negative values would otherwise
+        # wrap around to ~65535 and fractions would be truncated.
+        dark_cube = np.clip(np.round(dark_cube), 0, np.iinfo(np.uint16).max).astype(np.uint16)
 
         with asdf.open(filename, mode="rw") as af:
             #TODO update romanisim to do dark exposures or just realize noise up the ramp
@@ -225,7 +329,7 @@ class BaseDarkSimulation:
             #af.tree["roman"]["meta"]["exposure"]["ma_table_name"] = "IM_DIAGNOSTIC"
 
             # Not using the noise from romanisim yet - need to text RFP simulated dark data first
-            af.tree["roman"]["data"] = dark_cube.astype(np.uint16)
+            af.tree["roman"]["data"] = dark_cube
             af.update()
 
     # ---------------------------------------------------------
@@ -234,6 +338,10 @@ class BaseDarkSimulation:
     def run(self):
 
         time_overhead = 10.  # A general overhead time between successive dark exposures that is arbitrary.
+
+        # Exposure length runs to the last read in the (possibly truncated) read pattern.
+        n_reads = self._get_ma_table_config()["n_reads"]
+        exposure_time = n_reads * WFI_FRAME_TIME[WFI_MODE_WIM]
 
         for sca in self.scas:
             print(f"\n=== Running SCA {sca} ===")
@@ -251,13 +359,7 @@ class BaseDarkSimulation:
                 except Exception as e:
                     print(f"✘ Exposure {exp} failed: {e}")
 
-                cfg = self._get_ma_table_config()
-
-                n_reads = cfg["truncate"] if cfg["truncate"] is not None else cfg["n_reads"]
-
-                current_time += (
-                    n_reads * WFI_FRAME_TIME[WFI_MODE_WIM] + time_overhead
-                ) * u.s
+                current_time += (exposure_time + time_overhead) * u.s
 
 
 # =============================================================
@@ -283,7 +385,7 @@ class WeeklyDarkSimulation(BaseDarkSimulation):
             output_dir=output_dir,
             program="00901",
             ma_table_number=1010,
-            start_time="2026-10-01T00:00:00",
+            start_time="2026-12-15T00:00:00",
             num_exposures=num_exposures,
             scas=scas,
             config_file=config_file,
@@ -314,8 +416,9 @@ class LongDarkSimulation(BaseDarkSimulation):
         super().__init__(
             output_dir=output_dir,
             program="00902",
+            ma_table_number=9003,
             truncate=15,
-            start_time="2026-10-02T00:00:00",
+            start_time="2026-12-02T00:00:00",
             num_exposures=num_exposures,
             scas=scas,
             config_file=config_file,
