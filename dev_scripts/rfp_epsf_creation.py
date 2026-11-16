@@ -28,6 +28,22 @@ PIXEL_Y = [
 ]
 
 
+OVERSAMPLE = 4
+DEFOCUS = [0]
+
+DESCRIPTION = (
+    "Roman WFI empirical PSF (ePSF) library simulated with STPSF. Arrays are "
+    "(focus, spectral type, grid position, y, x) on a grid oversampled by "
+    f"{OVERSAMPLE}. Each STPSF model is convolved with the detector pixel "
+    f"response, a {OVERSAMPLE + 1}x{OVERSAMPLE + 1} kernel of ones with "
+    "half-weight edge rows/columns, so each value is the flux in a native pixel "
+    "centred at that oversampled position (each PSF sums to ~oversample**2). "
+    "psf and extended_psf are then convolved with the CRDS IPC kernel "
+    "renormalized to sum to 1. Both kernels are odd-sized and centred, so the "
+    "PSF centering is unchanged from the STPSF model."
+)
+
+
 def process_detector_filter(detector, optical_element):
     """
     Generate the PSF object library per detector and filter
@@ -39,6 +55,9 @@ def process_detector_filter(detector, optical_element):
 
     meta.pixel_x = PIXEL_X
     meta.pixel_y = PIXEL_Y
+    meta.oversample = OVERSAMPLE
+    meta.description = DESCRIPTION
+    meta.defocus = DEFOCUS
 
     result = generate_wfi_psf_library(
         detector=detector,
@@ -48,29 +67,29 @@ def process_detector_filter(detector, optical_element):
         spectral_types=["A0V", "G2V", "M5V"],
         temperatures=[9550, 5778, 2900],
         logg_values=[3.95, 4.44, 5.0],
-        defocus_values=[0, 1, 2],
-        oversample=4,
+        defocus_values=DEFOCUS,
+        oversample=OVERSAMPLE,
         include_extended_psf=True,
-        include_noipc=True,
     )
 
     output_dir = Path("/grp/roman/RFP/DEV/scratch")
     outfile = output_dir / (
         f"wfi{detector:02d}_"
-        f"{optical_element.lower()}_epsf.asdf"
+        f"{optical_element.lower()}_epsf_RGC20261115.asdf"
     )
 
     epsf = EmpiricalPSF(
         meta_data=meta,
         psf=result["psf"],
         extended_psf=result["extended_psf"],
-        psf_noipc=result["psf_noipc"],
-        extended_psf_noipc=result["extended_psf_noipc"],
         outfile=outfile,
         clobber=True,
     )
 
-    return epsf, epsf.generate_outfile()
+    epsf.generate_outfile()
+
+    # Return only the path so finished arrays are not sent back to the client
+    return str(outfile)
 
 
 # ============================================================
@@ -78,7 +97,7 @@ def process_detector_filter(detector, optical_element):
 # ============================================================
 def main(n_workers=0):
 
-    detectors = range(1, 2) # change to do all detectors when ready
+    detectors = range(2, 19) # change to do all detectors when ready
     # and then parallelize
     # --------------------------------------------------------
     # SERIAL MODE (n_workers = 0)
@@ -117,7 +136,7 @@ def main(n_workers=0):
     # PARALLEL MODE
     # --------------------------------------------------------
     print(f"Running in PARALLEL mode with {n_workers} workers.")
-    client = Client(n_workers=n_workers)
+    client = Client(n_workers=n_workers, threads_per_worker=1, memory_limit="8GB")
     print(f"Dask dashboard: {client.dashboard_link}")
     tasks = []
 
@@ -131,11 +150,12 @@ def main(n_workers=0):
                     optical_element,
                 )
             )
-    client.gather(tasks)
+    results = client.gather(tasks, errors="skip")
+    print(f"Wrote {len(results)} of {len(tasks)} files.")
     client.close()
 
 
 if __name__ == "__main__":
 
-    # default mode is serial and not parallelized
-    main(n_workers=0)
+    # n_workers=0 runs serially; 8 workers covers 1 detector x 8 filters
+    main(n_workers=8)

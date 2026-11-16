@@ -25,8 +25,6 @@ class EmpiricalPSF(ReferenceType):
         meta_data,
         psf,
         extended_psf=None,
-        psf_noipc=None,
-        extended_psf_noipc=None,
         outfile="roman_epsf_file.asdf",
         clobber=False,
     ):
@@ -52,11 +50,11 @@ class EmpiricalPSF(ReferenceType):
 
         self.meta = meta_data
         self.outfile = outfile
-        self.psf = psf
-        self.extended_psf = extended_psf
-        self.psf_noipc = psf_noipc
-        self.extended_psf_noipc = (
-            extended_psf_noipc
+        self.psf = psf.astype(np.float32, copy=False)
+        self.extended_psf = (
+            None
+            if extended_psf is None
+            else np.asarray(extended_psf).astype(np.float32, copy=False)
         )
 
         self._update_meta_data()
@@ -92,22 +90,12 @@ class EmpiricalPSF(ReferenceType):
 
         epsf_datamodel_tree = EpsfRefModel()
         epsf_datamodel_tree["meta"] = self.meta.export_asdf_meta()
-        epsf_datamodel_tree["psf"] = self.psf
+        epsf_datamodel_tree["psf"] = self.psf.astype(np.float32, copy=False)
 
         if self.extended_psf is not None:
             epsf_datamodel_tree[
                 "extended_psf"
-            ] = self.extended_psf
-
-        if self.psf_noipc is not None:
-            epsf_datamodel_tree[
-                "psf_noipc"
-            ] = self.psf_noipc
-
-        if self.extended_psf_noipc is not None:
-            epsf_datamodel_tree[
-                "extended_psf_noipc"
-            ] = self.extended_psf_noipc
+            ] = self.extended_psf.astype(np.float32, copy=False)
 
         return epsf_datamodel_tree
     
