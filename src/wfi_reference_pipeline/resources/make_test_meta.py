@@ -1,4 +1,7 @@
 from astropy import units as u
+from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
+    WFIMetaBoresightAlignmentMatrix,
+)
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_BORESIGHTALIGNMENTMATRIX,
@@ -26,10 +29,6 @@ from wfi_reference_pipeline.constants import (
     WFI_PEDIGREE,
     WFI_REF_TYPES,
     WFI_TYPE_IMAGE,
-)
-
-from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
-    WFIMetaBoresightAlignmentMatrix,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (

@@ -1,4 +1,7 @@
 from astropy import units as u
+from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
+    WFIMetaBoresightAlignmentMatrix,
+)
 
 from wfi_reference_pipeline.constants import (
     REF_TYPE_ABVEGAMAGNITUDEOFFSET,
@@ -36,9 +39,6 @@ from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
     WFIMetaApertureCorrection,
-)
-from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
-    WFIMetaBoresightAlignmentMatrix,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (

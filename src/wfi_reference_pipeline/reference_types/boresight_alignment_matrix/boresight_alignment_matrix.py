@@ -1,14 +1,13 @@
 import logging
- 
+
 import numpy as np
 from roman_datamodels.datamodels import BamRefModel
- 
 from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
     WFIMetaBoresightAlignmentMatrix,
 )
- 
+
 from ..reference_type import ReferenceType
- 
+
 log = logging.getLogger(__name__)
  
  
@@ -161,4 +160,100 @@ class BoresightAlignmentMatrix(ReferenceType):
         Abstract method not utilized.
         """
         pass
+
+
+
+
+# =====================================================================
+#  BAM delivery history: use after date, pedigree, author, description,
+#  and quaternion for each BAM reference file, oldest first.
+#  Keys are short labels for each delivery.
+# =====================================================================
+BAM_DESCRIPTION_BASE = (
+    "Quaternion values for the alignment matrix between the Roman observatory "
+    "boresight and fine guidance system (FGS)."
+)
+ 
+BAM_DELIVERIES = {
+    "GROUND": {
+        "use_after": "2020-01-01T00:00:00",
+        "pedigree": "GROUND",
+        "author": "T. Sohn, T. Desjardins",
+        "description": BAM_DESCRIPTION_BASE,
+        "bam_quaternion": [
+            -0.18596734175399293,
+            0.6837984564491885,
+            -0.1800546332580956,
+            0.6822141509826322,
+        ],
+    },
+    "COMMISSIONING": {
+        "use_after": "2026-09-01T00:00:00",
+        "pedigree": "INFLIGHT 2026-09-18 2026-09-20",
+        "author": "T. Sohn, T. Desjardins",
+        "description": (
+            BAM_DESCRIPTION_BASE
+            + " This file updates the BAM using on-orbit values from Roman commissioning."
+        ),
+        "bam_quaternion": [
+            -0.18544329040933288,
+            0.6841596691783262,
+            -0.1789574971477803,
+            0.6822833336133642,
+        ],
+    },
+    "PFAC1": {
+        "use_after": "2026-10-04T01:28:00",
+        "pedigree": "INFLIGHT 2026-10-04 2026-10-04",
+        "author": "T. Sohn, T. Desjardins",
+        "description": (
+            BAM_DESCRIPTION_BASE
+            + " This file updates the BAM using on-orbit values from Roman commissioning"
+            " and is valid for observations taken after the first Payload Focus and"
+            " Alignment Campaign (PFAC)."
+        ),
+        "bam_quaternion": [
+            -0.1854097027397201,
+            0.6841655865759074,
+            -0.17893168105684923,
+            0.6822932989480281,
+        ],
+    },
+    "CAR-86.15": {
+        "use_after": "2026-10-09T03:37:00",
+        "pedigree": "INFLIGHT 2026-10-08 2026-10-09",
+        "author": "T. Sohn, T. Desjardins",
+        "description": (
+            BAM_DESCRIPTION_BASE
+            + " This file updates the BAM using on-orbit values from Roman commissioning"
+            " and is valid for observations taken starting with CAR-86.15 (EP 9, Pass 10)."
+        ),
+        "bam_quaternion": [
+            -0.18541532459782697,
+            0.6841649308087118,
+            -0.17893053937736703,
+            0.6822927281848442,
+        ],
+    },
+    "CAR-86.17": {
+        "use_after": "2026-10-13T02:22:00",
+        "pedigree": "INFLIGHT 2026-10-13 2026-10-13",
+        "author": "T. Desjardins, T. Sohn",
+        "description": (
+            BAM_DESCRIPTION_BASE
+            + " This file updates the BAM using on-orbit values from Roman commissioning"
+            " and is valid for observations taken starting with CAR-86.17 (EP 12, Pass 13)."
+        ),
+        "bam_quaternion": [
+            -0.18541749359303772,
+            0.6841636922799866,
+            -0.17893482160935997,
+            0.6822922576514541,
+        ],
+    },
+}
+ 
+# Default BAM quaternion used when no ref_type_data is passed:
+# on-orbit values from Roman commissioning.
+BAM_QUATERNION = BAM_DELIVERIES["GROUND"]["bam_quaternion"]
  
