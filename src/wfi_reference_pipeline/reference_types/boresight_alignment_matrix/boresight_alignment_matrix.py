@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 from roman_datamodels.datamodels import BamRefModel
+
 from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
     WFIMetaBoresightAlignmentMatrix,
 )
