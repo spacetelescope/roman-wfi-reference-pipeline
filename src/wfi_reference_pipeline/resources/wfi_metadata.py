@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union
+from typing import ClassVar, Union
 
 from astropy.time import Time
 
-from wfi_reference_pipeline.constants import WFI_DETECTORS, WFI_PEDIGREE
+from wfi_reference_pipeline.constants import (
+    WFI_DETECTOR_NOT_CONFIGURED,
+    WFI_DETECTORS,
+    WFI_PEDIGREE,
+)
 
 
 @dataclass
@@ -22,6 +26,10 @@ class WFIMetadata(ABC):
     instrument: str
     instrument_detector: str
 
+    # Subclasses for detector agnostic reference files set this True to allow
+    # instrument_detector = WFI_DETECTOR_NOT_CONFIGURED (allowed by RAD ref_common).
+    allow_not_configured_detector: ClassVar[bool] = False
+
     @property
     def use_after(self) -> Time:
         return self._use_after
@@ -36,9 +44,12 @@ class WFIMetadata(ABC):
                 f"Invalid pedigree value. Allowed values are {WFI_PEDIGREE}"
             )
 
-        if self.instrument_detector not in WFI_DETECTORS:
+        allowed_detectors = set(WFI_DETECTORS)
+        if self.allow_not_configured_detector:
+            allowed_detectors.add(WFI_DETECTOR_NOT_CONFIGURED)
+        if self.instrument_detector not in allowed_detectors:
             raise ValueError(
-                f"Invalid instrument_detector value. Allowed values are {WFI_DETECTORS}"
+                f"Invalid instrument_detector value. Allowed values are {allowed_detectors}"
             )
 
         if self._use_after is not None:

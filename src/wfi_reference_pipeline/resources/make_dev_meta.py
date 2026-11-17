@@ -3,6 +3,7 @@ from astropy import units as u
 from wfi_reference_pipeline.constants import (
     REF_TYPE_ABVEGAMAGNITUDEOFFSET,
     REF_TYPE_APERTURECORRECTION,
+    REF_TYPE_BORESIGHTALIGNMENTMATRIX,
     REF_TYPE_DARK,
     REF_TYPE_DARKDECAYSIGNAL,
     REF_TYPE_DETECTORSTATUS,
@@ -23,6 +24,7 @@ from wfi_reference_pipeline.constants import (
     REF_TYPE_READNOISE,
     REF_TYPE_REFPIX,
     REF_TYPE_SATURATION,
+    WFI_DETECTOR_NOT_CONFIGURED,
     WFI_DETECTORS,
     WFI_MODE_WIM,
     WFI_PEDIGREE,
@@ -34,6 +36,9 @@ from wfi_reference_pipeline.resources.wfi_meta_abvegamagnitudeoffset import (
 )
 from wfi_reference_pipeline.resources.wfi_meta_aperturecorrection import (
     WFIMetaApertureCorrection,
+)
+from wfi_reference_pipeline.resources.wfi_meta_boresight_alignment_matrix import (
+    WFIMetaBoresightAlignmentMatrix,
 )
 from wfi_reference_pipeline.resources.wfi_meta_dark import WFIMetaDark
 from wfi_reference_pipeline.resources.wfi_meta_dark_decay_signal import (
@@ -91,6 +96,20 @@ class MakeDevMeta:
 
     def _create_dev_meta_aperturecorrection(self, meta_data):
         self.meta_aperturecorrection = WFIMetaApertureCorrection(*meta_data)
+
+    def _create_dev_meta_bam(self, meta_data):
+        # BAM is detector agnostic, RAD ref_common allows NOT_CONFIGURED for the detector.
+        bam_common_meta = list(meta_data)
+        bam_common_meta[-1] = WFI_DETECTOR_NOT_CONFIGURED
+ 
+        # V2, V3 (arcsec) and V3 Y angle (deg) of the boresight. Placeholder values,
+        # update with measured values before delivery.
+        v2 = 0.0
+        v3 = 0.0
+        v3_yangle = 0.0
+ 
+        bam_meta_data = [v2, v3, v3_yangle]
+        self.meta_bam = WFIMetaBoresightAlignmentMatrix(*bam_common_meta, *bam_meta_data)
 
     def _create_dev_meta_dark(self, meta_data):
         mode = WFI_MODE_WIM
@@ -296,6 +315,9 @@ class MakeDevMeta:
 
         if ref_type == REF_TYPE_APERTURECORRECTION:
             self._create_dev_meta_aperturecorrection(meta_data_params)
+
+        if ref_type == REF_TYPE_BORESIGHTALIGNMENTMATRIX:
+            self._create_dev_meta_bam(meta_data_params)
 
         if ref_type == REF_TYPE_DARK:
             self._create_dev_meta_dark(meta_data_params)
