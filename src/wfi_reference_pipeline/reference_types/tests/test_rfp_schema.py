@@ -8,6 +8,9 @@ from wfi_reference_pipeline.constants import (
     DETECTOR_PIXEL_X_COUNT,
     DETECTOR_PIXEL_Y_COUNT,
 )
+from wfi_reference_pipeline.reference_types.boresight_alignment_matrix.boresight_alignment_matrix import (
+    BoresightAlignmentMatrix,
+)
 from wfi_reference_pipeline.reference_types.dark.dark import Dark
 from wfi_reference_pipeline.reference_types.dark_decay_signal.dark_decay_signal import (
     DarkDecaySignal,
@@ -44,6 +47,31 @@ class TestSchema():
     """
     Class test suite for all RFP schema tests
     """
+
+    def test_rfp_bam_schema(self):
+        """
+        Use the WFI reference file pipeline BoresightAlignmentMatrix() module
+        to build a testable object which is then validated against
+        the DMS reference file schema.
+        """
+ 
+        # Make test meta
+        tmp = MakeTestMeta(ref_type='BAM')
+ 
+        # Make RFP BoresightAlignmentMatrix reference file object for testing
+        rfp_bam = BoresightAlignmentMatrix(
+            meta_data=tmp.meta_bam
+        )
+ 
+        # Make test asdf tree
+        tf = asdf.AsdfFile()
+        tf.tree = {
+            'roman': rfp_bam.populate_datamodel_tree()
+        }
+ 
+        # Validate method returns list of exceptions the json schema file failed to match.
+        # If none, then datamodel tree is valid.
+        assert tf.validate() is None
 
     def test_rfp_dark_schema(self):
         """
