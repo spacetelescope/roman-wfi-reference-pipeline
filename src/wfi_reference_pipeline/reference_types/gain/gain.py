@@ -5,6 +5,8 @@ from astropy import units as u
 from roman_datamodels.datamodels import GainRefModel
 
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
+from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import IPC_KERNELS
+
 
 from ..reference_type import ReferenceType
 
@@ -128,6 +130,9 @@ class Gain(ReferenceType):
         return gain_datamodel_tree
 
 
+
+'''
+# Obsolete as of 11/18/2026. We are computing the IPC-corrected gain correction factors now PER detector
 # =====================================================================
 #  Gain correction factor from T. Brandt
 #  The correction factor for the gain is 1.1 and this single value is for all 18 detectors.
@@ -135,3 +140,46 @@ class Gain(ReferenceType):
 #  but then partially compensated by the impact of small uncorrected nonlinearity. 
 # =====================================================================
 GAIN_CORRECTION_FACTOR = 1.1
+
+'''
+
+def compute_ipc_gain_correction_factor(detector, ipc_kernels=IPC_KERNELS):
+
+    '''
+    Implemented 11/18/2026
+    A stand-alone function to compute the IPC gain correction factor.
+
+    
+    Parameters
+    ----------
+    detector: str
+        WFI detector e.g. wfi01
+    IPC_KERNELS: dict
+        From the IPC module and contains hard-coded IPC kernel values for all 18 detectors. 
+        See the IPC module for more details
+
+    Output
+    ------
+    gain_correction_factor: float
+        A correction factor to account for IPC in gain for the requested detector. 
+    ''' 
+
+
+    # The IPC kernel looks liks this
+    # h = |alpha1       alpha2      alpha3|
+    #     |alpha4   1-sum(alphas)   alpha5|
+    #     |alpha6       alpha7      alpha8|
+    kernel = ipc_kernels[detector.upper()]
+
+    # Compute the alpha value
+    # We compute the alpha value using the values from the 4 pixels that are up, down, left, and right of the central pixel
+    alpha = np.mean([kernel[0, 1],  # up
+                    kernel[2, 1],  # down
+                    kernel[1, 0],  # left
+                    kernel[1, 2],  # right
+                ])
+
+    # IPC-correction factor for gain is 1+8*alpha
+    gain_correction_factor = 1+8*alpha
+
+    return gain_correction_factor
