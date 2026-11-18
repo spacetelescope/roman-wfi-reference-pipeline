@@ -91,11 +91,11 @@ class MakeOpsMeta:
  
         # V2, V3 (arcsec) and V3 Y angle (deg) of the boresight. Placeholder values,
         # update with measured values before delivery.
-        v2 = 0.0
-        v3 = 0.0
-        v3_yangle = 0.0
+        v2ref = 0.0
+        v3ref = 0.0
+        v3ideal_y_angle = 0.0
  
-        bam_meta_data = [v2, v3, v3_yangle]
+        bam_meta_data = [v2ref, v3ref, v3ideal_y_angle]
         self.meta_bam = WFIMetaBoresightAlignmentMatrix(*bam_common_meta, *bam_meta_data)
  
 

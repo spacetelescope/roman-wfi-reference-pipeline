@@ -98,7 +98,7 @@ class TestBoresightAlignmentMatrix:
         assert meta["reftype"] == REF_TYPE_BORESIGHTALIGNMENTMATRIX
         assert meta["telescope"] == "ROMAN"
         assert meta["instrument"]["detector"] == WFI_DETECTOR_NOT_CONFIGURED
-        assert {"v2", "v3", "v3_yangle"}.issubset(meta.keys())
+        assert {"v2ref", "v3ref", "v3ideal_y_angle"}.issubset(meta.keys())
  
         bam_quaternion = data_model_tree["bam_quaternion"]
         assert len(bam_quaternion) == 4

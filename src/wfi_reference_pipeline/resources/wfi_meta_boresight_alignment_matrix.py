@@ -20,17 +20,17 @@ class WFIMetaBoresightAlignmentMatrix(WFIMetadata):
  
     BAM specific fields
     -------------------
-    v2: float
+    v2ref: float
         V2 coordinate of the boresight in arcseconds.
-    v3: float
+    v3ref: float
         V3 coordinate of the boresight in arcseconds.
-    v3_yangle: float
+    v3ideal_y_angle: float
         Angle from the V3 axis to the Y axis in degrees, within [-360, 360].
     """
  
     # These are required reftype specific
-    v2: float
-    v3: float
+    v2ref: float
+    v3ref: float
     v3_yangle: float
  
     allow_not_configured_detector: ClassVar[bool] = True
@@ -41,7 +41,7 @@ class WFIMetaBoresightAlignmentMatrix(WFIMetadata):
         # Detector agnostic, always NOT_CONFIGURED regardless of the detector passed in.
         self.instrument_detector = constants.WFI_DETECTOR_NOT_CONFIGURED
  
-        for name in ("v2", "v3", "v3_yangle"):
+        for name in ("v2ref", "v3ref", "v3ideal_y_angle"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise TypeError(f"'{name}' must be a number, got {type(value)}.")
@@ -68,9 +68,9 @@ class WFIMetaBoresightAlignmentMatrix(WFIMetadata):
                            'detector': self.instrument_detector,
                            },
             # BAM meta
-            'v2': self.v2,
-            'v3': self.v3,
-            'v3_yangle': self.v3_yangle,
+            'v2ref': self.v2ref,
+            'v3ref': self.v3ref,
+            'v3ideal_y_angle': self.v3ideal_y_angle,
         }
         return asdf_meta
     

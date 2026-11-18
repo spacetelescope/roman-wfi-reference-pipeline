@@ -37,9 +37,9 @@ class BoresightAlignmentMatrix(ReferenceType):
     tmp.meta_bam.use_after = '2026-09-01T00:00:00.000'
     tmp.meta_bam.author = 'T. Sohn, T. Desjardins'
     tmp.meta_bam.origin = 'STSCI/SOC'
-    tmp.meta_bam.v2 = 0.0
-    tmp.meta_bam.v3 = 0.0
-    tmp.meta_bam.v3_yangle = 0.0
+    tmp.meta_bam.v2ref = 0.0
+    tmp.meta_bam.v3ref = 0.0
+    tmp.meta_bam.v3ideal_y_angle = 0.0
     tmp.meta_bam.description = 'Quaternion values for the alignment matrix between the Roman
     observatory boresight and fine guidance system (FGS).'
     rfp_bam = BoresightAlignmentMatrix(meta_data=tmp.meta_bam, ref_type_data=BAM_QUATERNION)
