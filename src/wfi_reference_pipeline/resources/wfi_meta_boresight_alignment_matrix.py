@@ -31,7 +31,7 @@ class WFIMetaBoresightAlignmentMatrix(WFIMetadata):
     # These are required reftype specific
     v2ref: float
     v3ref: float
-    v3_yangle: float
+    v3ideal_y_angle: float
  
     allow_not_configured_detector: ClassVar[bool] = True
  
@@ -49,9 +49,9 @@ class WFIMetaBoresightAlignmentMatrix(WFIMetadata):
                 raise ValueError(f"'{name}' must be finite, got {value}.")
             setattr(self, name, float(value))
  
-        if not -360.0 <= self.v3_yangle <= 360.0:
+        if not -360.0 <= self.v3ideal_y_angle <= 360.0:
             raise ValueError(
-                f"'v3_yangle' must be within [-360, 360] degrees, got {self.v3_yangle}."
+                f"'v3_yangle' must be within [-360, 360] degrees, got {self.v3ideal_y_angle}."
             )
  
     def export_asdf_meta(self):
