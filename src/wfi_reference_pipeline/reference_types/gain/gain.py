@@ -4,9 +4,13 @@ import numpy as np
 from astropy import units as u
 from roman_datamodels.datamodels import GainRefModel
 
+from wfi_reference_pipeline.constants import (
+    WFI_DETECTORS,
+)
+from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import (
+    IPC_KERNELS,
+)
 from wfi_reference_pipeline.resources.wfi_meta_gain import WFIMetaGain
-from wfi_reference_pipeline.reference_types.inter_pixel_capacitance.inter_pixel_capacitance import IPC_KERNELS
-
 
 from ..reference_type import ReferenceType
 
@@ -154,7 +158,7 @@ def compute_ipc_gain_correction_factor(detector, ipc_kernels=IPC_KERNELS):
     ----------
     detector: str
         WFI detector e.g. wfi01
-    IPC_KERNELS: dict
+    ipc_kernels: dict
         From the IPC module and contains hard-coded IPC kernel values for all 18 detectors. 
         See the IPC module for more details
 
@@ -164,6 +168,8 @@ def compute_ipc_gain_correction_factor(detector, ipc_kernels=IPC_KERNELS):
         A correction factor to account for IPC in gain for the requested detector. 
     ''' 
 
+    if detector not in WFI_DETECTORS:
+        raise ValueError(f"Invalid detector '{detector}'. Expected one of {sorted(WFI_DETECTORS)}.")
 
     # The IPC kernel looks liks this
     # h = |alpha1       alpha2      alpha3|
