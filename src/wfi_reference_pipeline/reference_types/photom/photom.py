@@ -1,6 +1,8 @@
+import logging
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import crds
@@ -27,6 +29,16 @@ from wfi_reference_pipeline.resources.wfi_meta_photom import (
 
 from ..reference_type import ReferenceType
 
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("wfi_photom_creation.log", mode="a"),
+    ],
+    force=True,
+)
 
 class Photom(ReferenceType):
     """Class Photom() inherits the ReferenceType() base class methods
@@ -39,6 +51,7 @@ class Photom(ReferenceType):
     def __init__(
         self,
         meta_data,
+        ref_type_data=None,
         outfile="roman_photom_file.asdf",
         clobber=False,
     ):
@@ -55,6 +68,7 @@ class Photom(ReferenceType):
 
         super().__init__(
             meta_data=meta_data,
+            ref_type_data=ref_type_data,
             outfile=outfile,
             clobber=clobber,
         )
@@ -97,7 +111,9 @@ class Photom(ReferenceType):
             if len(self.pam) != 18:
                 raise ValueError('PAM dictionary does not contain information for all 18 detectors')
         elif self.pam is None:
-            raise ValueError('The PAM dictionary is empty. Check the reference file exists')                       
+            raise ValueError('The PAM dictionary is empty. Check the reference file exists')       
+
+        self.modulation_df = read_modulation_factor(ref_type_data)                
 
 
     def populate_datamodel_tree(self):
@@ -191,6 +207,8 @@ class Photom(ReferenceType):
             
 
             col = throughput_table[filter].values.astype(np.float32) # safe math
+            print('## Correcting the End of Life to Biggining of Life')
+            col *= 1.057         # This factor is to convert the EOL to BOL throughput curves
             waves_micron = throughput_table['Wave'].values * u.micron
 
             # If the input file file contains throughput and not effective area, convert the data to effective area
@@ -208,6 +226,7 @@ class Photom(ReferenceType):
 
             # Throughput = A_eff / A_coll (dimensionless ndarray)
             thru_table = (eaq / (COLLECTING_AREA_M2 * u.m**2)).decompose().value.astype(np.float32)
+
 
             # Build bandpass from throughput usign STsynphot function
             band = syn.SpectralElement(Empirical1D, points=wq, lookup_table=thru_table)
@@ -227,6 +246,55 @@ class Photom(ReferenceType):
 
             photmjsr = np.float32(mjy_per_dnps_per_sr * gain)
             uncertainty = np.float32(mjy_per_dnps_per_sr * gain * gain_rerr)
+
+
+            # Correct the zeropoints based on the inflight data
+            # Only do it for the imaging elements
+            if filter not in ['Grism_1stOrder', 'Prism', 'DARK']:
+                detector = self.meta_data.instrument_detector
+                detector_number = int(detector.removeprefix('WFI'))
+
+                matches = self.modulation_df.loc[
+                    (
+                        pd.to_numeric(
+                            self.modulation_df['detector'],
+                            errors='coerce',
+                        )
+                        == detector_number
+                    )
+                    & (
+                        self.modulation_df['filter']
+                        .astype(str)
+                        .str.strip()
+                        .str.upper()
+                        == str(filter).strip().upper()
+                    )
+                ]
+                if matches.empty:
+                    raise ValueError(
+                        'No empirical correction found for '
+                        f'detector={detector!r}, filter={filter!r}'
+                    )
+
+                if len(matches) > 1:
+                    raise ValueError(
+                        f'Found {len(matches)} empirical corrections for '
+                        f'detector={detector!r}, filter={filter!r}; '
+                        'expected exactly one.\n'
+                        f'{matches.to_string(index=False)}'
+                    )
+
+                matching_row = matches.iloc[0]
+
+                corr_val = float(matching_row['Biweight_mean'])
+                corr_err = float(matching_row['Biweight_mean_err'])
+
+                photmjsr_corrected = photmjsr / corr_val
+                uncertainty_corrected = np.sqrt(uncertainty**2 + corr_err**2)
+
+                logging.info(f'{detector} & {filter}: correction factor -> {corr_val}, photmjsr -> {photmjsr.item()}, photmjsr_corrected -> {photmjsr_corrected.item()}')
+                logging.info(f'     correction factor uncertainty -> {corr_err}, uncertainty -> {uncertainty.item()}, uncertainty_corrected -> {uncertainty_corrected.item()}')
+
 
             # >>> CRITICAL: store plain ndarrays (no units), float32, 1-D
             wavelength_arr     = wq.to_value(u.micron).astype(np.float32)  # ndarray
@@ -257,8 +325,8 @@ class Photom(ReferenceType):
         # --- Imaging filters ---
         else:   
             return {
-                'photmjsr': float(photmjsr),
-                'uncertainty': float(uncertainty),
+                'photmjsr': float(photmjsr_corrected), #float(photmjsr),
+                'uncertainty': float(uncertainty_corrected), #float(uncertainty),
                 'pixelareasr': float(np.float32(pixel_area_sr)),
                 'collecting_area': COLLECTING_AREA_M2,
                 'wavelength': wavelength_arr,          # ndarray float32, 1-D
@@ -303,7 +371,7 @@ class Photom(ReferenceType):
 
 
 # -------------------------------
-# Standalone functions for gain and pixel area map
+# Standalone function for gain and pixel area map
 # -------------------------------
 def build_gain_and_pam_dict_from_crds():
     """
@@ -366,12 +434,11 @@ def build_gain_and_pam_dict_from_crds():
                 _, med, std = sigma_clipped_stats(ref.data, sigma=4, maxiters=3)
                 val = float(med)
 
-                # Correct the gain values to account for IPC + small uncorrected nonlinearity
-                # Value is from T. Brandt
-                # See the Gain module for the actual value and its full explanation
+                # Correct the gain values to account for IPC 
+                # See the Gain module for how the factor is computed
                 gain_correction_factor = compute_ipc_gain_correction_factor(det)
-                val_corrected = val / gain_correction_factor 
-                print(f"{det}: gain -> {val:.2f}, gain_corrected -> {val_corrected:.2f}")
+                val_corrected = val / gain_correction_factor
+                logging.info(f"{det}: correction factor -> {gain_correction_factor}, gain -> {val:.2f}, gain_corrected -> {val_corrected:.2f}")
 
                 # Save the gain values in the dictionary to convert DNs to electrons 
                 # for the rest of the detector parameters
@@ -397,7 +464,7 @@ def build_gain_and_pam_dict_from_crds():
                 pixelarea_arcsecsq = ref.meta.photometry.pixelarea_arcsecsq
                 pixelarea_steradians = ref.meta.photometry.pixelarea_steradians
 
-                print(f"{det}: pixelarea_steradians -> {pixelarea_steradians}")
+                logging.info(f"{det}: pixelarea_steradians -> {pixelarea_steradians}")
 
                 pam_vals[det] = {'pixelarea_arcsecsq': pixelarea_arcsecsq, 'pixelarea_steradians': pixelarea_steradians}
 
@@ -406,3 +473,18 @@ def build_gain_and_pam_dict_from_crds():
 
 
     return gain_vals, pam_vals
+
+
+# -------------------------------------------------------------------------
+# Standalone function to read the empirical correction for the zero points
+# -------------------------------------------------------------------------
+def read_modulation_factor(correction_file):
+
+    column_names = ['filter', 'detector', 'Nstars', 
+                    'Weighted_mean', 'Weighted_mean_err', 
+                    'Biweight_mean', 'Biweight_mean_err', 'Biweight_scatter', 
+                    'Mean', 'Median', 'Std']
+    df = pd.read_csv(correction_file, names=column_names, sep=r'\s+', skiprows=1, header=None)
+
+
+    return df

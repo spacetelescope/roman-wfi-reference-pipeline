@@ -1,4 +1,3 @@
-
 import numpy as np
 import pytest
 
@@ -54,10 +53,22 @@ BAD_TEST_META = MakeTestMeta(ref_type=REF_TYPE_EPSF)
 
 
 @pytest.fixture
-def photom_object(mocker):
-    """Fixture for initializing a Photom object with valid data.""" 
+def modulation_file(tmp_path):
+    """Create a minimal empirical-correction table for PHOTOM tests."""
+    modulation_file = tmp_path / 'modulation.txt'
+    modulation_file.write_text(
+        'filter detector Nstars Weighted_mean Weighted_mean_err '
+        'Biweight_mean Biweight_mean_err Biweight_scatter Mean Median Std\n'
+        'F062 1 1 1 0 1 0 0 1 1 0\n'
+    )
+    return str(modulation_file)
+
+
+@pytest.fixture
+def photom_object(mocker, modulation_file):
+    """Fixture for initializing a Photom object with valid data."""
     mocker.patch(f'{BASE_MODULE}.build_gain_and_pam_dict_from_crds', return_value=[GAIN_DICT, PAM_DICT])
-    return Photom(meta_data=PHOTOM_META.meta_photom)
+    return Photom(meta_data=PHOTOM_META.meta_photom, ref_type_data=modulation_file)
 
 
 # Tests
@@ -69,14 +80,14 @@ def test_photom_instantiation_with_valid_ref_type(photom_object):
  
         
 
-def test_photom_instantiation_with_invalid_metadata(mocker):
+def test_photom_instantiation_with_invalid_metadata(mocker, modulation_file):
     """
     Test that Photom raises TypeError with invalid metadata type.
     """ 
     mocker.patch(f'{BASE_MODULE}.build_gain_and_pam_dict_from_crds', return_value=[GAIN_DICT, PAM_DICT])
 
     with pytest.raises(TypeError):
-        Photom(meta_data=BAD_TEST_META.meta_epsf)
+        Photom(meta_data=BAD_TEST_META.meta_epsf, ref_type_data=modulation_file)
 
 
 def test_populate_datamodel_tree(photom_object):
