@@ -1,6 +1,8 @@
+import logging
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import crds
@@ -27,6 +29,16 @@ from wfi_reference_pipeline.resources.wfi_meta_photom import (
 
 from ..reference_type import ReferenceType
 
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("wfi_photom_creation.log", mode="a"),
+    ],
+    force=True,
+)
 
 class Photom(ReferenceType):
     """Class Photom() inherits the ReferenceType() base class methods
@@ -195,7 +207,7 @@ class Photom(ReferenceType):
             
 
             col = throughput_table[filter].values.astype(np.float32) # safe math
-            print('## Correcting the EOL to BOL')
+            print('## Correcting the End of Life to Biggining of Life')
             col *= 1.057         # This factor is to convert the EOL to BOL throughput curves
             waves_micron = throughput_table['Wave'].values * u.micron
 
@@ -280,8 +292,8 @@ class Photom(ReferenceType):
                 photmjsr_corrected = photmjsr / corr_val
                 uncertainty_corrected = np.sqrt(uncertainty**2 + corr_err**2)
 
-                print(f'{detector} & {filter}: correction factor -> {corr_val}, photmjsr -> {photmjsr.item()}, photmjsr_corrected -> {photmjsr_corrected.item()}')
-                print(f'     correction factor uncertainty -> {corr_err}, uncertainty -> {uncertainty.item()}, uncertainty_corrected -> {uncertainty_corrected.item()}')
+                logging.info(f'{detector} & {filter}: correction factor -> {corr_val}, photmjsr -> {photmjsr.item()}, photmjsr_corrected -> {photmjsr_corrected.item()}')
+                logging.info(f'     correction factor uncertainty -> {corr_err}, uncertainty -> {uncertainty.item()}, uncertainty_corrected -> {uncertainty_corrected.item()}')
 
 
             # >>> CRITICAL: store plain ndarrays (no units), float32, 1-D
@@ -426,7 +438,7 @@ def build_gain_and_pam_dict_from_crds():
                 # See the Gain module for how the factor is computed
                 gain_correction_factor = compute_ipc_gain_correction_factor(det)
                 val_corrected = val / gain_correction_factor
-                print(f"{det}: correction factor -> {gain_correction_factor}, gain -> {val:.2f}, gain_corrected -> {val_corrected:.2f}")
+                logging.info(f"{det}: correction factor -> {gain_correction_factor}, gain -> {val:.2f}, gain_corrected -> {val_corrected:.2f}")
 
                 # Save the gain values in the dictionary to convert DNs to electrons 
                 # for the rest of the detector parameters
@@ -452,7 +464,7 @@ def build_gain_and_pam_dict_from_crds():
                 pixelarea_arcsecsq = ref.meta.photometry.pixelarea_arcsecsq
                 pixelarea_steradians = ref.meta.photometry.pixelarea_steradians
 
-                print(f"{det}: pixelarea_steradians -> {pixelarea_steradians}")
+                logging.info(f"{det}: pixelarea_steradians -> {pixelarea_steradians}")
 
                 pam_vals[det] = {'pixelarea_arcsecsq': pixelarea_arcsecsq, 'pixelarea_steradians': pixelarea_steradians}
 
