@@ -277,7 +277,7 @@ class Photom(ReferenceType):
                 corr_val = float(matching_row['Biweight_mean'])
                 corr_err = float(matching_row['Biweight_mean_err'])
 
-                photmjsr_corrected = photmjsr * corr_val
+                photmjsr_corrected = photmjsr / corr_val
                 uncertainty_corrected = np.sqrt(uncertainty**2 + corr_err**2)
 
                 print(f'{detector} & {filter}: correction factor -> {corr_val}, photmjsr -> {photmjsr.item()}, photmjsr_corrected -> {photmjsr_corrected.item()}')
