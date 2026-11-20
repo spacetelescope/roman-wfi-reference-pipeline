@@ -221,8 +221,8 @@ def update_etc_form_from_crds(output_dir):
                 # Correct the gain values to account for IPC + small uncorrected nonlinearity
                 # Value is from T. Brandt
                 # See the Gain module for the actual value and its full explanation
-                GAIN_CORRECTION_FACTOR = compute_ipc_gain_correction_factor(det)
-                val_corrected = val / GAIN_CORRECTION_FACTOR
+                gain_correction_factor = compute_ipc_gain_correction_factor(det)
+                val_corrected = val / gain_correction_factor
                 print(f"{det}: gain -> {val:.2f}, gain_corrected -> {val_corrected:.2f}")
 
                 # Save the gain values in the dictionary to convert DNs to electrons 
